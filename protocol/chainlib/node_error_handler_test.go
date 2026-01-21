@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -175,7 +176,7 @@ func TestIsUnsupportedMethodErrorMessage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := IsUnsupportedMethodErrorMessage(tt.message)
+			result := common.IsUnsupportedMethodMessage(tt.message)
 			require.Equal(t, tt.expected, result, "Message: %s", tt.message)
 		})
 	}
@@ -315,62 +316,31 @@ func TestIsUnsupportedMethodError(t *testing.T) {
 	})
 }
 
-func TestGetUnsupportedMethodPatterns(t *testing.T) {
-	patterns := GetUnsupportedMethodPatterns()
-
-	// Verify all pattern categories exist
-	require.Contains(t, patterns, "json-rpc")
-	require.Contains(t, patterns, "rest")
-	require.Contains(t, patterns, "grpc")
-
-	// Verify JSON-RPC patterns
-	jsonRPCPatterns := patterns["json-rpc"]
-	require.Contains(t, jsonRPCPatterns, JSONRPCMethodNotFound)
-	require.Contains(t, jsonRPCPatterns, JSONRPCMethodNotSupported)
-	require.Contains(t, jsonRPCPatterns, JSONRPCUnknownMethod)
-	require.Contains(t, jsonRPCPatterns, JSONRPCMethodDoesNotExist)
-	require.Contains(t, jsonRPCPatterns, JSONRPCInvalidMethod)
-	require.Contains(t, jsonRPCPatterns, JSONRPCErrorCode)
-
-	// Verify REST patterns
-	restPatterns := patterns["rest"]
-	require.Contains(t, restPatterns, RESTEndpointNotFound)
-	require.Contains(t, restPatterns, RESTRouteNotFound)
-	require.Contains(t, restPatterns, RESTPathNotFound)
-	require.Contains(t, restPatterns, RESTMethodNotAllowed)
-
-	// Verify gRPC patterns
-	grpcPatterns := patterns["grpc"]
-	require.Contains(t, grpcPatterns, GRPCMethodNotImplemented)
-	require.Contains(t, grpcPatterns, GRPCUnimplemented)
-	require.Contains(t, grpcPatterns, GRPCServiceNotFound)
-}
-
 func TestErrorConstants(t *testing.T) {
 	// Verify constant values haven't changed
-	require.Equal(t, "method not found", JSONRPCMethodNotFound)
-	require.Equal(t, "method not supported", JSONRPCMethodNotSupported)
-	require.Equal(t, "unknown method", JSONRPCUnknownMethod)
-	require.Equal(t, "method does not exist", JSONRPCMethodDoesNotExist)
-	require.Equal(t, "invalid method", JSONRPCInvalidMethod)
-	require.Equal(t, "-32601", JSONRPCErrorCode)
+	require.Equal(t, "method not found", common.JSONRPCMethodNotFound)
+	require.Equal(t, "method not supported", common.JSONRPCMethodNotSupported)
+	require.Equal(t, "unknown method", common.JSONRPCUnknownMethod)
+	require.Equal(t, "method does not exist", common.JSONRPCMethodDoesNotExist)
+	require.Equal(t, "invalid method", common.JSONRPCInvalidMethod)
+	require.Equal(t, "-32601", common.JSONRPCErrorCode)
 
-	require.Equal(t, "endpoint not found", RESTEndpointNotFound)
-	require.Equal(t, "route not found", RESTRouteNotFound)
-	require.Equal(t, "path not found", RESTPathNotFound)
-	require.Equal(t, "method not allowed", RESTMethodNotAllowed)
+	require.Equal(t, "endpoint not found", common.RESTEndpointNotFound)
+	require.Equal(t, "route not found", common.RESTRouteNotFound)
+	require.Equal(t, "path not found", common.RESTPathNotFound)
+	require.Equal(t, "method not allowed", common.RESTMethodNotAllowed)
 
-	require.Equal(t, "method not implemented", GRPCMethodNotImplemented)
-	require.Equal(t, "unimplemented", GRPCUnimplemented)
-	require.Equal(t, "service not found", GRPCServiceNotFound)
+	require.Equal(t, "method not implemented", common.GRPCMethodNotImplemented)
+	require.Equal(t, "unimplemented", common.GRPCUnimplemented)
+	require.Equal(t, "service not found", common.GRPCServiceNotFound)
 
-	require.Equal(t, 404, HTTPStatusNotFound)
-	require.Equal(t, 405, HTTPStatusMethodNotAllowed)
-	require.Equal(t, -32601, JSONRPCMethodNotFoundCode)
+	require.Equal(t, 404, common.HTTPStatusNotFound)
+	require.Equal(t, 405, common.HTTPStatusMethodNotAllowed)
+	require.Equal(t, -32601, common.JSONRPCMethodNotFoundCode)
 }
 
 // Benchmark tests to ensure performance
-func BenchmarkIsUnsupportedMethodErrorMessage(b *testing.B) {
+func BenchmarkIsUnsupportedMethodMessage(b *testing.B) {
 	testMessages := []string{
 		"method not found",
 		"internal server error",
@@ -382,7 +352,7 @@ func BenchmarkIsUnsupportedMethodErrorMessage(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		for _, msg := range testMessages {
-			_ = IsUnsupportedMethodErrorMessage(msg)
+			_ = common.IsUnsupportedMethodMessage(msg)
 		}
 	}
 }
@@ -477,7 +447,7 @@ func TestIsUnsupportedMethodErrorMessage_SmartContractErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := IsUnsupportedMethodErrorMessage(tt.message)
+			got := common.IsUnsupportedMethodMessage(tt.message)
 			require.Equal(t, tt.expected, got, "Message: %s", tt.message)
 		})
 	}

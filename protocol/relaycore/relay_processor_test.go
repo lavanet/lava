@@ -1941,7 +1941,7 @@ func TestHasUnsupportedMethodErrors(t *testing.T) {
 		// This test validates that the HasUnsupportedMethodErrors function
 		// correctly checks the IsUnsupportedMethod flag in RelayResult
 		// The actual integration of this is tested in the full relay flow
-		
+
 		// Test 1: Verify RelayResult has the flag
 		result := common.RelayResult{
 			Reply:               &pairingtypes.RelayReply{Data: []byte(`{"error":"method not found"}`)},
@@ -1949,7 +1949,7 @@ func TestHasUnsupportedMethodErrors(t *testing.T) {
 			IsNodeError:         true,
 			IsUnsupportedMethod: true, // Flag set
 		}
-		
+
 		require.True(t, result.IsUnsupportedMethod, "IsUnsupportedMethod flag should be set")
 		require.True(t, result.IsNodeError, "IsNodeError should be set for unsupported methods")
 	})
@@ -1962,19 +1962,19 @@ func TestHasUnsupportedMethodErrors(t *testing.T) {
 			IsNodeError:         true,
 			IsUnsupportedMethod: false, // Flag should NOT be set
 		}
-		
+
 		require.False(t, result.IsUnsupportedMethod, "Smart contract error should NOT be marked as unsupported")
 		require.True(t, result.IsNodeError, "Should still be a node error")
-		
+
 		// Verify the message itself would not be classified as unsupported
-		isUnsupported := chainlib.IsUnsupportedMethodErrorMessage(string(result.Reply.Data))
+		isUnsupported := common.IsUnsupportedMethodMessage(string(result.Reply.Data))
 		require.False(t, isUnsupported, "Smart contract 'identity not found' should NOT match unsupported patterns")
 	})
 
 	t.Run("Backward compatibility - message pattern check still works", func(t *testing.T) {
 		// Verify that the old message-based detection still works
 		// for backward compatibility
-		
+
 		// Actual unsupported method messages
 		unsupportedMessages := []string{
 			"method not found",
@@ -1982,21 +1982,21 @@ func TestHasUnsupportedMethodErrors(t *testing.T) {
 			"method not supported",
 			"-32601",
 		}
-		
+
 		for _, msg := range unsupportedMessages {
-			isUnsupported := chainlib.IsUnsupportedMethodErrorMessage(msg)
+			isUnsupported := common.IsUnsupportedMethodMessage(msg)
 			require.True(t, isUnsupported, "Message '%s' should be detected as unsupported", msg)
 		}
-		
+
 		// Smart contract messages should NOT match
 		smartContractMessages := []string{
 			"execution reverted: NFT not found",
 			"execution reverted: User not found",
 			"execution reverted: identity not found",
 		}
-		
+
 		for _, msg := range smartContractMessages {
-			isUnsupported := chainlib.IsUnsupportedMethodErrorMessage(msg)
+			isUnsupported := common.IsUnsupportedMethodMessage(msg)
 			require.False(t, isUnsupported, "Smart contract message '%s' should NOT be detected as unsupported", msg)
 		}
 	})

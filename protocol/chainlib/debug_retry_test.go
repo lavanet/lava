@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -15,7 +16,7 @@ func TestSpecificErrorFromUser(t *testing.T) {
 
 	// Test message detection
 	t.Run("Message pattern detection", func(t *testing.T) {
-		result := IsUnsupportedMethodErrorMessage(errorMsg)
+		result := common.IsUnsupportedMethodMessage(errorMsg)
 		require.True(t, result, "Should detect 'unsupported method' in the error message")
 	})
 

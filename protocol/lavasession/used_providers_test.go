@@ -113,45 +113,6 @@ func TestUsedProviderContextTimeout(t *testing.T) {
 	})
 }
 
-// NEW TEST: Test Issue #1 fix - Smart contract errors should NOT be classified as unsupported
-func TestIsUnsupportedMethodError_SmartContractVsActual(t *testing.T) {
-	t.Run("Smart contract errors should NOT match", func(t *testing.T) {
-		smartContractErrors := []error{
-			fmt.Errorf("execution reverted: NFT not found"),
-			fmt.Errorf("execution reverted: User not found"),
-			fmt.Errorf("execution reverted: Token not found"),
-			fmt.Errorf("execution reverted: identity not found"),
-			fmt.Errorf("execution reverted: IdentityRegistry: identity not found"),
-			fmt.Errorf("user not found"),  // Generic "not found" removed
-			fmt.Errorf("item not found"),  // Generic "not found" removed
-			fmt.Errorf("execution reverted: Record not found in database"),
-		}
-
-		for _, err := range smartContractErrors {
-			result := isUnsupportedMethodError(err)
-			require.False(t, result, "Smart contract error '%s' should NOT be unsupported method", err.Error())
-		}
-	})
-
-	t.Run("Actual unsupported methods should match", func(t *testing.T) {
-		unsupportedErrors := []error{
-			fmt.Errorf("method not found"),
-			fmt.Errorf("endpoint not found"),
-			fmt.Errorf("method not supported"),
-			fmt.Errorf("unknown method"),
-			fmt.Errorf("-32601"),
-			fmt.Errorf("route not found"),
-			fmt.Errorf("method not allowed"),
-			fmt.Errorf("unimplemented"),
-		}
-
-		for _, err := range unsupportedErrors {
-			result := isUnsupportedMethodError(err)
-			require.True(t, result, "Unsupported method error '%s' should be detected", err.Error())
-		}
-	})
-}
-
 // NEW TEST: Verify shouldRetryWithThisError logic with unsupported methods
 func TestShouldRetryWithThisError(t *testing.T) {
 	t.Run("Should NOT retry unsupported methods", func(t *testing.T) {

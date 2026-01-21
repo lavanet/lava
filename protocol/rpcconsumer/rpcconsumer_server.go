@@ -1219,7 +1219,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 			// Check if this node error is an unsupported method
 			if isNodeError {
-				isUnsupported := chainlib.IsUnsupportedMethodErrorMessage(errorMessage)
+				isUnsupported := common.IsUnsupportedMethodMessage(errorMessage)
 
 				// Additional check for REST APIs
 				if !isUnsupported && protocolMessage.GetApiCollection() != nil {

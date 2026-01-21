@@ -288,19 +288,9 @@ func (up *UsedProviders) GetUnwantedProvidersToSend(routerKey RouterKey) map[str
 	return unwantedProvidersToSend
 }
 
-// isUnsupportedMethodError checks if an error indicates an unsupported method
-// Uses shared pattern matching from protocol/common to ensure consistency across the codebase.
-// Previously this was a local duplicate to avoid import cycles with chainlib.
-func isUnsupportedMethodError(err error) bool {
-	if err == nil {
-		return false
-	}
-	return common.IsUnsupportedMethodMessage(err.Error())
-}
-
 func shouldRetryWithThisError(err error) bool {
 	// Never retry unsupported method errors
-	if isUnsupportedMethodError(err) {
+	if common.IsUnsupportedMethodMessage(err.Error()) {
 		return false
 	}
 

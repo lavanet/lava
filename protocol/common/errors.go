@@ -2,7 +2,6 @@ package common
 
 import (
 	"bytes"
-	"strings"
 
 	sdkerrors "cosmossdk.io/errors"
 )
@@ -16,7 +15,6 @@ var (
 	SubscriptionNotFoundError                   = sdkerrors.New("SubscriptionNotFoundError Error", 901, "subscription not found")
 	ProviderFinalizationDataAccountabilityError = sdkerrors.New("ProviderFinalizationDataAccountability Error", 3365, "provider returned invalid finalization data, with accountability")
 )
-
 
 // Error pattern constants for unsupported method detection
 const (
@@ -48,52 +46,6 @@ const (
 	JSONRPCMethodNotFoundCode = -32601
 )
 
-// IsUnsupportedMethodMessage checks if an error message indicates an unsupported method
-// This performs basic string pattern matching on error messages across all supported protocols.
-// It is the single source of truth for pattern matching to ensure consistency across the codebase.
-//
-// For more comprehensive checks including HTTP status codes and gRPC status codes,
-// use chainlib.IsUnsupportedMethodError which wraps this function with additional protocol-specific checks.
-//
-// Returns true if the error message contains any known unsupported method pattern.
-func IsUnsupportedMethodMessage(errorMessage string) bool {
-	if errorMessage == "" {
-		return false
-	}
-
-	errorMsg := strings.ToLower(errorMessage)
-
-	// Check all patterns
-	patterns := []string{
-		JSONRPCMethodNotFound,
-		JSONRPCMethodNotSupported,
-		JSONRPCUnknownMethod,
-		JSONRPCMethodDoesNotExist,
-		JSONRPCInvalidMethod,
-		RESTEndpointNotFound,
-		RESTRouteNotFound,
-		RESTPathNotFound,
-		RESTMethodNotAllowed,
-		GRPCMethodNotImplemented,
-		GRPCUnimplemented,
-		GRPCNotImplemented,
-		GRPCServiceNotFound,
-		JSONRPCErrorCode,
-	}
-
-	for _, pattern := range patterns {
-		if strings.Contains(errorMsg, pattern) {
-			return true
-		}
-	}
-
-	return false
-}
-
-func IsUnsupportedMethodErrorMessageBytes(errorMessage []byte) bool {
-	errorMsgLower := bytes.ToLower(errorMessage)
-
-
 // Pre-computed byte patterns for efficient matching (initialized once at package load)
 // These are the lowercase versions of the pattern constants above
 var unsupportedMethodPatternBytes = [][]byte{
@@ -116,10 +68,32 @@ var unsupportedMethodPatternBytes = [][]byte{
 	[]byte(GRPCServiceNotFound),      // "service not found"
 }
 
-	for _, pattern := range unsupportedMethodPatternBytes{
-		if bytes.Contains(errorMsgLower, pattern) {
+// IsUnsupportedMethodMessage checks if an error message indicates an unsupported method.
+// This is a convenience wrapper that delegates to IsUnsupportedMethodErrorMessageBytes
+// for efficient pattern matching using pre-computed byte patterns.
+//
+// For more comprehensive checks including HTTP status codes and gRPC status codes,
+// use chainlib.IsUnsupportedMethodError which wraps this function with additional protocol-specific checks.
+//
+// Returns true if the error message contains any known unsupported method pattern.
+func IsUnsupportedMethodMessage(errorMessage string) bool {
+	return IsUnsupportedMethodErrorMessageBytes([]byte(errorMessage))
+}
+
+// IsUnsupportedMethodErrorMessageBytes checks if an error message (as bytes) indicates an unsupported method.
+// This is more efficient than IsUnsupportedMethodErrorMessage when working with []byte data
+// as it avoids string conversions and uses pre-computed byte patterns with a single-pass lowercase conversion.
+func IsUnsupportedMethodErrorMessageBytes(errorMessage []byte) bool {
+	// Convert to lowercase once (single O(n) pass)
+	errorMsgLower := bytes.ToLower(errorMessage)
+	msgLen := len(errorMsgLower)
+
+	// Check all patterns with early exit on first match
+	for _, pattern := range unsupportedMethodPatternBytes {
+		if len(pattern) <= msgLen && bytes.Contains(errorMsgLower, pattern) {
 			return true
 		}
 	}
+
 	return false
 }
