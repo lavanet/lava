@@ -27,6 +27,7 @@ const (
 	ERRORED_PROVIDERS_HEADER_NAME                   = "Lava-Errored-Providers"
 	NODE_ERRORS_PROVIDERS_HEADER_NAME               = "Lava-Node-Errors-providers"
 	REPORTED_PROVIDERS_HEADER_NAME                  = "Lava-Reported-Providers"
+	LAVA_RELAY_PROTOCOL_HEADER_NAME                 = "Lava-Relay-Protocol"
 	USER_REQUEST_TYPE                               = "lava-user-request-type"
 	STATEFUL_API_HEADER                             = "lava-stateful-api"
 	STATEFUL_ALL_PROVIDERS_HEADER_NAME              = "lava-fast-tx-participants"

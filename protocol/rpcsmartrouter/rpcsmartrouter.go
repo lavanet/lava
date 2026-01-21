@@ -32,7 +32,6 @@ package rpcsmartrouter
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -653,19 +652,14 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 			utils.LogAttr("optimizerEnabled", optimizer != nil),
 		)
 	} else {
-		// Fall back to provider-based subscription manager (requires Lava providers)
-		var specMethodType string
-		if rpcEndpoint.ApiInterface == spectypes.APIInterfaceJsonRPC {
-			specMethodType = http.MethodPost
-		}
-		wsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(
-			sessionManager, rpcSmartRouterServer, specMethodType,
-			chainParser, activeSubscriptionProvidersStorage, smartRouterMetricsManager,
-		)
-		utils.LavaFormatWarning("No WebSocket endpoint found in static providers, using provider-based subscriptions",
-			nil,
+		// No WebSocket endpoints configured - use NoOp manager that returns clear errors
+		// Smart router does NOT fall back to provider-based subscriptions (per implementation plan)
+		// Provider-based subscriptions are only for rpcconsumer, not rpcsmartrouter
+		wsSubscriptionManager = NewNoOpWSSubscriptionManager(rpcEndpoint.ChainID, rpcEndpoint.ApiInterface)
+		utils.LavaFormatInfo("No WebSocket endpoints configured for direct subscriptions",
 			utils.LogAttr("chainID", rpcEndpoint.ChainID),
 			utils.LogAttr("apiInterface", rpcEndpoint.ApiInterface),
+			utils.LogAttr("hint", "Add ws:// or wss:// URLs to static-providers-list to enable subscriptions"),
 		)
 	}
 
