@@ -232,7 +232,7 @@ func (d *DirectRPCRelaySender) sendJSONRPCRelay(
 	chainMessage chainlib.ChainMessage,
 	relayTimeout time.Duration,
 ) (*common.RelayResult, error) {
-	// ✅ FIX Gap 2: Use NodeUrl.LowerContextTimeoutWithDuration for per-endpoint timeout overrides
+	// Use NodeUrl.LowerContextTimeoutWithDuration for per-endpoint timeout overrides
 	// This allows operators to configure extended timeouts for heavy RPCs (debug_traceTransaction, etc.)
 	nodeUrl := d.directConnection.GetNodeUrl()
 	requestCtx, cancel := nodeUrl.LowerContextTimeoutWithDuration(ctx, relayTimeout)
@@ -259,7 +259,7 @@ func (d *DirectRPCRelaySender) sendJSONRPCRelay(
 		utils.LogAttr("timeout", relayTimeout),
 	)
 
-	// ✅ FIX Gap 1: Use DoHTTPRequest with []Metadata (preserves duplicates, supports delete semantics)
+	// Use DoHTTPRequest with []Metadata (preserves duplicates, supports delete semantics)
 	// Instead of map[string]string which loses duplicates and doesn't support delete (empty = delete)
 	httpDoer, ok := d.directConnection.(lavasession.HTTPDirectRPCDoer)
 	if !ok {
@@ -271,7 +271,7 @@ func (d *DirectRPCRelaySender) sendJSONRPCRelay(
 		Method:      "POST",
 		URL:         nodeUrl.Url,
 		Body:        requestData,
-		Headers:     rpcMessage.GetHeaders(), // ✅ Preserves duplicates, empty value = delete
+		Headers:     rpcMessage.GetHeaders(), // Preserves duplicates, empty value = delete
 		ContentType: "application/json",
 	}
 
@@ -334,7 +334,7 @@ func (d *DirectRPCRelaySender) sendJSONRPCRelay(
 	// Uses spec-driven parsing for all API interfaces (EVM, Tendermint, etc.)
 	latestBlockFromResponse := extractBlockHeightFromJSONResponse(responseData, chainMessage)
 
-	// ✅ FIX Gap 3: Convert response headers to metadata (same as REST path)
+	// Convert response headers to metadata (same as REST path)
 	// This enables Provider-Latest-Block, lava-identified-node-error, and upstream hints
 	responseMetadata := convertHTTPHeadersToMetadata(response.Headers)
 
@@ -342,7 +342,7 @@ func (d *DirectRPCRelaySender) sendJSONRPCRelay(
 		Reply: &pairingtypes.RelayReply{
 			Data:        responseData,
 			LatestBlock: latestBlockFromResponse,
-			Metadata:    responseMetadata, // ✅ Response headers now included
+			Metadata:    responseMetadata, // Response headers now included
 		},
 		Finalized:  true,
 		StatusCode: statusCode,
@@ -361,7 +361,7 @@ func (d *DirectRPCRelaySender) sendRESTRelay(
 	chainMessage chainlib.ChainMessage,
 	relayTimeout time.Duration,
 ) (*common.RelayResult, error) {
-	// ✅ FIX Gap 2: Use NodeUrl.LowerContextTimeoutWithDuration for per-endpoint timeout overrides
+	// Use NodeUrl.LowerContextTimeoutWithDuration for per-endpoint timeout overrides
 	nodeUrl := d.directConnection.GetNodeUrl()
 	requestCtx, cancel := nodeUrl.LowerContextTimeoutWithDuration(ctx, relayTimeout)
 	defer cancel()
@@ -381,7 +381,7 @@ func (d *DirectRPCRelaySender) sendRESTRelay(
 	// Get API collection
 	apiCollection := chainMessage.GetApiCollection()
 
-	// ✅ CORRECTION 1: HTTP method from parser (already validated)
+	// HTTP method from parser (already validated)
 	httpMethod := apiCollection.CollectionData.Type
 	if httpMethod == "" {
 		return nil, fmt.Errorf("HTTP method not set by REST parser")
@@ -391,7 +391,7 @@ func (d *DirectRPCRelaySender) sendRESTRelay(
 	var headers []pairingtypes.Metadata
 	headers = restMessage.GetHeaders()
 
-	// ✅ CORRECTION 6: Robust URL joining
+	// Robust URL joining
 	baseURL := d.directConnection.GetURL()
 	fullURL, err := joinURLPath(baseURL, restPath)
 	if err != nil {
@@ -410,7 +410,7 @@ func (d *DirectRPCRelaySender) sendRESTRelay(
 		Method:      httpMethod,
 		URL:         fullURL,
 		Body:        restBody, // Send body as-is (for POST/PUT)
-		Headers:     headers,  // ✅ CORRECTION 4: Use Metadata (preserves delete semantics)
+		Headers:     headers,  // Use Metadata (preserves delete semantics)
 		ContentType: "application/json",
 	})
 	latency := time.Since(startTime)
@@ -420,7 +420,7 @@ func (d *DirectRPCRelaySender) sendRESTRelay(
 		return nil, MapDirectRPCError(err, d.directConnection.GetProtocol())
 	}
 
-	// ✅ CORRECTION 5: Proper error classification (don't treat all 4xx as node errors)
+	// Proper error classification (don't treat all 4xx as node errors)
 	var isNodeError bool
 	switch {
 	case response.StatusCode >= 500:
@@ -443,7 +443,7 @@ func (d *DirectRPCRelaySender) sendRESTRelay(
 		)
 	}
 
-	// ✅ CORRECTION 2: Convert response headers to metadata
+	// Convert response headers to metadata
 	responseMetadata := convertHTTPHeadersToMetadata(response.Headers)
 
 	// Build result (include body even for 4xx/5xx!)
@@ -454,15 +454,15 @@ func (d *DirectRPCRelaySender) sendRESTRelay(
 
 	result := &common.RelayResult{
 		Reply: &pairingtypes.RelayReply{
-			Data:     response.Body,    // ✅ Include body even for errors!
-			Metadata: responseMetadata, // ✅ Include headers
+			Data:     response.Body,    // Include body even for errors!
+			Metadata: responseMetadata, // Include headers
 		},
 		Finalized:  true,
 		StatusCode: response.StatusCode,
 		ProviderInfo: common.ProviderInfo{
 			ProviderAddress: providerAddress,
 		},
-		IsNodeError: isNodeError, // ✅ Correct transport-level classification
+		IsNodeError: isNodeError, // Correct transport-level classification
 	}
 
 	utils.LavaFormatTrace("REST request completed",

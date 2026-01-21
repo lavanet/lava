@@ -50,7 +50,7 @@ func (rm *RestMessage) GetRawRequestHash() ([]byte, error) {
 }
 
 func (jm RestMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
-	// ✅ CORRECTION: Treat 5xx and 429 as node errors (triggers retries)
+	// Treat 5xx and 429 as node errors (triggers retries)
 	if httpStatusCode >= 500 || httpStatusCode == 429 {
 		// Server error or rate limit - treat as node error for retry logic
 		errorMsg := extractErrorMessage(data, httpStatusCode)
@@ -66,7 +66,7 @@ func (jm RestMessage) CheckResponseError(data []byte, httpStatusCode int) (hasEr
 		return false, ""
 	}
 
-	// ✅ CORRECTION: 4xx (except 429) are client errors - NOT node errors
+	// 4xx (except 429) are client errors - NOT node errors
 	// Return false so state machine doesn't retry (client error won't succeed on retry)
 	return false, ""
 }

@@ -496,7 +496,7 @@ func (rpcss *RPCSmartRouterServer) SendParsedRelay(
 	}
 	returnedResult, err := relayProcessor.ProcessingResult()
 
-	utils.LavaFormatInfo("📊 ProcessingResult RETURNED",
+	utils.LavaFormatInfo("ProcessingResult RETURNED",
 		utils.LogAttr("has_result", returnedResult != nil),
 		utils.LogAttr("has_reply", returnedResult != nil && returnedResult.Reply != nil),
 		utils.LogAttr("reply_size", func() int {
@@ -590,20 +590,20 @@ func (rpcss *RPCSmartRouterServer) ProcessRelaySend(ctx context.Context, protoco
 		utils.LavaFormatTrace("[RPCSmartRouterServer] ProcessRelaySend - task", utils.LogAttr("GUID", ctx), utils.LogAttr("numOfProviders", task.NumOfProviders))
 		err := rpcss.sendRelayToProvider(ctx, task.NumOfProviders, task.RelayState, relayProcessor, task.Analytics)
 
-		utils.LavaFormatInfo("🔄 UPDATING BATCH",
+		utils.LavaFormatInfo("UPDATING BATCH",
 			utils.LogAttr("error", err),
 			utils.LogAttr("GUID", ctx),
 		)
 
 		relayProcessor.UpdateBatch(err)
 
-		utils.LavaFormatInfo("🔁 LOOPING BACK TO RECEIVE NEXT TASK",
+		utils.LavaFormatInfo("LOOPING BACK TO RECEIVE NEXT TASK",
 			utils.LogAttr("GUID", ctx),
 		)
 	}
 
 	// shouldn't happen.
-	utils.LavaFormatError("❌ CHANNEL CLOSED UNEXPECTEDLY", nil,
+	utils.LavaFormatError("CHANNEL CLOSED UNEXPECTEDLY", nil,
 		utils.LogAttr("GUID", ctx),
 	)
 	return relayProcessor, utils.LavaFormatError("ProcessRelaySend channel closed unexpectedly", nil)
@@ -919,7 +919,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 			}
 
 			// Update session manager with result
-			// ✅ CORRECTION: Check status code to determine if session should fail
+			// Check status code to determine if session should fail
 			// For REST 5xx/429, err == nil but we still want to fail the session for QoS/retry
 			statusCode := localRelayResult.StatusCode
 			shouldFailSession := err != nil || statusCode >= 500 || statusCode == 429
@@ -929,7 +929,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 				// Get endpoint reference for per-endpoint tracking
 				var targetEndpoint *lavasession.Endpoint
 				if drsc, ok := singleConsumerSession.Connection.(*lavasession.DirectRPCSessionConnection); ok {
-					targetEndpoint = drsc.Endpoint // ✅ Use stored reference (robust)
+					targetEndpoint = drsc.Endpoint // Use stored reference (robust)
 				}
 
 				// Get latest block: prefer response extraction, fallback to ChainTracker
@@ -938,7 +938,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 					// Block extracted from response (eth_blockNumber, eth_getBlockByNumber, etc.)
 					latestBlock = localRelayResult.Reply.LatestBlock
 
-					// ✅ Update endpoint's latest block (per-endpoint tracking)
+					// Update endpoint's latest block (per-endpoint tracking)
 					if targetEndpoint != nil {
 						targetEndpoint.LatestBlock.Store(latestBlock)
 						targetEndpoint.LastBlockUpdate = time.Now()
@@ -949,7 +949,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 						)
 					}
 
-					// ✅ Update global latest block height and estimator (for getLatestBlock fallback)
+					// Update global latest block height and estimator (for getLatestBlock fallback)
 					rpcss.updateLatestBlockHeight(uint64(latestBlock), endpointAddress)
 				} else if rpcss.chainTracker != nil && !rpcss.chainTracker.IsDummy() {
 					// Fallback to ChainTracker (global)
@@ -964,7 +964,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 					)
 				}
 
-				// ✅ Calculate syncGap (detect lagging endpoints)
+				// Calculate syncGap (detect lagging endpoints)
 				syncGap := int64(0)
 				if targetEndpoint != nil && rpcss.chainTracker != nil && !rpcss.chainTracker.IsDummy() {
 					globalLatest, _ := rpcss.chainTracker.GetLatestBlockNum()
@@ -992,7 +992,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 					chainlib.GetComputeUnits(protocolMessage), // specComputeUnits
 					relayLatency, // currentLatency
 					singleConsumerSession.CalculateExpectedLatency(relayTimeout), // expectedLatency
-					syncGap,             // ✅ Real syncGap (detect lagging endpoints)
+					syncGap,             // Real syncGap (detect lagging endpoints)
 					numSessions,         // numOfProviders (int)
 					uint64(numSessions), // providersCount (uint64)
 					protocolMessage.GetApi().Category.HangingApi, // hangingApi
@@ -1021,7 +1021,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 	// The state machine already calls it via readResultsFromProcessor
 	// Calling it twice causes a deadlock
 
-	utils.LavaFormatInfo("✅ GOROUTINES LAUNCHED - RETURNING TO LET STATE MACHINE WAIT",
+	utils.LavaFormatInfo("GOROUTINES LAUNCHED - RETURNING TO LET STATE MACHINE WAIT",
 		utils.LogAttr("num_endpoints", len(sessions)),
 		utils.LogAttr("GUID", ctx),
 	)
@@ -1409,7 +1409,7 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 	// Get endpoint for health tracking (use stored reference, not string lookup)
 	var targetEndpoint *lavasession.Endpoint
 	if drsc, ok := singleConsumerSession.Connection.(*lavasession.DirectRPCSessionConnection); ok {
-		targetEndpoint = drsc.Endpoint // ✅ Robust: use stored reference
+		targetEndpoint = drsc.Endpoint // Robust: use stored reference
 	}
 
 	if err != nil {
@@ -1466,7 +1466,7 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 		return relayLatency, err, needsBackoff
 	}
 
-	// ✅ CORRECTION: Check status code even when err == nil (for REST 5xx/429)
+	// Check status code even when err == nil (for REST 5xx/429)
 	statusCode := result.StatusCode
 	if statusCode >= 500 || statusCode == 429 {
 		// REST returned 5xx or 429 (no transport error, but node issue)
