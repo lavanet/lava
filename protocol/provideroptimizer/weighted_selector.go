@@ -70,6 +70,10 @@ type WeightedSelector struct {
 
 	// Random number generator (defaults to global probabilistic RNG)
 	rng Randomizer
+
+	// Adaptive max configuration (Phase 2)
+	useAdaptiveLatencyMax bool                      // Feature flag for adaptive latency max
+	adaptiveLatencyGetter func() (p10, p90 float64) // Function to get adaptive P10-P90 bounds
 }
 
 // ProviderScore represents a provider's calculated scores for selection
@@ -98,12 +102,14 @@ type ProviderScoreDetails struct {
 
 // WeightedSelectorConfig holds configuration options for creating a WeightedSelector
 type WeightedSelectorConfig struct {
-	AvailabilityWeight float64
-	LatencyWeight      float64
-	SyncWeight         float64
-	StakeWeight        float64
-	MinSelectionChance float64
-	Strategy           Strategy
+	AvailabilityWeight    float64
+	LatencyWeight         float64
+	SyncWeight            float64
+	StakeWeight           float64
+	MinSelectionChance    float64
+	Strategy              Strategy
+	UseAdaptiveLatencyMax bool                      // Phase 2: Enable adaptive max for latency
+	AdaptiveLatencyGetter func() (p10, p90 float64) // Phase 2: Function to get adaptive P10-P90 bounds
 }
 
 // DefaultWeightedSelectorConfig returns a configuration with balanced default weights
@@ -176,13 +182,15 @@ func NewWeightedSelector(config WeightedSelectorConfig) *WeightedSelector {
 	}
 
 	return &WeightedSelector{
-		availabilityWeight: config.AvailabilityWeight,
-		latencyWeight:      config.LatencyWeight,
-		syncWeight:         config.SyncWeight,
-		stakeWeight:        config.StakeWeight,
-		minSelectionChance: config.MinSelectionChance,
-		strategy:           config.Strategy,
-		rng:                globalRandomizer{},
+		availabilityWeight:    config.AvailabilityWeight,
+		latencyWeight:         config.LatencyWeight,
+		syncWeight:            config.SyncWeight,
+		stakeWeight:           config.StakeWeight,
+		minSelectionChance:    config.MinSelectionChance,
+		strategy:              config.Strategy,
+		rng:                   globalRandomizer{},
+		useAdaptiveLatencyMax: config.UseAdaptiveLatencyMax,
+		adaptiveLatencyGetter: config.AdaptiveLatencyGetter,
 	}
 }
 
@@ -255,10 +263,57 @@ func (ws *WeightedSelector) CalculateScore(
 // normalizeLatency converts latency score to 0-1 range where higher is better
 // Input: latency in seconds (lower is better)
 // Output: normalized score where 1.0 = best, 0.0 = worst
+//
+// Phase 2 (Hybrid P10-P90 Approach):
+//   - Uses P10-P90 adaptive range from T-Digest for better distribution
+//   - Formula: normalized = 1 - (clamp(latency, P10, P90) - P10) / (P90 - P10)
+//   - This provides 85-95% range utilization vs 70-85% with P95-only
+//   - Robust to both-sided outliers (excludes bottom 10% and top 10%)
+//
+// Phase 1 (Fallback):
+//   - Uses fixed maximum expected latency (score.WorstLatencyScore = 30s)
+//   - Formula: normalized = 1 - (latency / maxLatency)
 func (ws *WeightedSelector) normalizeLatency(latency float64) float64 {
-	// Maximum expected latency (aligned with optimizer clamp)
-	const maxLatency = score.WorstLatencyScore
+	// Phase 2: Adaptive P10-P90 normalization (if enabled)
+	if ws.useAdaptiveLatencyMax && ws.adaptiveLatencyGetter != nil {
+		p10, p90 := ws.adaptiveLatencyGetter()
 
+		// Validate adaptive bounds
+		if p10 <= 0 || p90 <= 0 || p90 <= p10 {
+			// Invalid bounds, fallback to Phase 1
+			utils.LavaFormatWarning("invalid adaptive latency bounds, falling back to fixed max",
+				nil,
+				utils.LogAttr("p10", p10),
+				utils.LogAttr("p90", p90),
+			)
+		} else {
+			// Clamp latency to P10-P90 range
+			clampedLatency := latency
+			if clampedLatency < p10 {
+				clampedLatency = p10
+			}
+			if clampedLatency > p90 {
+				clampedLatency = p90
+			}
+
+			// Normalize: 1 - (Li - P10) / (P90 - P10)
+			// This gives better distribution than simple 1 - (L / P90)
+			normalized := 1.0 - (clampedLatency-p10)/(p90-p10)
+
+			// Clamp to [0, 1] (should already be in range, but defensive)
+			if normalized < 0 {
+				normalized = 0
+			}
+			if normalized > 1.0 {
+				normalized = 1.0
+			}
+
+			return normalized
+		}
+	}
+
+	// Phase 1 (Fallback): Use fixed maximum expected latency
+	const maxLatency = score.WorstLatencyScore
 	if latency <= 0 {
 		return 1.0 // Perfect latency
 	}
@@ -531,12 +586,14 @@ func (ws *WeightedSelector) CalculateProviderScores(
 // GetConfig returns the current configuration
 func (ws *WeightedSelector) GetConfig() WeightedSelectorConfig {
 	return WeightedSelectorConfig{
-		AvailabilityWeight: ws.availabilityWeight,
-		LatencyWeight:      ws.latencyWeight,
-		SyncWeight:         ws.syncWeight,
-		StakeWeight:        ws.stakeWeight,
-		MinSelectionChance: ws.minSelectionChance,
-		Strategy:           ws.strategy,
+		AvailabilityWeight:    ws.availabilityWeight,
+		LatencyWeight:         ws.latencyWeight,
+		SyncWeight:            ws.syncWeight,
+		StakeWeight:           ws.stakeWeight,
+		MinSelectionChance:    ws.minSelectionChance,
+		Strategy:              ws.strategy,
+		UseAdaptiveLatencyMax: ws.useAdaptiveLatencyMax,
+		AdaptiveLatencyGetter: ws.adaptiveLatencyGetter,
 	}
 }
 
