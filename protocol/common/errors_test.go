@@ -7,7 +7,7 @@ import (
 )
 
 func TestIsUnsupportedMethodMessage_AllPatterns(t *testing.T) {
-	// Test all 14 patterns are detected
+	// Test all 15 patterns are detected
 	tests := []struct {
 		name    string
 		message string
@@ -32,6 +32,9 @@ func TestIsUnsupportedMethodMessage_AllPatterns(t *testing.T) {
 		{"unimplemented", "unimplemented", true},
 		{"not implemented", "not implemented", true},
 		{"service not found", "service not found", true},
+
+		// Generic catch-all pattern (1) - catches "method X not supported" format
+		{"not supported generic", "not supported", true},
 	}
 
 	for _, tt := range tests {
@@ -64,6 +67,10 @@ func TestIsUnsupportedMethodMessage_PartialMatch(t *testing.T) {
 		"RPC endpoint not found on server",
 		"The service is unimplemented",
 		"JSON-RPC error -32601: method not found",
+		// Specific format: "method X not supported" (catches GenericNotSupported pattern)
+		"method eth_call not supported",
+		"method someMethod not supported",
+		"feature not supported",
 	}
 
 	for _, msg := range tests {

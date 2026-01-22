@@ -26,6 +26,9 @@ const (
 	JSONRPCInvalidMethod      = "invalid method"
 	JSONRPCErrorCode          = "-32601" // JSON-RPC 2.0 method not found error code
 
+	// Generic unsupported patterns (catch-all for "method X not supported" format)
+	GenericNotSupported = "not supported"
+
 	// REST API error patterns
 	RESTEndpointNotFound = "endpoint not found"
 	RESTRouteNotFound    = "route not found"
@@ -66,6 +69,8 @@ var unsupportedMethodPatternBytes = [][]byte{
 	[]byte(GRPCUnimplemented),        // "unimplemented"
 	[]byte(GRPCNotImplemented),       // "not implemented"
 	[]byte(GRPCServiceNotFound),      // "service not found"
+	// Generic catch-all pattern (for "method X not supported" format)
+	[]byte(GenericNotSupported), // "not supported"
 }
 
 // IsUnsupportedMethodMessage checks if an error message indicates an unsupported method.
