@@ -42,6 +42,22 @@ const (
 
 	HighCuThreshold = uint64(100)
 	MidCuThreshold  = uint64(50)
+
+	// Adaptive Normalization Constants (Phase 2)
+	// P10 bounds: Used to clamp the 10th percentile (adaptive minimum)
+	AdaptiveP10MinBound float64 = 0.001 // 1ms - extremely fast local/optimized providers
+	AdaptiveP10MaxBound float64 = 10.0  // 10s - maximum reasonable P10
+
+	// P90 bounds: Use existing score bounds as fallback
+	// AdaptiveP90MinBound = minMax parameter (typically 1.0s)
+	// AdaptiveP90MaxBound = maxMax parameter (typically 30.0s = WorstLatencyScore)
+
+	// T-Digest compression for adaptive max calculator
+	DefaultTDigestCompression float64 = 100.0 // Good balance of accuracy vs memory
+
+	// Default bounds for latency adaptive max calculator
+	DefaultLatencyAdaptiveMinMax float64 = 1.0  // 1 second minimum for P90
+	DefaultLatencyAdaptiveMaxMax float64 = 30.0 // 30 seconds maximum for P90 (WorstLatencyScore)
 )
 
 type Config struct {

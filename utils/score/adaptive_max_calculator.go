@@ -190,16 +190,15 @@ func (a *AdaptiveMaxCalculator) GetAdaptiveBounds() (p10, p90 float64) {
 	p10 = a.digest.Quantile(0.10)
 	p90 = a.digest.Quantile(0.90)
 
-	// Apply safety bounds
-	// P10: minimum bound should be lower than P90's minimum
-	if p10 < 0.1 {
-		p10 = 0.1 // Minimum latency bound (100ms)
+	// Apply safety bounds for P10 (adaptive minimum)
+	if p10 < AdaptiveP10MinBound {
+		p10 = AdaptiveP10MinBound // Allow extremely fast providers (1ms)
 	}
-	if p10 > 10.0 {
-		p10 = 10.0 // Maximum for P10 (10 seconds)
+	if p10 > AdaptiveP10MaxBound {
+		p10 = AdaptiveP10MaxBound // Cap at 10 seconds
 	}
 
-	// P90: use configured bounds
+	// Apply safety bounds for P90 (adaptive maximum) using configured bounds
 	if p90 < a.minMax {
 		p90 = a.minMax
 	}
@@ -215,8 +214,8 @@ func (a *AdaptiveMaxCalculator) GetAdaptiveBounds() (p10, p90 float64) {
 		if p90 > a.maxMax {
 			p90 = a.maxMax
 			p10 = p90 - 1.0
-			if p10 < 0.1 {
-				p10 = 0.1
+			if p10 < AdaptiveP10MinBound {
+				p10 = AdaptiveP10MinBound
 			}
 		}
 	}
@@ -239,11 +238,11 @@ func (a *AdaptiveMaxCalculator) GetStats() map[string]interface{} {
 
 	// Apply same bounds logic as GetAdaptiveBounds
 	p10 := p10Raw
-	if p10 < 0.1 {
-		p10 = 0.1
+	if p10 < AdaptiveP10MinBound {
+		p10 = AdaptiveP10MinBound
 	}
-	if p10 > 10.0 {
-		p10 = 10.0
+	if p10 > AdaptiveP10MaxBound {
+		p10 = AdaptiveP10MaxBound
 	}
 
 	p90 := p90Raw
@@ -259,8 +258,8 @@ func (a *AdaptiveMaxCalculator) GetStats() map[string]interface{} {
 		if p90 > a.maxMax {
 			p90 = a.maxMax
 			p10 = p90 - 1.0
-			if p10 < 0.1 {
-				p10 = 0.1
+			if p10 < AdaptiveP10MinBound {
+				p10 = AdaptiveP10MinBound
 			}
 		}
 	}
@@ -294,4 +293,82 @@ func (a *AdaptiveMaxCalculator) Reset() {
 	compression := a.digest.Compression
 	a.digest = tdigest.NewWithCompression(compression)
 	a.lastUpdate = time.Now()
+}
+
+// LogDistributionStats logs comprehensive distribution statistics for visualization
+// This is designed to provide all needed data for Python plotting and analysis
+func (a *AdaptiveMaxCalculator) LogDistributionStats(parameterName string) {
+	if a == nil {
+		return
+	}
+
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	// Get key percentiles for distribution analysis
+	p01 := a.digest.Quantile(0.01)   // 1st percentile
+	p05 := a.digest.Quantile(0.05)   // 5th percentile
+	p10 := a.digest.Quantile(0.10)   // 10th percentile (adaptive min)
+	p25 := a.digest.Quantile(0.25)   // 25th percentile (Q1)
+	p50 := a.digest.Quantile(0.50)   // 50th percentile (median)
+	p75 := a.digest.Quantile(0.75)   // 75th percentile (Q3)
+	p90 := a.digest.Quantile(0.90)   // 90th percentile (adaptive max)
+	p95 := a.digest.Quantile(0.95)   // 95th percentile
+	p99 := a.digest.Quantile(0.99)   // 99th percentile
+	p999 := a.digest.Quantile(0.999) // 99.9th percentile
+
+	// Apply clamping to P10 and P90 (same as GetAdaptiveBounds)
+	p10Clamped := p10
+	if p10Clamped < AdaptiveP10MinBound {
+		p10Clamped = AdaptiveP10MinBound
+	}
+	if p10Clamped > AdaptiveP10MaxBound {
+		p10Clamped = AdaptiveP10MaxBound
+	}
+
+	p90Clamped := p90
+	if p90Clamped < a.minMax {
+		p90Clamped = a.minMax
+	}
+	if p90Clamped > a.maxMax {
+		p90Clamped = a.maxMax
+	}
+
+	// Calculate additional distribution metrics
+	totalWeight := a.digest.Count()
+	centroidCount := len(a.digest.Centroids())
+	iqr := p75 - p25     // Interquartile range
+	range90 := p90 - p10 // P10-P90 range (used for normalization)
+
+	// Log comprehensive distribution data
+	utils.LavaFormatInfo("[AdaptiveNormalization] Distribution Statistics",
+		utils.LogAttr("parameter", parameterName),
+		utils.LogAttr("total_weight", totalWeight),
+		utils.LogAttr("centroid_count", centroidCount),
+		// Raw percentiles (before clamping)
+		utils.LogAttr("p01_raw", p01),
+		utils.LogAttr("p05_raw", p05),
+		utils.LogAttr("p10_raw", p10),
+		utils.LogAttr("p25_raw", p25),
+		utils.LogAttr("p50_median", p50),
+		utils.LogAttr("p75_raw", p75),
+		utils.LogAttr("p90_raw", p90),
+		utils.LogAttr("p95_raw", p95),
+		utils.LogAttr("p99_raw", p99),
+		utils.LogAttr("p999_raw", p999),
+		// Clamped values (actually used for normalization)
+		utils.LogAttr("p10_clamped", p10Clamped),
+		utils.LogAttr("p90_clamped", p90Clamped),
+		// Distribution metrics
+		utils.LogAttr("iqr", iqr),
+		utils.LogAttr("range_p10_p90", range90),
+		// Configuration
+		utils.LogAttr("p10_min_bound", AdaptiveP10MinBound),
+		utils.LogAttr("p10_max_bound", AdaptiveP10MaxBound),
+		utils.LogAttr("p90_min_bound", a.minMax),
+		utils.LogAttr("p90_max_bound", a.maxMax),
+		utils.LogAttr("half_life_seconds", a.halfLife.Seconds()),
+		utils.LogAttr("compression", a.digest.Compression),
+		utils.LogAttr("last_update", a.lastUpdate),
+	)
 }

@@ -328,8 +328,8 @@ func TestAdaptiveMaxCalculator_GetAdaptiveBounds_Clamping(t *testing.T) {
 
 	p10, p90 := calc.GetAdaptiveBounds()
 
-	// P10 should be clamped to minimum (0.1)
-	require.GreaterOrEqual(t, p10, 0.1)
+	// P10 should be clamped to minimum (0.001 = 1ms - AdaptiveP10MinBound)
+	require.GreaterOrEqual(t, p10, AdaptiveP10MinBound)
 
 	// P90 should be clamped to minMax (1.0)
 	require.GreaterOrEqual(t, p90, minMax)

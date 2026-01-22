@@ -289,11 +289,16 @@ func (ws *WeightedSelector) normalizeLatency(latency float64) float64 {
 		} else {
 			// Clamp latency to P10-P90 range
 			clampedLatency := latency
+			wasClampedLow := false
+			wasClampedHigh := false
+
 			if clampedLatency < p10 {
 				clampedLatency = p10
+				wasClampedLow = true
 			}
 			if clampedLatency > p90 {
 				clampedLatency = p90
+				wasClampedHigh = true
 			}
 
 			// Normalize: 1 - (Li - P10) / (P90 - P10)
@@ -308,6 +313,18 @@ func (ws *WeightedSelector) normalizeLatency(latency float64) float64 {
 				normalized = 1.0
 			}
 
+			// Log normalization details for distribution visualization
+			utils.LavaFormatTrace("[LatencyNormalization] P10-P90 normalization applied",
+				utils.LogAttr("raw_latency", latency),
+				utils.LogAttr("clamped_latency", clampedLatency),
+				utils.LogAttr("p10", p10),
+				utils.LogAttr("p90", p90),
+				utils.LogAttr("range_p10_p90", p90-p10),
+				utils.LogAttr("normalized_score", normalized),
+				utils.LogAttr("was_clamped_low", wasClampedLow),
+				utils.LogAttr("was_clamped_high", wasClampedHigh),
+			)
+
 			return normalized
 		}
 	}
@@ -315,6 +332,10 @@ func (ws *WeightedSelector) normalizeLatency(latency float64) float64 {
 	// Phase 1 (Fallback): Use fixed maximum expected latency
 	const maxLatency = score.WorstLatencyScore
 	if latency <= 0 {
+		utils.LavaFormatTrace("[LatencyNormalization] Perfect latency",
+			utils.LogAttr("latency", latency),
+			utils.LogAttr("normalized_score", 1.0),
+		)
 		return 1.0 // Perfect latency
 	}
 
@@ -323,6 +344,13 @@ func (ws *WeightedSelector) normalizeLatency(latency float64) float64 {
 	if normalized < 0 {
 		normalized = 0 // Clamp to 0 for extremely high latency
 	}
+
+	// Log normalization details for distribution visualization
+	utils.LavaFormatTrace("[LatencyNormalization] Fixed max normalization applied",
+		utils.LogAttr("raw_latency", latency),
+		utils.LogAttr("max_latency", maxLatency),
+		utils.LogAttr("normalized_score", normalized),
+	)
 
 	return normalized
 }
