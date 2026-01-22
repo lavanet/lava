@@ -17,8 +17,10 @@ type AdaptiveMaxCalculator struct {
 	digest     *tdigest.TDigest
 	lastUpdate time.Time
 	halfLife   time.Duration
-	minMax     float64 // Minimum allowed max value (safety bound)
-	maxMax     float64 // Maximum allowed max value (safety bound)
+	minP10     float64 // Minimum allowed P10 value (safety bound)
+	maxP10     float64 // Maximum allowed P10 value (safety bound)
+	minMax     float64 // Minimum allowed P90/max value (safety bound)
+	maxMax     float64 // Maximum allowed P90/max value (safety bound)
 	mu         sync.RWMutex
 }
 
@@ -27,10 +29,12 @@ type AdaptiveMaxCalculator struct {
 //
 // Parameters:
 //   - halfLife: The half-life for exponential decay (should match ScoreStore half-life)
-//   - minMax: Minimum value to clamp adaptive max to (safety bound)
-//   - maxMax: Maximum value to clamp adaptive max to (safety bound)
+//   - minP10: Minimum value to clamp P10 to (safety bound for 10th percentile)
+//   - maxP10: Maximum value to clamp P10 to (safety bound for 10th percentile)
+//   - minMax: Minimum value to clamp P90/adaptive max to (safety bound)
+//   - maxMax: Maximum value to clamp P90/adaptive max to (safety bound)
 //   - compression: T-Digest compression parameter (100 is recommended)
-func NewAdaptiveMaxCalculator(halfLife time.Duration, minMax, maxMax float64, compression float64) *AdaptiveMaxCalculator {
+func NewAdaptiveMaxCalculator(halfLife time.Duration, minP10, maxP10, minMax, maxMax, compression float64) *AdaptiveMaxCalculator {
 	if compression <= 0 {
 		compression = 100 // Default compression
 	}
@@ -39,6 +43,8 @@ func NewAdaptiveMaxCalculator(halfLife time.Duration, minMax, maxMax float64, co
 		digest:     tdigest.NewWithCompression(compression),
 		lastUpdate: time.Now(),
 		halfLife:   halfLife,
+		minP10:     minP10,
+		maxP10:     maxP10,
 		minMax:     minMax,
 		maxMax:     maxMax,
 	}
@@ -190,12 +196,12 @@ func (a *AdaptiveMaxCalculator) GetAdaptiveBounds() (p10, p90 float64) {
 	p10 = a.digest.Quantile(0.10)
 	p90 = a.digest.Quantile(0.90)
 
-	// Apply safety bounds for P10 (adaptive minimum)
-	if p10 < AdaptiveP10MinBound {
-		p10 = AdaptiveP10MinBound // Allow extremely fast providers (1ms)
+	// Apply safety bounds for P10 (adaptive minimum) using configured bounds
+	if p10 < a.minP10 {
+		p10 = a.minP10
 	}
-	if p10 > AdaptiveP10MaxBound {
-		p10 = AdaptiveP10MaxBound // Cap at 10 seconds
+	if p10 > a.maxP10 {
+		p10 = a.maxP10
 	}
 
 	// Apply safety bounds for P90 (adaptive maximum) using configured bounds
@@ -214,8 +220,8 @@ func (a *AdaptiveMaxCalculator) GetAdaptiveBounds() (p10, p90 float64) {
 		if p90 > a.maxMax {
 			p90 = a.maxMax
 			p10 = p90 - 1.0
-			if p10 < AdaptiveP10MinBound {
-				p10 = AdaptiveP10MinBound
+			if p10 < a.minP10 {
+				p10 = a.minP10
 			}
 		}
 	}
@@ -238,11 +244,11 @@ func (a *AdaptiveMaxCalculator) GetStats() map[string]interface{} {
 
 	// Apply same bounds logic as GetAdaptiveBounds
 	p10 := p10Raw
-	if p10 < AdaptiveP10MinBound {
-		p10 = AdaptiveP10MinBound
+	if p10 < a.minP10 {
+		p10 = a.minP10
 	}
-	if p10 > AdaptiveP10MaxBound {
-		p10 = AdaptiveP10MaxBound
+	if p10 > a.maxP10 {
+		p10 = a.maxP10
 	}
 
 	p90 := p90Raw
@@ -258,8 +264,8 @@ func (a *AdaptiveMaxCalculator) GetStats() map[string]interface{} {
 		if p90 > a.maxMax {
 			p90 = a.maxMax
 			p10 = p90 - 1.0
-			if p10 < AdaptiveP10MinBound {
-				p10 = AdaptiveP10MinBound
+			if p10 < a.minP10 {
+				p10 = a.minP10
 			}
 		}
 	}
@@ -276,6 +282,8 @@ func (a *AdaptiveMaxCalculator) GetStats() map[string]interface{} {
 		"compression":       a.digest.Compression,
 		"last_update":       a.lastUpdate,
 		"half_life_seconds": a.halfLife.Seconds(),
+		"min_p10":           a.minP10,
+		"max_p10":           a.maxP10,
 		"min_max":           a.minMax,
 		"max_max":           a.maxMax,
 	}
@@ -319,11 +327,11 @@ func (a *AdaptiveMaxCalculator) LogDistributionStats(parameterName string) {
 
 	// Apply clamping to P10 and P90 (same as GetAdaptiveBounds)
 	p10Clamped := p10
-	if p10Clamped < AdaptiveP10MinBound {
-		p10Clamped = AdaptiveP10MinBound
+	if p10Clamped < a.minP10 {
+		p10Clamped = a.minP10
 	}
-	if p10Clamped > AdaptiveP10MaxBound {
-		p10Clamped = AdaptiveP10MaxBound
+	if p10Clamped > a.maxP10 {
+		p10Clamped = a.maxP10
 	}
 
 	p90Clamped := p90
@@ -363,8 +371,8 @@ func (a *AdaptiveMaxCalculator) LogDistributionStats(parameterName string) {
 		utils.LogAttr("iqr", iqr),
 		utils.LogAttr("range_p10_p90", range90),
 		// Configuration
-		utils.LogAttr("p10_min_bound", AdaptiveP10MinBound),
-		utils.LogAttr("p10_max_bound", AdaptiveP10MaxBound),
+		utils.LogAttr("p10_min_bound", a.minP10),
+		utils.LogAttr("p10_max_bound", a.maxP10),
 		utils.LogAttr("p90_min_bound", a.minMax),
 		utils.LogAttr("p90_max_bound", a.maxMax),
 		utils.LogAttr("half_life_seconds", a.halfLife.Seconds()),

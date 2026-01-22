@@ -8,6 +8,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Helper function to create adaptive max calculator with default latency bounds
+func newTestAdaptiveMaxCalculator(halfLife time.Duration, minMax, maxMax, compression float64) *AdaptiveMaxCalculator {
+	return NewAdaptiveMaxCalculator(
+		halfLife,
+		AdaptiveP10MinBound, // 0.001 (1ms)
+		AdaptiveP10MaxBound, // 10.0 (10s)
+		minMax,
+		maxMax,
+		compression,
+	)
+}
+
 func TestAdaptiveMaxCalculator_BasicFunctionality(t *testing.T) {
 	// Create adaptive max calculator
 	halfLife := 1 * time.Hour
@@ -15,7 +27,7 @@ func TestAdaptiveMaxCalculator_BasicFunctionality(t *testing.T) {
 	maxMax := 30.0
 	compression := 100.0
 
-	calc := NewAdaptiveMaxCalculator(halfLife, minMax, maxMax, compression)
+	calc := newTestAdaptiveMaxCalculator(halfLife, minMax, maxMax, compression)
 	require.NotNil(t, calc)
 
 	// Add samples
@@ -39,7 +51,7 @@ func TestAdaptiveMaxCalculator_BasicFunctionality(t *testing.T) {
 
 func TestAdaptiveMaxCalculator_ExponentialDecay(t *testing.T) {
 	halfLife := 1 * time.Hour
-	calc := NewAdaptiveMaxCalculator(halfLife, 0.0, 100.0, 100.0)
+	calc := newTestAdaptiveMaxCalculator(halfLife, 0.0, 100.0, 100.0)
 
 	baseTime := time.Now()
 
@@ -75,7 +87,7 @@ func TestAdaptiveMaxCalculator_ExponentialDecay(t *testing.T) {
 func TestAdaptiveMaxCalculator_Clamping(t *testing.T) {
 	minMax := 2.0
 	maxMax := 5.0
-	calc := NewAdaptiveMaxCalculator(1*time.Hour, minMax, maxMax, 100.0)
+	calc := newTestAdaptiveMaxCalculator(1*time.Hour, minMax, maxMax, 100.0)
 
 	baseTime := time.Now()
 
@@ -104,7 +116,7 @@ func TestAdaptiveMaxCalculator_Clamping(t *testing.T) {
 func TestAdaptiveMaxCalculator_DecayFormula(t *testing.T) {
 	// Verify that decay formula matches ScoreStore formula
 	halfLife := 1 * time.Hour
-	calc := NewAdaptiveMaxCalculator(halfLife, 0.0, 100.0, 100.0)
+	calc := newTestAdaptiveMaxCalculator(halfLife, 0.0, 100.0, 100.0)
 
 	baseTime := time.Now()
 
@@ -142,7 +154,7 @@ func TestAdaptiveMaxCalculator_NilHandling(t *testing.T) {
 }
 
 func TestAdaptiveMaxCalculator_NegativeSample(t *testing.T) {
-	calc := NewAdaptiveMaxCalculator(1*time.Hour, 0.0, 100.0, 100.0)
+	calc := newTestAdaptiveMaxCalculator(1*time.Hour, 0.0, 100.0, 100.0)
 
 	// Adding negative sample should return error
 	err := calc.AddSample(-1.0, time.Now())
@@ -150,7 +162,7 @@ func TestAdaptiveMaxCalculator_NegativeSample(t *testing.T) {
 }
 
 func TestAdaptiveMaxCalculator_Stats(t *testing.T) {
-	calc := NewAdaptiveMaxCalculator(1*time.Hour, 1.0, 30.0, 100.0)
+	calc := newTestAdaptiveMaxCalculator(1*time.Hour, 1.0, 30.0, 100.0)
 
 	baseTime := time.Now()
 	samples := []float64{1.0, 2.0, 3.0, 4.0, 5.0}
@@ -178,7 +190,7 @@ func TestAdaptiveMaxCalculator_Stats(t *testing.T) {
 
 func TestAdaptiveMaxCalculator_LargeDataset(t *testing.T) {
 	// Test with large number of samples (900 samples = 3 providers × 300 relays)
-	calc := NewAdaptiveMaxCalculator(1*time.Hour, 0.5, 10.0, 100.0)
+	calc := newTestAdaptiveMaxCalculator(1*time.Hour, 0.5, 10.0, 100.0)
 
 	baseTime := time.Now()
 
@@ -218,7 +230,7 @@ func TestAdaptiveMaxCalculator_LargeDataset(t *testing.T) {
 }
 
 func TestAdaptiveMaxCalculator_Reset(t *testing.T) {
-	calc := NewAdaptiveMaxCalculator(1*time.Hour, 0.0, 100.0, 100.0)
+	calc := newTestAdaptiveMaxCalculator(1*time.Hour, 0.0, 100.0, 100.0)
 
 	baseTime := time.Now()
 
@@ -245,7 +257,7 @@ func TestAdaptiveMaxCalculator_Reset(t *testing.T) {
 }
 
 func TestAdaptiveMaxCalculator_OldSampleHandling(t *testing.T) {
-	calc := NewAdaptiveMaxCalculator(1*time.Hour, 0.0, 100.0, 100.0)
+	calc := newTestAdaptiveMaxCalculator(1*time.Hour, 0.0, 100.0, 100.0)
 
 	baseTime := time.Now()
 
@@ -265,7 +277,7 @@ func TestAdaptiveMaxCalculator_OldSampleHandling(t *testing.T) {
 
 func TestAdaptiveMaxCalculator_GetAdaptiveBounds(t *testing.T) {
 	// Test P10-P90 bounds calculation (Phase 2 hybrid approach)
-	calc := NewAdaptiveMaxCalculator(1*time.Hour, 1.0, 30.0, 100.0)
+	calc := newTestAdaptiveMaxCalculator(1*time.Hour, 1.0, 30.0, 100.0)
 
 	baseTime := time.Now()
 
@@ -316,7 +328,7 @@ func TestAdaptiveMaxCalculator_GetAdaptiveBounds_Clamping(t *testing.T) {
 	// Test that P10-P90 bounds are properly clamped
 	minMax := 1.0
 	maxMax := 5.0
-	calc := NewAdaptiveMaxCalculator(1*time.Hour, minMax, maxMax, 100.0)
+	calc := newTestAdaptiveMaxCalculator(1*time.Hour, minMax, maxMax, 100.0)
 
 	baseTime := time.Now()
 
@@ -366,7 +378,7 @@ func TestAdaptiveMaxCalculator_GetAdaptiveBounds_NilHandling(t *testing.T) {
 
 func TestAdaptiveMaxCalculator_Stats_IncludesBounds(t *testing.T) {
 	// Test that stats include P10-P90 bounds
-	calc := NewAdaptiveMaxCalculator(1*time.Hour, 1.0, 30.0, 100.0)
+	calc := newTestAdaptiveMaxCalculator(1*time.Hour, 1.0, 30.0, 100.0)
 
 	baseTime := time.Now()
 

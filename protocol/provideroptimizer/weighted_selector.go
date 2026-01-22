@@ -74,6 +74,8 @@ type WeightedSelector struct {
 	// Adaptive max configuration (Phase 2)
 	useAdaptiveLatencyMax bool                      // Feature flag for adaptive latency max
 	adaptiveLatencyGetter func() (p10, p90 float64) // Function to get adaptive P10-P90 bounds
+	useAdaptiveSyncMax    bool                      // Feature flag for adaptive sync max
+	adaptiveSyncGetter    func() (p10, p90 float64) // Function to get adaptive P10-P90 bounds for sync
 }
 
 // ProviderScore represents a provider's calculated scores for selection
@@ -110,6 +112,8 @@ type WeightedSelectorConfig struct {
 	Strategy              Strategy
 	UseAdaptiveLatencyMax bool                      // Phase 2: Enable adaptive max for latency
 	AdaptiveLatencyGetter func() (p10, p90 float64) // Phase 2: Function to get adaptive P10-P90 bounds
+	UseAdaptiveSyncMax    bool                      // Phase 2: Enable adaptive max for sync
+	AdaptiveSyncGetter    func() (p10, p90 float64) // Phase 2: Function to get adaptive P10-P90 bounds for sync
 }
 
 // DefaultWeightedSelectorConfig returns a configuration with balanced default weights
@@ -191,6 +195,8 @@ func NewWeightedSelector(config WeightedSelectorConfig) *WeightedSelector {
 		rng:                   globalRandomizer{},
 		useAdaptiveLatencyMax: config.UseAdaptiveLatencyMax,
 		adaptiveLatencyGetter: config.AdaptiveLatencyGetter,
+		useAdaptiveSyncMax:    config.UseAdaptiveSyncMax,
+		adaptiveSyncGetter:    config.AdaptiveSyncGetter,
 	}
 }
 
@@ -358,11 +364,79 @@ func (ws *WeightedSelector) normalizeLatency(latency float64) float64 {
 // normalizeSync converts sync lag to 0-1 range where higher is better
 // Input: sync lag in seconds (lower is better)
 // Output: normalized score where 1.0 = best, 0.0 = worst
+//
+// Phase 2 (Hybrid P10-P90 Approach):
+//   - Uses P10-P90 adaptive range from T-Digest for better distribution
+//   - Formula: normalized = 1 - (clamp(syncLag, P10, P90) - P10) / (P90 - P10)
+//   - This provides 85-95% range utilization vs 55-70% with P95-only
+//   - Robust to both-sided outliers (excludes bottom 10% and top 10%)
+//
+// Phase 1 (Fallback):
+//   - Uses fixed maximum expected sync lag (score.WorstSyncScore = 1200s)
+//   - Formula: normalized = 1 - (syncLag / maxSyncLag)
 func (ws *WeightedSelector) normalizeSync(syncLag float64) float64 {
-	// Maximum acceptable sync lag (aligned with optimizer clamp)
-	const maxSyncLag = score.WorstSyncScore
+	// Phase 2: Adaptive P10-P90 normalization (if enabled)
+	if ws.useAdaptiveSyncMax && ws.adaptiveSyncGetter != nil {
+		p10, p90 := ws.adaptiveSyncGetter()
 
+		// Validate adaptive bounds
+		if p10 <= 0 || p90 <= 0 || p90 <= p10 {
+			// Invalid bounds, fallback to Phase 1
+			utils.LavaFormatWarning("invalid adaptive sync bounds, falling back to fixed max",
+				nil,
+				utils.LogAttr("p10", p10),
+				utils.LogAttr("p90", p90),
+			)
+		} else {
+			// Clamp sync lag to P10-P90 range
+			clampedSyncLag := syncLag
+			wasClampedLow := false
+			wasClampedHigh := false
+
+			if clampedSyncLag < p10 {
+				clampedSyncLag = p10
+				wasClampedLow = true
+			}
+			if clampedSyncLag > p90 {
+				clampedSyncLag = p90
+				wasClampedHigh = true
+			}
+
+			// Normalize: 1 - (Si - P10) / (P90 - P10)
+			// This gives better distribution than simple 1 - (S / P90)
+			normalized := 1.0 - (clampedSyncLag-p10)/(p90-p10)
+
+			// Clamp to [0, 1] (should already be in range, but defensive)
+			if normalized < 0 {
+				normalized = 0
+			}
+			if normalized > 1.0 {
+				normalized = 1.0
+			}
+
+			// Log normalization details for distribution visualization
+			utils.LavaFormatTrace("[SyncNormalization] P10-P90 normalization applied",
+				utils.LogAttr("raw_sync_lag", syncLag),
+				utils.LogAttr("clamped_sync_lag", clampedSyncLag),
+				utils.LogAttr("p10", p10),
+				utils.LogAttr("p90", p90),
+				utils.LogAttr("range_p10_p90", p90-p10),
+				utils.LogAttr("normalized_score", normalized),
+				utils.LogAttr("was_clamped_low", wasClampedLow),
+				utils.LogAttr("was_clamped_high", wasClampedHigh),
+			)
+
+			return normalized
+		}
+	}
+
+	// Phase 1 (Fallback): Use fixed maximum expected sync lag
+	const maxSyncLag = score.WorstSyncScore
 	if syncLag <= 0 {
+		utils.LavaFormatTrace("[SyncNormalization] Perfect sync",
+			utils.LogAttr("sync_lag", syncLag),
+			utils.LogAttr("normalized_score", 1.0),
+		)
 		return 1.0 // Perfect sync
 	}
 
@@ -371,6 +445,13 @@ func (ws *WeightedSelector) normalizeSync(syncLag float64) float64 {
 	if normalized < 0 {
 		normalized = 0 // Clamp to 0 for extremely poor sync
 	}
+
+	// Log normalization details for distribution visualization
+	utils.LavaFormatTrace("[SyncNormalization] Fixed max normalization applied",
+		utils.LogAttr("raw_sync_lag", syncLag),
+		utils.LogAttr("max_sync_lag", maxSyncLag),
+		utils.LogAttr("normalized_score", normalized),
+	)
 
 	return normalized
 }
@@ -622,6 +703,8 @@ func (ws *WeightedSelector) GetConfig() WeightedSelectorConfig {
 		Strategy:              ws.strategy,
 		UseAdaptiveLatencyMax: ws.useAdaptiveLatencyMax,
 		AdaptiveLatencyGetter: ws.adaptiveLatencyGetter,
+		UseAdaptiveSyncMax:    ws.useAdaptiveSyncMax,
+		AdaptiveSyncGetter:    ws.adaptiveSyncGetter,
 	}
 }
 

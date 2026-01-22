@@ -58,6 +58,15 @@ const (
 	// Default bounds for latency adaptive max calculator
 	DefaultLatencyAdaptiveMinMax float64 = 1.0  // 1 second minimum for P90
 	DefaultLatencyAdaptiveMaxMax float64 = 30.0 // 30 seconds maximum for P90 (WorstLatencyScore)
+
+	// Sync-specific adaptive normalization constants (Phase 2)
+	// P10 bounds for sync: Used to clamp the 10th percentile (adaptive minimum)
+	AdaptiveSyncP10MinBound float64 = 0.1   // 100ms - very fast sync (perfect or near-perfect)
+	AdaptiveSyncP10MaxBound float64 = 60.0  // 60s - maximum reasonable P10 for sync
+
+	// Default bounds for sync adaptive max calculator
+	DefaultSyncAdaptiveMinMax float64 = 30.0   // 30 seconds minimum for P90
+	DefaultSyncAdaptiveMaxMax float64 = 1200.0 // 1200 seconds (20 min) maximum for P90 (WorstSyncScore)
 )
 
 type Config struct {
