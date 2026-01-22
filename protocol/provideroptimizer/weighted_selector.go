@@ -237,7 +237,7 @@ func (ws *WeightedSelector) CalculateScore(
 	}
 
 	// Normalize individual metrics to 0-1 range where higher is better
-	availabilityScore := availability // Already 0-1, higher is better
+	availabilityScore := ws.normalizeAvailability(availability) // Rescale [0.9, 1.0] → [0.0, 1.0]
 
 	// For latency and sync, lower raw values are better, so we invert them
 	latencyScore := ws.normalizeLatency(latency)       // Convert to 0-1 where higher is better
@@ -264,6 +264,67 @@ func (ws *WeightedSelector) CalculateScore(
 	}
 
 	return composite
+}
+
+// normalizeAvailability converts availability score to 0-1 range using simple rescaling
+// Input: availability in [0, 1] range (higher is better, e.g., 0.98 = 98% success rate)
+// Output: normalized score where 1.0 = best, 0.0 = worst
+//
+// Phase 1 (Simple Rescaling):
+//   - Rescales [MIN_ACCEPTABLE, 1.0] → [0.0, 1.0]
+//   - Below MIN_ACCEPTABLE (0.90) = score of 0.0
+//   - Formula: normalized = (availability - 0.90) / (1.0 - 0.90) = (availability - 0.90) / 0.10
+//   - This achieves 100% range utilization vs current ~5% (0.95-1.0 → 0.95-1.0)
+//
+// Example:
+//   - Provider with 100% availability (1.00) → score 1.0 (perfect)
+//   - Provider with 99% availability (0.99) → score 0.9
+//   - Provider with 95% availability (0.95) → score 0.5
+//   - Provider with 90% availability (0.90) → score 0.0 (threshold)
+//   - Provider with 85% availability (0.85) → score 0.0 (below threshold)
+//
+// Advantages:
+//   - ✅ Uses full [0,1] range (100% vs 5%)
+//   - ✅ Zero complexity, no state, no memory overhead
+//   - ✅ Clear business rule: < 90% availability = unacceptable
+//   - ✅ Stable and predictable
+func (ws *WeightedSelector) normalizeAvailability(availability float64) float64 {
+	// Phase 1: Simple Rescaling
+	const minAcceptable = score.MinAcceptableAvailability // 0.90
+	const maxAvailability = 1.0
+
+	// Below minimum threshold = score of 0
+	if availability < minAcceptable {
+		utils.LavaFormatDebug("availability below minimum threshold",
+			utils.LogAttr("raw_availability", availability),
+			utils.LogAttr("min_acceptable", minAcceptable),
+			utils.LogAttr("normalized_score", 0.0),
+			utils.LogAttr("below_threshold", true),
+		)
+		return 0.0
+	}
+
+	// Rescale [minAcceptable, 1.0] → [0.0, 1.0]
+	// Formula: (availability - min) / (max - min)
+	normalized := (availability - minAcceptable) / (maxAvailability - minAcceptable)
+
+	// Clamp to [0, 1] (should already be in range after above check, but defensive)
+	if normalized > 1.0 {
+		normalized = 1.0
+	}
+	if normalized < 0.0 {
+		normalized = 0.0
+	}
+
+	utils.LavaFormatDebug("normalized availability (Phase 1 rescaling)",
+		utils.LogAttr("raw_availability", availability),
+		utils.LogAttr("min_acceptable", minAcceptable),
+		utils.LogAttr("rescale_range", maxAvailability-minAcceptable),
+		utils.LogAttr("normalized_score", normalized),
+		utils.LogAttr("below_threshold", false),
+	)
+
+	return normalized
 }
 
 // normalizeLatency converts latency score to 0-1 range where higher is better
@@ -457,13 +518,13 @@ func (ws *WeightedSelector) normalizeSync(syncLag float64) float64 {
 }
 
 // normalizeStake converts stake to 0-1 range relative to total stake
+// Uses square root scaling to reduce whale dominance while maintaining incentives
 func (ws *WeightedSelector) normalizeStake(stake sdk.Coin, totalStake sdk.Coin) float64 {
 	if totalStake.IsZero() || stake.IsZero() {
 		return 0.0
 	}
 
 	// Calculate stake ratio
-	// Use QuoInt64 to get a decimal representation, then convert to float
 	stakeFloat := float64(stake.Amount.Int64())
 	totalStakeFloat := float64(totalStake.Amount.Int64())
 
@@ -473,12 +534,25 @@ func (ws *WeightedSelector) normalizeStake(stake sdk.Coin, totalStake sdk.Coin) 
 
 	stakeRatio := stakeFloat / totalStakeFloat
 
-	// Cap at 1.0 to prevent single large staker from dominating
+	// Cap at 1.0 to prevent errors
 	if stakeRatio > 1.0 {
 		stakeRatio = 1.0
 	}
 
-	return stakeRatio
+	// Square root scaling: reduces whale dominance with diminishing returns
+	// Example: 10% stake → 0.316 (3x boost), 80% stake → 0.894 (slight boost)
+	// This reduces the gap between large and small stakers by ~17%
+	normalized := math.Sqrt(stakeRatio)
+
+	utils.LavaFormatDebug("normalized stake (square root scaling)",
+		utils.LogAttr("stake", stakeFloat),
+		utils.LogAttr("total_stake", totalStakeFloat),
+		utils.LogAttr("stake_ratio", stakeRatio),
+		utils.LogAttr("normalized_score", normalized),
+		utils.LogAttr("boost_factor", normalized/stakeRatio),
+	)
+
+	return normalized
 }
 
 // applyStrategyAdjustments modifies scores based on the configured strategy
@@ -639,7 +713,7 @@ func (ws *WeightedSelector) CalculateProviderScores(
 		latency, sync, availability := qos.GetScoresFloat64()
 
 		// Calculate normalized scores
-		availabilityScore := availability
+		availabilityScore := ws.normalizeAvailability(availability)
 		latencyScore := ws.normalizeLatency(latency)
 		syncScore := ws.normalizeSync(sync)
 		stakeScore := ws.normalizeStake(stakeCoin, totalStakeCoin)
