@@ -39,7 +39,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -57,7 +56,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
-	"github.com/lavanet/lava/v5/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/v5/x/plans/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
@@ -169,7 +167,6 @@ type RPCSmartRouter struct {
 
 type rpcSmartRouterStartOptions struct {
 	rpcEndpoints             []*lavasession.RPCEndpoint
-	requiredResponses        int
 	cache                    *performance.Cache
 	strategy                 provideroptimizer.Strategy
 	maxConcurrentProviders   uint
@@ -180,11 +177,9 @@ type rpcSmartRouterStartOptions struct {
 	backupProvidersList      []*lavasession.RPCStaticProviderEndpoint // define backup providers as emergency fallback when no providers available
 	geoLocation              uint64
 	clientCtx                client.Context    // Blockchain client context for querying specs
-	privKey                  *btcec.PrivateKey // Private key for signing relay requests
-	lavaChainID              string            // Lava blockchain chain ID
 }
 
-// spawns a new RPCConsumer server with all it's processes and internals ready for communications
+// spawns a new RPCSmartRouter server with all its processes and internals ready for communications
 func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterStartOptions) (err error) {
 	if common.IsTestMode(ctx) {
 		testModeWarn("RPCSmartRouter running tests")
@@ -793,8 +788,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 
 	utils.LavaFormatInfo("RPCSmartRouter Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
 	// Convert smartRouterIdentifier string to empty sdk.AccAddress for smart router
-	emptyConsumerAddr := []byte{}
-	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, chainTracker, sessionManager, options.requiredResponses, options.privKey, options.lavaChainID, options.cache, rpcSmartRouterMetrics, emptyConsumerAddr, smartRouterConsistency, relaysMonitor, options.cmdFlags, options.stateShare, smartRouterReportsManager, wsSubscriptionManager)
+	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, chainTracker, sessionManager, options.cache, rpcSmartRouterMetrics, smartRouterConsistency, relaysMonitor, options.cmdFlags, options.stateShare, wsSubscriptionManager)
 	if err != nil {
 		err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 		errCh <- err
@@ -867,16 +861,12 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			closeLoggerOnFinish := common.SetupRollingLogger()
 			defer closeLoggerOnFinish()
 
-			utils.LavaFormatInfo("RPCConsumer started:", utils.Attribute{Key: "args", Value: strings.Join(args, ",")})
+			utils.LavaFormatInfo("RPCSmartRouter started:", utils.Attribute{Key: "args", Value: strings.Join(args, ",")})
 
 			// setting the insecure option on provider dial, this should be used in development only!
 			lavasession.AllowInsecureConnectionToProviders = viper.GetBool(lavasession.AllowInsecureConnectionToProvidersFlag)
 			if lavasession.AllowInsecureConnectionToProviders {
 				utils.LavaFormatWarning("AllowInsecureConnectionToProviders is set to true, this should be used only in development", nil, utils.Attribute{Key: lavasession.AllowInsecureConnectionToProvidersFlag, Value: lavasession.AllowInsecureConnectionToProviders})
-			}
-			lavasession.AllowGRPCCompressionForConsumerProviderCommunication = viper.GetBool(lavasession.AllowGRPCCompressionFlag)
-			if lavasession.AllowGRPCCompressionForConsumerProviderCommunication {
-				utils.LavaFormatInfo("AllowGRPCCompressionForConsumerProviderCommunication is set to true, messages will be compressed", utils.Attribute{Key: lavasession.AllowGRPCCompressionFlag, Value: lavasession.AllowGRPCCompressionForConsumerProviderCommunication})
 			}
 
 			var rpcEndpoints []*lavasession.RPCEndpoint
@@ -1032,7 +1022,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			}
 
 			rpcSmartRouter := RPCSmartRouter{}
-			requiredResponses := 1 // TODO: handle secure flag, for a majority between providers
 			utils.LavaFormatInfo("lavap Binary Version: " + upgrade.GetCurrentVersion().ConsumerVersion)
 			rand.InitRandomSeed()
 
@@ -1093,37 +1082,9 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				EpochDuration:            epochDuration,
 			}
 
-			// Get private key for signing relay requests
-			// Smart router uses ephemeral key in static provider mode since providers
-			// are configured to accept requests from anyone (no signature verification)
-			keyName, err := sigs.GetKeyName(clientCtx)
-			var privKey *btcec.PrivateKey
-			if err != nil {
-				// If no key in keyring, generate ephemeral key for static provider mode
-				utils.LavaFormatWarning("No key found in keyring, generating ephemeral key for signing (static provider mode)", err)
-				privKey, err = btcec.NewPrivateKey()
-				if err != nil {
-					utils.LavaFormatFatal("failed generating ephemeral private key", err)
-				}
-			} else {
-				// Use key from keyring if available
-				privKey, err = sigs.GetPrivKey(clientCtx, keyName)
-				if err != nil {
-					utils.LavaFormatWarning("Failed getting key from keyring, generating ephemeral key for signing (static provider mode)", err, utils.Attribute{Key: "keyName", Value: keyName})
-					privKey, err = btcec.NewPrivateKey()
-					if err != nil {
-						utils.LavaFormatFatal("failed generating ephemeral private key", err)
-					}
-				}
-			}
-
-			// Get Lava chain ID
-			lavaChainID := clientCtx.ChainID
-
 			rpcSmartRouterSharedState := viper.GetBool(common.SharedStateFlag)
 			err = rpcSmartRouter.Start(ctx, &rpcSmartRouterStartOptions{
 				rpcEndpoints:             rpcEndpoints,
-				requiredResponses:        requiredResponses,
 				cache:                    cache,
 				strategy:                 strategyFlag.Strategy,
 				maxConcurrentProviders:   maxConcurrentProviders,
@@ -1134,8 +1095,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				backupProvidersList:      backupProviderEndpoints,
 				geoLocation:              geolocation,
 				clientCtx:                clientCtx,
-				privKey:                  privKey,
-				lavaChainID:              lavaChainID,
 			})
 			return err
 		},
@@ -1146,7 +1105,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().Uint(common.MaximumConcurrentProvidersFlagName, 3, "max number of concurrent providers to communicate with")
 	cmdRPCSmartRouter.MarkFlagRequired(common.GeolocationFlag)
 	cmdRPCSmartRouter.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allow insecure provider-dialing. used for development and testing")
-	cmdRPCSmartRouter.Flags().Bool(lavasession.AllowGRPCCompressionFlag, false, "allow messages to be compressed when communicating between the consumer and provider")
 	cmdRPCSmartRouter.Flags().Uint64Var(&lavasession.MaximumStreamsOverASingleConnection, lavasession.MaximumStreamsOverASingleConnectionFlag, lavasession.DefaultMaximumStreamsOverASingleConnection, "maximum number of parallel streams over a single provider connection")
 	cmdRPCSmartRouter.Flags().Bool(common.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
 	cmdRPCSmartRouter.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
