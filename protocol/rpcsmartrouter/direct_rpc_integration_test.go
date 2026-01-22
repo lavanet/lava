@@ -134,9 +134,8 @@ func TestDirectRPCRelaySender_SendDirectRelay_ServerError(t *testing.T) {
 	assert.Contains(t, err.Error(), "service unavailable")
 }
 
-func TestRelayInner_DirectRPCBranching(t *testing.T) {
-	// This test verifies that relayInner correctly branches to relayInnerDirect
-	// when the session is a direct RPC session
+func TestDirectRPCSession_IsDirectRPC(t *testing.T) {
+	// This test verifies that IsDirectRPC() correctly identifies direct RPC sessions
 
 	// Create mock JSON-RPC server
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -183,10 +182,9 @@ func TestRelayInner_DirectRPCBranching(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, directConn, conn)
 
-	// NOTE: Full relayInner test would require:
+	// NOTE: Full relayInnerDirect test would require:
 	// - Mock RPCSmartRouterServer with chainParser, metrics, etc.
-	// - This is deferred to the end-to-end test (prod-7)
-	// For now, we verify the session structure is correct for branching
+	// - This is covered by the end-to-end tests
 }
 
 // createMockChainMessage creates a mock ChainMessage for testing
