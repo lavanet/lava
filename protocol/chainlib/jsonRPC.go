@@ -638,7 +638,10 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 		batch[idx].Result = nil
 	}
 
-	retData, err := json.Marshal(replyMsgs)
+	// Use MarshalBatchWithRawResults to avoid go-json's expensive compact operations.
+	// This bypasses compactString/compactValue which cause 3-4x memory overhead
+	// for large responses like debug_traceTransaction.
+	retData, err := rpcInterfaceMessages.MarshalBatchWithRawResults(replyMsgs)
 	if err != nil {
 		return nil, err
 	}
@@ -767,7 +770,10 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	rpcMessage.Result = nil
 	rpcMessage = nil
 
-	retData, err := json.Marshal(replyMsg)
+	// Use MarshalWithRawResult to avoid go-json's expensive compact operations.
+	// This bypasses compactString/compactValue which cause 3-4x memory overhead
+	// for large responses like debug_traceTransaction.
+	retData, err := replyMsg.MarshalWithRawResult()
 	if err != nil {
 		return nil, "", nil, err
 	}
