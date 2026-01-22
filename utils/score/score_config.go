@@ -61,12 +61,17 @@ const (
 
 	// Sync-specific adaptive normalization constants (Phase 2)
 	// P10 bounds for sync: Used to clamp the 10th percentile (adaptive minimum)
-	AdaptiveSyncP10MinBound float64 = 0.1   // 100ms - very fast sync (perfect or near-perfect)
-	AdaptiveSyncP10MaxBound float64 = 60.0  // 60s - maximum reasonable P10 for sync
+	AdaptiveSyncP10MinBound float64 = 0.1  // 100ms - very fast sync (perfect or near-perfect)
+	AdaptiveSyncP10MaxBound float64 = 60.0 // 60s - maximum reasonable P10 for sync
 
 	// Default bounds for sync adaptive max calculator
 	DefaultSyncAdaptiveMinMax float64 = 30.0   // 30 seconds minimum for P90
 	DefaultSyncAdaptiveMaxMax float64 = 1200.0 // 1200 seconds (20 min) maximum for P90 (WorstSyncScore)
+
+	// Availability-specific normalization constants (Phase 1: Simple Rescaling)
+	// Availability is already in [0,1] range but has poor distribution (typically 0.95-1.0 = only 5% of range)
+	// Rescaling [MIN_ACCEPTABLE, 1.0] → [0.0, 1.0] achieves 100% range utilization
+	MinAcceptableAvailability float64 = 0.80 // Below 80% availability = score of 0 (reasonable minimum)
 )
 
 type Config struct {
