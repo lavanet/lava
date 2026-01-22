@@ -53,7 +53,10 @@ type ProviderOptimizer struct {
 	stakeCache                      ProviderStakeCache // provider stake amounts used in weighted selection
 	consumerOptimizerQoSClient      consumerOptimizerQoSClientInf
 	chainId                         string
-	weightedSelector                *WeightedSelector // Weighted random selection based on composite QoS scores
+	weightedSelector                *WeightedSelector            // Weighted random selection based on composite QoS scores
+	globalLatencyCalculator         *score.AdaptiveMaxCalculator // Global T-Digest for all providers' latency samples
+	globalSyncCalculator            *score.AdaptiveMaxCalculator // Global T-Digest for all providers' sync samples
+	adaptiveLock                    sync.RWMutex                 // Lock for accessing adaptive calculators
 }
 
 type ProviderData struct {
@@ -111,7 +114,49 @@ func (po *ProviderOptimizer) ConfigureWeightedSelector(config WeightedSelectorCo
 		return
 	}
 	config.Strategy = po.strategy
+
+	// Wire up Phase 2: Enable adaptive P10-P90 normalization
+	config.UseAdaptiveLatencyMax = true
+	config.AdaptiveLatencyGetter = po.getAdaptiveLatencyBounds
+
+	config.UseAdaptiveSyncMax = true
+	config.AdaptiveSyncGetter = po.getAdaptiveSyncBounds
+
 	po.weightedSelector = NewWeightedSelector(config)
+}
+
+// getAdaptiveLatencyBounds returns the current P10 and P90 bounds for latency normalization
+// from the global T-Digest that aggregates data from all providers
+func (po *ProviderOptimizer) getAdaptiveLatencyBounds() (p10, p90 float64) {
+	if po == nil {
+		return score.AdaptiveP10MinBound, score.DefaultLatencyAdaptiveMaxMax
+	}
+
+	po.adaptiveLock.RLock()
+	defer po.adaptiveLock.RUnlock()
+
+	if po.globalLatencyCalculator == nil {
+		return score.AdaptiveP10MinBound, score.DefaultLatencyAdaptiveMaxMax
+	}
+
+	return po.globalLatencyCalculator.GetAdaptiveBounds()
+}
+
+// getAdaptiveSyncBounds returns the current P10 and P90 bounds for sync normalization
+// from the global T-Digest that aggregates data from all providers
+func (po *ProviderOptimizer) getAdaptiveSyncBounds() (p10, p90 float64) {
+	if po == nil {
+		return score.AdaptiveSyncP10MinBound, score.DefaultSyncAdaptiveMaxMax
+	}
+
+	po.adaptiveLock.RLock()
+	defer po.adaptiveLock.RUnlock()
+
+	if po.globalSyncCalculator == nil {
+		return score.AdaptiveSyncP10MinBound, score.DefaultSyncAdaptiveMaxMax
+	}
+
+	return po.globalSyncCalculator.GetAdaptiveBounds()
 }
 
 // UpdateWeights updates provider stake amounts in the cache and metrics
@@ -643,6 +688,21 @@ func (po *ProviderOptimizer) updateDecayingWeightedAverage(providerData Provider
 			return providerData, po.validateUpdateError(err, "[Update] did not update provider latency score")
 		}
 
+		// Phase 2: Feed sample to global T-Digest for adaptive normalization
+		// Apply the same latency CU factor as the score store
+		adjustedSample := sample * score.GetLatencyFactor(cu)
+		po.adaptiveLock.Lock()
+		if po.globalLatencyCalculator != nil {
+			if err := po.globalLatencyCalculator.AddSample(adjustedSample, sampleTime); err != nil {
+				utils.LavaFormatWarning("failed to update global latency adaptive calculator",
+					err,
+					utils.LogAttr("sample", adjustedSample),
+					utils.LogAttr("sampleTime", sampleTime),
+				)
+			}
+		}
+		po.adaptiveLock.Unlock()
+
 	case score.SyncScoreType:
 		err := providerData.Sync.UpdateConfig(score.WithWeight(weight), score.WithDecayHalfLife(halfTime))
 		if err != nil {
@@ -653,6 +713,19 @@ func (po *ProviderOptimizer) updateDecayingWeightedAverage(providerData Provider
 		if err != nil {
 			return providerData, po.validateUpdateError(err, "[Update] did not update provider sync score")
 		}
+
+		// Phase 2: Feed sample to global T-Digest for adaptive normalization
+		po.adaptiveLock.Lock()
+		if po.globalSyncCalculator != nil {
+			if err := po.globalSyncCalculator.AddSample(sample, sampleTime); err != nil {
+				utils.LavaFormatWarning("failed to update global sync adaptive calculator",
+					err,
+					utils.LogAttr("sample", sample),
+					utils.LogAttr("sampleTime", sampleTime),
+				)
+			}
+		}
+		po.adaptiveLock.Unlock()
 
 	case score.AvailabilityScoreType:
 		err := providerData.Availability.UpdateConfig(score.WithWeight(weight), score.WithDecayHalfLife(halfTime))
@@ -742,6 +815,25 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wan
 	weightedConfig.Strategy = strategy
 	weightedSelector := NewWeightedSelector(weightedConfig)
 
+	// Initialize global adaptive calculators for Phase 2 (P10-P90 normalization)
+	globalLatencyCalculator := score.NewAdaptiveMaxCalculator(
+		score.DefaultHalfLifeTime,          // halfLife (1 hour default)
+		score.AdaptiveP10MinBound,          // minP10 (0.001s = 1ms)
+		score.AdaptiveP10MaxBound,          // maxP10 (10s)
+		score.DefaultLatencyAdaptiveMinMax, // minMax (P90 lower bound: 1.0s)
+		score.DefaultLatencyAdaptiveMaxMax, // maxMax (P90 upper bound: 30.0s)
+		score.DefaultTDigestCompression,    // compression (100.0)
+	)
+
+	globalSyncCalculator := score.NewAdaptiveMaxCalculator(
+		score.DefaultHalfLifeTime,       // halfLife (1 hour default)
+		score.AdaptiveSyncP10MinBound,   // minP10 (0.1s)
+		score.AdaptiveSyncP10MaxBound,   // maxP10 (60s)
+		score.DefaultSyncAdaptiveMinMax, // minMax (P90 lower bound: 30.0s)
+		score.DefaultSyncAdaptiveMaxMax, // maxMax (P90 upper bound: 1200.0s)
+		score.DefaultTDigestCompression, // compression (100.0)
+	)
+
 	return &ProviderOptimizer{
 		strategy:                        strategy,
 		providersStorage:                cache,
@@ -752,6 +844,8 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wan
 		consumerOptimizerQoSClient:      consumerOptimizerQoSClient,
 		chainId:                         chainId,
 		weightedSelector:                weightedSelector,
+		globalLatencyCalculator:         globalLatencyCalculator,
+		globalSyncCalculator:            globalSyncCalculator,
 	}
 }
 
