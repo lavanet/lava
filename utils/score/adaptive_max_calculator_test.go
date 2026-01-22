@@ -180,7 +180,7 @@ func TestAdaptiveMaxCalculator_Stats(t *testing.T) {
 	require.Greater(t, stats["adaptive_p90"].(float64), 0.0)
 	require.Greater(t, stats["median"].(float64), 0.0)
 	require.Greater(t, stats["p99"].(float64), 0.0)
-	require.Greater(t, stats["total_weight"].(float64), 0.0)
+	require.Greater(t, stats["total_weight"].(uint64), uint64(0)) // Changed from float64 to uint64
 	require.Greater(t, stats["centroid_count"].(int), 0)
 	require.Equal(t, 100.0, stats["compression"].(float64))
 	require.Equal(t, 3600.0, stats["half_life_seconds"].(float64))
@@ -226,7 +226,7 @@ func TestAdaptiveMaxCalculator_LargeDataset(t *testing.T) {
 
 	// Verify stats
 	stats := calc.GetStats()
-	require.Greater(t, stats["total_weight"].(float64), 800.0) // Should have ~900 total weight
+	require.Greater(t, stats["total_weight"].(uint64), uint64(800)) // Should have ~900 total weight
 }
 
 func TestAdaptiveMaxCalculator_Reset(t *testing.T) {
@@ -242,14 +242,14 @@ func TestAdaptiveMaxCalculator_Reset(t *testing.T) {
 
 	// Verify samples were added
 	stats := calc.GetStats()
-	require.Greater(t, stats["total_weight"].(float64), 0.0)
+	require.Greater(t, stats["total_weight"].(uint64), uint64(0))
 
 	// Reset
 	calc.Reset()
 
 	// Verify reset worked
 	stats = calc.GetStats()
-	require.Equal(t, 0.0, stats["total_weight"].(float64))
+	require.Equal(t, uint64(0), stats["total_weight"].(uint64))
 
 	// Can add samples after reset
 	err := calc.AddSample(1.0, time.Now())

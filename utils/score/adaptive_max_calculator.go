@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	tdigest "github.com/influxdata/tdigest"
+	tdigest "github.com/caio/go-tdigest/v5"
 	"github.com/lavanet/lava/v5/utils"
 )
 
@@ -39,8 +39,13 @@ func NewAdaptiveMaxCalculator(halfLife time.Duration, minP10, maxP10, minMax, ma
 		compression = 100 // Default compression
 	}
 
+	digest, err := tdigest.New(tdigest.Compression(compression))
+	if err != nil {
+		utils.LavaFormatFatal("failed to create T-Digest", err)
+	}
+
 	return &AdaptiveMaxCalculator{
-		digest:     tdigest.NewWithCompression(compression),
+		digest:     digest,
 		lastUpdate: time.Now(),
 		halfLife:   halfLife,
 		minP10:     minP10,
@@ -113,8 +118,14 @@ func (a *AdaptiveMaxCalculator) AddSample(value float64, sampleTime time.Time) e
 		a.applyDecayToDigest(decayFactor)
 	}
 
-	// Add new sample with weight = 1.0
-	a.digest.Add(value, 1.0)
+	// Add new sample with weight = 1
+	err := a.digest.AddWeighted(value, 1)
+	if err != nil {
+		return utils.LavaFormatError("failed to add sample to T-Digest",
+			err,
+			utils.LogAttr("value", value),
+		)
+	}
 
 	// Update last update time
 	a.lastUpdate = sampleTime
@@ -125,27 +136,36 @@ func (a *AdaptiveMaxCalculator) AddSample(value float64, sampleTime time.Time) e
 // applyDecayToDigest applies exponential decay to all centroids in the T-Digest.
 // This is done by scaling all centroid weights by the decay factor.
 //
-// Note: The influxdata/tdigest library doesn't have a native Scale() method,
-// so we implement decay by rebuilding the digest with decayed weights.
+// Note: The caio/go-tdigest library uses uint64 for weights. We round decayed
+// weights and drop any centroids with weight < 1 after decay.
 func (a *AdaptiveMaxCalculator) applyDecayToDigest(decayFactor float64) {
-	// Get all centroids from the current digest
-	centroids := a.digest.Centroids()
-
-	if len(centroids) == 0 {
-		return // Nothing to decay
-	}
+	// Get the current digest's compression
+	compression := a.digest.Compression()
 
 	// Create a new digest with the same compression
-	compression := a.digest.Compression
-	newDigest := tdigest.NewWithCompression(compression)
-
-	// Add all centroids with decayed weights
-	for _, centroid := range centroids {
-		newWeight := centroid.Weight * decayFactor
-		if newWeight > 0 {
-			newDigest.Add(centroid.Mean, newWeight)
-		}
+	newDigest, err := tdigest.New(tdigest.Compression(compression))
+	if err != nil {
+		utils.LavaFormatError("failed to create new T-Digest for decay", err)
+		return
 	}
+
+	// Collect all centroids with decayed weights
+	a.digest.ForEachCentroid(func(mean float64, count uint64) bool {
+		// Apply decay to the weight
+		newWeight := float64(count) * decayFactor
+		
+		// Round to nearest integer, but drop if < 0.5 (would round to 0)
+		weightRounded := uint64(math.Round(newWeight))
+		if weightRounded > 0 {
+			if err := newDigest.AddWeighted(mean, weightRounded); err != nil {
+				utils.LavaFormatWarning("failed to add decayed centroid", err,
+					utils.LogAttr("mean", mean),
+					utils.LogAttr("weight", weightRounded),
+				)
+			}
+		}
+		return true // Continue iteration
+	})
 
 	// Replace the old digest with the new one
 	a.digest = newDigest
@@ -270,6 +290,13 @@ func (a *AdaptiveMaxCalculator) GetStats() map[string]interface{} {
 		}
 	}
 
+	// Count centroids
+	centroidCount := 0
+	a.digest.ForEachCentroid(func(mean float64, count uint64) bool {
+		centroidCount++
+		return true
+	})
+
 	return map[string]interface{}{
 		"enabled":           true,
 		"adaptive_max_p95":  a.digest.Quantile(0.95),
@@ -278,8 +305,8 @@ func (a *AdaptiveMaxCalculator) GetStats() map[string]interface{} {
 		"median":            a.digest.Quantile(0.5),
 		"p99":               a.digest.Quantile(0.99),
 		"total_weight":      a.digest.Count(),
-		"centroid_count":    len(a.digest.Centroids()),
-		"compression":       a.digest.Compression,
+		"centroid_count":    centroidCount,
+		"compression":       a.digest.Compression(),
 		"last_update":       a.lastUpdate,
 		"half_life_seconds": a.halfLife.Seconds(),
 		"min_p10":           a.minP10,
@@ -298,8 +325,13 @@ func (a *AdaptiveMaxCalculator) Reset() {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	compression := a.digest.Compression
-	a.digest = tdigest.NewWithCompression(compression)
+	compression := a.digest.Compression()
+	newDigest, err := tdigest.New(tdigest.Compression(compression))
+	if err != nil {
+		utils.LavaFormatError("failed to create new T-Digest for reset", err)
+		return
+	}
+	a.digest = newDigest
 	a.lastUpdate = time.Now()
 }
 
@@ -344,7 +376,14 @@ func (a *AdaptiveMaxCalculator) LogDistributionStats(parameterName string) {
 
 	// Calculate additional distribution metrics
 	totalWeight := a.digest.Count()
-	centroidCount := len(a.digest.Centroids())
+
+	// Count centroids
+	centroidCount := 0
+	a.digest.ForEachCentroid(func(mean float64, count uint64) bool {
+		centroidCount++
+		return true
+	})
+
 	iqr := p75 - p25     // Interquartile range
 	range90 := p90 - p10 // P10-P90 range (used for normalization)
 
