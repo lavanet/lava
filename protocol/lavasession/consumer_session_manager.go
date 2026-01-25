@@ -837,6 +837,26 @@ func (csm *ConsumerSessionManager) getTopTenProvidersForStatefulCalls(validAddre
 	return addresses
 }
 
+// convertSelectionStatsToMetrics converts SelectionStats to metrics format with all provider scores
+func convertSelectionStatsToMetrics(stats *provideroptimizer.SelectionStats) (allScores []metrics.ProviderSelectionScores, rngValue float64) {
+	if stats == nil {
+		return nil, 0
+	}
+	rngValue = stats.RNGValue
+	allScores = make([]metrics.ProviderSelectionScores, 0, len(stats.ProviderScores))
+	for _, score := range stats.ProviderScores {
+		allScores = append(allScores, metrics.ProviderSelectionScores{
+			ProviderAddress: score.Address,
+			Availability:    score.Availability,
+			Latency:         score.Latency,
+			Sync:            score.Sync,
+			Stake:           score.Stake,
+			Composite:       score.Composite,
+		})
+	}
+	return allScores, rngValue
+}
+
 // Get a valid provider address.
 func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context, wantedProviders int, ignoredProvidersList map[string]struct{}, cu uint64, requestedBlock int64, addon string, extensions []string, stateful uint32, stickiness string) (addresses []string, err error) {
 	// cs.Lock must be Rlocked here.
@@ -881,9 +901,10 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 		if selectionStats != nil {
 			csm.setSelectionStats(selectionStats)
 		}
-		// Track provider selection for metrics
+		// Track provider selection for metrics with all provider scores
 		if len(providers) > 0 {
-			csm.consumerMetricsManager.SetProviderSelected(csm.rpcEndpoint.ChainID, providers[0])
+			allScores, rngValue := convertSelectionStatsToMetrics(selectionStats)
+			csm.consumerMetricsManager.SetProviderSelected(csm.rpcEndpoint.ChainID, providers[0], allScores, rngValue)
 		}
 	} else {
 		// Make a copy of ignoredProvidersList to avoid modifying the original
@@ -900,10 +921,11 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 			if i == 0 && selectionStats != nil {
 				csm.setSelectionStats(selectionStats)
 			}
+			// Track provider selection for metrics with all provider scores
+			allScores, rngValue := convertSelectionStatsToMetrics(selectionStats)
 			for _, providerAddr := range provider {
 				ignoredProvidersListCopy[providerAddr] = struct{}{}
-				// Track provider selection for metrics
-				csm.consumerMetricsManager.SetProviderSelected(csm.rpcEndpoint.ChainID, providerAddr)
+				csm.consumerMetricsManager.SetProviderSelected(csm.rpcEndpoint.ChainID, providerAddr, allScores, rngValue)
 			}
 			providers = append(providers, provider...)
 		}

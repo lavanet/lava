@@ -26,13 +26,17 @@ type ConsumerOptimizerQoSClient struct {
 	queueSender      *QueueSender
 	optimizers       map[string]OptimizerInf // keys are chain ids
 	// keys are chain ids, values are maps with provider addresses as keys
-	chainIdToProviderToRelaysCount     map[string]map[string]uint64
-	chainIdToProviderToNodeErrorsCount map[string]map[string]uint64
-	chainIdToProviderToEpochToStake    map[string]map[string]map[uint64]int64 // third key is epoch
-	currentEpoch                       atomic.Uint64
-	lock                               sync.RWMutex
-	reportsToSend                      []OptimizerQoSReportToSend
-	geoLocation                        uint64
+	chainIdToProviderToRelaysCount      map[string]map[string]uint64
+	chainIdToProviderToNodeErrorsCount  map[string]map[string]uint64
+	chainIdToProviderToSelectionCount    map[string]map[string]uint64  // tracks how many times each provider was selected
+	chainIdToProviderToQoSScoreSum       map[string]map[string]float64 // sum of QoS scores at selection time for averaging
+	chainIdToProviderToLastRNGValue      map[string]map[string]float64 // last RNG value used for selection
+	chainIdToProviderToEpochToStake      map[string]map[string]map[uint64]int64 // third key is epoch
+	chainIdToTotalSelections             map[string]uint64                      // total selections per chain for calculating selection rate
+	currentEpoch                        atomic.Uint64
+	lock                                sync.RWMutex
+	reportsToSend                       []OptimizerQoSReportToSend
+	geoLocation                         uint64
 }
 
 type OptimizerQoSReport struct {
@@ -71,6 +75,11 @@ type OptimizerQoSReportToSend struct {
 	SelectionSync         float64 `json:"selection_sync"`         // Normalized sync score (0-1)
 	SelectionStake        float64 `json:"selection_stake"`        // Normalized stake score (0-1)
 	SelectionComposite    float64 `json:"selection_composite"`    // Combined QoS score (0-1)
+	// Provider selection tracking
+	SelectionCount       uint64  `json:"selection_count"`        // Number of times this provider was selected
+	SelectionRate        float64 `json:"selection_rate"`         // Percentage of total selections (0-1)
+	SelectionQoSScore    float64 `json:"selection_qos_score"`    // Average QoS score at time of selection (0-1)
+	SelectionRNGValue    float64 `json:"selection_rng_value"`    // Last RNG value used for selecting this provider
 }
 
 func (oqosr OptimizerQoSReportToSend) String() string {
@@ -92,14 +101,18 @@ func NewConsumerOptimizerQoSClient(consumerAddress, endpointAddress string, geoL
 		hostname = "unknown" + strconv.FormatUint(rand.Uint64(), 10) // random seed for different unknowns
 	}
 	return &ConsumerOptimizerQoSClient{
-		consumerHostname:                   hostname,
-		consumerAddress:                    consumerAddress,
-		queueSender:                        NewQueueSender(endpointAddress, "ConsumerOptimizerQoS", nil, interval...),
-		optimizers:                         map[string]OptimizerInf{},
-		chainIdToProviderToRelaysCount:     map[string]map[string]uint64{},
-		chainIdToProviderToNodeErrorsCount: map[string]map[string]uint64{},
-		chainIdToProviderToEpochToStake:    map[string]map[string]map[uint64]int64{},
-		geoLocation:                        geoLocation,
+		consumerHostname:                     hostname,
+		consumerAddress:                      consumerAddress,
+		queueSender:                          NewQueueSender(endpointAddress, "ConsumerOptimizerQoS", nil, interval...),
+		optimizers:                           map[string]OptimizerInf{},
+		chainIdToProviderToRelaysCount:       map[string]map[string]uint64{},
+		chainIdToProviderToNodeErrorsCount:   map[string]map[string]uint64{},
+		chainIdToProviderToSelectionCount:    map[string]map[string]uint64{},
+		chainIdToProviderToQoSScoreSum:       map[string]map[string]float64{},
+		chainIdToProviderToLastRNGValue:      map[string]map[string]float64{},
+		chainIdToProviderToEpochToStake:      map[string]map[string]map[uint64]int64{},
+		chainIdToTotalSelections:             map[string]uint64{},
+		geoLocation:                          geoLocation,
 	}
 }
 
@@ -144,6 +157,44 @@ func (coqc *ConsumerOptimizerQoSClient) calculateNodeErrorRate(chainId, provider
 	return 0
 }
 
+func (coqc *ConsumerOptimizerQoSClient) getProviderChainSelectionCount(chainId, providerAddress string) uint64 {
+	// must be called under read lock
+	return coqc.getProviderChainMapCounterValue(coqc.chainIdToProviderToSelectionCount, chainId, providerAddress)
+}
+
+func (coqc *ConsumerOptimizerQoSClient) calculateSelectionRate(chainId, providerAddress string) float64 {
+	// must be called under read lock
+	totalSelections := coqc.chainIdToTotalSelections[chainId]
+	if totalSelections > 0 {
+		selectionCount := coqc.getProviderChainSelectionCount(chainId, providerAddress)
+		return float64(selectionCount) / float64(totalSelections)
+	}
+	return 0
+}
+
+func (coqc *ConsumerOptimizerQoSClient) calculateAverageSelectionQoSScore(chainId, providerAddress string) float64 {
+	// must be called under read lock
+	selectionCount := coqc.getProviderChainSelectionCount(chainId, providerAddress)
+	if selectionCount > 0 {
+		if providersMap, found := coqc.chainIdToProviderToQoSScoreSum[chainId]; found {
+			if scoreSum, found := providersMap[providerAddress]; found {
+				return scoreSum / float64(selectionCount)
+			}
+		}
+	}
+	return 0
+}
+
+func (coqc *ConsumerOptimizerQoSClient) getLastRNGValue(chainId, providerAddress string) float64 {
+	// must be called under read lock
+	if providersMap, found := coqc.chainIdToProviderToLastRNGValue[chainId]; found {
+		if rngValue, found := providersMap[providerAddress]; found {
+			return rngValue
+		}
+	}
+	return 0
+}
+
 func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report *OptimizerQoSReport, chainId string, epoch uint64) OptimizerQoSReportToSend {
 	// must be called under read lock
 	optimizerQoSReportToSend := OptimizerQoSReportToSend{
@@ -167,6 +218,11 @@ func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report *Optimiz
 		SelectionSync:         report.SelectionSync,
 		SelectionStake:        report.SelectionStake,
 		SelectionComposite:    report.SelectionComposite,
+		// Provider selection tracking
+		SelectionCount:    coqc.getProviderChainSelectionCount(chainId, report.ProviderAddress),
+		SelectionRate:     coqc.calculateSelectionRate(chainId, report.ProviderAddress),
+		SelectionQoSScore: coqc.calculateAverageSelectionQoSScore(chainId, report.ProviderAddress),
+		SelectionRNGValue: coqc.getLastRNGValue(chainId, report.ProviderAddress),
 	}
 
 	coqc.queueSender.appendQueue(optimizerQoSReportToSend)
@@ -286,6 +342,30 @@ func (coqc *ConsumerOptimizerQoSClient) SetNodeErrorToProvider(providerAddress s
 	defer coqc.lock.Unlock()
 
 	coqc.incrementStoreCounter(coqc.chainIdToProviderToNodeErrorsCount, chainId, providerAddress)
+}
+
+func (coqc *ConsumerOptimizerQoSClient) SetProviderSelected(providerAddress string, chainId string, qosScore float64, rngValue float64) {
+	if coqc == nil {
+		return
+	}
+
+	coqc.lock.Lock()
+	defer coqc.lock.Unlock()
+
+	coqc.incrementStoreCounter(coqc.chainIdToProviderToSelectionCount, chainId, providerAddress)
+	coqc.chainIdToTotalSelections[chainId]++
+
+	// Accumulate QoS score for averaging
+	if _, found := coqc.chainIdToProviderToQoSScoreSum[chainId]; !found {
+		coqc.chainIdToProviderToQoSScoreSum[chainId] = make(map[string]float64)
+	}
+	coqc.chainIdToProviderToQoSScoreSum[chainId][providerAddress] += qosScore
+
+	// Store last RNG value used for selection
+	if _, found := coqc.chainIdToProviderToLastRNGValue[chainId]; !found {
+		coqc.chainIdToProviderToLastRNGValue[chainId] = make(map[string]float64)
+	}
+	coqc.chainIdToProviderToLastRNGValue[chainId][providerAddress] = rngValue
 }
 
 func (coqc *ConsumerOptimizerQoSClient) setProviderStake(chainId, providerAddress string, epoch uint64, stake int64) {

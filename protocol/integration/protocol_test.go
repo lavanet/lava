@@ -404,7 +404,7 @@ func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpc
 	chainTracker.StartAndServe(ctx)
 	reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, &mockProviderStateTracker, rpcProviderOptions.account.Addr.String(), chainRouter, chainParser)
 	mockReliabilityManager := NewMockReliabilityManager(reliabilityManager)
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rws, providerSessionManager, mockReliabilityManager, rpcProviderOptions.account.SK, cache, chainRouter, &mockProviderStateTracker, rpcProviderOptions.account.Addr, rpcProviderOptions.lavaChainID, rpcprovider.DEFAULT_ALLOWED_MISSING_CU, nil, nil, nil, false, nil, nil, numberOfRetriesOnNodeErrorsProviderSide, nil, nil)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rws, providerSessionManager, mockReliabilityManager, rpcProviderOptions.account.SK, cache, chainRouter, &mockProviderStateTracker, rpcProviderOptions.account.Addr, rpcProviderOptions.lavaChainID, rpcprovider.DEFAULT_ALLOWED_MISSING_CU, nil, nil, nil, false, nil, nil, numberOfRetriesOnNodeErrorsProviderSide, nil, nil, 0)
 	listener := rpcprovider.NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress, "/health")
 	err = listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
 	require.NoError(t, err)
