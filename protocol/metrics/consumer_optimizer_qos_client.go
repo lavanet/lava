@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"math"
 	"os"
 	"strconv"
 	"sync"
@@ -14,6 +15,14 @@ import (
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"golang.org/x/exp/maps"
 )
+
+// sanitizeFloat returns 0 if the value is NaN or Inf, otherwise returns the value
+func sanitizeFloat(v float64) float64 {
+	if math.IsNaN(v) || math.IsInf(v, 0) {
+		return 0
+	}
+	return v
+}
 
 var (
 	OptimizerQosServerPushInterval     time.Duration
@@ -197,32 +206,33 @@ func (coqc *ConsumerOptimizerQoSClient) getLastRNGValue(chainId, providerAddress
 
 func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report *OptimizerQoSReport, chainId string, epoch uint64) OptimizerQoSReportToSend {
 	// must be called under read lock
+	// Use sanitizeFloat to prevent NaN/Inf values in JSON output
 	optimizerQoSReportToSend := OptimizerQoSReportToSend{
 		Timestamp:         time.Now(),
 		ConsumerHostname:  coqc.consumerHostname,
 		ConsumerAddress:   coqc.consumerAddress,
-		SyncScore:         report.SyncScore,
-		AvailabilityScore: report.AvailabilityScore,
-		LatencyScore:      report.LatencyScore,
-		GenericScore:      report.GenericScore,
+		SyncScore:         sanitizeFloat(report.SyncScore),
+		AvailabilityScore: sanitizeFloat(report.AvailabilityScore),
+		LatencyScore:      sanitizeFloat(report.LatencyScore),
+		GenericScore:      sanitizeFloat(report.GenericScore),
 		ProviderAddress:   report.ProviderAddress,
 		EntryIndex:        report.EntryIndex,
 		ChainId:           chainId,
 		Epoch:             epoch,
-		NodeErrorRate:     coqc.calculateNodeErrorRate(chainId, report.ProviderAddress),
+		NodeErrorRate:     sanitizeFloat(coqc.calculateNodeErrorRate(chainId, report.ProviderAddress)),
 		ProviderStake:     coqc.getProviderChainStake(chainId, report.ProviderAddress, epoch),
 		GeoLocation:       coqc.geoLocation,
 		// Add selection stats
-		SelectionAvailability: report.SelectionAvailability,
-		SelectionLatency:      report.SelectionLatency,
-		SelectionSync:         report.SelectionSync,
-		SelectionStake:        report.SelectionStake,
-		SelectionComposite:    report.SelectionComposite,
+		SelectionAvailability: sanitizeFloat(report.SelectionAvailability),
+		SelectionLatency:      sanitizeFloat(report.SelectionLatency),
+		SelectionSync:         sanitizeFloat(report.SelectionSync),
+		SelectionStake:        sanitizeFloat(report.SelectionStake),
+		SelectionComposite:    sanitizeFloat(report.SelectionComposite),
 		// Provider selection tracking
 		SelectionCount:    coqc.getProviderChainSelectionCount(chainId, report.ProviderAddress),
-		SelectionRate:     coqc.calculateSelectionRate(chainId, report.ProviderAddress),
-		SelectionQoSScore: coqc.calculateAverageSelectionQoSScore(chainId, report.ProviderAddress),
-		SelectionRNGValue: coqc.getLastRNGValue(chainId, report.ProviderAddress),
+		SelectionRate:     sanitizeFloat(coqc.calculateSelectionRate(chainId, report.ProviderAddress)),
+		SelectionQoSScore: sanitizeFloat(coqc.calculateAverageSelectionQoSScore(chainId, report.ProviderAddress)),
+		SelectionRNGValue: sanitizeFloat(coqc.getLastRNGValue(chainId, report.ProviderAddress)),
 	}
 
 	coqc.queueSender.appendQueue(optimizerQoSReportToSend)
