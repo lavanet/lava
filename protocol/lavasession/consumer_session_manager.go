@@ -903,6 +903,24 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 		}
 		// Track provider selection for metrics with all provider scores
 		if len(providers) > 0 {
+			if selectionStats == nil {
+				utils.LavaFormatWarning("Selection stats missing for sticky session provider", nil,
+					utils.LogAttr("provider", providers[0]),
+					utils.LogAttr("chainId", csm.rpcEndpoint.ChainID),
+					utils.LogAttr("addon", addon),
+					utils.LogAttr("extensions", extensions),
+					utils.LogAttr("GUID", ctx),
+				)
+			} else if len(selectionStats.ProviderScores) == 0 {
+				utils.LavaFormatWarning("Selection stats missing provider scores for sticky session", nil,
+					utils.LogAttr("provider", providers[0]),
+					utils.LogAttr("selectedProvider", selectionStats.SelectedProvider),
+					utils.LogAttr("chainId", csm.rpcEndpoint.ChainID),
+					utils.LogAttr("addon", addon),
+					utils.LogAttr("extensions", extensions),
+					utils.LogAttr("GUID", ctx),
+				)
+			}
 			allScores, rngValue := convertSelectionStatsToMetrics(selectionStats)
 			csm.consumerMetricsManager.SetProviderSelected(csm.rpcEndpoint.ChainID, providers[0], allScores, rngValue)
 		}
@@ -922,6 +940,24 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 				csm.setSelectionStats(selectionStats)
 			}
 			// Track provider selection for metrics with all provider scores
+			if selectionStats == nil {
+				utils.LavaFormatWarning("Selection stats missing for provider selection", nil,
+					utils.LogAttr("provider", provider[0]),
+					utils.LogAttr("chainId", csm.rpcEndpoint.ChainID),
+					utils.LogAttr("addon", addon),
+					utils.LogAttr("extensions", extensions),
+					utils.LogAttr("GUID", ctx),
+				)
+			} else if len(selectionStats.ProviderScores) == 0 {
+				utils.LavaFormatWarning("Selection stats missing provider scores", nil,
+					utils.LogAttr("provider", provider[0]),
+					utils.LogAttr("selectedProvider", selectionStats.SelectedProvider),
+					utils.LogAttr("chainId", csm.rpcEndpoint.ChainID),
+					utils.LogAttr("addon", addon),
+					utils.LogAttr("extensions", extensions),
+					utils.LogAttr("GUID", ctx),
+				)
+			}
 			allScores, rngValue := convertSelectionStatsToMetrics(selectionStats)
 			for _, providerAddr := range provider {
 				ignoredProvidersListCopy[providerAddr] = struct{}{}

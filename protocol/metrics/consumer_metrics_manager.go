@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -818,18 +819,19 @@ func (pme *ConsumerMetricsManager) SetRequestPerProvider(chainId string, provide
 }
 
 // SetProviderSelected records when a provider is selected and updates score gauges for all providers
-func (pme *ConsumerMetricsManager) SetProviderSelected(chainId string, selectedProvider string, allProviderScores []ProviderSelectionScores, rngValue float64) {
+func (pme *ConsumerMetricsManager) SetProviderSelected(chainId string, providerAddress string, allProviderScores []ProviderSelectionScores, rngValue float64) {
 	if pme == nil {
 		return
 	}
 	// Increment selection counter for the selected provider
-	pme.providerSelectionsMetric.WithLabelValues(chainId, selectedProvider).Inc()
+	pme.providerSelectionsMetric.WithLabelValues(chainId, providerAddress).Inc()
 
 	// Update RNG value gauge for this chain
 	pme.selectionRNGValueGauge.WithLabelValues(chainId).Set(rngValue)
 
 	// Update score gauges for ALL providers (not just selected)
 	var selectedQoSScore float64
+	foundSelectedProvider := false
 	for _, scores := range allProviderScores {
 		pme.providerAvailabilityScoreGauge.WithLabelValues(chainId, scores.ProviderAddress).Set(scores.Availability)
 		pme.providerLatencyScoreGauge.WithLabelValues(chainId, scores.ProviderAddress).Set(scores.Latency)
@@ -837,13 +839,56 @@ func (pme *ConsumerMetricsManager) SetProviderSelected(chainId string, selectedP
 		pme.providerStakeScoreGauge.WithLabelValues(chainId, scores.ProviderAddress).Set(scores.Stake)
 		pme.providerCompositeScoreGauge.WithLabelValues(chainId, scores.ProviderAddress).Set(scores.Composite)
 
-		if scores.ProviderAddress == selectedProvider {
+		if scores.ProviderAddress == providerAddress {
 			selectedQoSScore = scores.Composite
+			foundSelectedProvider = true
+		}
+	}
+
+	// If selected provider wasn't in the scores list, log for debugging
+	if !foundSelectedProvider && len(allProviderScores) > 0 {
+		// Collect addresses in scores for comparison
+		scoreAddresses := make([]string, 0, len(allProviderScores))
+		for _, s := range allProviderScores {
+			scoreAddresses = append(scoreAddresses, s.ProviderAddress)
+		}
+		utils.LavaFormatWarning("Selected provider not found in scores list",
+			nil,
+			utils.LogAttr("selectedProvider", providerAddress),
+			utils.LogAttr("scoreAddresses", scoreAddresses),
+			utils.LogAttr("numScores", len(allProviderScores)),
+			utils.LogAttr("chainId", chainId),
+		)
+	}
+	if len(allProviderScores) == 0 {
+		utils.LavaFormatWarning("Selection scores list empty for provider selection",
+			nil,
+			utils.LogAttr("provider", providerAddress),
+			utils.LogAttr("chainId", chainId),
+		)
+	}
+	if foundSelectedProvider && len(allProviderScores) > 0 {
+		if math.IsNaN(selectedQoSScore) || math.IsInf(selectedQoSScore, 0) {
+			utils.LavaFormatWarning("Selected provider composite score is invalid",
+				nil,
+				utils.LogAttr("provider", providerAddress),
+				utils.LogAttr("chainId", chainId),
+				utils.LogAttr("qosScore", selectedQoSScore),
+				utils.LogAttr("rngValue", rngValue),
+			)
+			selectedQoSScore = 0
+		} else if selectedQoSScore == 0 {
+			utils.LavaFormatWarning("Selected provider composite score is zero",
+				nil,
+				utils.LogAttr("provider", providerAddress),
+				utils.LogAttr("chainId", chainId),
+				utils.LogAttr("rngValue", rngValue),
+			)
 		}
 	}
 
 	// Forward to optimizer QoS client for additional tracking
-	pme.consumerOptimizerQoSClient.SetProviderSelected(selectedProvider, chainId, selectedQoSScore, rngValue)
+	pme.consumerOptimizerQoSClient.SetProviderSelected(providerAddress, chainId, selectedQoSScore, rngValue)
 }
 
 func (pme *ConsumerMetricsManager) SetWsSubscriptionRequestMetric(chainId string, apiInterface string) {
