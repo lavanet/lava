@@ -401,7 +401,8 @@ func (po *ProviderOptimizer) ChooseProviderWithStats(allAddresses []string, igno
 
 	utils.LavaFormatTrace("[Optimizer] returned providers",
 		utils.LogAttr("providers", strings.Join(returnedProviders, ",")),
-		utils.LogAttr("selectedScore", getProviderScore(selectedProvider, providerScores)),
+		utils.LogAttr("selectedWeight", getProviderSelectionWeight(selectedProvider, providerScores)),
+		utils.LogAttr("selectedCompositeScore", getProviderCompositeScore(selectedProvider, providerScores)),
 		utils.LogAttr("numScores", len(providerScores)),
 		utils.LogAttr("requestedBlock", requestedBlock),
 	)
@@ -410,7 +411,16 @@ func (po *ProviderOptimizer) ChooseProviderWithStats(allAddresses []string, igno
 }
 
 // getProviderScore is a helper function to find a provider's score in the scores list
-func getProviderScore(address string, scores []ProviderScore) float64 {
+func getProviderSelectionWeight(address string, scores []ProviderScore) float64 {
+	for _, ps := range scores {
+		if ps.Address == address {
+			return ps.SelectionWeight
+		}
+	}
+	return 0.0
+}
+
+func getProviderCompositeScore(address string, scores []ProviderScore) float64 {
 	for _, ps := range scores {
 		if ps.Address == address {
 			return ps.CompositeScore
@@ -468,7 +478,8 @@ func (po *ProviderOptimizer) ChooseBestProviderWithStats(allAddresses []string, 
 
 	utils.LavaFormatTrace("[Optimizer] returned provider",
 		utils.LogAttr("provider", selectedProvider),
-		utils.LogAttr("score", getProviderScore(selectedProvider, providerScores)),
+		utils.LogAttr("selectedWeight", getProviderSelectionWeight(selectedProvider, providerScores)),
+		utils.LogAttr("selectedCompositeScore", getProviderCompositeScore(selectedProvider, providerScores)),
 		utils.LogAttr("numCandidates", len(providerScores)),
 		utils.LogAttr("requestedBlock", requestedBlock),
 	)
