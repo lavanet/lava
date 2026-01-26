@@ -24,8 +24,9 @@ import (
 // DirectRPCRelaySender handles sending relay requests directly to RPC endpoints
 // (bypassing the Lava provider-relay protocol)
 type DirectRPCRelaySender struct {
-	directConnection lavasession.DirectRPCConnection
-	endpointName     string // Sanitized endpoint name (no API keys)
+	directConnection    lavasession.DirectRPCConnection
+	endpointName        string // Sanitized endpoint name (no API keys)
+	originalRequestData []byte // Original request bytes (for batch support)
 }
 
 // extractBlockHeightFromJSONResponse extracts block height using spec-driven parsing.
@@ -238,12 +239,19 @@ func (d *DirectRPCRelaySender) sendJSONRPCRelay(
 	requestCtx, cancel := nodeUrl.LowerContextTimeoutWithDuration(ctx, relayTimeout)
 	defer cancel()
 
-	// STEP 1: Get the RPC message and marshal to JSON bytes
-	// The chainMessage already contains the parsed and validated request
-	rpcMessage := chainMessage.GetRPCMessage()
-	requestData, err := json.Marshal(rpcMessage)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal RPC message: %w", err)
+	// STEP 1: Use original request bytes (supports batch requests)
+	// For batch requests, we MUST use the original JSON because JsonrpcBatchMessage
+	// has a non-exported 'batch' field that cannot be marshaled.
+	// This approach works for both single and batch requests.
+	requestData := d.originalRequestData
+	if len(requestData) == 0 {
+		// Fallback: marshal the RPC message (should not happen in normal flow)
+		rpcMessage := chainMessage.GetRPCMessage()
+		var err error
+		requestData, err = json.Marshal(rpcMessage)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal RPC message: %w", err)
+		}
 	}
 
 	// Use sanitized endpoint identifier for logging (no API keys)
@@ -271,7 +279,7 @@ func (d *DirectRPCRelaySender) sendJSONRPCRelay(
 		Method:      "POST",
 		URL:         nodeUrl.Url,
 		Body:        requestData,
-		Headers:     rpcMessage.GetHeaders(), // Preserves duplicates, empty value = delete
+		Headers:     chainMessage.GetRPCMessage().GetHeaders(), // Preserves duplicates, empty value = delete
 		ContentType: "application/json",
 	}
 
@@ -388,8 +396,7 @@ func (d *DirectRPCRelaySender) sendRESTRelay(
 	}
 
 	// Extract headers as Metadata (preserves delete semantics)
-	var headers []pairingtypes.Metadata
-	headers = restMessage.GetHeaders()
+	headers := restMessage.GetHeaders()
 
 	// Robust URL joining
 	baseURL := d.directConnection.GetURL()
@@ -553,7 +560,7 @@ func (d *DirectRPCRelaySender) sendGRPCRelay(
 			// The response.Data contains the error details in JSON format
 			return &common.RelayResult{
 				Reply: &pairingtypes.RelayReply{
-					Data:     response.Data,                                  // Error response in JSON format
+					Data:     response.Data,                                   // Error response in JSON format
 					Metadata: convertHTTPHeadersToMetadata(response.Metadata), // Include metadata even for errors
 				},
 				Finalized: true,
