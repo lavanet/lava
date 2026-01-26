@@ -43,21 +43,21 @@ const (
 
 // implements Relay Sender interfaced and uses an ChainListener to get it called
 type RPCSmartRouterServer struct {
-	chainParser                    chainlib.ChainParser
-	chainTracker                   chaintracker.IChainTracker
-	sessionManager                 *lavasession.ConsumerSessionManager
-	listenEndpoint                 *lavasession.RPCEndpoint
-	rpcSmartRouterLogs             *metrics.RPCConsumerLogs
-	cache                          *performance.Cache
-	smartRouterConsistency         relaycore.Consistency
-	sharedState                    bool // using the cache backend to sync the latest seen block
-	relaysMonitor                  *metrics.RelaysMonitor
-	debugRelays                    bool
-	chainListener                  chainlib.ChainListener
-	relayRetriesManager            *lavaprotocol.RelayRetriesManager
-	initialized                    atomic.Bool
-	latestBlockHeight              atomic.Uint64
-	latestBlockEstimator           *relaycore.LatestBlockEstimator
+	chainParser            chainlib.ChainParser
+	chainTracker           chaintracker.IChainTracker
+	sessionManager         *lavasession.ConsumerSessionManager
+	listenEndpoint         *lavasession.RPCEndpoint
+	rpcSmartRouterLogs     *metrics.RPCConsumerLogs
+	cache                  *performance.Cache
+	smartRouterConsistency relaycore.Consistency
+	sharedState            bool // using the cache backend to sync the latest seen block
+	relaysMonitor          *metrics.RelaysMonitor
+	debugRelays            bool
+	chainListener          chainlib.ChainListener
+	relayRetriesManager    *lavaprotocol.RelayRetriesManager
+	initialized            atomic.Bool
+	latestBlockHeight      atomic.Uint64
+	latestBlockEstimator   *relaycore.LatestBlockEstimator
 
 	// gRPC streaming subscription manager (nil if not configured)
 	grpcSubscriptionManager *DirectGRPCSubscriptionManager
@@ -730,6 +730,9 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 ) error {
 	chainMessage := protocolMessage
 
+	// Extract original request bytes (for batch support - we need to forward the original JSON)
+	originalRequestData := protocolMessage.RelayPrivateData().Data
+
 	// Get relay timeout
 	_, averageBlockTime, _, _ := rpcss.chainParser.ChainBlockStats()
 	relayTimeout := chainlib.GetRelayTimeout(protocolMessage, averageBlockTime)
@@ -780,6 +783,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 				localRelayResult,
 				relayTimeout,
 				chainMessage,
+				originalRequestData,
 				analytics,
 			)
 
@@ -1205,6 +1209,7 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 	relayResult *common.RelayResult,
 	relayTimeout time.Duration,
 	chainMessage chainlib.ChainMessage,
+	originalRequestData []byte,
 	analytics *metrics.RelayMetrics,
 ) (relayLatency time.Duration, err error, needsBackoff bool) {
 	// Get direct connection from session
@@ -1244,8 +1249,9 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 	// Use provider name (configured name) instead of raw URL to avoid leaking API keys
 	endpointName := singleConsumerSession.Parent.PublicLavaAddress
 	directSender := &DirectRPCRelaySender{
-		directConnection: directConnection,
-		endpointName:     endpointName,
+		directConnection:    directConnection,
+		endpointName:        endpointName,
+		originalRequestData: originalRequestData,
 	}
 
 	// Add metric for processing latency (compatible with existing metrics)
@@ -1377,7 +1383,6 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 
 	return relayLatency, nil, false
 }
-
 
 func (rpcss *RPCSmartRouterServer) getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
 	_, averageBlockTime, _, _ := rpcss.chainParser.ChainBlockStats()
