@@ -27,6 +27,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"google.golang.org/grpc"
+	grpcmetadata "google.golang.org/grpc/metadata"
 )
 
 const (
@@ -370,6 +371,12 @@ func (rpcss *RPCSmartRouterServer) SendRelay(
 	analytics *metrics.RelayMetrics,
 	metadata []pairingtypes.Metadata,
 ) (relayResult *common.RelayResult, errRet error) {
+	// Inject client IP into context so IP forwarding (X-Forwarded-For) works when using HTTP listener.
+	// GetIpFromGrpcContext reads from gRPC peer or from incoming metadata.
+	if consumerIp != "" {
+		md := grpcmetadata.Pairs(common.IP_FORWARDING_HEADER_NAME, consumerIp)
+		ctx = grpcmetadata.NewIncomingContext(ctx, md)
+	}
 	protocolMessage, err := rpcss.ParseRelay(ctx, url, req, connectionType, dappID, consumerIp, metadata)
 	if err != nil {
 		return nil, err
@@ -745,7 +752,8 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 	// Launch goroutines for each direct RPC endpoint (parallel relay pattern)
 	for endpointAddress, sessionInfo := range sessions {
 		go func(endpointAddress string, sessionInfo *lavasession.SessionInfo) {
-			goroutineCtx, goroutineCtxCancel := context.WithCancel(context.Background())
+			// Derive from ctx so IP forwarding metadata (and other values) are preserved.
+			goroutineCtx, goroutineCtxCancel := context.WithCancel(ctx)
 
 			guid, found := utils.GetUniqueIdentifier(ctx)
 			if found {
@@ -1770,7 +1778,12 @@ func (rpcss *RPCSmartRouterServer) RoundTrip(req *http.Request) (*http.Response,
 	if err != nil {
 		return nil, err
 	}
-	relayResult, err := rpcss.SendRelay(ctx, url, data, connectionType, "", "", nil, metadata)
+	// Use client IP for IP forwarding when available (Raw HTTP transport has no consumerIp param)
+	consumerIp := req.RemoteAddr
+	if h := req.Header.Get(common.IP_FORWARDING_HEADER_NAME); h != "" {
+		consumerIp = h
+	}
+	relayResult, err := rpcss.SendRelay(ctx, url, data, connectionType, "", consumerIp, nil, metadata)
 	if err != nil {
 		return nil, err
 	}
