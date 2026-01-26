@@ -71,6 +71,7 @@ config/consumer_examples/lava_consumer_static_peers.yml \
 --allow-insecure-provider-dialing \
 --use-static-spec $SPECS_DIR \
 --enable-selection-stats \
+--optimizer-qos-listen :7779 \
 --metrics-listen-address ':7779' 2>&1 | tee $LOGS_DIR/CONSUMER.log" && sleep 0.25
 
 echo "--- setting up screens done ---"
@@ -85,6 +86,8 @@ echo "Provider 1: $PROVIDER1_LISTENER (non-archive, fully standalone)"
 echo "Provider 2: $PROVIDER2_LISTENER (non-archive, fully standalone)"
 echo "Provider 3: $PROVIDER3_LISTENER (archive, fully standalone)"
 echo "Consumer:   rpcsmartrouter (fully standalone, cache-enabled)"
+echo ""
+echo "Optimizer QoS Metrics: http://localhost:7779/provider_optimizer_metrics"
 echo ""
 echo "All components disconnected from Lava blockchain!"
 echo "Using static specs: specs/mainnet-1/specs/"
