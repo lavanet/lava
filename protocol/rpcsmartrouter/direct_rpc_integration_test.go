@@ -134,6 +134,72 @@ func TestDirectRPCRelaySender_SendDirectRelay_ServerError(t *testing.T) {
 	assert.Contains(t, err.Error(), "service unavailable")
 }
 
+func TestDirectRPCRelaySender_SendDirectRelay_BatchRequest(t *testing.T) {
+	// Create mock JSON-RPC server that handles batch requests
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Verify request format
+		assert.Equal(t, "POST", r.Method)
+		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+
+		// Read and verify incoming request is a valid batch (JSON array)
+		body := make([]byte, r.ContentLength)
+		r.Body.Read(body)
+
+		// Verify it's a JSON array (batch request starts with '[')
+		assert.Equal(t, byte('['), body[0], "Batch request should start with '['")
+
+		// Return mock batch JSON-RPC response (array of results)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`[
+			{"jsonrpc":"2.0","id":1,"result":"0x12a7b5c"},
+			{"jsonrpc":"2.0","id":2,"result":"0x2fe3f504c5cf346076d"}
+		]`))
+	}))
+	defer mockServer.Close()
+
+	// Create direct RPC connection
+	ctx := context.Background()
+	nodeUrl := common.NodeUrl{Url: mockServer.URL}
+
+	directConn, err := lavasession.NewDirectRPCConnection(ctx, nodeUrl, 5, "")
+	require.NoError(t, err)
+	require.NotNil(t, directConn)
+
+	// Batch request JSON (array of two requests)
+	batchRequestJSON := []byte(`[
+		{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1},
+		{"jsonrpc":"2.0","method":"eth_getBalance","params":["0x0000000000000000000000000000000000000000","latest"],"id":2}
+	]`)
+
+	// Create DirectRPCRelaySender with original request data (critical for batch support)
+	sender := &DirectRPCRelaySender{
+		directConnection:    directConn,
+		endpointName:        "test-batch-endpoint",
+		originalRequestData: batchRequestJSON, // This preserves the batch request
+	}
+
+	// Create mock batch chain message
+	chainMessage := createMockBatchChainMessage(t, batchRequestJSON)
+
+	// Send relay
+	result, err := sender.SendDirectRelay(ctx, chainMessage, 5*time.Second)
+
+	// Verify results
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.NotNil(t, result.Reply)
+	assert.NotNil(t, result.Reply.Data)
+	assert.True(t, result.Finalized)
+	assert.Equal(t, 200, result.StatusCode)
+
+	// Verify response data is a batch response (contains both results)
+	responseStr := string(result.Reply.Data)
+	assert.Contains(t, responseStr, "0x12a7b5c", "Should contain eth_blockNumber result")
+	assert.Contains(t, responseStr, "0x2fe3f504c5cf346076d", "Should contain eth_getBalance result")
+	assert.Equal(t, byte('['), result.Reply.Data[0], "Batch response should start with '['")
+}
+
 func TestDirectRPCSession_IsDirectRPC(t *testing.T) {
 	// This test verifies that IsDirectRPC() correctly identifies direct RPC sessions
 
@@ -196,6 +262,19 @@ func createMockChainMessage(t *testing.T, requestData string) chainlib.ChainMess
 	// In real integration tests, use chainlib.CreateChainLibMocks
 	return &mockChainMessage{
 		requestData: []byte(requestData),
+	}
+}
+
+// createMockBatchChainMessage creates a mock ChainMessage for batch requests
+func createMockBatchChainMessage(t *testing.T, requestData []byte) chainlib.ChainMessage {
+	t.Helper()
+
+	// Return a mock chain message with batch API name
+	return &mockChainMessage{
+		requestData: requestData,
+		api: &spectypes.Api{
+			Name: "eth_blockNumber&eth_getBalance", // Batch request combined API name
+		},
 	}
 }
 
