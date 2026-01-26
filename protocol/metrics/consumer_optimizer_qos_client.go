@@ -35,60 +35,73 @@ type ConsumerOptimizerQoSClient struct {
 	queueSender      *QueueSender
 	optimizers       map[string]OptimizerInf // keys are chain ids
 	// keys are chain ids, values are maps with provider addresses as keys
-	chainIdToProviderToRelaysCount      map[string]map[string]uint64
-	chainIdToProviderToNodeErrorsCount  map[string]map[string]uint64
-	chainIdToProviderToSelectionCount    map[string]map[string]uint64  // tracks how many times each provider was selected
-	chainIdToProviderToQoSScoreSum       map[string]map[string]float64 // sum of QoS scores at selection time for averaging
-	chainIdToProviderToLastRNGValue      map[string]map[string]float64 // last RNG value used for selection
-	chainIdToProviderToEpochToStake      map[string]map[string]map[uint64]int64 // third key is epoch
-	chainIdToTotalSelections             map[string]uint64                      // total selections per chain for calculating selection rate
-	currentEpoch                        atomic.Uint64
-	lock                                sync.RWMutex
-	reportsToSend                       []OptimizerQoSReportToSend
-	geoLocation                         uint64
+	chainIdToProviderToRelaysCount     map[string]map[string]uint64
+	chainIdToProviderToNodeErrorsCount map[string]map[string]uint64
+	chainIdToProviderToSelectionCount  map[string]map[string]uint64           // tracks how many times each provider was selected
+	chainIdToProviderToQoSScoreSum     map[string]map[string]float64          // sum of QoS scores at selection time for averaging
+	chainIdToProviderToLastRNGValue    map[string]map[string]float64          // last RNG value used for selection
+	chainIdToProviderToEpochToStake    map[string]map[string]map[uint64]int64 // third key is epoch
+	chainIdToTotalSelections           map[string]uint64                      // total selections per chain for calculating selection rate
+	currentEpoch                       atomic.Uint64
+	lock                               sync.RWMutex
+	reportsToSend                      []OptimizerQoSReportToSend
+	geoLocation                        uint64
 }
 
 type OptimizerQoSReport struct {
-	ProviderAddress   string
-	SyncScore         float64
-	AvailabilityScore float64
-	LatencyScore      float64
-	GenericScore      float64
-	EntryIndex        int
-	// Selection stats - detailed scores used for provider selection
-	SelectionAvailability float64 // Normalized availability score (0-1)
-	SelectionLatency      float64 // Normalized latency score (0-1)
-	SelectionSync         float64 // Normalized sync score (0-1)
-	SelectionStake        float64 // Normalized stake score (0-1)
-	SelectionComposite    float64 // Combined QoS score (0-1)
+	ProviderAddress string
+	// Legacy fields - Raw EWMA values from score stores (NOT normalized for WRS)
+	SyncScore         float64 // Raw sync lag in seconds from EWMA (lower is better)
+	AvailabilityScore float64 // Raw availability from EWMA (0-1, higher is better)
+	LatencyScore      float64 // Raw latency in seconds from EWMA (lower is better)
+	GenericScore      float64 // Old composite score (deprecated, use SelectionComposite)
+	EntryIndex        int     // Index in provider list
+	// WRS normalized scores - Used in weighted random selection algorithm (0-1, higher is better)
+	SelectionAvailability float64 // Normalized availability after Phase 1 rescaling
+	SelectionLatency      float64 // Normalized latency after Phase 2 P10-P90
+	SelectionSync         float64 // Normalized sync after Phase 2 P10-P90
+	SelectionStake        float64 // Normalized stake after square root scaling
+	SelectionComposite    float64 // Final composite score used for selection
+	// Weighted contributions - How much each parameter contributes to SelectionComposite
+	AvailabilityContribution float64 // SelectionAvailability × availability_weight
+	LatencyContribution      float64 // SelectionLatency × latency_weight
+	SyncContribution         float64 // SelectionSync × sync_weight
+	StakeContribution        float64 // SelectionStake × stake_weight
 }
 
 type OptimizerQoSReportToSend struct {
-	Timestamp         time.Time `json:"timestamp"`
-	SyncScore         float64   `json:"sync_score"`
-	AvailabilityScore float64   `json:"availability_score"`
-	LatencyScore      float64   `json:"latency_score"`
-	GenericScore      float64   `json:"generic_score"`
-	ProviderAddress   string    `json:"provider"`
-	ConsumerHostname  string    `json:"consumer_hostname"`
-	ConsumerAddress   string    `json:"consumer_pub_address"`
-	ChainId           string    `json:"chain_id"`
-	NodeErrorRate     float64   `json:"node_error_rate"`
-	Epoch             uint64    `json:"epoch"`
-	ProviderStake     int64     `json:"provider_stake"`
-	EntryIndex        int       `json:"entry_index"`
-	GeoLocation       uint64    `json:"geo_location"`
-	// Selection stats - detailed scores used for provider selection
-	SelectionAvailability float64 `json:"selection_availability"` // Normalized availability score (0-1)
-	SelectionLatency      float64 `json:"selection_latency"`      // Normalized latency score (0-1)
-	SelectionSync         float64 `json:"selection_sync"`         // Normalized sync score (0-1)
-	SelectionStake        float64 `json:"selection_stake"`        // Normalized stake score (0-1)
-	SelectionComposite    float64 `json:"selection_composite"`    // Combined QoS score (0-1)
+	Timestamp time.Time `json:"timestamp"`
+	// Legacy fields - Raw EWMA values from score stores (NOT normalized for WRS)
+	SyncScore         float64 `json:"sync_score"`         // Raw sync lag in seconds from EWMA (lower is better)
+	AvailabilityScore float64 `json:"availability_score"` // Raw availability from EWMA (0-1, higher is better)
+	LatencyScore      float64 `json:"latency_score"`      // Raw latency in seconds from EWMA (lower is better)
+	GenericScore      float64 `json:"generic_score"`      // Old composite score (deprecated, use selection_composite)
+	// Provider metadata
+	ProviderAddress  string  `json:"provider"`
+	ConsumerHostname string  `json:"consumer_hostname"`
+	ConsumerAddress  string  `json:"consumer_pub_address"`
+	ChainId          string  `json:"chain_id"`
+	NodeErrorRate    float64 `json:"node_error_rate"`
+	Epoch            uint64  `json:"epoch"`
+	ProviderStake    int64   `json:"provider_stake"`
+	EntryIndex       int     `json:"entry_index"`
+	GeoLocation      uint64  `json:"geo_location"`
+	// WRS normalized scores - Used in weighted random selection algorithm (0-1, higher is better)
+	SelectionAvailability float64 `json:"selection_availability"` // Normalized availability after Phase 1 rescaling
+	SelectionLatency      float64 `json:"selection_latency"`      // Normalized latency after Phase 2 P10-P90
+	SelectionSync         float64 `json:"selection_sync"`         // Normalized sync after Phase 2 P10-P90
+	SelectionStake        float64 `json:"selection_stake"`        // Normalized stake after square root scaling
+	SelectionComposite    float64 `json:"selection_composite"`    // Final composite score used for selection
 	// Provider selection tracking
-	SelectionCount       uint64  `json:"selection_count"`        // Number of times this provider was selected
-	SelectionRate        float64 `json:"selection_rate"`         // Percentage of total selections (0-1)
-	SelectionQoSScore    float64 `json:"selection_qos_score"`    // Average QoS score at time of selection (0-1)
-	SelectionRNGValue    float64 `json:"selection_rng_value"`    // Last RNG value used for selecting this provider
+	SelectionCount    uint64  `json:"selection_count"`     // Number of times this provider was selected
+	SelectionRate     float64 `json:"selection_rate"`      // Percentage of total selections (0-1)
+	SelectionQoSScore float64 `json:"selection_qos_score"` // Average QoS score at time of selection (0-1)
+	SelectionRNGValue float64 `json:"selection_rng_value"` // Last RNG value used for selecting this provider
+	// Weighted contributions - How much each parameter contributes to selection_composite
+	AvailabilityContribution float64 `json:"availability_contribution"` // selection_availability × availability_weight
+	LatencyContribution      float64 `json:"latency_contribution"`      // selection_latency × latency_weight
+	SyncContribution         float64 `json:"sync_contribution"`         // selection_sync × sync_weight
+	StakeContribution        float64 `json:"stake_contribution"`        // selection_stake × stake_weight
 }
 
 func (oqosr OptimizerQoSReportToSend) String() string {
@@ -110,18 +123,18 @@ func NewConsumerOptimizerQoSClient(consumerAddress, endpointAddress string, geoL
 		hostname = "unknown" + strconv.FormatUint(rand.Uint64(), 10) // random seed for different unknowns
 	}
 	return &ConsumerOptimizerQoSClient{
-		consumerHostname:                     hostname,
-		consumerAddress:                      consumerAddress,
-		queueSender:                          NewQueueSender(endpointAddress, "ConsumerOptimizerQoS", nil, interval...),
-		optimizers:                           map[string]OptimizerInf{},
-		chainIdToProviderToRelaysCount:       map[string]map[string]uint64{},
-		chainIdToProviderToNodeErrorsCount:   map[string]map[string]uint64{},
-		chainIdToProviderToSelectionCount:    map[string]map[string]uint64{},
-		chainIdToProviderToQoSScoreSum:       map[string]map[string]float64{},
-		chainIdToProviderToLastRNGValue:      map[string]map[string]float64{},
-		chainIdToProviderToEpochToStake:      map[string]map[string]map[uint64]int64{},
-		chainIdToTotalSelections:             map[string]uint64{},
-		geoLocation:                          geoLocation,
+		consumerHostname:                   hostname,
+		consumerAddress:                    consumerAddress,
+		queueSender:                        NewQueueSender(endpointAddress, "ConsumerOptimizerQoS", nil, interval...),
+		optimizers:                         map[string]OptimizerInf{},
+		chainIdToProviderToRelaysCount:     map[string]map[string]uint64{},
+		chainIdToProviderToNodeErrorsCount: map[string]map[string]uint64{},
+		chainIdToProviderToSelectionCount:  map[string]map[string]uint64{},
+		chainIdToProviderToQoSScoreSum:     map[string]map[string]float64{},
+		chainIdToProviderToLastRNGValue:    map[string]map[string]float64{},
+		chainIdToProviderToEpochToStake:    map[string]map[string]map[uint64]int64{},
+		chainIdToTotalSelections:           map[string]uint64{},
+		geoLocation:                        geoLocation,
 	}
 }
 
@@ -222,7 +235,7 @@ func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report *Optimiz
 		NodeErrorRate:     sanitizeFloat(coqc.calculateNodeErrorRate(chainId, report.ProviderAddress)),
 		ProviderStake:     coqc.getProviderChainStake(chainId, report.ProviderAddress, epoch),
 		GeoLocation:       coqc.geoLocation,
-		// Add selection stats
+		// WRS normalized scores
 		SelectionAvailability: sanitizeFloat(report.SelectionAvailability),
 		SelectionLatency:      sanitizeFloat(report.SelectionLatency),
 		SelectionSync:         sanitizeFloat(report.SelectionSync),
@@ -233,6 +246,11 @@ func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report *Optimiz
 		SelectionRate:     sanitizeFloat(coqc.calculateSelectionRate(chainId, report.ProviderAddress)),
 		SelectionQoSScore: sanitizeFloat(coqc.calculateAverageSelectionQoSScore(chainId, report.ProviderAddress)),
 		SelectionRNGValue: sanitizeFloat(coqc.getLastRNGValue(chainId, report.ProviderAddress)),
+		// Weighted contributions
+		AvailabilityContribution: sanitizeFloat(report.AvailabilityContribution),
+		LatencyContribution:      sanitizeFloat(report.LatencyContribution),
+		SyncContribution:         sanitizeFloat(report.SyncContribution),
+		StakeContribution:        sanitizeFloat(report.StakeContribution),
 	}
 
 	coqc.queueSender.appendQueue(optimizerQoSReportToSend)

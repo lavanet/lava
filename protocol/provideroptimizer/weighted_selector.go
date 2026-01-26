@@ -214,6 +214,7 @@ func (ws *WeightedSelector) CalculateScore(
 	qos *pairingtypes.QualityOfServiceReport,
 	stake sdk.Coin,
 	totalStake sdk.Coin,
+	providerAddress string,
 ) float64 {
 	// Extract individual scores from QoS report:
 	// - availability is in [0,1] (higher is better)
@@ -253,8 +254,16 @@ func (ws *WeightedSelector) CalculateScore(
 		syncScore*ws.syncWeight +
 		stakeScore*ws.stakeWeight
 
+	// Calculate weighted contributions for logging
+	availabilityContribution := availabilityScore * ws.availabilityWeight
+	latencyContribution := latencyScore * ws.latencyWeight
+	syncContribution := syncScore * ws.syncWeight
+	stakeContribution := stakeScore * ws.stakeWeight
+
 	// Ensure minimum selection chance
+	wasAdjusted := false
 	if composite < ws.minSelectionChance {
+		wasAdjusted = true
 		composite = ws.minSelectionChance
 	}
 
@@ -262,6 +271,29 @@ func (ws *WeightedSelector) CalculateScore(
 	if composite > 1.0 {
 		composite = 1.0
 	}
+
+	// Log comprehensive score breakdown for analysis
+	utils.LavaFormatDebug("Provider score calculation breakdown",
+		utils.LogAttr("provider", providerAddress),
+		utils.LogAttr("raw_availability", availability),
+		utils.LogAttr("raw_latency_sec", latency),
+		utils.LogAttr("raw_sync_sec", sync),
+		utils.LogAttr("raw_stake", stake.String()),
+		utils.LogAttr("normalized_availability", availabilityScore),
+		utils.LogAttr("normalized_latency", latencyScore),
+		utils.LogAttr("normalized_sync", syncScore),
+		utils.LogAttr("normalized_stake", stakeScore),
+		utils.LogAttr("availability_weight", ws.availabilityWeight),
+		utils.LogAttr("latency_weight", ws.latencyWeight),
+		utils.LogAttr("sync_weight", ws.syncWeight),
+		utils.LogAttr("stake_weight", ws.stakeWeight),
+		utils.LogAttr("availability_contribution", availabilityContribution),
+		utils.LogAttr("latency_contribution", latencyContribution),
+		utils.LogAttr("sync_contribution", syncContribution),
+		utils.LogAttr("stake_contribution", stakeContribution),
+		utils.LogAttr("composite_score", composite),
+		utils.LogAttr("min_chance_adjusted", wasAdjusted),
+	)
 
 	return composite
 }
@@ -640,12 +672,46 @@ func (ws *WeightedSelector) SelectProviderWithStats(
 	for _, ps := range providerScores {
 		cumulativeScore += ps.SelectionWeight
 		if randomValue <= cumulativeScore {
-			utils.LavaFormatTrace("[WeightedSelector] selected provider",
-				utils.LogAttr("address", ps.Address),
-				utils.LogAttr("score", ps.SelectionWeight),
-				utils.LogAttr("totalScore", totalScore),
-				utils.LogAttr("randomValue", randomValue),
-			)
+			// Calculate selection probability for each provider
+			selectionProbabilities := make(map[string]float64)
+			for _, p := range providerScores {
+				selectionProbabilities[p.Address] = (p.SelectionWeight / totalScore) * 100.0
+			}
+
+			// Log comprehensive selection summary
+			logAttrs := []utils.Attribute{
+				utils.LogAttr("selected_provider", ps.Address),
+				utils.LogAttr("selected_score", ps.SelectionWeight),
+				utils.LogAttr("selected_probability_pct", selectionProbabilities[ps.Address]),
+				utils.LogAttr("total_score", totalScore),
+				utils.LogAttr("random_value", randomValue),
+				utils.LogAttr("num_candidates", len(providerScores)),
+			}
+
+			// Add all candidates' scores and probabilities with parameter breakdown
+			for i, p := range providerScores {
+				prefix := fmt.Sprintf("candidate_%d", i+1)
+				logAttrs = append(logAttrs,
+					utils.LogAttr(prefix+"_provider", p.Address),
+					utils.LogAttr(prefix+"_score", p.SelectionWeight),
+					utils.LogAttr(prefix+"_probability_pct", selectionProbabilities[p.Address]),
+				)
+
+				// Add parameter breakdown if available
+				if i < len(scoreDetails) {
+					detail := scoreDetails[i]
+					logAttrs = append(logAttrs,
+						utils.LogAttr(prefix+"_availability", detail.Availability),
+						utils.LogAttr(prefix+"_latency", detail.Latency),
+						utils.LogAttr(prefix+"_sync", detail.Sync),
+						utils.LogAttr(prefix+"_stake", detail.Stake),
+						utils.LogAttr(prefix+"_composite", detail.Composite),
+					)
+				}
+			}
+
+			utils.LavaFormatDebug("Provider selection completed", logAttrs...)
+
 			stats := &SelectionStats{
 				ProviderScores:   scoreDetails,
 				RNGValue:         randomValue,
@@ -719,7 +785,7 @@ func (ws *WeightedSelector) CalculateProviderScores(
 		stakeScore := ws.normalizeStake(stakeCoin, totalStakeCoin)
 
 		// Calculate composite score
-		compositeScore := ws.CalculateScore(qos, stakeCoin, totalStakeCoin)
+		compositeScore := ws.CalculateScore(qos, stakeCoin, totalStakeCoin, providerAddress)
 
 		providerScore := ProviderScore{
 			Address:         providerAddress,
@@ -741,16 +807,21 @@ func (ws *WeightedSelector) CalculateProviderScores(
 		// Create QoS report for metrics
 		qosReports[providerAddress] = &metrics.OptimizerQoSReport{
 			ProviderAddress:   providerAddress,
-			SyncScore:         sync,
-			AvailabilityScore: availability,
-			LatencyScore:      latency,
+			SyncScore:         sync,         // Raw EWMA sync lag (seconds)
+			AvailabilityScore: availability, // Raw EWMA availability (0-1)
+			LatencyScore:      latency,      // Raw EWMA latency (seconds)
 			GenericScore:      compositeScore,
-			// Add selection stats - normalized scores used in selection algorithm
+			// WRS normalized scores used for selection
 			SelectionAvailability: availabilityScore,
 			SelectionLatency:      latencyScore,
 			SelectionSync:         syncScore,
 			SelectionStake:        stakeScore,
 			SelectionComposite:    compositeScore,
+			// Weighted contributions
+			AvailabilityContribution: availabilityScore * ws.availabilityWeight,
+			LatencyContribution:      latencyScore * ws.latencyWeight,
+			SyncContribution:         syncScore * ws.syncWeight,
+			StakeContribution:        stakeScore * ws.stakeWeight,
 		}
 
 		utils.LavaFormatTrace("[WeightedSelector] calculated provider score",
