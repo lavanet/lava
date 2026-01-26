@@ -464,6 +464,11 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
+		if consumerMetricsManager.consumerOptimizerQoSClient == nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte("[]"))
+			return
+		}
 		reports := consumerMetricsManager.consumerOptimizerQoSClient.GetReportsToSend()
 		jsonData, err := json.Marshal(reports)
 		if err != nil {

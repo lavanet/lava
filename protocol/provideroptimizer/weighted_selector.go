@@ -378,7 +378,7 @@ func (ws *WeightedSelector) normalizeLatency(latency float64) float64 {
 		p10, p90 := ws.adaptiveLatencyGetter()
 
 		// Validate adaptive bounds
-		if p10 <= 0 || p90 <= 0 || p90 <= p10 {
+		if math.IsNaN(p10) || math.IsNaN(p90) || math.IsInf(p10, 0) || math.IsInf(p90, 0) || p10 <= 0 || p90 <= 0 || p90 <= p10 {
 			// Invalid bounds, fallback to Phase 1
 			utils.LavaFormatWarning("invalid adaptive latency bounds, falling back to fixed max",
 				nil,
@@ -473,7 +473,7 @@ func (ws *WeightedSelector) normalizeSync(syncLag float64) float64 {
 		p10, p90 := ws.adaptiveSyncGetter()
 
 		// Validate adaptive bounds
-		if p10 <= 0 || p90 <= 0 || p90 <= p10 {
+		if math.IsNaN(p10) || math.IsNaN(p90) || math.IsInf(p10, 0) || math.IsInf(p90, 0) || p10 <= 0 || p90 <= 0 || p90 <= p10 {
 			// Invalid bounds, fallback to Phase 1
 			utils.LavaFormatWarning("invalid adaptive sync bounds, falling back to fixed max",
 				nil,

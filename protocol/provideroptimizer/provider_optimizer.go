@@ -1,6 +1,7 @@
 package provideroptimizer
 
 import (
+	"math"
 	"strings"
 	"sync"
 	"time"
@@ -139,7 +140,16 @@ func (po *ProviderOptimizer) getAdaptiveLatencyBounds() (p10, p90 float64) {
 		return score.AdaptiveP10MinBound, score.DefaultLatencyAdaptiveMaxMax
 	}
 
-	return po.globalLatencyCalculator.GetAdaptiveBounds()
+	p10, p90 = po.globalLatencyCalculator.GetAdaptiveBounds()
+	if math.IsNaN(p10) || math.IsNaN(p90) || math.IsInf(p10, 0) || math.IsInf(p90, 0) || p10 <= 0 || p90 <= 0 || p90 <= p10 {
+		utils.LavaFormatWarning("invalid adaptive latency bounds, using defaults",
+			nil,
+			utils.LogAttr("p10", p10),
+			utils.LogAttr("p90", p90),
+		)
+		return score.AdaptiveP10MinBound, score.DefaultLatencyAdaptiveMaxMax
+	}
+	return p10, p90
 }
 
 // getAdaptiveSyncBounds returns the current P10 and P90 bounds for sync normalization
@@ -156,7 +166,16 @@ func (po *ProviderOptimizer) getAdaptiveSyncBounds() (p10, p90 float64) {
 		return score.AdaptiveSyncP10MinBound, score.DefaultSyncAdaptiveMaxMax
 	}
 
-	return po.globalSyncCalculator.GetAdaptiveBounds()
+	p10, p90 = po.globalSyncCalculator.GetAdaptiveBounds()
+	if math.IsNaN(p10) || math.IsNaN(p90) || math.IsInf(p10, 0) || math.IsInf(p90, 0) || p10 <= 0 || p90 <= 0 || p90 <= p10 {
+		utils.LavaFormatWarning("invalid adaptive sync bounds, using defaults",
+			nil,
+			utils.LogAttr("p10", p10),
+			utils.LogAttr("p90", p90),
+		)
+		return score.AdaptiveSyncP10MinBound, score.DefaultSyncAdaptiveMaxMax
+	}
+	return p10, p90
 }
 
 // UpdateWeights updates provider stake amounts in the cache and metrics
