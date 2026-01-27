@@ -12,6 +12,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
+	"github.com/lavanet/lava/v5/protocol/parser"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/protocopy"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
@@ -51,7 +52,6 @@ type ConsumerWSSubscriptionManager struct {
 	relaySender                        RelaySender
 	consumerSessionManager             *lavasession.ConsumerSessionManager
 	chainParser                        ChainParser
-	refererData                        *RefererData
 	connectionType                     string
 	activeSubscriptionProvidersStorage *lavasession.ActiveSubscriptionProvidersStorage
 	currentlyPendingSubscriptions      map[string]*pendingSubscriptionsBroadcastManager
@@ -62,7 +62,6 @@ type ConsumerWSSubscriptionManager struct {
 func NewConsumerWSSubscriptionManager(
 	consumerSessionManager *lavasession.ConsumerSessionManager,
 	relaySender RelaySender,
-	refererData *RefererData,
 	connectionType string,
 	chainParser ChainParser,
 	activeSubscriptionProvidersStorage *lavasession.ActiveSubscriptionProvidersStorage,
@@ -74,7 +73,6 @@ func NewConsumerWSSubscriptionManager(
 		currentlyPendingSubscriptions:      make(map[string]*pendingSubscriptionsBroadcastManager),
 		consumerSessionManager:             consumerSessionManager,
 		chainParser:                        chainParser,
-		refererData:                        refererData,
 		relaySender:                        relaySender,
 		connectionType:                     connectionType,
 		activeSubscriptionProvidersStorage: activeSubscriptionProvidersStorage,
@@ -362,7 +360,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 			utils.LogAttr("params", protocolMessage.GetRPCMessage().GetParams()),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			utils.LogAttr("dappKey", dappKey),
-			utils.LogAttr("reply", string(reply.Data)),
+			utils.LogAttr("reply", parser.CapStringLen(string(reply.Data))),
 		)
 	}
 
@@ -563,13 +561,23 @@ func (cwsm *ConsumerWSSubscriptionManager) verifySubscriptionMessage(hashedParam
 	lavaprotocol.UpdateRequestedBlock(request.RelayData, reply) // update relay request requestedBlock to the provided one in case it was arbitrary
 	filteredHeaders, _, ignoredHeaders := cwsm.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 	reply.Metadata = filteredHeaders
-	err := lavaprotocol.VerifyRelayReply(context.Background(), reply, request, providerAddr)
-	if err != nil {
-		return utils.LavaFormatError("Failed VerifyRelayReply on subscription message", err,
-			utils.LogAttr("subscriptionMsg", reply.Data),
-			utils.LogAttr("hashedParams", hashedParams),
-			utils.LogAttr("originalRequest", request),
-		)
+
+	// For static providers, skip signature verification (similar to regular RPC calls)
+	// Use the explicit flag from the session manager rather than heuristics based on address formatting.
+	isStaticProvider := false
+	if cwsm.consumerSessionManager != nil {
+		isStaticProvider = cwsm.consumerSessionManager.IsStaticProvider(providerAddr)
+	}
+
+	if !isStaticProvider {
+		err := lavaprotocol.VerifyRelayReply(context.Background(), reply, request, providerAddr)
+		if err != nil {
+			return utils.LavaFormatError("Failed VerifyRelayReply on subscription message", err,
+				utils.LogAttr("subscriptionMsg", reply.Data),
+				utils.LogAttr("hashedParams", hashedParams),
+				utils.LogAttr("originalRequest", request),
+			)
+		}
 	}
 
 	reply.Metadata = append(reply.Metadata, ignoredHeaders...)

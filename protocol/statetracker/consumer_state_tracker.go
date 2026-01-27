@@ -7,28 +7,18 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
-	"github.com/lavanet/lava/v5/protocol/common"
-	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationconsensus"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	updaters "github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/utils"
-	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
 	plantypes "github.com/lavanet/lava/v5/x/plans/types"
 	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
 )
-
-var DisableDR = false
-
-type ConsumerTxSenderInf interface {
-	TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict) error
-}
 
 // ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
 // it allows also to query specific data form the blockchain and acts as a single place to send transactions
 type ConsumerStateTracker struct {
 	StateQuery *updaters.ConsumerStateQuery
-	ConsumerTxSenderInf
 	*StateTracker
 	ConsumerEmergencyTrackerInf
 }
@@ -40,14 +30,9 @@ func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 	if err != nil {
 		return nil, err
 	}
-	txSender, err := NewConsumerTxSender(ctx, clientCtx, txFactory)
-	if err != nil {
-		return nil, err
-	}
 	cst := &ConsumerStateTracker{
 		StateTracker:                stateTrackerBase,
 		StateQuery:                  stateQuery,
-		ConsumerTxSenderInf:         txSender,
 		ConsumerEmergencyTrackerInf: emergencyTracker,
 	}
 
@@ -92,31 +77,6 @@ func (cst *ConsumerStateTracker) RegisterForPairingUpdates(ctx context.Context, 
 	if err != nil {
 		utils.LavaFormatError("failed registering updatable for pairing updates", err)
 	}
-}
-
-func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx context.Context, finalizationConsensus *finalizationconsensus.FinalizationConsensus, ignoreQueryErrors bool) {
-	finalizationConsensusUpdater := updaters.NewFinalizationConsensusUpdater(cst.StateQuery, finalizationConsensus.SpecId, ignoreQueryErrors)
-	finalizationConsensusUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, finalizationConsensusUpdater)
-	finalizationConsensusUpdater, ok := finalizationConsensusUpdaterRaw.(*updaters.FinalizationConsensusUpdater)
-	if !ok {
-		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: finalizationConsensusUpdaterRaw})
-	}
-	finalizationConsensusUpdater.RegisterFinalizationConsensus(finalizationConsensus)
-}
-
-func (cst *ConsumerStateTracker) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, conflictHandler common.ConflictHandlerInterface) error {
-	if DisableDR {
-		utils.LavaFormatInfo("found Conflict, but transactions are disabled, returning")
-		return nil
-	}
-	if conflictHandler.ConflictAlreadyReported() {
-		return nil // already reported
-	}
-	err := cst.TxSenderConflictDetection(ctx, finalizationConflict, responseConflict)
-	if err == nil { // if conflict report succeeded, we can set this provider as reported, so we wont need to report again.
-		conflictHandler.StoreConflictReported()
-	}
-	return err
 }
 
 func (cst *ConsumerStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error {

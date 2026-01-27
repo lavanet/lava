@@ -10,7 +10,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol/protocolerrors"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/sigs"
-	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
 
@@ -48,10 +47,15 @@ func CraftEmptyRPCResponseFromGenericMessage(message rpcInterfaceMessages.Generi
 	return rpcResponse, nil
 }
 
-func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.RelayRequest, pkey *btcSecp256k1.PrivateKey, reply *pairingtypes.RelayReply, signDataReliability bool) (*pairingtypes.RelayReply, error) {
+func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.RelayRequest, pkey *btcSecp256k1.PrivateKey, reply *pairingtypes.RelayReply) (*pairingtypes.RelayReply, error) {
 	// request is a copy of the original request, but won't modify it
 	// update relay request requestedBlock to the provided one in case it was arbitrary
 	UpdateRequestedBlock(request.RelayData, reply)
+
+	// Skip signing when configured (e.g., smart router mode) to save CPU/memory
+	if SkipRelaySigning {
+		return reply, nil
+	}
 
 	// Update signature,
 	relayExchange := pairingtypes.NewRelayExchange(request, *reply)
@@ -64,23 +68,15 @@ func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.Rela
 	}
 	reply.Sig = sig
 
-	if signDataReliability {
-		// update sig blocks signature
-		relayFinalization := conflicttypes.NewRelayFinalizationFromRelaySessionAndRelayReply(request.RelaySession, reply, consumerAddress)
-		sigBlocks, err := sigs.Sign(pkey, relayFinalization)
-		if err != nil {
-			return nil, utils.LavaFormatError("failed signing finalization data", err,
-				utils.LogAttr("request", request),
-				utils.LogAttr("reply", reply),
-				utils.LogAttr("userAddr", consumerAddress),
-			)
-		}
-		reply.SigBlocks = sigBlocks
-	}
 	return reply, nil
 }
 
 func VerifyRelayReply(ctx context.Context, reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, addr string) error {
+	// Skip verification when signing is disabled (no signature to verify)
+	if SkipRelaySigning {
+		return nil
+	}
+
 	relayExchange := pairingtypes.NewRelayExchange(*relayRequest, *reply)
 	serverKey, err := sigs.RecoverPubKey(relayExchange)
 	if err != nil {

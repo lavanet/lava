@@ -21,7 +21,6 @@ type SingleProviderSession struct {
 	lock               sync.RWMutex
 	RelayNum           uint64
 	PairingEpoch       uint64
-	BadgeUserData      *ProviderSessionsEpochData
 	occupyingGuid      uint64 // used for tracking errors
 	errorsCount        uint64
 }
@@ -30,10 +29,6 @@ type SingleProviderSession struct {
 // is used to determine if the proof is beneficial and needs to be sent to rewardServer
 func (sps *SingleProviderSession) IsPayingRelay() bool {
 	return sps.LatestRelayCu > 0
-}
-
-func (sps *SingleProviderSession) IsBadgeSession() bool {
-	return sps.BadgeUserData != nil
 }
 
 func (sps *SingleProviderSession) writeCuSumAtomically(cuSum uint64) {
@@ -99,30 +94,11 @@ func (sps *SingleProviderSession) VerifyLock() error {
 	return nil
 }
 
-// In case the user session is a data reliability we just need to verify that the cusum is the amount agreed between the consumer and the provider
-func (sps *SingleProviderSession) PrepareDataReliabilitySessionForUsage(relayRequestTotalCU uint64) error {
-	if relayRequestTotalCU != DataReliabilityCuSum {
-		return utils.LavaFormatError("PrepareDataReliabilitySessionForUsage", DataReliabilityCuSumMisMatchError, utils.Attribute{Key: "relayRequestTotalCU", Value: relayRequestTotalCU})
-	}
-	sps.LatestRelayCu = DataReliabilityCuSum // 1. update latest
-	sps.CuSum = relayRequestTotalCU          // 2. update CuSum, if consumer wants to pay more, let it
-	utils.LavaFormatDebug("PrepareDataReliabilitySessionForUsage",
-		utils.Attribute{Key: "relayRequestTotalCU", Value: relayRequestTotalCU},
-		utils.Attribute{Key: "sps.LatestRelayCu", Value: sps.LatestRelayCu},
-	)
-	return nil
-}
-
 // if this errors out the caller needs to unlock the session, this is not implemented inside because code between getting the session and this needs the same behavior
 func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cuFromSpec, relayRequestTotalCU uint64, allowedThreshold float64, virtualEpoch uint64) error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
 		return utils.LavaFormatError("sps.verifyLock() failed in PrepareSessionForUsage", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "relayNum", Value: sps.RelayNum}, utils.Attribute{Key: "sps.sessionId", Value: sps.SessionID})
-	}
-
-	// checking if this user session is a data reliability user session.
-	if sps.userSessionsParent.atomicReadIsDataReliability() == isDataReliabilityPSWC {
-		return sps.PrepareDataReliabilitySessionForUsage(relayRequestTotalCU)
 	}
 
 	maxCu := sps.userSessionsParent.atomicReadMaxComputeUnits()
@@ -184,16 +160,6 @@ func (sps *SingleProviderSession) PrepareSessionForUsage(ctx context.Context, cu
 		return err
 	}
 
-	// Update badgeUsedCu in ProviderSessionsWithConsumer
-	if sps.IsBadgeSession() {
-		maxCuBadge := atomicReadBadgeMaxComputeUnits(sps.BadgeUserData)
-		err = sps.validateAndAddBadgeUsedCU(cuToAdd, maxCuBadge, virtualEpoch, sps.BadgeUserData)
-		if err != nil {
-			sps.lock.Unlock() // unlock on error
-			return err
-		}
-	}
-
 	// finished validating, can add all info.
 	sps.LatestRelayCu = cuToAdd // 1. update latest
 	sps.CuSum += cuToAdd        // 2. update CuSum, if consumer wants to pay more, let it
@@ -222,33 +188,6 @@ func (sps *SingleProviderSession) DisbandSession() error {
 	}
 	sps.lock.Unlock()
 	return nil
-}
-
-func (sps *SingleProviderSession) validateAndAddBadgeUsedCU(currentCU, maxCu, virtualEpoch uint64, badgeUserEpochData *ProviderSessionsEpochData) error {
-	for {
-		badgeUsedCu := atomicReadBadgeUsedComputeUnits(badgeUserEpochData)
-		// add additional CU for virtual epochs
-		if badgeUsedCu+currentCU > maxCu*(virtualEpoch+1) {
-			return utils.LavaFormatError("Maximum badge cu exceeded PrepareSessionForUsage", MaximumCULimitReachedByConsumer,
-				utils.Attribute{Key: "usedCu", Value: badgeUsedCu},
-				utils.Attribute{Key: "currentCU", Value: currentCU},
-				utils.Attribute{Key: "maxCu", Value: maxCu * (virtualEpoch + 1)},
-				utils.Attribute{Key: "virtualEpoch", Value: virtualEpoch},
-			)
-		}
-		if atomicCompareAndWriteBadgeUsedComputeUnits(badgeUsedCu+currentCU, badgeUsedCu, badgeUserEpochData) {
-			return nil
-		}
-	}
-}
-
-func (sps *SingleProviderSession) validateAndSubBadgeUsedCU(currentCU uint64, badgeUserEpochData *ProviderSessionsEpochData) error {
-	for {
-		badgeUsedCu := atomicReadBadgeUsedComputeUnits(badgeUserEpochData)                                      // check used cu of badge user now
-		if atomicCompareAndWriteBadgeUsedComputeUnits(badgeUsedCu-currentCU, badgeUsedCu, badgeUserEpochData) { // decrease the amount of badge used cu from the known value
-			return nil
-		}
-	}
 }
 
 func (sps *SingleProviderSession) validateAndAddUsedCU(currentCU, maxCu, virtualEpoch uint64) error {
@@ -281,11 +220,6 @@ func (sps *SingleProviderSession) validateAndSubUsedCU(currentCU uint64) error {
 	}
 }
 
-// for a different behavior in data reliability session failure add here
-func (sps *SingleProviderSession) onDataReliabilitySessionFailure() error {
-	return nil
-}
-
 func (sps *SingleProviderSession) onSessionFailure() error {
 	err := sps.VerifyLock() // sps is locked
 	if err != nil {
@@ -293,16 +227,8 @@ func (sps *SingleProviderSession) onSessionFailure() error {
 	}
 	defer sps.lock.Unlock()
 
-	// handle data reliability session failure
-	if sps.userSessionsParent.atomicReadIsDataReliability() == isDataReliabilityPSWC {
-		return sps.onDataReliabilitySessionFailure()
-	}
-
 	sps.CuSum -= sps.LatestRelayCu
 	sps.validateAndSubUsedCU(sps.LatestRelayCu)
-	if sps.IsBadgeSession() {
-		sps.validateAndSubBadgeUsedCU(sps.LatestRelayCu, sps.BadgeUserData)
-	}
 	sps.LatestRelayCu = 0
 	sps.errorsCount += 1
 	return nil

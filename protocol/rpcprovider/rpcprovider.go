@@ -23,17 +23,17 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
-	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
+
 	"github.com/lavanet/lava/v5/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/v5/protocol/statetracker"
 	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/lavaslices"
-	"github.com/lavanet/lava/v5/utils/memoryutils"
 	"github.com/lavanet/lava/v5/utils/rand"
 	"github.com/lavanet/lava/v5/utils/sigs"
 	epochstorage "github.com/lavanet/lava/v5/x/epochstorage/types"
@@ -84,12 +84,9 @@ type ProviderStateTrackerInf interface {
 	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterForSpecVerifications(ctx context.Context, specVerifier updaters.SpecVerifier, chainId string) error
-	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable updaters.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint)
 	RegisterForEpochUpdates(ctx context.Context, epochUpdatable updaters.EpochUpdatable)
 	RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error
 	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error
-	SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData, specID string) error
-	SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData, specID string) error
 	LatestBlock() int64
 	GetMaxCuForUser(ctx context.Context, consumerAddress, chainID string, epocu uint64) (maxCu uint64, err error)
 	VerifyPairing(ctx context.Context, consumerAddress, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, projectId string, err error)
@@ -125,7 +122,6 @@ type rpcProviderStartOptions struct {
 	testResponsesFile         string
 	epochDuration             time.Duration
 	resourceLimiterOptions    *resourceLimiterOptions
-	memoryGCThresholdGB       float64
 }
 
 type resourceLimiterOptions struct {
@@ -156,6 +152,7 @@ type RPCProvider struct {
 	chainMutexes                 map[string]*sync.Mutex
 	parallelConnections          uint
 	cache                        *performance.Cache
+	cacheLatestBlockEnabled      bool
 	shardID                      uint // shardID is a flag that allows setting up multiple provider databases of the same chain
 	chainTrackers                *common.SafeSyncMap[string, chaintracker.IChainTracker]
 	relaysMonitorAggregator      *metrics.RelaysMonitorAggregator
@@ -287,9 +284,6 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	}
 	rpcp.providerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
 
-	// Start memory GC monitoring goroutine
-	memoryutils.StartMemoryGC(ctx, options.memoryGCThresholdGB)
-
 	// single reward server
 	if !options.staticProvider {
 		rewardDB := rewardserver.NewRewardDBWithTTL(options.rewardTTL)
@@ -397,7 +391,7 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 				sessionManager.UpdateEpoch(epoch)
 			})
 
-			utils.LavaFormatInfo("RPCProvider: Registered session manager for epoch updates",
+			utils.LavaFormatInfo("RPCProvider: Registered session manager for epoch updates.",
 				utils.LogAttr("chainKey", chainKey),
 			)
 		}
@@ -623,25 +617,39 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	var chainTracker chaintracker.IChainTracker
 	// chainTracker accepts a callback to be called on new blocks, we use this to call metrics update on a new block
 	recordMetricsOnNewBlock := func(blockFrom int64, blockTo int64, hash string) {
+		utils.LavaFormatDebug("ChainTracker callback triggered - new blocks detected",
+			utils.LogAttr("chainID", chainID),
+			utils.LogAttr("blockFrom", blockFrom),
+			utils.LogAttr("blockTo", blockTo),
+			utils.LogAttr("hash", hash),
+			utils.LogAttr("provider_endpoint", rpcProviderEndpoint.NetworkAddress.Address),
+			utils.LogAttr("num_blocks", blockTo-blockFrom),
+		)
 		for block := blockFrom + 1; block <= blockTo; block++ {
+			utils.LavaFormatDebug("ChainTracker calling SetLatestBlock for block",
+				utils.LogAttr("chainID", chainID),
+				utils.LogAttr("block", block),
+				utils.LogAttr("provider_endpoint", rpcProviderEndpoint.NetworkAddress.Address),
+			)
 			rpcp.providerMetricsManager.SetLatestBlock(chainID, rpcProviderEndpoint.NetworkAddress.Address, uint64(block))
 		}
-	}
-	var chainFetcher chainlib.IChainFetcher
-	if enabled, _ := chainParser.DataReliabilityParams(); enabled {
-		chainFetcher = chainlib.NewChainFetcher(
-			ctx,
-			&chainlib.ChainFetcherOptions{
-				ChainRouter: chainRouter,
-				ChainParser: chainParser,
-				Endpoint:    rpcProviderEndpoint,
-				Cache:       rpcp.cache,
-			},
+		utils.LavaFormatDebug("ChainTracker callback completed",
+			utils.LogAttr("chainID", chainID),
+			utils.LogAttr("blockFrom", blockFrom),
+			utils.LogAttr("blockTo", blockTo),
+			utils.LogAttr("total_blocks_processed", blockTo-blockFrom),
 		)
-	} else {
-		utils.LavaFormatInfo("verifications only ChainFetcher for spec", utils.LogAttr("chainId", rpcEndpoint.ChainID))
-		chainFetcher = chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
 	}
+	utils.LavaFormatInfo("Setting up ChainFetcher for spec", utils.LogAttr("chainId", rpcEndpoint.ChainID))
+	var chainFetcher chainlib.IChainFetcher = chainlib.NewChainFetcher(
+		ctx,
+		&chainlib.ChainFetcherOptions{
+			ChainRouter: chainRouter,
+			ChainParser: chainParser,
+			Endpoint:    rpcProviderEndpoint,
+			Cache:       rpcp.cache,
+		},
+	)
 	// so we can fetch failed verifications we need to add the chainFetcher before returning
 	rpcp.AddVerificationStatusFetcher(chainFetcher)
 
@@ -733,9 +741,6 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	}
 	providerMetrics := rpcp.providerMetricsManager.AddProviderMetrics(chainID, apiInterface, rpcProviderEndpoint.NetworkAddress.Address)
 
-	reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, rpcp.providerStateTracker, rpcp.addr.String(), chainRouter, chainParser)
-	rpcp.providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager, rpcProviderEndpoint)
-
 	// add a database for this chainID if does not exist.
 	rpcp.rewardServer.AddDataBase(rpcProviderEndpoint.ChainID, rpcp.addr.String(), rpcp.shardID)
 
@@ -751,7 +756,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	var providerNodeSubscriptionManager *chainlib.ProviderNodeSubscriptionManager
 	if rpcProviderEndpoint.ApiInterface == spectypes.APIInterfaceTendermintRPC || rpcProviderEndpoint.ApiInterface == spectypes.APIInterfaceJsonRPC {
 		utils.LavaFormatInfo("Creating provider node subscription manager", utils.LogAttr("rpcProviderEndpoint", rpcProviderEndpoint))
-		providerNodeSubscriptionManager = chainlib.NewProviderNodeSubscriptionManager(chainRouter, chainParser, rpcProviderServer, rpcp.privKey)
+		providerNodeSubscriptionManager = chainlib.NewProviderNodeSubscriptionManager(chainRouter, chainParser, rpcp.privKey)
 	}
 
 	// Create test mode config if enabled
@@ -809,7 +814,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		)
 	}
 
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager, rpcp, numberOfRetriesAllowedOnNodeErrors, testModeConfig, resourceLimiter)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, chainTracker, rpcp.privKey, rpcp.cache, rpcp.cacheLatestBlockEnabled, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager, rpcp, numberOfRetriesAllowedOnNodeErrors, testModeConfig, resourceLimiter)
 	// set up grpc listener
 	var listener *ProviderListener
 	func() {
@@ -1065,17 +1070,44 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 					return utils.LavaFormatError("failed to start pprof HTTP server", err)
 				}
 			}
+			// check if the command includes --pyroscope-address
+			pyroscopeAddressFlagUsed := cmd.Flags().Lookup(performance.PyroscopeAddressFlagName).Changed
+			if pyroscopeAddressFlagUsed {
+				pyroscopeServerAddress, err := cmd.Flags().GetString(performance.PyroscopeAddressFlagName)
+				if err != nil {
+					utils.LavaFormatFatal("failed to read pyroscope address flag", err)
+				}
+				pyroscopeAppName, err := cmd.Flags().GetString(performance.PyroscopeAppNameFlagName)
+				if err != nil || pyroscopeAppName == "" {
+					pyroscopeAppName = "lavap-provider"
+				}
+				mutexProfileFraction, err := cmd.Flags().GetInt(performance.PyroscopeMutexProfileFractionFlagName)
+				if err != nil {
+					mutexProfileFraction = performance.DefaultMutexProfileFraction
+				}
+				blockProfileRate, err := cmd.Flags().GetInt(performance.PyroscopeBlockProfileRateFlagName)
+				if err != nil {
+					blockProfileRate = performance.DefaultBlockProfileRate
+				}
+				tagsStr, _ := cmd.Flags().GetString(performance.PyroscopeTagsFlagName)
+				tags := performance.ParseTags(tagsStr)
+				err = performance.StartPyroscope(pyroscopeAppName, pyroscopeServerAddress, mutexProfileFraction, blockProfileRate, tags)
+				if err != nil {
+					return utils.LavaFormatError("failed to start pyroscope profiler", err)
+				}
+			}
 
 			utils.LavaFormatInfo("lavap Binary Version: " + upgrade.GetCurrentVersion().ProviderVersion)
 			rand.InitRandomSeed()
 			var cache *performance.Cache = nil
 			cacheAddr := viper.GetString(performance.CacheFlagName)
+			cacheLatestBlockEnabled := viper.GetBool(performance.CacheLatestBlockFlagName)
 			if cacheAddr != "" {
 				cache, err = performance.InitCache(ctx, cacheAddr)
 				if err != nil {
 					utils.LavaFormatError("Failed To Connect to cache at address", err, utils.Attribute{Key: "address", Value: cacheAddr})
 				} else {
-					utils.LavaFormatInfo("cache service connected", utils.Attribute{Key: "address", Value: cacheAddr})
+					utils.LavaFormatInfo("cache service connected", utils.Attribute{Key: "address", Value: cacheAddr}, utils.Attribute{Key: "cacheLatestBlockEnabled", Value: cacheLatestBlockEnabled})
 				}
 			}
 			numberOfNodeParallelConnections, err := cmd.Flags().GetUint(chainproxy.ParallelConnectionsFlag)
@@ -1102,13 +1134,29 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			offlineSpecPath := viper.GetString(common.UseStaticSpecFlag)
 			githubToken := viper.GetString(common.GitHubTokenFlag)
 			epochDuration := viper.GetDuration(common.EpochDurationFlag)
-			enableMemoryLogs := viper.GetBool(common.EnableMemoryLogsFlag)
-			memoryutils.EnableMemoryLogs(enableMemoryLogs)
 
 			// If running with --static-providers, enable standalone mode
 			if staticProvider {
 				utils.LavaFormatWarning("Running in static provider mode (standalone, no Lava blockchain connection)", nil)
 				// Note: Epoch duration will default to 15 minutes (StandaloneEpochDuration) if not specified
+
+				// Automatically skip relay signing in static provider mode unless explicitly set
+				// This saves CPU and memory since rewards are not claimed in standalone mode
+				if !viper.IsSet(common.SkipRelaySigningFlag) {
+					lavaprotocol.SkipRelaySigning = true
+					utils.LavaFormatInfo("[SkipRelaySigning] Static provider mode: automatically enabling skip-relay-signing for performance",
+						utils.Attribute{Key: "skipRelaySigning", Value: lavaprotocol.SkipRelaySigning},
+						utils.Attribute{Key: "reason", Value: "auto-enabled for static provider mode"},
+					)
+				} else {
+					// Flag was explicitly set, log the value
+					explicitValue := viper.GetBool(common.SkipRelaySigningFlag)
+					lavaprotocol.SkipRelaySigning = explicitValue
+					utils.LavaFormatInfo("[SkipRelaySigning] Static provider mode: using explicit flag value",
+						utils.Attribute{Key: "skipRelaySigning", Value: lavaprotocol.SkipRelaySigning},
+						utils.Attribute{Key: "source", Value: "command-line/config file"},
+					)
+				}
 			}
 
 			// Load test mode configuration
@@ -1132,13 +1180,6 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				heavyMaxConcurrent:  heavyMaxConcurrent,
 				heavyQueueSize:      heavyQueueSize,
 				normalMaxConcurrent: normalMaxConcurrent,
-			}
-
-			// Get memory GC threshold
-			memoryGCThresholdGB, err := cmd.Flags().GetFloat64(common.MemoryGCThresholdGBFlagName)
-			if err != nil {
-				utils.LavaFormatWarning("failed to read memory GC threshold flag, using default (0 = disabled)", err)
-				memoryGCThresholdGB = 0
 			}
 
 			rpcProviderHealthCheckMetricsOptions := rpcProviderHealthCheckMetricsOptions{
@@ -1169,7 +1210,6 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				testResponsesFile,
 				epochDuration,
 				resourceLimiterOptions,
-				memoryGCThresholdGB,
 			}
 
 			verificationsResponseCache, err := ristretto.NewCache(
@@ -1186,6 +1226,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				verificationsResponseCache: verificationsResponseCache,
 				testMode:                   testMode,
 				testResponsesFile:          testResponsesFile,
+				cacheLatestBlockEnabled:    cacheLatestBlockEnabled,
 			}
 
 			// Load test mode config if enabled
@@ -1206,8 +1247,14 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().Uint64(common.GeolocationFlag, 0, "geolocation to run from")
 	cmdRPCProvider.MarkFlagRequired(common.GeolocationFlag)
 	cmdRPCProvider.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
+	cmdRPCProvider.Flags().String(performance.PyroscopeAddressFlagName, "", "pyroscope server address for continuous profiling (e.g., http://pyroscope:4040)")
+	cmdRPCProvider.Flags().String(performance.PyroscopeAppNameFlagName, "lavap-provider", "pyroscope application name for identifying this service")
+	cmdRPCProvider.Flags().Int(performance.PyroscopeMutexProfileFractionFlagName, performance.DefaultMutexProfileFraction, "mutex profile sampling rate (1 in N mutex events)")
+	cmdRPCProvider.Flags().Int(performance.PyroscopeBlockProfileRateFlagName, performance.DefaultBlockProfileRate, "block profile rate in nanoseconds (1 records all blocking events)")
+	cmdRPCProvider.Flags().String(performance.PyroscopeTagsFlagName, "", "comma-separated list of tags in key=value format (e.g., instance=provider-1,region=us-east)")
 	cmdRPCProvider.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
-	cmdRPCProvider.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")
+	cmdRPCProvider.Flags().Bool(performance.CacheLatestBlockFlagName, false, "enable caching for latest block requests (default: false)")
+	cmdRPCProvider.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "number of parallel connections to blockchain node (gRPC only, HTTP uses shared connection pool)")
 	cmdRPCProvider.Flags().String(flags.FlagLogLevel, "debug", "log level")
 	cmdRPCProvider.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
 	cmdRPCProvider.Flags().String(rewardserver.RewardServerStorageFlagName, rewardserver.DefaultRewardServerStorage, "the path to store reward server data")
@@ -1231,14 +1278,13 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().Duration(common.EpochDurationFlag, 0, "duration of each epoch for time-based epoch system (e.g., 30m, 1h). If not set, epochs are disabled")
 	cmdRPCProvider.Flags().Uint64(common.RateLimitRequestPerSecondFlag, 0, "Measuring the load relative to this number for feedback - per second - per chain - default unlimited. Given Y simultaneous relay calls, a value of X  and will measure Y/X load rate.")
 	cmdRPCProvider.Flags().BoolVar(&chainlib.SkipWebsocketVerification, common.SkipWebsocketVerificationFlag, false, "skip websocket verification")
+	cmdRPCProvider.Flags().BoolVar(&lavaprotocol.SkipRelaySigning, common.SkipRelaySigningFlag, lavaprotocol.SkipRelaySigning, "skip cryptographic signing of relay responses to reduce CPU and memory usage (use only with static providers)")
 	cmdRPCProvider.Flags().BoolVar(&metrics.ShowProviderEndpointInProviderMetrics, common.ShowProviderEndpointInMetricsFlagName, metrics.ShowProviderEndpointInProviderMetrics, "show provider endpoint in provider metrics")
 	cmdRPCProvider.Flags().Bool("enable-resource-limiter", false, "Enable method-specific resource limiting to prevent OOM from high-CU requests")
 	cmdRPCProvider.Flags().Uint64("resource-limiter-cu-threshold", 100, "CU threshold above which methods are considered 'heavy' (default: 100)")
 	cmdRPCProvider.Flags().Int64("heavy-max-concurrent", 2, "Max concurrent heavy (high-CU/debug/trace) method calls")
 	cmdRPCProvider.Flags().Int("heavy-queue-size", 5, "Queue size for heavy methods")
 	cmdRPCProvider.Flags().Int64("normal-max-concurrent", 100, "Max concurrent normal method calls")
-	cmdRPCProvider.Flags().Bool(common.EnableMemoryLogsFlag, false, "enable memory tracking logs")
-	cmdRPCProvider.Flags().Float64(common.MemoryGCThresholdGBFlagName, 0, "Memory GC threshold in GB - triggers GC when heap in use exceeds this value (0 = disabled)")
 	common.AddRollingLogConfig(cmdRPCProvider)
 	return cmdRPCProvider
 }

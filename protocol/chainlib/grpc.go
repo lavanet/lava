@@ -209,21 +209,6 @@ func (apip *GrpcChainParser) SetSpec(spec spectypes.Spec) {
 	apip.BaseChainParser.Construct(spec, internalPaths, taggedApis, serverApis, apiCollections, headers, verifications)
 }
 
-// DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
-func (apip *GrpcChainParser) DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32) {
-	// Guard that the GrpcChainParser instance exists
-	if apip == nil {
-		return false, 0
-	}
-
-	// Acquire read lock
-	apip.rwLock.RLock()
-	defer apip.rwLock.RUnlock()
-
-	// Return enabled and data reliability threshold from spec
-	return apip.spec.DataReliabilityEnabled, apip.spec.GetReliabilityThreshold()
-}
-
 // ChainBlockStats returns block stats from spec
 // (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.BlockDistanceForFinalizedData)
 func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32) {
@@ -249,7 +234,6 @@ type GrpcChainListener struct {
 	logger           *metrics.RPCConsumerLogs
 	chainParser      *GrpcChainParser
 	healthReporter   HealthReporter
-	refererData      *RefererData
 	listeningAddress string
 }
 
@@ -260,7 +244,6 @@ func NewGrpcChainListener(
 	healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	chainParser ChainParser,
-	refererData *RefererData,
 ) (chainListener *GrpcChainListener) {
 	// Create a new instance of GrpcChainListener
 	chainListener = &GrpcChainListener{
@@ -269,7 +252,6 @@ func NewGrpcChainListener(
 		logger:         rpcConsumerLogs,
 		chainParser:    chainParser.(*GrpcChainParser),
 		healthReporter: healthReporter,
-		refererData:    refererData,
 	}
 	return chainListener
 }

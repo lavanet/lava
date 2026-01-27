@@ -1,6 +1,7 @@
 package chainlib
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"testing"
@@ -53,6 +54,52 @@ func TestUnsupportedMethodError(t *testing.T) {
 		err := NewUnsupportedMethodError(originalErr, "")
 		require.Equal(t, "", err.GetMethodName())
 	})
+}
+
+func TestIsUnsupportedMethodErrorMessageBytes(t *testing.T) {
+	tests := []struct {
+		name     string
+		message  []byte
+		expected bool
+	}{
+		{
+			name:     "JSON-RPC method not found",
+			message:  []byte("Method not found"),
+			expected: true,
+		},
+		{
+			name:     "Empty message",
+			message:  []byte(""),
+			expected: false,
+		},
+		{
+			name:     "Generic error",
+			message:  []byte("Internal server error"),
+			expected: false,
+		},
+		{
+			name:     "gRPC unimplemented",
+			message:  []byte("UNIMPLEMENTED: unknown service"),
+			expected: true,
+		},
+		{
+			name:     "JSON-RPC error code",
+			message:  []byte(`{"error":{"code":-32601,"message":"Method not found"}}`),
+			expected: true,
+		},
+		{
+			name:     "Nil message",
+			message:  nil,
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := IsUnsupportedMethodErrorMessageBytes(tt.message)
+			require.Equal(t, tt.expected, result, "Message: %s", string(tt.message))
+		})
+	}
 }
 
 func TestIsUnsupportedMethodErrorMessage(t *testing.T) {
@@ -387,6 +434,58 @@ func BenchmarkIsUnsupportedMethodErrorMessage(b *testing.B) {
 	}
 }
 
+func BenchmarkIsUnsupportedMethodErrorMessageBytes(b *testing.B) {
+	testMessages := [][]byte{
+		[]byte("method not found"),
+		[]byte("internal server error"),
+		[]byte("The requested method 'eth_someMethod' does not exist"),
+		[]byte("404 Not Found"),
+		[]byte("Connection timeout"),
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		for _, msg := range testMessages {
+			_ = IsUnsupportedMethodErrorMessageBytes(msg)
+		}
+	}
+}
+
+// BenchmarkIsUnsupportedMethodErrorMessageLongString tests performance with realistic response sizes
+func BenchmarkIsUnsupportedMethodErrorMessageLongString(b *testing.B) {
+	// Simulate a realistic JSON-RPC error response
+	longError := `{"jsonrpc":"2.0","id":1,"error":{"code":-32601,"message":"The method eth_someUnsupportedMethod does not exist/is not available. See available methods at https://docs.example.com/api","data":null}}`
+	longErrorBytes := []byte(longError)
+
+	b.Run("String", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_ = IsUnsupportedMethodErrorMessage(longError)
+		}
+	})
+
+	b.Run("Bytes", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_ = IsUnsupportedMethodErrorMessageBytes(longErrorBytes)
+		}
+	})
+
+	// Test with non-matching long string (worst case - checks all patterns)
+	longNonMatch := `{"jsonrpc":"2.0","id":1,"result":"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"}`
+	longNonMatchBytes := []byte(longNonMatch)
+
+	b.Run("String_NoMatch", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_ = IsUnsupportedMethodErrorMessage(longNonMatch)
+		}
+	})
+
+	b.Run("Bytes_NoMatch", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_ = IsUnsupportedMethodErrorMessageBytes(longNonMatchBytes)
+		}
+	})
+}
+
 func BenchmarkIsUnsupportedMethodError(b *testing.B) {
 	testErrors := []error{
 		errors.New("method not found"),
@@ -401,4 +500,55 @@ func BenchmarkIsUnsupportedMethodError(b *testing.B) {
 			_ = IsUnsupportedMethodError(err)
 		}
 	}
+}
+
+func TestValidateRequestAndResponseIds(t *testing.T) {
+	handler := &genericErrorHandler{}
+
+	t.Run("matching IDs - success", func(t *testing.T) {
+		reqID := json.RawMessage(`1`)
+		respID := json.RawMessage(`1`)
+		err := handler.ValidateRequestAndResponseIds(reqID, respID)
+		require.NoError(t, err)
+	})
+
+	t.Run("matching string IDs - success", func(t *testing.T) {
+		reqID := json.RawMessage(`"abc-123"`)
+		respID := json.RawMessage(`"abc-123"`)
+		err := handler.ValidateRequestAndResponseIds(reqID, respID)
+		require.NoError(t, err)
+	})
+
+	t.Run("mismatched IDs - error", func(t *testing.T) {
+		reqID := json.RawMessage(`1`)
+		respID := json.RawMessage(`2`)
+		err := handler.ValidateRequestAndResponseIds(reqID, respID)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "ID mismatch")
+	})
+
+	t.Run("empty response ID - error with parsing failure", func(t *testing.T) {
+		// This simulates the case where a node returns an error (e.g., "Apikey is expired")
+		// with an empty/invalid ID in the response
+		reqID := json.RawMessage(`49`)
+		respID := json.RawMessage(`[]`) // Empty array - invalid ID
+		err := handler.ValidateRequestAndResponseIds(reqID, respID)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed parsing ID")
+	})
+
+	t.Run("null response ID - error", func(t *testing.T) {
+		reqID := json.RawMessage(`1`)
+		respID := json.RawMessage(`null`)
+		err := handler.ValidateRequestAndResponseIds(reqID, respID)
+		require.Error(t, err)
+	})
+
+	t.Run("invalid JSON in request ID - error", func(t *testing.T) {
+		reqID := json.RawMessage(`invalid`)
+		respID := json.RawMessage(`1`)
+		err := handler.ValidateRequestAndResponseIds(reqID, respID)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed parsing ID")
+	})
 }

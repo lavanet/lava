@@ -12,7 +12,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -27,7 +26,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/common"
-	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationconsensus"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
@@ -35,7 +33,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/relaycore"
 	"github.com/lavanet/lava/v5/protocol/rpcconsumer"
 	"github.com/lavanet/lava/v5/protocol/rpcprovider"
-	"github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/v5/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
@@ -45,7 +42,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/connectivity"
 
-	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
@@ -231,7 +227,6 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 		Geolocation:     1,
 	}
 	consumerStateTracker := &mockConsumerStateTracker{}
-	finalizationConsensus := finalizationconsensus.NewFinalizationConsensus(rpcEndpoint.ChainID)
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, averageBlockTime, 2, nil, "dontcare")
 	optimizer.SetDeterministicSeed(seed)
@@ -280,7 +275,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 	consumerCmdFlags := common.ConsumerCmdFlags{}
 	rpcconsumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil, nil, nil)
 	require.NoError(t, err)
-	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, rpcConsumerOptions.requiredResponses, rpcConsumerOptions.account.SK, rpcConsumerOptions.lavaChainID, cache, rpcconsumerLogs, rpcConsumerOptions.account.Addr, consumerConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
+	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, consumerSessionManager, rpcConsumerOptions.requiredResponses, rpcConsumerOptions.account.SK, rpcConsumerOptions.lavaChainID, cache, rpcconsumerLogs, rpcConsumerOptions.account.Addr, consumerConsistency, nil, consumerCmdFlags, false, nil, nil)
 	require.NoError(t, err)
 
 	// wait for consumer to finish initialization
@@ -313,7 +308,7 @@ type rpcProviderOptions struct {
 	cacheListenAddress string
 }
 
-func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpcProviderOptions) (*rpcprovider.RPCProviderServer, *lavasession.RPCProviderEndpoint, *ReplySetter, *MockChainFetcher, *MockReliabilityManager) {
+func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpcProviderOptions) (*rpcprovider.RPCProviderServer, *lavasession.RPCProviderEndpoint, *ReplySetter, *MockChainFetcher, *MockChainTracker) {
 	replySetter := &ReplySetter{
 		status:       http.StatusOK,
 		replyDataBuf: []byte(`{"reply": "REPLY-STUB"}`),
@@ -412,7 +407,7 @@ func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpc
 	chainTracker.RegisterForBlockTimeUpdates(chainParser)
 	providerUp := checkGrpcServerStatusWithTimeout(rpcProviderEndpoint.NetworkAddress.Address, time.Millisecond*261)
 	require.True(t, providerUp)
-	return rpcProviderServer, endpoint, replySetter, mockChainFetcher, mockReliabilityManager
+	return rpcProviderServer, endpoint, replySetter, mockChainFetcher, mockChainTracker
 }
 
 func createCacheServer(t *testing.T, ctx context.Context, listenAddress string) {
@@ -1037,147 +1032,6 @@ func TestConsumerProviderSubscriptionsHappyFlow(t *testing.T) {
 	}
 }
 
-func TestSameProviderConflictBasicResponseCheck(t *testing.T) {
-	playbook := []struct {
-		name                string
-		shouldGetError      bool
-		numOfProviders      int
-		numOfLyingProviders int
-	}{
-		{
-			name:                "one provider - fake block hashes - return conflict error",
-			numOfProviders:      1,
-			numOfLyingProviders: 1,
-			shouldGetError:      true,
-		},
-		{
-			name:                "multiple providers - only one with fake block hashes - return ok",
-			numOfProviders:      2,
-			numOfLyingProviders: 1,
-			shouldGetError:      false,
-		},
-		{
-			name:                "multiple providers - everyone is returning fake block hashes - return conflict error",
-			numOfProviders:      3,
-			numOfLyingProviders: 3,
-			shouldGetError:      true,
-		},
-	}
-	for _, play := range playbook {
-		t.Run(play.name, func(t *testing.T) {
-			require.LessOrEqual(t, play.numOfLyingProviders, play.numOfProviders, "too many lying providers")
-			ctx := context.Background()
-			// can be any spec and api interface
-			specId := "LAV1"
-			apiInterface := spectypes.APIInterfaceRest
-			epoch := uint64(100)
-			lavaChainID := "lava"
-			numProviders := play.numOfProviders
-
-			consumerListenAddress := addressGen.GetAddress()
-			pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
-
-			type providerData struct {
-				account                sigs.Account
-				endpoint               *lavasession.RPCProviderEndpoint
-				server                 *rpcprovider.RPCProviderServer
-				replySetter            *ReplySetter
-				mockChainFetcher       *MockChainFetcher
-				mockReliabilityManager *MockReliabilityManager
-			}
-			providers := []providerData{}
-
-			for i := 0; i < numProviders; i++ {
-				account := sigs.GenerateDeterministicFloatingKey(randomizer)
-				providerDataI := providerData{account: account}
-				providers = append(providers, providerDataI)
-			}
-			consumerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
-
-			for i := 0; i < numProviders; i++ {
-				ctx := context.Background()
-				providerDataI := providers[i]
-				listenAddress := addressGen.GetAddress()
-				rpcProviderOptions := rpcProviderOptions{
-					consumerAddress:  consumerAccount.Addr.String(),
-					specId:           specId,
-					apiInterface:     apiInterface,
-					listenAddress:    listenAddress,
-					account:          providerDataI.account,
-					lavaChainID:      lavaChainID,
-					addons:           []string(nil),
-					providerUniqueId: fmt.Sprintf("provider%d", i),
-				}
-				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockReliabilityManager = createRpcProvider(t, ctx, rpcProviderOptions)
-				providers[i].replySetter.replyDataBuf = []byte(fmt.Sprintf(`{"result": %d}`, i+1))
-			}
-
-			for i := 0; i < numProviders; i++ {
-				pairingList[uint64(i)] = &lavasession.ConsumerSessionsWithProvider{
-					PublicLavaAddress: providers[i].account.Addr.String(),
-					Endpoints: []*lavasession.Endpoint{
-						{
-							NetworkAddress: providers[i].endpoint.NetworkAddress.Address,
-							Enabled:        true,
-							Geolocation:    1,
-						},
-					},
-					Sessions:         map[int64]*lavasession.SingleConsumerSession{},
-					MaxComputeUnits:  10000,
-					UsedComputeUnits: 0,
-					PairingEpoch:     epoch,
-				}
-			}
-
-			rpcConsumerOptions := rpcConsumerOptions{
-				specId:                specId,
-				apiInterface:          apiInterface,
-				account:               consumerAccount,
-				consumerListenAddress: consumerListenAddress,
-				epoch:                 epoch,
-				pairingList:           pairingList,
-				requiredResponses:     1,
-				lavaChainID:           lavaChainID,
-			}
-			rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
-			require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
-
-			// Set first provider as a "liar", to return wrong block hashes
-			getLatestBlockDataWrapper := func(rmi rpcprovider.ReliabilityManagerInf, fromBlock, toBlock, specificBlock int64) (int64, []*chaintracker.BlockStore, time.Time, error) {
-				latestBlock, requestedHashes, changeTime, err := rmi.GetLatestBlockData(fromBlock, toBlock, specificBlock)
-
-				for _, block := range requestedHashes {
-					block.Hash += strconv.Itoa(int(rand.Int63()))
-				}
-
-				return latestBlock, requestedHashes, changeTime, err
-			}
-
-			for i := 0; i < play.numOfLyingProviders; i++ {
-				providers[i].mockReliabilityManager.SetGetLatestBlockDataWrapper(getLatestBlockDataWrapper)
-			}
-
-			client := http.Client{Timeout: 500 * time.Millisecond}
-			req, err := http.NewRequest(http.MethodPost, "http://"+consumerListenAddress+"/cosmos/tx/v1beta1/txs", nil)
-			require.NoError(t, err)
-
-			resp, err := client.Do(req)
-			require.NoError(t, err)
-			require.Equal(t, http.StatusOK, resp.StatusCode)
-
-			bodyBytes, err := io.ReadAll(resp.Body)
-			require.NoError(t, err)
-
-			resp.Body.Close()
-			if play.shouldGetError {
-				require.Contains(t, string(bodyBytes), "found same provider conflict")
-			} else {
-				require.Equal(t, `{"result": 2}`, string(bodyBytes))
-			}
-		})
-	}
-}
-
 func TestArchiveProvidersRetry(t *testing.T) {
 	playbook := []struct {
 		name               string
@@ -1233,12 +1087,12 @@ func TestArchiveProvidersRetry(t *testing.T) {
 			consumerListenAddress := addressGen.GetAddress()
 
 			type providerData struct {
-				account                sigs.Account
-				endpoint               *lavasession.RPCProviderEndpoint
-				server                 *rpcprovider.RPCProviderServer
-				replySetter            *ReplySetter
-				mockChainFetcher       *MockChainFetcher
-				mockReliabilityManager *MockReliabilityManager
+				account          sigs.Account
+				endpoint         *lavasession.RPCProviderEndpoint
+				server           *rpcprovider.RPCProviderServer
+				replySetter      *ReplySetter
+				mockChainFetcher *MockChainFetcher
+				mockChainTracker *MockChainTracker
 			}
 			providers := []providerData{}
 
@@ -1268,7 +1122,7 @@ func TestArchiveProvidersRetry(t *testing.T) {
 					addons:           addons,
 					providerUniqueId: fmt.Sprintf("provider%d", i),
 				}
-				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockReliabilityManager = createRpcProvider(t, ctx, rpcProviderOptions)
+				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockChainTracker = createRpcProvider(t, ctx, rpcProviderOptions)
 				providers[i].replySetter.replyDataBuf = []byte(`{"result": "success"}`)
 				if i+1 <= play.nodeErrorProviders {
 					providers[i].replySetter.replyDataBuf = []byte(`{"error": "failure", "message": "test", "code": "-32132"}`)
@@ -1364,243 +1218,6 @@ func TestArchiveProvidersRetry(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestSameProviderConflictReport(t *testing.T) {
-	type providerData struct {
-		account                sigs.Account
-		endpoint               *lavasession.RPCProviderEndpoint
-		server                 *rpcprovider.RPCProviderServer
-		replySetter            *ReplySetter
-		mockChainFetcher       *MockChainFetcher
-		mockReliabilityManager *MockReliabilityManager
-	}
-
-	createProvidersData := func(numProviders int) (providers []*providerData) {
-		providers = []*providerData{}
-
-		for i := 0; i < numProviders; i++ {
-			account := sigs.GenerateDeterministicFloatingKey(randomizer)
-			providerDataI := providerData{account: account}
-			providers = append(providers, &providerDataI)
-		}
-
-		return providers
-	}
-
-	initProvidersData := func(consumerAccount sigs.Account, providers []*providerData, specId, apiInterface, lavaChainID string) {
-		for i := 0; i < len(providers); i++ {
-			ctx := context.Background()
-			providerDataI := providers[i]
-			listenAddress := addressGen.GetAddress()
-			rpcProviderOptions := rpcProviderOptions{
-				consumerAddress:  consumerAccount.Addr.String(),
-				specId:           specId,
-				apiInterface:     apiInterface,
-				listenAddress:    listenAddress,
-				account:          providerDataI.account,
-				lavaChainID:      lavaChainID,
-				addons:           []string(nil),
-				providerUniqueId: fmt.Sprintf("provider%d", i),
-			}
-			providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockReliabilityManager = createRpcProvider(t, ctx, rpcProviderOptions)
-			providers[i].replySetter.replyDataBuf = []byte(fmt.Sprintf(`{"result": %d}`, i+1))
-		}
-	}
-
-	initPairingList := func(providers []*providerData, epoch uint64) (pairingList map[uint64]*lavasession.ConsumerSessionsWithProvider) {
-		pairingList = map[uint64]*lavasession.ConsumerSessionsWithProvider{}
-
-		for i := 0; i < len(providers); i++ {
-			pairingList[uint64(i)] = &lavasession.ConsumerSessionsWithProvider{
-				PublicLavaAddress: providers[i].account.Addr.String(),
-				Endpoints: []*lavasession.Endpoint{
-					{
-						NetworkAddress: providers[i].endpoint.NetworkAddress.Address,
-						Enabled:        true,
-						Geolocation:    1,
-					},
-				},
-				Sessions:         map[int64]*lavasession.SingleConsumerSession{},
-				MaxComputeUnits:  10000,
-				UsedComputeUnits: 0,
-				PairingEpoch:     epoch,
-			}
-		}
-
-		return pairingList
-	}
-
-	t.Run("same provider conflict report", func(t *testing.T) {
-		ctx := context.Background()
-		// can be any spec and api interface
-		specId := "LAV1"
-		apiInterface := spectypes.APIInterfaceRest
-		epoch := uint64(100)
-		lavaChainID := "lava"
-		numProviders := 1
-
-		consumerListenAddress := addressGen.GetAddress()
-
-		providers := createProvidersData(numProviders)
-		consumerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
-
-		initProvidersData(consumerAccount, providers, specId, apiInterface, lavaChainID)
-
-		rpcConsumerOptions := rpcConsumerOptions{
-			specId:                specId,
-			apiInterface:          apiInterface,
-			account:               consumerAccount,
-			consumerListenAddress: consumerListenAddress,
-			epoch:                 epoch,
-			pairingList:           initPairingList(providers, epoch),
-			requiredResponses:     1,
-			lavaChainID:           lavaChainID,
-		}
-		rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
-
-		conflictSent := false
-		wg := sync.WaitGroup{}
-		wg.Add(1)
-		txConflictDetectionMock := func(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, conflictHandler common.ConflictHandlerInterface) error {
-			if finalizationConflict == nil {
-				wg.Done()
-				require.FailNow(t, "Finalization conflict should not be nil")
-				return nil
-			}
-			utils.LavaFormatDebug("@@@@@@@@@@@@@@@ Called conflict mock tx", utils.LogAttr("provider0", finalizationConflict.RelayFinalization_0.RelaySession.Provider), utils.LogAttr("provider0", finalizationConflict.RelayFinalization_1.RelaySession.Provider))
-
-			if finalizationConflict.RelayFinalization_0.RelaySession.Provider != finalizationConflict.RelayFinalization_1.RelaySession.Provider {
-				require.FailNow(t, "Finalization conflict should not have different provider addresses")
-			}
-
-			if finalizationConflict.RelayFinalization_0.RelaySession.Provider != providers[0].account.Addr.String() {
-				require.FailNow(t, "Finalization conflict provider address is not the provider address")
-			}
-			wg.Done()
-			conflictSent = true
-			return nil
-		}
-		rpcConsumerOut.mockConsumerStateTracker.SetTxConflictDetectionWrapper(txConflictDetectionMock)
-		require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
-
-		// Set first provider as a "liar", to return wrong block hashes
-		getLatestBlockDataWrapper := func(rmi rpcprovider.ReliabilityManagerInf, fromBlock, toBlock, specificBlock int64) (int64, []*chaintracker.BlockStore, time.Time, error) {
-			latestBlock, requestedHashes, changeTime, err := rmi.GetLatestBlockData(fromBlock, toBlock, specificBlock)
-
-			for _, block := range requestedHashes {
-				block.Hash += strconv.Itoa(int(rand.Int63()))
-			}
-
-			return latestBlock, requestedHashes, changeTime, err
-		}
-
-		providers[0].mockReliabilityManager.SetGetLatestBlockDataWrapper(getLatestBlockDataWrapper)
-
-		client := http.Client{Timeout: 1 * time.Minute}
-		clientCtx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
-		defer cancel()
-
-		req, err := http.NewRequestWithContext(clientCtx, http.MethodPost, "http://"+consumerListenAddress+"/cosmos/tx/v1beta1/txs", nil)
-		require.NoError(t, err)
-
-		resp, err := client.Do(req)
-		require.NoError(t, err)
-		require.Equal(t, http.StatusOK, resp.StatusCode)
-		// conflict calls happen concurrently, therefore we need to wait the call.
-		wg.Wait()
-		require.True(t, conflictSent)
-	})
-
-	t.Run("two providers conflict report", func(t *testing.T) {
-		ctx := context.Background()
-		// can be any spec and api interface
-		specId := "LAV1"
-		apiInterface := spectypes.APIInterfaceRest
-		epoch := uint64(100)
-		lavaChainID := "lava"
-		numProviders := 2
-
-		consumerListenAddress := addressGen.GetAddress()
-		providers := createProvidersData(numProviders)
-		consumerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
-
-		initProvidersData(consumerAccount, providers, specId, apiInterface, lavaChainID)
-
-		rpcConsumerOptions := rpcConsumerOptions{
-			specId:                specId,
-			apiInterface:          apiInterface,
-			account:               consumerAccount,
-			consumerListenAddress: consumerListenAddress,
-			epoch:                 epoch,
-			pairingList:           initPairingList(providers, epoch),
-			requiredResponses:     1,
-			lavaChainID:           lavaChainID,
-		}
-		rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
-
-		twoProvidersConflictSent := false
-		sameProviderConflictSent := false
-		numberOfRelays := 10
-		reported := make(chan bool, numberOfRelays)
-		txConflictDetectionMock := func(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, conflictHandler common.ConflictHandlerInterface) error {
-			if finalizationConflict == nil {
-				require.FailNow(t, "Finalization conflict should not be nil")
-				reported <- true
-				return nil
-			}
-			utils.LavaFormatDebug("@@@@@@@@@@@@@@@ Called conflict mock tx", utils.LogAttr("provider0", finalizationConflict.RelayFinalization_0.RelaySession.Provider), utils.LogAttr("provider0", finalizationConflict.RelayFinalization_1.RelaySession.Provider))
-
-			if finalizationConflict.RelayFinalization_0.RelaySession.Provider == finalizationConflict.RelayFinalization_1.RelaySession.Provider {
-				utils.LavaFormatDebug("@@@@@@@@@@@@@@@ Called SAME conflict tx")
-				sameProviderConflictSent = true
-			}
-
-			if finalizationConflict.RelayFinalization_0.RelaySession.Provider != providers[0].account.Addr.String() {
-				require.FailNow(t, "Finalization conflict provider 0 address is not the first provider")
-			}
-
-			if !sameProviderConflictSent && finalizationConflict.RelayFinalization_1.RelaySession.Provider != providers[1].account.Addr.String() {
-				require.FailNow(t, "Finalization conflict provider 1 address is not the first provider")
-			}
-
-			twoProvidersConflictSent = true
-			reported <- true
-			return nil
-		}
-		rpcConsumerOut.mockConsumerStateTracker.SetTxConflictDetectionWrapper(txConflictDetectionMock)
-		require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
-
-		// Set first provider as a "liar", to return wrong block hashes
-		getLatestBlockDataWrapper := func(rmi rpcprovider.ReliabilityManagerInf, fromBlock, toBlock, specificBlock int64) (int64, []*chaintracker.BlockStore, time.Time, error) {
-			latestBlock, requestedHashes, changeTime, err := rmi.GetLatestBlockData(fromBlock, toBlock, specificBlock)
-
-			for _, block := range requestedHashes {
-				block.Hash += strconv.Itoa(int(rand.Int63()))
-			}
-
-			return latestBlock, requestedHashes, changeTime, err
-		}
-
-		providers[0].mockReliabilityManager.SetGetLatestBlockDataWrapper(getLatestBlockDataWrapper)
-
-		client := http.Client{Timeout: 1000 * time.Millisecond}
-		req, err := http.NewRequest(http.MethodPost, "http://"+consumerListenAddress+"/cosmos/tx/v1beta1/txs", nil)
-		require.NoError(t, err)
-
-		for i := 0; i < numberOfRelays; i++ {
-			// Two relays to trigger both same provider conflict and
-			go func() {
-				resp, err := client.Do(req)
-				require.NoError(t, err)
-				require.Equal(t, http.StatusOK, resp.StatusCode)
-			}()
-		}
-		// conflict calls happen concurrently, therefore we need to wait the call.
-		<-reported
-		require.True(t, sameProviderConflictSent)
-		require.True(t, twoProvidersConflictSent)
-	})
 }
 
 func TestConsumerProviderStatic(t *testing.T) {
@@ -2007,12 +1624,12 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 			consumerListenAddress := addressGen.GetAddress()
 
 			type providerData struct {
-				account                sigs.Account
-				endpoint               *lavasession.RPCProviderEndpoint
-				server                 *rpcprovider.RPCProviderServer
-				replySetter            *ReplySetter
-				mockChainFetcher       *MockChainFetcher
-				mockReliabilityManager *MockReliabilityManager
+				account          sigs.Account
+				endpoint         *lavasession.RPCProviderEndpoint
+				server           *rpcprovider.RPCProviderServer
+				replySetter      *ReplySetter
+				mockChainFetcher *MockChainFetcher
+				mockChainTracker *MockChainTracker
 			}
 			providers := []providerData{}
 			for i := 0; i < numProviders; i++ {
@@ -2104,7 +1721,7 @@ func TestArchiveProvidersRetryOnParsedHash(t *testing.T) {
 					addons:           addons,
 					providerUniqueId: fmt.Sprintf("provider%d", i),
 				}
-				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockReliabilityManager = createRpcProvider(t, ctx, rpcProviderOptions)
+				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockChainTracker = createRpcProvider(t, ctx, rpcProviderOptions)
 				providers[i].replySetter.handler = handler
 
 				pairingList[uint64(i)] = &lavasession.ConsumerSessionsWithProvider{

@@ -11,6 +11,11 @@ on:
       - smart-router-v1.1
   workflow_dispatch:
 
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -35,17 +40,17 @@ jobs:
       - name: Run Utils Tests
         run: |
           set -o pipefail
-          go test -v ./utils/... 2>&1 | tee utils-test.log | go-junit-report -iocopy -set-exit-code -out utils-report.xml
+          go test -v -coverprofile=utils-coverage.out ./utils/... 2>&1 | tee utils-test.log | go-junit-report -iocopy -set-exit-code -out utils-report.xml
 
       - name: Run Common Tests
         run: |
           set -o pipefail
-          go test -v ./protocol/common/... ./testutil/common/... ./cmd/common/... 2>&1 | tee common-test.log | go-junit-report -iocopy -set-exit-code -out common-report.xml
+          go test -v -coverprofile=common-coverage.out ./protocol/common/... ./testutil/common/... ./cmd/common/... 2>&1 | tee common-test.log | go-junit-report -iocopy -set-exit-code -out common-report.xml
 
       - name: Run X Tests
         run: |
           set -o pipefail
-          go test -v ./x/... 2>&1 | tee x-test.log | go-junit-report -iocopy -set-exit-code -out x-report.xml
+          go test -v -coverprofile=x-coverage.out ./x/... 2>&1 | tee x-test.log | go-junit-report -iocopy -set-exit-code -out x-report.xml
 
       - name: Upload Test Results
         if: always()
@@ -55,6 +60,17 @@ jobs:
           path: |
             *-report.xml
             *-test.log
+            *-coverage.out
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: lavanet/lava
+          files: ./utils-coverage.out,./common-coverage.out,./x-coverage.out
+          flags: consensus
+          fail_ci_if_error: false
+          verbose: true
 
   test-protocol:
     runs-on: ubuntu-latest
@@ -76,13 +92,13 @@ jobs:
         timeout-minutes: 20
         run: |
           set -o pipefail
-          go test -v -timeout 15m ./protocol/... 2>&1 | tee protocol-test.log | go-junit-report -iocopy -set-exit-code -out protocol-report.xml
+          go test -v -timeout 15m -coverprofile=protocol-coverage.out ./protocol/... 2>&1 | tee protocol-test.log | go-junit-report -iocopy -set-exit-code -out protocol-report.xml
 
       - name: Run Cache Tests
         timeout-minutes: 10
         run: |
           set -o pipefail
-          go test -v ./ecosystem/cache/... 2>&1 | tee cache-test.log | go-junit-report -iocopy -set-exit-code -out cache-report.xml
+          go test -v -coverprofile=cache-coverage.out ./ecosystem/cache/... 2>&1 | tee cache-test.log | go-junit-report -iocopy -set-exit-code -out cache-report.xml
 
       - name: Upload Test Results
         if: always()
@@ -92,6 +108,17 @@ jobs:
           path: |
             *-report.xml
             *-test.log
+            *-coverage.out
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: lavanet/lava
+          files: ./protocol-coverage.out,./cache-coverage.out
+          flags: protocol
+          fail_ci_if_error: false
+          verbose: true
 
   test-protocol-e2e:
     runs-on: ubuntu-latest
@@ -225,165 +252,6 @@ jobs:
           name: Protocol E2E Logs
           path: "testutil/e2e/protocolLogs/*"
 
-  # Temporarly disabled due to a bug in the signature.
-  # test-sdk-e2e:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: actions/setup-go@v5
-  #       with:
-  #         go-version-file: go.mod
-  #         cache-dependency-path: go.sum
-
-  #     # Install Node.js
-  #     - name: Setup Node.js environment
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: "21.2.0"
-
-  #     - name: Init the SDK
-  #       run: GOPATH=~/go ./scripts/init_sdk.sh -s
-  #       working-directory: ./ecosystem/lava-sdk
-
-  #     - name: Build
-  #       run: yarn build
-  #       working-directory: ./ecosystem/lava-sdk
-
-  #     - name: Install ts-node
-  #       run: npm install -g ts-node
-
-  #     - name: Install telescope dependencies
-  #       run: yarn; yarn e2e-setup
-  #       working-directory: ./ecosystem/lavajs
-
-  #     - name: Setup test environment
-  #       run: npm init --yes; npm install --save-dev @types/node
-
-  #     ######################################################
-  #     ### Run Lava SDK E2E Tests
-  #     ######################################################
-  #     - name: Run Lava SDK E2E Tests  -timeout 1200s
-  #       run: |
-  #         go install github.com/jstemmer/go-junit-report/v2@latest
-  #         go test ./testutil/e2e/ -run ^TestLavaSDK -v -timeout 1200s | go-junit-report -iocopy -set-exit-code -out sdk-e2e-report.xml # 20mins
-
-  #     - name: Upload Test Results
-  #       if: always()
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: Test Results (SDK E2E)
-  #         path: "*-report.xml"
-
-  #     - name: tail -n 300 Lavad Logs
-  #       if: always()
-  #       run: tail -n 300 testutil/e2e/sdkLogs/00_StartLava.log
-
-  #     - name: Stake Lava All Logs
-  #       if: always()
-  #       run: cat testutil/e2e/sdkLogs/01_stakeLava.log
-
-  #     - name: Stake Lava Error Only Logs
-  #       if: always()
-  #       continue-on-error: true
-  #       run: cat testutil/e2e/sdkLogs/01_stakeLava_errors.log
-
-  #     - name: head -n 300 JSON Proxy Logs
-  #       if: always()
-  #       run: head -n 300 testutil/e2e/sdkLogs/02_jsonProxy.log
-
-  #     - name: tail -n 300 JSON Proxy Logs
-  #       if: always()
-  #       run: tail -n 300 testutil/e2e/sdkLogs/02_jsonProxy.log
-
-  #     - name: JSON Proxy Error Only Logs
-  #       if: always()
-  #       continue-on-error: true
-  #       run: cat testutil/e2e/sdkLogs/02_jsonProxy_errors.log
-
-  #     - name: JSON Provider All Logs
-  #       if: always()
-  #       run: grep "" testutil/e2e/sdkLogs/03_EthProvider* --exclude="*errors*"
-
-  #     - name: JSON Provider Error Only Logs
-  #       if: always()
-  #       continue-on-error: true
-  #       run: grep "" testutil/e2e/sdkLogs/03_EthProvider* --include="*errors*"
-
-  #     - name: Lava Provider All Logs
-  #       if: always()
-  #       run: grep "" testutil/e2e/sdkLogs/05_LavaProvider* --exclude="*errors*"
-
-  #     - name: Lava Provider Error Only Logs
-  #       if: always()
-  #       continue-on-error: true
-  #       run: grep "" testutil/e2e/sdkLogs/05_LavaProvider* --include="*errors*"
-
-  #     - name: Badge Server All Logs
-  #       if: always()
-  #       run: grep "" testutil/e2e/sdkLogs/01_BadgeServer* --exclude="*errors*"
-
-  #     - name: Badge Server Error Only Logs
-  #       if: always()
-  #       continue-on-error: true
-  #       run: grep "" testutil/e2e/sdkLogs/01_BadgeServer* --include="*errors*"
-
-  #     - name: Lava SDK All Logs
-  #       if: always()
-  #       run: grep "" testutil/e2e/sdkLogs/01_sdkTest* --exclude="*errors*"
-
-  #     - name: Lava SDK Error Only Logs
-  #       if: always()
-  #       continue-on-error: true
-  #       run: grep "" testutil/e2e/sdkLogs/01_sdkTest* --include="*errors*"
-
-  #     - name: Upload SDK E2E Logs
-  #       if: always()
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: SDK E2E Logs
-  #         path: "testutil/e2e/sdkLogs/*"
-
-  # This part came from lava_sdk_tests.yml that was removed. just not to lose functionality it moved here.
-  # name: Lava SDK Tests
-
-  # on:
-  #   pull_request
-
-  # jobs:
-  #   main:
-  #     runs-on: ubuntu-latest
-  #     steps:
-  #       - name: Checkout code
-  #         uses: actions/checkout@v4
-
-  #       - name: Cache dependencies
-  #         uses: actions/cache@v4
-  #         with:
-  #           path: ~/.yarn
-  #           key: yarn-${{ hashFiles('yarn.lock') }}
-  #           restore-keys: yarn-
-
-  #       - uses: actions/setup-go@v5
-  #         with:
-  #           go-version-file: go.mod
-  #           cache-dependency-path: go.sum
-
-  #       - uses: actions/setup-node@v4
-  #         with:
-  #           node-version: "21.2.0"
-
-  #       - name: Init the SDK
-  #         run: GOPATH=~/go ./scripts/init_sdk.sh -s
-  #         working-directory: ./ecosystem/lava-sdk
-
-  #       - name: ESLint
-  #         run: ./node_modules/.bin/eslint '**/*.ts'
-  #         working-directory: ./ecosystem/lava-sdk
-
-  #       - name: Test
-  #         run: ./node_modules/.bin/jest ./src --ci
-  #         working-directory: ./ecosystem/lava-sdk
-
   test-payment-e2e:
     runs-on: ubuntu-latest
     steps:
@@ -463,13 +331,7 @@ jobs:
 
   report-tests-results:
     runs-on: ubuntu-latest
-    needs: [
-        test-consensus,
-        test-protocol,
-        test-protocol-e2e,
-        # test-sdk-e2e,
-        test-payment-e2e,
-      ]
+    needs: [test-consensus, test-protocol, test-protocol-e2e, test-payment-e2e]
     if: always()
     steps:
       - name: Download Artifacts

@@ -90,13 +90,6 @@ type ignoredProviders struct {
 	currentEpoch uint64
 }
 
-type DataReliabilitySession struct {
-	SingleConsumerSession *SingleConsumerSession
-	Epoch                 uint64
-	ProviderPublicAddress string
-	UniqueIdentifier      bool
-}
-
 type EndpointConnection struct {
 	Client                              pairingtypes.RelayerClient
 	connection                          *grpc.ClientConn
@@ -425,10 +418,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 
 	// try to lock an existing session, if can't create a new one
 	var numberOfBlockedSessions uint64 = 0
-	for sessionID, session := range cswp.Sessions {
-		if sessionID == DataReliabilitySessionId {
-			continue // we cant use the data reliability session. which is located at key DataReliabilitySessionId
-		}
+	for _, session := range cswp.Sessions {
 		if session.EndpointConnection != endpointConnection {
 			// skip sessions that don't belong to the active connection
 			continue
@@ -452,10 +442,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 		return nil, 0, MaximumNumberOfSessionsExceededError
 	}
 
-	randomSessionId := int64(0)
-	for randomSessionId == 0 { // we don't allow 0
-		randomSessionId = rand.Int63()
-	}
+	randomSessionId := rand.Int63()
 	consumerSession := &SingleConsumerSession{
 		SessionId:          randomSessionId,
 		Parent:             cswp,

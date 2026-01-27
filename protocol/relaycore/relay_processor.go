@@ -29,7 +29,6 @@ type RelayProcessor struct {
 	guid                         uint64
 	selection                    Selection
 	consistency                  Consistency
-	skipDataReliability          bool
 	debugRelay                   bool
 	allowSessionDegradation      uint32 // used in the scenario where extension was previously used.
 	metricsInf                   MetricsInterface
@@ -91,18 +90,6 @@ func (rp *RelayProcessor) GetAllowSessionDegradation() bool {
 // in case we had an extension and managed to get a session successfully, we prevent session degradation.
 func (rp *RelayProcessor) SetDisallowDegradation() {
 	atomic.StoreUint32(&rp.allowSessionDegradation, 1)
-}
-
-func (rp *RelayProcessor) SetSkipDataReliability(val bool) {
-	rp.lock.Lock()
-	defer rp.lock.Unlock()
-	rp.skipDataReliability = val
-}
-
-func (rp *RelayProcessor) GetSkipDataReliability() bool {
-	rp.lock.RLock()
-	defer rp.lock.RUnlock()
-	return rp.skipDataReliability
 }
 
 // SetStatefulRelayTargets stores the list of providers that received a stateful relay
@@ -199,8 +186,8 @@ func (rp *RelayProcessor) HasUnsupportedMethodErrors() bool {
 	// Check node errors
 	for _, nodeErrorResult := range nodeErrorResults {
 		if nodeErrorResult.Reply != nil && nodeErrorResult.Reply.Data != nil {
-			// Check if this is an unsupported method error based on the reply
-			if chainlib.IsUnsupportedMethodErrorMessage(string(nodeErrorResult.Reply.Data)) {
+			// Check if this is an unsupported method error based on the reply (use bytes variant to avoid string conversion)
+			if chainlib.IsUnsupportedMethodErrorMessageBytes(nodeErrorResult.Reply.Data) {
 				return true
 			}
 		}
@@ -383,8 +370,9 @@ func (rp *RelayProcessor) handleResponse(response *RelayResponse) {
 	// Only hash successful responses (not errors) for quorum tracking
 	// This prevents error responses from being counted toward quorum
 	if response != nil && nodeError == nil && response.Err == nil {
-		// Hash the response data instead of creating canonical form - much more efficient
+		// Hash the response data once and cache it in the RelayResult
 		hash := sha256.Sum256(response.RelayResult.GetReply().GetData())
+		response.RelayResult.ResponseHash = hash // Cache the hash for later reuse
 		rp.quorumMap[hash]++
 		if rp.quorumMap[hash] > rp.currentQourumEqualResults {
 			rp.currentQourumEqualResults = rp.quorumMap[hash]
@@ -477,9 +465,13 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 
 	for idx, result := range results {
 		if result.Reply != nil && result.Reply.Data != nil && isValidResponse(result.Reply.Data) {
-			// Hash the response data for comparison - much faster and more memory efficient
-			// than creating canonical forms. SHA256 ensures reliable comparison for quorum.
-			hash := sha256.Sum256(result.Reply.Data)
+			// Use cached hash if available (set in handleResponse), otherwise compute it
+			// This eliminates redundant SHA256 computation for responses already hashed
+			hash := result.ResponseHash
+			if hash == [32]byte{} {
+				// Fallback: hash not cached (e.g., for old code paths or error cases)
+				hash = sha256.Sum256(result.Reply.Data)
+			}
 
 			if count, exists := countMap[hash]; exists {
 				count.count++

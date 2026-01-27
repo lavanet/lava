@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/v5/protocol/chainlib"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
@@ -46,17 +47,21 @@ func NewProviderStateMachine(chainId string, relayRetriesManager lavaprotocol.Re
 }
 
 func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg chainlib.ChainMessage, request *pairingtypes.RelayRequest) (*chainlib.RelayReplyWrapper, time.Duration, error) {
-	hash, err := chainMsg.GetRawRequestHash()
+	hash, hashErr := chainMsg.GetRawRequestHash()
 	requestHashString := ""
-	if err != nil {
-		utils.LavaFormatWarning("Failed converting message to hash", err, utils.LogAttr("url", request.RelayData.ApiUrl), utils.LogAttr("data", string(request.RelayData.Data)))
-	} else {
+	// Batch requests intentionally return WontCalculateBatchHash - this is expected, not a warning.
+	// Only log warning for unexpected hash failures on single requests.
+	isBatchRequest := errors.Is(hashErr, rpcInterfaceMessages.WontCalculateBatchHash)
+	if hashErr != nil && !isBatchRequest {
+		utils.LavaFormatWarning("Failed converting message to hash", hashErr, utils.LogAttr("url", request.RelayData.ApiUrl), utils.LogAttr("data", string(request.RelayData.Data)))
+	} else if hashErr == nil {
 		requestHashString = string(hash)
 	}
 
 	var replyWrapper *chainlib.RelayReplyWrapper
 	var isNodeError bool
 	var errorMessage string
+	var err error
 	emptyTime := 0 * time.Millisecond
 	for retryAttempt := 0; retryAttempt <= psm.numberOfRetries; retryAttempt++ {
 		sendTime := time.Now()
@@ -90,7 +95,13 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 		// Check for node errors
 		isNodeError, errorMessage = chainMsg.CheckResponseError(replyWrapper.RelayReply.Data, replyWrapper.StatusCode)
 
-		// Failed fetching hash return the reply.
+		// Batch requests cannot be hashed (intentionally), so return immediately with latency.
+		// No retries are possible for batch requests since we can't cache the hash.
+		if isBatchRequest {
+			return replyWrapper, latency, nil
+		}
+
+		// For single requests that failed to hash unexpectedly, we can't perform retries.
 		if requestHashString == "" {
 			utils.LavaFormatWarning("Failed to hash request, shouldn't happen", nil, utils.LogAttr("url", request.RelayData.ApiUrl), utils.LogAttr("data", string(request.RelayData.Data)))
 			break // We can't perform the retries as we failed fetching the request hash.

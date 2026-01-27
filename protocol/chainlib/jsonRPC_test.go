@@ -65,9 +65,6 @@ func TestJSONChainParser_Spec(t *testing.T) {
 	}
 	apip.SetSpec(spec)
 
-	// fetch data reliability params
-	enabled, dataReliabilityThreshold := apip.DataReliabilityParams()
-
 	// fetch chain block stats
 	allowedBlockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData, blocksInFinalizationProof := apip.ChainBlockStats()
 
@@ -75,8 +72,6 @@ func TestJSONChainParser_Spec(t *testing.T) {
 	AverageBlockTime := time.Duration(apip.spec.AverageBlockTime) * time.Millisecond
 
 	// check that the spec was set correctly
-	assert.Equal(t, apip.spec.DataReliabilityEnabled, enabled)
-	assert.Equal(t, apip.spec.GetReliabilityThreshold(), dataReliabilityThreshold)
 	assert.Equal(t, apip.spec.AllowedBlockLagForQosSync, allowedBlockLagForQosSync)
 	assert.Equal(t, apip.spec.BlockDistanceForFinalizedData, blockDistanceForFinalizedData)
 	assert.Equal(t, apip.spec.BlocksInFinalizationProof, blocksInFinalizationProof)
@@ -93,7 +88,6 @@ func TestJSONChainParser_NilGuard(t *testing.T) {
 	}()
 
 	apip.SetSpec(spectypes.Spec{})
-	apip.DataReliabilityParams()
 	apip.ChainBlockStats()
 	apip.getSupportedApi("", "", "")
 	apip.ParseMsg("", []byte{}, "", nil, extensionslib.ExtensionInfo{LatestBlock: 0})
@@ -356,6 +350,48 @@ func TestJsonRpcBatchCall(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, relayReply)
 	require.Equal(t, response, string(relayReply.RelayReply.Data))
+}
+
+func TestJsonRpcBatchSizeLimit(t *testing.T) {
+	ctx := context.Background()
+
+	// Set a batch size limit of 2
+	originalLimit := MaxBatchRequestSize
+	MaxBatchRequestSize = 2
+	defer func() { MaxBatchRequestSize = originalLimit }()
+
+	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"jsonrpc":"2.0","id":1,"result":"0x1"}`)
+	})
+
+	chainParser, _, _, closeServer, _, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+
+	// Test: batch within limit should succeed
+	batchWithinLimit := `[{"jsonrpc":"2.0","id":1,"method":"eth_chainId"},{"jsonrpc":"2.0","id":2,"method":"eth_chainId"}]`
+	_, err = chainParser.ParseMsg("", []byte(batchWithinLimit), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+
+	// Test: batch exceeding limit should fail
+	batchExceedingLimit := `[{"jsonrpc":"2.0","id":1,"method":"eth_chainId"},{"jsonrpc":"2.0","id":2,"method":"eth_chainId"},{"jsonrpc":"2.0","id":3,"method":"eth_chainId"}]`
+	_, err = chainParser.ParseMsg("", []byte(batchExceedingLimit), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.Error(t, err)
+	require.True(t, ErrBatchRequestSizeExceeded.Is(err))
+
+	// Test: single request should always succeed regardless of limit
+	singleRequest := `{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}`
+	_, err = chainParser.ParseMsg("", []byte(singleRequest), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+
+	// Test: when limit is 0 (unlimited), large batches should succeed
+	MaxBatchRequestSize = 0
+	largeBatch := `[{"jsonrpc":"2.0","id":1,"method":"eth_chainId"},{"jsonrpc":"2.0","id":2,"method":"eth_chainId"},{"jsonrpc":"2.0","id":3,"method":"eth_chainId"},{"jsonrpc":"2.0","id":4,"method":"eth_chainId"},{"jsonrpc":"2.0","id":5,"method":"eth_chainId"}]`
+	_, err = chainParser.ParseMsg("", []byte(largeBatch), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
 }
 
 func TestJsonRpcBatchCallSameID(t *testing.T) {

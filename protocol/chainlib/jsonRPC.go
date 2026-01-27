@@ -25,7 +25,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/utils"
-	"github.com/lavanet/lava/v5/utils/memoryutils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
@@ -112,6 +111,13 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	}
 	if len(msgs) == 0 {
 		return nil, errors.New("empty unmarshaled json")
+	}
+	// Check batch size limit
+	if MaxBatchRequestSize > 0 && len(msgs) > MaxBatchRequestSize {
+		return nil, utils.LavaFormatWarning("batch request size exceeded", ErrBatchRequestSizeExceeded,
+			utils.LogAttr("batchSize", len(msgs)),
+			utils.LogAttr("maxAllowed", MaxBatchRequestSize),
+		)
 	}
 	var api *spectypes.Api
 	var apiCollection *spectypes.ApiCollection
@@ -292,21 +298,6 @@ func (apip *JsonRPCChainParser) GetInternalPaths() map[string]struct{} {
 	return internalPaths
 }
 
-// DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
-func (apip *JsonRPCChainParser) DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32) {
-	// Guard that the JsonRPCChainParser instance exists
-	if apip == nil {
-		return false, 0
-	}
-
-	// Acquire read lock
-	apip.rwLock.RLock()
-	defer apip.rwLock.RUnlock()
-
-	// Return enabled and data reliability threshold from spec
-	return apip.spec.DataReliabilityEnabled, apip.spec.GetReliabilityThreshold()
-}
-
 // ChainBlockStats returns block stats from spec
 // (spec.AllowedBlockLagForQosSync, spec.AverageBlockTime, spec.BlockDistanceForFinalizedData)
 func (apip *JsonRPCChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32) {
@@ -331,7 +322,6 @@ type JsonRPCChainListener struct {
 	relaySender                   RelaySender
 	healthReporter                HealthReporter
 	logger                        *metrics.RPCConsumerLogs
-	refererData                   *RefererData
 	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
 	listeningAddress              string
 	websocketConnectionLimiter    *WebsocketConnectionLimiter
@@ -341,7 +331,6 @@ type JsonRPCChainListener struct {
 func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	relaySender RelaySender, healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
-	refererData *RefererData,
 	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager,
 ) (chainListener *JsonRPCChainListener) {
 	// Create a new instance of JsonRPCChainListener
@@ -350,7 +339,6 @@ func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 		relaySender:                   relaySender,
 		healthReporter:                healthReporter,
 		logger:                        rpcConsumerLogs,
-		refererData:                   refererData,
 		consumerWsSubscriptionManager: consumerWsSubscriptionManager,
 		websocketConnectionLimiter:    &WebsocketConnectionLimiter{ipToNumberOfActiveConnections: make(map[string]int64)},
 	}
@@ -401,13 +389,11 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		consumerWebsocketManager := NewConsumerWebsocketManager(ConsumerWebsocketManagerOptions{
 			WebsocketConn:                 websocketConn,
 			RpcConsumerLogs:               apil.logger,
-			RefererMatchString:            refererMatchString,
 			CmdFlags:                      cmdFlags,
 			RelayMsgLogMaxChars:           relayMsgLogMaxChars,
 			ChainID:                       chainID,
 			ApiInterface:                  apiInterface,
 			ConnectionType:                fiber.MethodPost, // We use it for the ParseMsg method, which needs to know the connection type to find the method in the spec
-			RefererData:                   apil.refererData,
 			RelaySender:                   apil.relaySender,
 			ConsumerWsSubscriptionManager: apil.consumerWsSubscriptionManager,
 			WebsocketConnectionUID:        strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10),
@@ -433,14 +419,15 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		defer cancel()
 		guid := utils.GenerateUniqueIdentifier()
 		ctx = utils.WithUniqueIdentifier(ctx, guid)
-		ctx = utils.ExtractWantedHeadersAndUpdateContext(fiberCtx, ctx)
 		msgSeed := strconv.FormatUint(guid, 10)
 		if test_mode {
 			apil.logger.LogTestMode(fiberCtx)
 		}
 
-		userIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
+		// Cache headers once at the start to avoid repeated lookups
 		metadataValues := fiberCtx.GetReqHeaders()
+		ctx = utils.ExtractWantedHeadersFromCachedMap(metadataValues, ctx)
+		userIp := GetHeaderFromCachedMap(metadataValues, common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		headers := convertToMetadataMap(metadataValues)
 
 		msg := string(fiberCtx.Body())
@@ -462,21 +449,16 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			utils.LogAttr("headers", headers),
 		)
 
-		// Log memory and message size at consumer entry point
-		memoryutils.LogMemoryAndMessageSize(ctx, "consumer_request_entry", len(msg),
-			utils.Attribute{Key: "chain_id", Value: chainID},
-			utils.Attribute{Key: "api_interface", Value: apiInterface},
-			utils.Attribute{Key: "dapp_id", Value: dappID},
-		)
-
-		refererMatch := fiberCtx.Params(refererMatchString, "")
 		relayResult, err := apil.relaySender.SendRelay(ctx, path, msg, http.MethodPost, dappID, userIp, metricsData, headers)
-		if refererMatch != "" && apil.refererData != nil && err == nil {
-			go apil.refererData.SendReferer(refererMatch, chainID, msg, userIp, metadataValues, nil)
-		}
 		reply := relayResult.GetReply()
-		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
+		go apil.logger.AddMetricForHttp(metricsData, err, metadataValues)
 		if err != nil {
+			// Check if batch size limit exceeded - return 429 rate limit error
+			if ErrBatchRequestSizeExceeded.Is(err) {
+				errorResponse, _ := json.Marshal(common.JsonRpcBatchSizeExceededError)
+				return fiberCtx.Status(fiber.StatusTooManyRequests).SendString(string(errorResponse))
+			}
+
 			if common.APINotSupportedError.Is(err) {
 				// Convert error to JSON string and add headers
 				errorResponse, _ := json.Marshal(common.JsonRpcMethodNotFoundError)
@@ -521,14 +503,6 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		}
 
 		response := checkBTCResponseAndFixReply(chainID, reply.Data)
-
-		// Log memory and message size before sending to user
-		memoryutils.LogMemoryAndMessageSize(ctx, "consumer_pre_user_send", len(response),
-			utils.Attribute{Key: "chain_id", Value: chainID},
-			utils.Attribute{Key: "api_interface", Value: apiInterface},
-			utils.Attribute{Key: "dapp_id", Value: dappID},
-		)
-
 		// Log request and response
 		apil.logger.LogRequestAndResponse("jsonrpc http",
 			false,
@@ -545,30 +519,9 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		}
 		// Return json response and add metric for after provider processing
 		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
-
-		// Log memory and message size after sending to user
-		memoryutils.LogMemoryAndMessageSize(ctx, "consumer_post_user_send", len(response),
-			utils.Attribute{Key: "chain_id", Value: chainID},
-			utils.Attribute{Key: "api_interface", Value: apiInterface},
-			utils.Attribute{Key: "dapp_id", Value: dappID},
-		)
-
 		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, chainID, apiInterface)
 		apil.logger.SetEndToEndLatency(chainID, apiInterface, time.Since(startTime))
 		return err
-	}
-	if apil.refererData != nil && apil.refererData.Marker != "" {
-		app.Use("/"+apil.refererData.Marker+":"+refererMatchString+"/ws", func(c *fiber.Ctx) error {
-			if websocket.IsWebSocketUpgrade(c) {
-				c.Locals("allowed", true)
-				return c.Next()
-			}
-			return fiber.ErrUpgradeRequired
-		})
-		websocketCallbackWithDappIDAndReferer := constructFiberCallbackWithHeaderAndParameterExtractionAndReferer(webSocketCallback, apil.logger.StoreMetricData)
-		app.Get("/"+apil.refererData.Marker+":"+refererMatchString+"/ws", websocketCallbackWithDappIDAndReferer)
-		app.Get("/"+apil.refererData.Marker+":"+refererMatchString+"/websocket", websocketCallbackWithDappIDAndReferer)
-		app.Post("/"+apil.refererData.Marker+":"+refererMatchString+"/*", handlerPost)
 	}
 	app.Post("/*", handlerPost)
 	// Go
@@ -794,10 +747,17 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 
 	err = cp.ValidateRequestAndResponseIds(nodeMessage.ID, replyMsg.ID)
 	if err != nil {
+		// When there's a response error (e.g., "Apikey is expired"), the node may return
+		// an empty/invalid ID, causing ID mismatch. Include the response error to clarify the root cause.
+		responseError := ""
+		if replyMsg.Error != nil {
+			responseError = replyMsg.Error.Message
+		}
 		return nil, "", nil, utils.LavaFormatError("jsonRPC ID mismatch error", err,
 			utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx},
 			utils.Attribute{Key: "nodeMessageRequestId", Value: nodeMessage.ID},
 			utils.Attribute{Key: "responseId", Value: rpcMessage.ID},
+			utils.Attribute{Key: "responseError", Value: responseError},
 			utils.Attribute{Key: "reply", Value: replyMsg},
 			utils.Attribute{Key: "request", Value: nodeMessage},
 		)

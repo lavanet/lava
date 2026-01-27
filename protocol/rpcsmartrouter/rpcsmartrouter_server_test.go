@@ -87,7 +87,7 @@ func createRpcSmartRouter(t *testing.T, ctrl *gomock.Controller, ctx context.Con
 	rpcSmartRouterLogs, err := metrics.NewRPCConsumerLogs(nil, nil, nil, nil)
 	require.NoError(t, err)
 	// Smart router signature: no consumerStateTracker, no finalizationConsensus
-	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, consumerSessionManager, requiredResponses, consumeSK, lavaChainID, nil, rpcSmartRouterLogs, consumerAccount, smartRouterConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
+	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, consumerSessionManager, requiredResponses, consumeSK, lavaChainID, nil, rpcSmartRouterLogs, consumerAccount, smartRouterConsistency, nil, consumerCmdFlags, false, nil, nil)
 	require.NoError(t, err)
 
 	return rpcSmartRouterServer, chainParser
@@ -136,7 +136,8 @@ func TestRelayInnerProviderUniqueIdFlow(t *testing.T) {
 		DoAndReturn(func(ctx context.Context, in *pairingtypes.RelayRequest, opts ...grpc.CallOption) (*pairingtypes.RelayReply, error) {
 			// Find the TrailerCallOption among the options (could be 1 or 2 options now)
 			for _, opt := range opts {
-				if trailerCallOption, ok := opt.(grpc.TrailerCallOption); ok {
+				trailerCallOption, ok := opt.(grpc.TrailerCallOption)
+				if ok {
 					trailerCallOption.TrailerAddr.Set(chainlib.RpcProviderUniqueIdHeader, providerUniqueId)
 					break
 				}

@@ -147,8 +147,6 @@ func (rpcpe *RPCProviderEndpoint) Key() string {
 const (
 	notBlockListedConsumer = 0
 	blockListedConsumer    = 1
-	notDataReliabilityPSWC = 0
-	isDataReliabilityPSWC  = 1
 )
 
 // holds all of the data for a consumer (project) for a certain epoch
@@ -157,40 +155,21 @@ type ProviderSessionsWithConsumerProject struct {
 	isBlockListed        uint32
 	consumersProjectId   string
 	epochData            *ProviderSessionsEpochData
-	badgeEpochData       map[string]*ProviderSessionsEpochData
 	Lock                 sync.RWMutex
-	isDataReliability    uint32 // 0 is false, 1 is true. set to uint so we can atomically read
 	pairedProviders      int64
 	ongoingSubscriptions map[string]*RPCSubscription // key == sub id
 }
 
-type BadgeSession struct {
-	BadgeCuAllocation uint64
-	BadgeUser         string
-}
-
-func NewProviderSessionsWithConsumer(projectId string, epochData *ProviderSessionsEpochData, isDataReliability uint32, pairedProviders int64) *ProviderSessionsWithConsumerProject {
+func NewProviderSessionsWithConsumer(projectId string, epochData *ProviderSessionsEpochData, pairedProviders int64) *ProviderSessionsWithConsumerProject {
 	pswc := &ProviderSessionsWithConsumerProject{
 		Sessions:             map[uint64]*SingleProviderSession{},
 		isBlockListed:        0,
 		consumersProjectId:   projectId,
 		epochData:            epochData,
-		badgeEpochData:       map[string]*ProviderSessionsEpochData{},
-		isDataReliability:    isDataReliability,
 		pairedProviders:      pairedProviders,
 		ongoingSubscriptions: map[string]*RPCSubscription{},
 	}
 	return pswc
-}
-
-// reads the pairedProviders data atomically for DR
-func (pswc *ProviderSessionsWithConsumerProject) atomicReadPairedProviders() int64 {
-	return atomic.LoadInt64(&pswc.pairedProviders)
-}
-
-// reads the isDataReliability data atomically
-func (pswc *ProviderSessionsWithConsumerProject) atomicReadIsDataReliability() uint32 {
-	return atomic.LoadUint32(&pswc.isDataReliability)
 }
 
 // reads cs.BlockedEpoch atomically to determine if the consumer is blocked notBlockListedConsumer = 0, blockListedConsumer = 1
@@ -202,10 +181,6 @@ func (pswc *ProviderSessionsWithConsumerProject) atomicReadMaxComputeUnits() (ma
 	return atomic.LoadUint64(&pswc.epochData.MaxComputeUnits)
 }
 
-func atomicReadBadgeMaxComputeUnits(badgeUserEpochData *ProviderSessionsEpochData) (maxComputeUnits uint64) {
-	return atomic.LoadUint64(&badgeUserEpochData.MaxComputeUnits)
-}
-
 func (pswc *ProviderSessionsWithConsumerProject) atomicReadUsedComputeUnits() (usedComputeUnits uint64) {
 	return atomic.LoadUint64(&pswc.epochData.UsedComputeUnits)
 }
@@ -214,22 +189,11 @@ func (pswc *ProviderSessionsWithConsumerProject) atomicWriteUsedComputeUnits(cu 
 	atomic.StoreUint64(&pswc.epochData.UsedComputeUnits, cu)
 }
 
-func atomicReadBadgeUsedComputeUnits(badgeUserEpochData *ProviderSessionsEpochData) (usedComputeUnits uint64) {
-	return atomic.LoadUint64(&badgeUserEpochData.UsedComputeUnits)
-}
-
 func (pswc *ProviderSessionsWithConsumerProject) atomicCompareAndWriteUsedComputeUnits(newUsed, knownUsed uint64) bool {
 	if newUsed == knownUsed { // no need to compare swap
 		return true
 	}
 	return atomic.CompareAndSwapUint64(&pswc.epochData.UsedComputeUnits, knownUsed, newUsed)
-}
-
-func atomicCompareAndWriteBadgeUsedComputeUnits(newUsed, knownUsed uint64, badgeUserEpochData *ProviderSessionsEpochData) bool {
-	if newUsed == knownUsed { // no need to compare swap
-		return true
-	}
-	return atomic.CompareAndSwapUint64(&badgeUserEpochData.UsedComputeUnits, knownUsed, newUsed)
 }
 
 func (pswc *ProviderSessionsWithConsumerProject) atomicReadMissingComputeUnits() (missingComputeUnits uint64) {
@@ -295,31 +259,4 @@ func (pswc *ProviderSessionsWithConsumerProject) getExistingSession(ctx context.
 		return session, err
 	}
 	return nil, SessionDoesNotExist
-}
-
-// this function verifies the provider can create a data reliability session and returns one if valid
-func (pswc *ProviderSessionsWithConsumerProject) getDataReliabilitySingleSession(sessionId, epoch uint64) (session *SingleProviderSession, err error) {
-	utils.LavaFormatDebug("Provider creating new DataReliabilitySingleSession", utils.Attribute{Key: "SessionID", Value: sessionId}, utils.Attribute{Key: "epoch", Value: epoch})
-	session, foundDataReliabilitySession := pswc.Sessions[sessionId]
-	if foundDataReliabilitySession {
-		// if session exists, relay number should be 0 as it might have had an error
-		// locking the session and returning for validation
-		session.lock.Lock()
-		return session, nil
-	}
-
-	// otherwise return a new session and add it to the sessions list
-	session = &SingleProviderSession{
-		userSessionsParent: pswc,
-		SessionID:          sessionId,
-		PairingEpoch:       epoch,
-	}
-	pswc.Lock.Lock()
-	defer pswc.Lock.Unlock()
-	// this is a double lock and risky but we just created session and nobody has reference to it yet
-	session.lock.Lock()
-	pswc.Sessions[sessionId] = session
-
-	// session is still locked when we return it
-	return session, nil
 }
