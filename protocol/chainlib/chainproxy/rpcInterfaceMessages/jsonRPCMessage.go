@@ -228,28 +228,46 @@ func NewBatchMessage(msgs []JsonrpcMessage) (JsonrpcBatchMessage, error) {
 }
 
 // returns if error exists and
+// For batch requests: only consider it an error if ALL sub-requests failed.
+// If at least one sub-request succeeded (has result, no error), treat the batch as successful.
+// This prevents unnecessary retries when batch responses contain partial errors (e.g., Solana skipped slots).
 func CheckResponseErrorForJsonRpcBatch(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
-	// Use a temporary struct that omits the Result field to avoid allocating memory for large results
+	// Use a temporary struct that checks for both error and result presence
 	var result []struct {
-		Error *rpcclient.JsonError `json:"error,omitempty"`
+		Error  *rpcclient.JsonError `json:"error,omitempty"`
+		Result json.RawMessage      `json:"result,omitempty"`
 	}
 	err := json.Unmarshal(data, &result)
 	if err != nil {
 		utils.LavaFormatWarning("Failed unmarshalling CheckError", err, utils.LogAttr("data", string(data)))
 		return false, ""
 	}
-	aggregatedResults := ""
+
+	// Check if at least one sub-request succeeded (has result, no error)
+	hasAnySuccess := false
+	aggregatedErrors := ""
 	numberOfBatchElements := len(result)
+
 	for idx, batchResult := range result {
-		if batchResult.Error == nil {
-			continue
+		if batchResult.Error == nil && len(batchResult.Result) > 0 {
+			// This sub-request succeeded
+			hasAnySuccess = true
 		}
-		if batchResult.Error.Message != "" {
-			aggregatedResults += batchResult.Error.Message
-			if idx < numberOfBatchElements-1 {
-				aggregatedResults += ",-," // add a unique comma separator between results
+		if batchResult.Error != nil && batchResult.Error.Message != "" {
+			if aggregatedErrors != "" {
+				aggregatedErrors += ",-," // add a unique comma separator between results
 			}
+			aggregatedErrors += batchResult.Error.Message
 		}
+		_ = idx // suppress unused warning
+		_ = numberOfBatchElements
 	}
-	return aggregatedResults != "", aggregatedResults
+
+	// Only return error if ALL sub-requests failed (no successes)
+	// If we have any success, the batch response is valid and should not trigger a retry
+	if hasAnySuccess {
+		return false, ""
+	}
+
+	return aggregatedErrors != "", aggregatedErrors
 }
