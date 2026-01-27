@@ -659,7 +659,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 
 			rpcConsumerSharedState := viper.GetBool(common.SharedStateFlag)
 			err = rpcConsumer.Start(ctx, &rpcConsumerStartOptions{
-<<<<<<< HEAD
 				txFactory:                txFactory,
 				clientCtx:                clientCtx,
 				rpcEndpoints:             rpcEndpoints,
@@ -670,23 +669,8 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				analyticsServerAddresses: analyticsServerAddresses,
 				cmdFlags:                 consumerPropagatedFlags,
 				stateShare:               rpcConsumerSharedState,
-				refererData:              refererData,
 				geoLocation:              geolocation,
-				memoryGCThresholdGB:      memoryGCThresholdGB,
 				weightedSelectorConfig:   weightedSelectorConfig,
-=======
-				txFactory,
-				clientCtx,
-				rpcEndpoints,
-				requiredResponses,
-				cache,
-				strategyFlag.Strategy,
-				maxConcurrentProviders,
-				analyticsServerAddresses,
-				consumerPropagatedFlags,
-				rpcConsumerSharedState,
-				geolocation,
->>>>>>> origin/main
 			})
 			return err
 		},

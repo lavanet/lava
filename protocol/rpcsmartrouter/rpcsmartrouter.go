@@ -965,11 +965,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				clientCtx:                clientCtx,
 				privKey:                  privKey,
 				lavaChainID:              lavaChainID,
-<<<<<<< HEAD
-				memoryGCThresholdGB:      memoryGCThresholdGB,
 				weightedSelectorConfig:   weightedSelectorConfig,
-=======
->>>>>>> origin/main
 			})
 
 			return err
