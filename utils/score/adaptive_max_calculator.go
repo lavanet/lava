@@ -153,7 +153,7 @@ func (a *AdaptiveMaxCalculator) applyDecayToDigest(decayFactor float64) {
 	a.digest.ForEachCentroid(func(mean float64, count uint64) bool {
 		// Apply decay to the weight
 		newWeight := float64(count) * decayFactor
-		
+
 		// Round to nearest integer, but drop if < 0.5 (would round to 0)
 		weightRounded := uint64(math.Round(newWeight))
 		if weightRounded > 0 {
