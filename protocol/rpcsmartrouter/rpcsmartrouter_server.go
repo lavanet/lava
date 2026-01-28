@@ -884,25 +884,34 @@ func (rpcss *RPCSmartRouterServer) sendRelayToEndpoint(
 	var cacheError error
 	selection := relayProcessor.GetSelection()
 	crossValidationParams := relayProcessor.GetCrossValidationParams()
-	if rpcss.cache.CacheActive() && selection != relaycore.CrossValidation { // use cache only if its defined and cross-validation is disabled.
-		utils.LavaFormatDebug("Cache lookup attempt",
-			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("cacheActive", true),
-			utils.LogAttr("reqBlock", reqBlock),
-			utils.LogAttr("forceCacheRefresh", protocolMessage.GetForceCacheRefresh()),
-			utils.LogAttr("selection", selection),
-		)
-	} else if rpcss.cache.CacheActive() && selection == relaycore.CrossValidation && crossValidationParams != nil {
-		utils.LavaFormatDebug("Cache bypassed due to cross-validation requirements",
-			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("cacheActive", true),
-			utils.LogAttr("selection", selection),
-			utils.LogAttr("agreementThreshold", crossValidationParams.AgreementThreshold),
-			utils.LogAttr("reason", "cross-validation requires fresh endpoint validation, cache would defeat consensus verification"),
-		)
-	}
-	if rpcss.cache.CacheActive() && selection != relaycore.CrossValidation { // use cache only if its defined and cross-validation is disabled.
-		if !protocolMessage.GetForceCacheRefresh() {
+
+	// Cache lookup: only if cache is active and cross-validation is disabled
+	crossValidationEnabled := selection == relaycore.CrossValidation && crossValidationParams != nil
+	if rpcss.cache.CacheActive() {
+		if crossValidationEnabled {
+			// Cross-validation requires fresh endpoint validation - cache would defeat consensus verification
+			utils.LavaFormatDebug("Cache bypassed due to cross-validation requirements",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("cacheActive", true),
+				utils.LogAttr("selection", selection),
+				utils.LogAttr("agreementThreshold", crossValidationParams.AgreementThreshold),
+				utils.LogAttr("reason", "cross-validation requires fresh endpoint validation, cache would defeat consensus verification"),
+			)
+		} else if protocolMessage.GetForceCacheRefresh() {
+			// User requested cache bypass via header
+			utils.LavaFormatDebug("Cache bypassed due to force-cache-refresh header",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("cacheActive", true),
+			)
+		} else {
+			// Proceed with cache lookup
+			utils.LavaFormatDebug("Cache lookup attempt",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("cacheActive", true),
+				utils.LogAttr("reqBlock", reqBlock),
+				utils.LogAttr("forceCacheRefresh", false),
+				utils.LogAttr("selection", selection),
+			)
 			allowCacheLookup := reqBlock != spectypes.NOT_APPLICABLE
 
 			if allowCacheLookup {
