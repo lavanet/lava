@@ -151,3 +151,135 @@ func TestParseJsonRPCBatch(t *testing.T) {
 		}
 	}
 }
+
+func TestCheckResponseErrorForJsonRpcBatch(t *testing.T) {
+	t.Run("all_success_no_error", func(t *testing.T) {
+		// All sub-requests succeeded
+		data := []byte(`[
+			{"jsonrpc":"2.0","id":1,"result":{"blockNumber":"0x123"}},
+			{"jsonrpc":"2.0","id":2,"result":{"blockNumber":"0x124"}},
+			{"jsonrpc":"2.0","id":3,"result":{"blockNumber":"0x125"}}
+		]`)
+		hasError, errorMsg := CheckResponseErrorForJsonRpcBatch(data, 200)
+		require.False(t, hasError, "All success should not have error")
+		require.Empty(t, errorMsg)
+	})
+
+	t.Run("all_errors_should_return_error", func(t *testing.T) {
+		// All sub-requests failed
+		data := []byte(`[
+			{"jsonrpc":"2.0","id":1,"error":{"code":-32000,"message":"Slot was skipped"}},
+			{"jsonrpc":"2.0","id":2,"error":{"code":-32000,"message":"Slot was skipped"}},
+			{"jsonrpc":"2.0","id":3,"error":{"code":-32000,"message":"Slot was skipped"}}
+		]`)
+		hasError, errorMsg := CheckResponseErrorForJsonRpcBatch(data, 200)
+		require.True(t, hasError, "All errors should return error")
+		require.Contains(t, errorMsg, "Slot was skipped")
+	})
+
+	t.Run("partial_success_should_not_error", func(t *testing.T) {
+		// Some sub-requests succeeded, some failed - should NOT be considered an error
+		data := []byte(`[
+			{"jsonrpc":"2.0","id":1,"result":{"blockNumber":"0x123"}},
+			{"jsonrpc":"2.0","id":2,"error":{"code":-32000,"message":"Slot was skipped"}},
+			{"jsonrpc":"2.0","id":3,"result":{"blockNumber":"0x125"}}
+		]`)
+		hasError, errorMsg := CheckResponseErrorForJsonRpcBatch(data, 200)
+		require.False(t, hasError, "Partial success should not be considered an error")
+		require.Empty(t, errorMsg)
+	})
+
+	t.Run("single_success_among_errors_should_not_error", func(t *testing.T) {
+		// Only one success among multiple errors - should NOT be considered an error
+		data := []byte(`[
+			{"jsonrpc":"2.0","id":1,"error":{"code":-32000,"message":"Slot was skipped"}},
+			{"jsonrpc":"2.0","id":2,"error":{"code":-32000,"message":"Slot was skipped"}},
+			{"jsonrpc":"2.0","id":3,"result":{"blockNumber":"0x125"}}
+		]`)
+		hasError, errorMsg := CheckResponseErrorForJsonRpcBatch(data, 200)
+		require.False(t, hasError, "Single success should prevent error classification")
+		require.Empty(t, errorMsg)
+	})
+
+	t.Run("empty_batch_no_error", func(t *testing.T) {
+		data := []byte(`[]`)
+		hasError, errorMsg := CheckResponseErrorForJsonRpcBatch(data, 200)
+		require.False(t, hasError)
+		require.Empty(t, errorMsg)
+	})
+
+	t.Run("invalid_json_no_error", func(t *testing.T) {
+		data := []byte(`not valid json`)
+		hasError, errorMsg := CheckResponseErrorForJsonRpcBatch(data, 200)
+		require.False(t, hasError, "Invalid JSON should not return error (fail-open)")
+		require.Empty(t, errorMsg)
+	})
+
+	t.Run("null_result_with_no_error_is_success", func(t *testing.T) {
+		// null result without error is still a valid response (API returned successfully)
+		data := []byte(`[
+			{"jsonrpc":"2.0","id":1,"result":null},
+			{"jsonrpc":"2.0","id":2,"error":{"code":-32000,"message":"Some error"}}
+		]`)
+		// null result is a valid JSON-RPC response - it means the method executed successfully
+		// and returned null. This counts as a success.
+		hasError, _ := CheckResponseErrorForJsonRpcBatch(data, 200)
+		require.False(t, hasError, "null result is a valid success response")
+	})
+
+	t.Run("real_world_solana_batch_partial_error", func(t *testing.T) {
+		// Real-world scenario: Solana batch request where some slots are skipped
+		data := []byte(`[
+			{"jsonrpc":"2.0","id":1,"result":{"slot":123,"blockhash":"abc"}},
+			{"jsonrpc":"2.0","id":2,"error":{"code":-32007,"message":"Slot 124 was skipped, or missing in long-term storage"}},
+			{"jsonrpc":"2.0","id":3,"result":{"slot":125,"blockhash":"def"}}
+		]`)
+		hasError, errorMsg := CheckResponseErrorForJsonRpcBatch(data, 200)
+		require.False(t, hasError, "Solana batch with partial skipped slots should not trigger retry")
+		require.Empty(t, errorMsg)
+	})
+}
+
+func TestCheckResponseErrorForJsonRpcBatch_StrictMode(t *testing.T) {
+	// Save and restore original flag value
+	originalValue := BatchNodeErrorOnAny
+	defer func() { BatchNodeErrorOnAny = originalValue }()
+
+	t.Run("strict_mode_partial_success_is_error", func(t *testing.T) {
+		BatchNodeErrorOnAny = true // Enable strict mode
+
+		data := []byte(`[
+			{"jsonrpc":"2.0","id":1,"result":{"blockNumber":"0x123"}},
+			{"jsonrpc":"2.0","id":2,"error":{"code":-32000,"message":"Slot was skipped"}},
+			{"jsonrpc":"2.0","id":3,"result":{"blockNumber":"0x125"}}
+		]`)
+		hasError, errorMsg := CheckResponseErrorForJsonRpcBatch(data, 200)
+		require.True(t, hasError, "Strict mode: partial success should be an error")
+		require.Contains(t, errorMsg, "Slot was skipped")
+	})
+
+	t.Run("strict_mode_all_success_no_error", func(t *testing.T) {
+		BatchNodeErrorOnAny = true // Enable strict mode
+
+		data := []byte(`[
+			{"jsonrpc":"2.0","id":1,"result":{"blockNumber":"0x123"}},
+			{"jsonrpc":"2.0","id":2,"result":{"blockNumber":"0x124"}},
+			{"jsonrpc":"2.0","id":3,"result":{"blockNumber":"0x125"}}
+		]`)
+		hasError, errorMsg := CheckResponseErrorForJsonRpcBatch(data, 200)
+		require.False(t, hasError, "Strict mode: all success should not have error")
+		require.Empty(t, errorMsg)
+	})
+
+	t.Run("default_mode_partial_success_no_error", func(t *testing.T) {
+		BatchNodeErrorOnAny = false // Default mode
+
+		data := []byte(`[
+			{"jsonrpc":"2.0","id":1,"result":{"blockNumber":"0x123"}},
+			{"jsonrpc":"2.0","id":2,"error":{"code":-32000,"message":"Slot was skipped"}},
+			{"jsonrpc":"2.0","id":3,"result":{"blockNumber":"0x125"}}
+		]`)
+		hasError, _ := CheckResponseErrorForJsonRpcBatch(data, 200)
+		require.False(t, hasError, "Default mode: partial success should not be an error")
+	})
+}
