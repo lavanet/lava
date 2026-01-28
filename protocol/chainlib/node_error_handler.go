@@ -1,7 +1,6 @@
 package chainlib
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -22,58 +21,6 @@ import (
 	"github.com/itchyny/gojq"
 	"github.com/lavanet/lava/v5/utils"
 )
-
-// Error pattern constants for unsupported method detection
-const (
-	// JSON-RPC error patterns
-	JSONRPCMethodNotFound     = "method not found"
-	JSONRPCMethodNotSupported = "method not supported"
-	JSONRPCUnknownMethod      = "unknown method"
-	JSONRPCMethodDoesNotExist = "method does not exist"
-	JSONRPCInvalidMethod      = "invalid method"
-	JSONRPCErrorCode          = "-32601" // JSON-RPC 2.0 method not found error code
-
-	// REST API error patterns
-	RESTEndpointNotFound = "endpoint not found"
-	RESTRouteNotFound    = "route not found"
-	RESTPathNotFound     = "path not found"
-	RESTMethodNotAllowed = "method not allowed"
-
-	// gRPC error patterns
-	GRPCMethodNotImplemented = "method not implemented"
-	GRPCUnimplemented        = "unimplemented"
-	GRPCNotImplemented       = "not implemented"
-	GRPCServiceNotFound      = "service not found"
-
-	// HTTP status codes for unsupported endpoints
-	HTTPStatusNotFound         = 404
-	HTTPStatusMethodNotAllowed = 405
-
-	// JSON-RPC error code for method not found
-	JSONRPCMethodNotFoundCode = -32601
-)
-
-// Pre-computed byte patterns for efficient matching (initialized once at package load)
-// These are the lowercase versions of the pattern constants above
-var unsupportedMethodPatternBytes = [][]byte{
-	// JSON-RPC patterns (most common, ordered by frequency)
-	[]byte(JSONRPCMethodNotFound),     // "method not found"
-	[]byte(JSONRPCMethodNotSupported), // "method not supported"
-	[]byte(JSONRPCUnknownMethod),      // "unknown method"
-	[]byte(JSONRPCMethodDoesNotExist), // "method does not exist"
-	[]byte(JSONRPCInvalidMethod),      // "invalid method"
-	[]byte(JSONRPCErrorCode),          // "-32601"
-	// REST patterns
-	[]byte(RESTEndpointNotFound), // "endpoint not found"
-	[]byte(RESTRouteNotFound),    // "route not found"
-	[]byte(RESTPathNotFound),     // "path not found"
-	[]byte(RESTMethodNotAllowed), // "method not allowed"
-	// gRPC patterns
-	[]byte(GRPCMethodNotImplemented), // "method not implemented"
-	[]byte(GRPCUnimplemented),        // "unimplemented"
-	[]byte(GRPCNotImplemented),       // "not implemented"
-	[]byte(GRPCServiceNotFound),      // "service not found"
-}
 
 type UnsupportedMethodError struct {
 	originalError error
@@ -110,71 +57,25 @@ func NewUnsupportedMethodError(originalError error, methodName string) *Unsuppor
 	}
 }
 
-// GetUnsupportedMethodPatterns returns all error patterns that indicate an unsupported method
-// This is useful for documentation and testing purposes
-func GetUnsupportedMethodPatterns() map[string][]string {
-	return map[string][]string{
-		"json-rpc": {
-			JSONRPCMethodNotFound,
-			JSONRPCMethodNotSupported,
-			JSONRPCUnknownMethod,
-			JSONRPCMethodDoesNotExist,
-			JSONRPCInvalidMethod,
-			JSONRPCErrorCode,
-		},
-		"rest": {
-			RESTEndpointNotFound,
-			RESTRouteNotFound,
-			RESTPathNotFound,
-			RESTMethodNotAllowed,
-		},
-		"grpc": {
-			GRPCMethodNotImplemented,
-			GRPCUnimplemented,
-			GRPCNotImplemented,
-			GRPCServiceNotFound,
-		},
-	}
-}
-
-// IsUnsupportedMethodErrorMessage checks if an error message indicates an unsupported method
-// This is a convenience function that accepts a string directly
-func IsUnsupportedMethodErrorMessage(errorMessage string) bool {
-	return IsUnsupportedMethodErrorMessageBytes([]byte(errorMessage))
-}
-
-// IsUnsupportedMethodErrorMessageBytes checks if an error message (as bytes) indicates an unsupported method.
-// This is more efficient than IsUnsupportedMethodErrorMessage when working with []byte data
-// as it avoids string conversions and uses pre-computed byte patterns with a single-pass lowercase conversion.
-func IsUnsupportedMethodErrorMessageBytes(errorMessage []byte) bool {
-	// Convert to lowercase once (single O(n) pass)
-	errorMsgLower := bytes.ToLower(errorMessage)
-	msgLen := len(errorMsgLower)
-
-	// Check all patterns with early exit on first match
-	for _, pattern := range unsupportedMethodPatternBytes {
-		if len(pattern) <= msgLen && bytes.Contains(errorMsgLower, pattern) {
-			return true
-		}
-	}
-
-	return false
-}
-
 // IsUnsupportedMethodError checks if an error indicates an unsupported method
+// This is the comprehensive check that handles:
+// - Error message pattern matching (via common.IsUnsupportedMethodMessage)
+// - HTTP status codes (404, 405)
+// - gRPC status codes (Unimplemented)
+// - JSON-RPC error codes (-32601)
 func IsUnsupportedMethodError(nodeError error) bool {
 	if nodeError == nil {
 		return false
 	}
 
 	// First check the error message patterns
-	if IsUnsupportedMethodErrorMessage(nodeError.Error()) {
+	if common.IsUnsupportedMethodMessage(nodeError.Error()) {
 		return true
 	}
 
 	// Check for HTTP status codes that indicate unsupported endpoints
 	if httpError, ok := nodeError.(rpcclient.HTTPError); ok {
-		return httpError.StatusCode == HTTPStatusNotFound || httpError.StatusCode == HTTPStatusMethodNotAllowed
+		return httpError.StatusCode == common.HTTPStatusNotFound || httpError.StatusCode == common.HTTPStatusMethodNotAllowed
 	}
 
 	// Check for gRPC status codes
@@ -184,7 +85,7 @@ func IsUnsupportedMethodError(nodeError error) bool {
 			return true
 		}
 		// Also check Unknown code with unsupported method message
-		if st.Code() == codes.Unknown && IsUnsupportedMethodErrorMessage(st.Message()) {
+		if st.Code() == codes.Unknown && common.IsUnsupportedMethodMessage(st.Message()) {
 			return true
 		}
 	}
@@ -192,12 +93,12 @@ func IsUnsupportedMethodError(nodeError error) bool {
 	// Try to recover JSON-RPC error from HTTP error
 	if jsonMsg := TryRecoverNodeErrorFromClientError(nodeError); jsonMsg != nil && jsonMsg.Error != nil {
 		// JSON-RPC error code -32601 is "Method not found"
-		if jsonMsg.Error.Code == JSONRPCMethodNotFoundCode {
+		if jsonMsg.Error.Code == common.JSONRPCMethodNotFoundCode {
 			return true
 		}
 		// Check error message patterns in JSON-RPC error
 		if jsonMsg.Error.Message != "" {
-			return IsUnsupportedMethodErrorMessage(jsonMsg.Error.Message)
+			return common.IsUnsupportedMethodMessage(jsonMsg.Error.Message)
 		}
 	}
 

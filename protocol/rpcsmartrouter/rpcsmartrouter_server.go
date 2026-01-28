@@ -458,16 +458,6 @@ func (rpcss *RPCSmartRouterServer) SendParsedRelay(
 	returnedResult, err := relayProcessor.ProcessingResult()
 	rpcss.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, protocolMessage, protocolMessage.GetApi().GetName())
 	if err != nil {
-		// Check if this is an unsupported method error from the error message
-		// This catches cases where the provider returns a gRPC error instead of response data
-		if rpcss.cache.CacheActive() && chainlib.IsUnsupportedMethodError(err) {
-			utils.LavaFormatDebug("ProcessingResult returned unsupported method error - caching",
-				utils.LogAttr("GUID", ctx),
-				utils.LogAttr("error", err.Error()),
-			)
-			// Cache the unsupported method error for future requests
-			go rpcss.cacheUnsupportedMethodErrorResponse(ctx, protocolMessage, returnedResult)
-		}
 		return returnedResult, utils.LavaFormatError("failed processing responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.LogAttr("endpoint", rpcss.listenEndpoint.Key()))
 	}
 
@@ -484,81 +474,6 @@ func (rpcss *RPCSmartRouterServer) SendParsedRelay(
 
 func (rpcss *RPCSmartRouterServer) GetChainIdAndApiInterface() (string, string) {
 	return rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface
-}
-
-// cacheUnsupportedMethodErrorResponse caches an unsupported method error like a regular response
-// This is called when the provider returns a gRPC error instead of response data
-func (rpcss *RPCSmartRouterServer) cacheUnsupportedMethodErrorResponse(ctx context.Context, protocolMessage chainlib.ProtocolMessage, relayResult *common.RelayResult) {
-	if relayResult == nil {
-		return
-	}
-
-	chainId, _ := rpcss.GetChainIdAndApiInterface()
-	relayData := protocolMessage.RelayPrivateData()
-	if relayData == nil {
-		return
-	}
-
-	// Create error response with placeholder GUID
-	// Note: When retrieved from cache, the actual request GUID will be different
-	// We use "CACHED_ERROR" as a marker to indicate this is a cached unsupported method error
-	errorData := `{"Error_GUID":"CACHED_ERROR","error":{"code":-32601,"message":"Method not found"}}`
-	errorReply := &pairingtypes.RelayReply{
-		Data:        []byte(errorData),
-		LatestBlock: relayResult.Reply.GetLatestBlock(),
-	}
-
-	// Get the resolved block for caching
-	// relayData.RequestBlock may still be negative (-2 for LATEST_BLOCK)
-	// Use seenBlock as the resolved block for caching
-	requestedBlock := relayData.SeenBlock
-	if requestedBlock <= 0 {
-		// Fallback to 0 if seenBlock is also not set
-		requestedBlock = 0
-	}
-	seenBlock := relayData.SeenBlock
-
-	hashKey, _, hashErr := chainlib.HashCacheRequest(relayData, chainId)
-	if hashErr != nil {
-		return
-	}
-
-	// Determine if finalized based on block age (like regular responses)
-	_, _, blockDistanceForFinalizedData, _ := rpcss.chainParser.ChainBlockStats()
-	var latestBlock int64
-	if relayResult.Reply != nil {
-		latestBlock = relayResult.Reply.LatestBlock
-	}
-	finalized := spectypes.IsFinalizedBlock(requestedBlock, latestBlock, int64(blockDistanceForFinalizedData))
-
-	cacheCtx, cancel := context.WithTimeout(context.Background(), common.CacheWriteTimeout)
-	defer cancel()
-	_, averageBlockTime, _, _ := rpcss.chainParser.ChainBlockStats()
-
-	err := rpcss.cache.SetEntry(cacheCtx, &pairingtypes.RelayCacheSet{
-		RequestHash:           hashKey,
-		ChainId:               chainId,
-		RequestedBlock:        requestedBlock,
-		SeenBlock:             seenBlock,
-		BlockHash:             nil,
-		Response:              errorReply,
-		Finalized:             finalized,
-		OptionalMetadata:      nil,
-		SharedStateId:         "",
-		AverageBlockTime:      int64(averageBlockTime),
-		IsNodeError:           false,
-		BlocksHashesToHeights: nil,
-	})
-
-	if err != nil {
-		utils.LavaFormatWarning("error caching unsupported method error response", err, utils.LogAttr("GUID", ctx))
-	} else {
-		utils.LavaFormatDebug("Successfully cached unsupported method error",
-			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("requestedBlock", requestedBlock),
-			utils.LogAttr("finalized", finalized),
-		)
-	}
 }
 
 func (rpcss *RPCSmartRouterServer) ProcessRelaySend(ctx context.Context, protocolMessage chainlib.ProtocolMessage, analytics *metrics.RelayMetrics) (*relaycore.RelayProcessor, error) {
@@ -1296,7 +1211,8 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 
 			// Smart router uses 0 for syncGap since it doesn't track consensus
 			syncGap := int64(0)
-			sessionHandled.Store(true)                                                                                                                                                                                                                                                                                                        // Mark session as handled before OnSessionDone
+			sessionHandled.Store(true)
+			// Mark session as handled before OnSessionDone
 			errResponse = rpcss.sessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), syncGap, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
 			isNodeError, _ := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
 			localRelayResult.IsNodeError = isNodeError
@@ -1304,18 +1220,11 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 				utils.LavaFormatDebug("Result Code", utils.LogAttr("isNodeError", isNodeError), utils.LogAttr("StatusCode", localRelayResult.StatusCode), utils.LogAttr("GUID", ctx))
 			}
 			if rpcss.cache.CacheActive() && rpcclient.ValidateStatusCodes(localRelayResult.StatusCode, true) == nil {
-				// Check if this is an unsupported method error (use bytes variant to avoid string conversion)
-				isUnsupportedMethodError := chainlib.IsUnsupportedMethodErrorMessageBytes(localRelayResult.Reply.Data)
-
 				// Determine if we should cache this response
 				// - Always cache unsupported method errors (treat like regular API responses based on block)
 				// - Only cache successful responses when quorum is disabled
 				shouldCache := false
-				if isUnsupportedMethodError {
-					// Cache unsupported method errors like regular responses
-					// This allows latest block errors to use tempCache and historical to use finalizedCache
-					shouldCache = true
-				} else if !quorumParams.Enabled() {
+				if !quorumParams.Enabled() {
 					shouldCache = !isNodeError // Cache successful responses only when quorum is disabled
 				} else {
 					// Quorum is enabled and this is not an unsupported method error
