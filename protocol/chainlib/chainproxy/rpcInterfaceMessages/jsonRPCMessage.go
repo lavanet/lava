@@ -246,9 +246,8 @@ func CheckResponseErrorForJsonRpcBatch(data []byte, httpStatusCode int) (hasErro
 	// Check if at least one sub-request succeeded (has result, no error)
 	hasAnySuccess := false
 	aggregatedErrors := ""
-	numberOfBatchElements := len(result)
 
-	for idx, batchResult := range result {
+	for _, batchResult := range result {
 		if batchResult.Error == nil && len(batchResult.Result) > 0 {
 			// This sub-request succeeded
 			hasAnySuccess = true
@@ -259,8 +258,6 @@ func CheckResponseErrorForJsonRpcBatch(data []byte, httpStatusCode int) (hasErro
 			}
 			aggregatedErrors += batchResult.Error.Message
 		}
-		_ = idx // suppress unused warning
-		_ = numberOfBatchElements
 	}
 
 	// Only return error if ALL sub-requests failed (no successes)
