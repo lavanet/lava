@@ -469,16 +469,6 @@ func (rpcss *RPCSmartRouterServer) SendParsedRelay(
 
 	rpcss.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, protocolMessage, protocolMessage.GetApi().GetName())
 	if err != nil {
-		// Check if this is an unsupported method error from the error message
-		// This catches cases where the RPC endpoint returns a gRPC error instead of response data
-		if rpcss.cache.CacheActive() && chainlib.IsUnsupportedMethodError(err) {
-			utils.LavaFormatDebug("ProcessingResult returned unsupported method error - caching",
-				utils.LogAttr("GUID", ctx),
-				utils.LogAttr("error", err.Error()),
-			)
-			// Cache the unsupported method error for future requests
-			go rpcss.cacheUnsupportedMethodErrorResponse(ctx, protocolMessage, returnedResult)
-		}
 		return returnedResult, utils.LavaFormatError("failed processing responses from RPC endpoints", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.LogAttr("endpoint", rpcss.listenEndpoint.Key()))
 	}
 
@@ -496,74 +486,6 @@ func (rpcss *RPCSmartRouterServer) SendParsedRelay(
 func (rpcss *RPCSmartRouterServer) GetChainIdAndApiInterface() (string, string) {
 	return rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface
 }
-
-// cacheUnsupportedMethodErrorResponse caches an unsupported method error like a regular response
-// This is called when the RPC endpoint returns a gRPC error instead of response data
-func (rpcss *RPCSmartRouterServer) cacheUnsupportedMethodErrorResponse(ctx context.Context, protocolMessage chainlib.ProtocolMessage, relayResult *common.RelayResult) {
-	if relayResult == nil {
-		return
-	}
-
-	chainId, _ := rpcss.GetChainIdAndApiInterface()
-	relayData := protocolMessage.RelayPrivateData()
-	if relayData == nil {
-		return
-	}
-
-	errorData := `{"Error_GUID":"CACHED_ERROR","error":{"code":-32601,"message":"Method not found"}}`
-	errorReply := &pairingtypes.RelayReply{
-		Data:        []byte(errorData),
-		LatestBlock: relayResult.Reply.GetLatestBlock(),
-	}
-
-	requestedBlock := relayData.SeenBlock
-	if requestedBlock <= 0 {
-		requestedBlock = 0
-	}
-	seenBlock := relayData.SeenBlock
-
-	hashKey, _, hashErr := chainlib.HashCacheRequest(relayData, chainId)
-	if hashErr != nil {
-		return
-	}
-
-	_, _, blockDistanceForFinalizedData, _ := rpcss.chainParser.ChainBlockStats()
-	var latestBlock int64
-	if relayResult.Reply != nil {
-		latestBlock = relayResult.Reply.LatestBlock
-	}
-	finalized := spectypes.IsFinalizedBlock(requestedBlock, latestBlock, int64(blockDistanceForFinalizedData))
-
-	cacheCtx, cancel := context.WithTimeout(context.Background(), common.CacheWriteTimeout)
-	defer cancel()
-	_, averageBlockTime, _, _ := rpcss.chainParser.ChainBlockStats()
-
-	err := rpcss.cache.SetEntry(cacheCtx, &pairingtypes.RelayCacheSet{
-		RequestHash:           hashKey,
-		ChainId:               chainId,
-		RequestedBlock:        requestedBlock,
-		SeenBlock:             seenBlock,
-		BlockHash:             nil,
-		Response:              errorReply,
-		Finalized:             finalized,
-		OptionalMetadata:      nil,
-		SharedStateId:         "",
-		AverageBlockTime:      int64(averageBlockTime),
-		IsNodeError:           false,
-		BlocksHashesToHeights: nil,
-	})
-
-	if err != nil {
-		utils.LavaFormatWarning("error caching unsupported method error response", err, utils.LogAttr("GUID", ctx))
-	} else {
-		utils.LavaFormatDebug("Successfully cached unsupported method error",
-			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("requestedBlock", requestedBlock),
-			utils.LogAttr("finalized", finalized),
-		)
-	}
-}
-
 
 func (rpcss *RPCSmartRouterServer) ProcessRelaySend(ctx context.Context, protocolMessage chainlib.ProtocolMessage, analytics *metrics.RelayMetrics) (*relaycore.RelayProcessor, error) {
 	// make sure all of the child contexts are cancelled when we exit
