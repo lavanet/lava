@@ -99,6 +99,12 @@ func (crsm *ConsumerRelaySenderMock) ParseRelay(
 
 func TestConsumerStateMachineHappyFlow(t *testing.T) {
 	t.Run("happy", func(t *testing.T) {
+		// Save and restore RelayCountOnNodeError - this test needs higher limit
+		// to allow 3 retries (protocol error + 2 node errors + success)
+		originalValue := relaycore.RelayCountOnNodeError
+		relaycore.RelayCountOnNodeError = 4
+		defer func() { relaycore.RelayCountOnNodeError = originalValue }()
+
 		ctx := context.Background()
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Handle the incoming request and provide the desired response
