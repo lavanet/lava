@@ -82,12 +82,12 @@ type ConsumerMetricsManager struct {
 	providerLivenessMetric                         *prometheus.GaugeVec
 	blockedProviderMetric                          *MappedLabelsGaugeVec
 	// Provider selection score gauges - latest scores at time of selection
-	providerAvailabilityScoreGauge                 *prometheus.GaugeVec
-	providerLatencyScoreGauge                      *prometheus.GaugeVec
-	providerSyncScoreGauge                         *prometheus.GaugeVec
-	providerStakeScoreGauge                        *prometheus.GaugeVec
-	providerCompositeScoreGauge                    *prometheus.GaugeVec
-	selectionRNGValueGauge                         *prometheus.GaugeVec
+	providerAvailabilityScoreGauge *prometheus.GaugeVec
+	providerLatencyScoreGauge      *prometheus.GaugeVec
+	providerSyncScoreGauge         *prometheus.GaugeVec
+	providerStakeScoreGauge        *prometheus.GaugeVec
+	providerCompositeScoreGauge    *prometheus.GaugeVec
+	selectionRNGValueGauge         *prometheus.GaugeVec
 }
 
 type ConsumerMetricsManagerOptions struct {
@@ -977,50 +977,50 @@ func (pme *ConsumerMetricsManager) UpdateSelectionStatsFromOptimizerReports() {
 
 	for _, report := range reports {
 		providerEndpoint := "" // TODO: Get provider endpoint if needed
-		
+
 		// Set selection stats metrics
 		availabilityLabels := map[string]string{
-			"spec":             report.ChainId,
-			"provider_address": report.ProviderAddress,
+			"spec":              report.ChainId,
+			"provider_address":  report.ProviderAddress,
 			"provider_endpoint": providerEndpoint,
-			"selection_metric": SelectionAvailabilityLabel,
-			"apiInterface":     "", // API interface not available in optimizer reports
+			"selection_metric":  SelectionAvailabilityLabel,
+			"apiInterface":      "", // API interface not available in optimizer reports
 		}
 		pme.selectionStatsMetric.WithLabelValues(availabilityLabels).Set(report.SelectionAvailability)
 
 		latencyLabels := map[string]string{
-			"spec":             report.ChainId,
-			"provider_address": report.ProviderAddress,
+			"spec":              report.ChainId,
+			"provider_address":  report.ProviderAddress,
 			"provider_endpoint": providerEndpoint,
-			"selection_metric": SelectionLatencyLabel,
-			"apiInterface":     "",
+			"selection_metric":  SelectionLatencyLabel,
+			"apiInterface":      "",
 		}
 		pme.selectionStatsMetric.WithLabelValues(latencyLabels).Set(report.SelectionLatency)
 
 		syncLabels := map[string]string{
-			"spec":             report.ChainId,
-			"provider_address": report.ProviderAddress,
+			"spec":              report.ChainId,
+			"provider_address":  report.ProviderAddress,
 			"provider_endpoint": providerEndpoint,
-			"selection_metric": SelectionSyncLabel,
-			"apiInterface":     "",
+			"selection_metric":  SelectionSyncLabel,
+			"apiInterface":      "",
 		}
 		pme.selectionStatsMetric.WithLabelValues(syncLabels).Set(report.SelectionSync)
 
 		stakeLabels := map[string]string{
-			"spec":             report.ChainId,
-			"provider_address": report.ProviderAddress,
+			"spec":              report.ChainId,
+			"provider_address":  report.ProviderAddress,
 			"provider_endpoint": providerEndpoint,
-			"selection_metric": SelectionStakeLabel,
-			"apiInterface":     "",
+			"selection_metric":  SelectionStakeLabel,
+			"apiInterface":      "",
 		}
 		pme.selectionStatsMetric.WithLabelValues(stakeLabels).Set(report.SelectionStake)
 
 		compositeLabels := map[string]string{
-			"spec":             report.ChainId,
-			"provider_address": report.ProviderAddress,
+			"spec":              report.ChainId,
+			"provider_address":  report.ProviderAddress,
 			"provider_endpoint": providerEndpoint,
-			"selection_metric": SelectionCompositeLabel,
-			"apiInterface":     "",
+			"selection_metric":  SelectionCompositeLabel,
+			"apiInterface":      "",
 		}
 		pme.selectionStatsMetric.WithLabelValues(compositeLabels).Set(report.SelectionComposite)
 	}
