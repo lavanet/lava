@@ -7,6 +7,7 @@ const (
 )
 
 var RelayCountOnNodeError = 2
+var RelayCountOnProtocolError = 2
 
 // selection Enum, do not add other const
 const (

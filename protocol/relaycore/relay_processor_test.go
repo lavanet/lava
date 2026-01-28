@@ -317,14 +317,14 @@ func TestRelayProcessorStatefulApi(t *testing.T) {
 			err := relayProcessor.WaitForResults(ctx)
 			require.NoError(t, err)
 			// Decide if we need to resend or not
-			if results, _ := relayProcessor.HasRequiredNodeResults(1); results {
+			if results, _, _ := relayProcessor.HasRequiredNodeResults(1); results {
 				break
 			}
 			time.Sleep(5 * time.Millisecond)
 		}
 		resultsOk := relayProcessor.HasResults()
 		require.True(t, resultsOk)
-		resultsOk, _ = relayProcessor.HasRequiredNodeResults(1)
+		resultsOk, _, _ = relayProcessor.HasRequiredNodeResults(1)
 		require.True(t, resultsOk)
 		protocolErrors := relayProcessor.ProtocolErrors()
 		require.Equal(t, uint64(1), protocolErrors)
@@ -597,7 +597,7 @@ func TestHasRequiredNodeResultsQuorumScenarios(t *testing.T) {
 			relayProcessor.WaitForResults(ctx)
 
 			// Test the quorum functionality
-			result, errors := relayProcessor.HasRequiredNodeResults(tt.tries)
+			result, errors, _ := relayProcessor.HasRequiredNodeResults(tt.tries)
 
 			require.Equal(t, tt.expectedResult, result, "quorum result mismatch")
 			require.Equal(t, tt.expectedErrors, errors, "error count mismatch")
@@ -1541,7 +1541,7 @@ func TestNodeErrorsRecoveryMetricWithQuorum(t *testing.T) {
 	maxRetries := 20
 	for retry := 0; retry < maxRetries; retry++ {
 		time.Sleep(10 * time.Millisecond)
-		hasResults, nodeErrorCount = relayProcessor.HasRequiredNodeResults(1)
+		hasResults, nodeErrorCount, _ = relayProcessor.HasRequiredNodeResults(1)
 		if hasResults && nodeErrorCount > 0 {
 			break
 		}
@@ -1634,7 +1634,7 @@ func TestProtocolErrorsRecoveryMetricWithQuorum(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check HasRequiredNodeResults
-	hasResults, nodeErrorCount := relayProcessor.HasRequiredNodeResults(1)
+	hasResults, nodeErrorCount, _ := relayProcessor.HasRequiredNodeResults(1)
 
 	// Verify results
 	require.True(t, hasResults, "Should have required results (quorum met)")
@@ -1724,7 +1724,7 @@ func TestBothErrorTypesRecoveryMetricsWithQuorum(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check HasRequiredNodeResults
-	hasResults, _ := relayProcessor.HasRequiredNodeResults(1)
+	hasResults, _, _ := relayProcessor.HasRequiredNodeResults(1)
 
 	// Verify results
 	require.True(t, hasResults, "Should have required results (quorum met)")
@@ -1824,7 +1824,7 @@ func TestNoRecoveryMetricsWhenQuorumNotMet(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check HasRequiredNodeResults
-	hasResults, nodeErrorCount := relayProcessor.HasRequiredNodeResults(1)
+	hasResults, nodeErrorCount, _ := relayProcessor.HasRequiredNodeResults(1)
 
 	// Verify results
 	require.False(t, hasResults, "Should NOT have required results (only 1 success, need 3)")
@@ -1932,4 +1932,422 @@ func TestQuorumDisabledScenario(t *testing.T) {
 	// With 3 responses and quorum enabled, should calculate: ceil(0.66 * 3) = 2
 	result = rp.getRequiredQuorumSize(3)
 	require.Equal(t, 2, result, "Quorum enabled with 3 responses: ceil(0.66 * 3) = 2")
+}
+
+// TestRelayCountOnNodeErrorZeroDisablesRetries tests that when RelayCountOnNodeError=0,
+// node errors are counted towards quorum and retries are disabled.
+func TestRelayCountOnNodeErrorZeroDisablesRetries(t *testing.T) {
+	ctx := context.Background()
+	// Create a minimal protocol message to avoid nil pointer panic
+	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceRest, nil, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+	chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
+
+	// Quorum disabled params (Min=1)
+	quorumParams := common.QuorumParams{Rate: 1, Max: 1, Min: 1}
+
+	tests := []struct {
+		name                  string
+		relayCountOnNodeError int
+		successResults        int
+		nodeErrors            int
+		expectedHasResults    bool
+		description           string
+	}{
+		{
+			name:                  "RelayCountOnNodeError=0 with only node errors should NOT retry",
+			relayCountOnNodeError: 0,
+			successResults:        0,
+			nodeErrors:            1,
+			expectedHasResults:    true, // Node error counts as result when flag is 0
+			description:           "When RelayCountOnNodeError=0, node errors should count toward quorum",
+		},
+		{
+			name:                  "RelayCountOnNodeError=2 with only node errors SHOULD retry",
+			relayCountOnNodeError: 2,
+			successResults:        0,
+			nodeErrors:            1,
+			expectedHasResults:    false, // Node error does NOT count as result when flag > 0
+			description:           "When RelayCountOnNodeError>0, should retry to get a success",
+		},
+		{
+			name:                  "RelayCountOnNodeError=0 with success should NOT retry",
+			relayCountOnNodeError: 0,
+			successResults:        1,
+			nodeErrors:            0,
+			expectedHasResults:    true,
+			description:           "Success should always meet quorum",
+		},
+		{
+			name:                  "RelayCountOnNodeError=2 with success should NOT retry",
+			relayCountOnNodeError: 2,
+			successResults:        1,
+			nodeErrors:            0,
+			expectedHasResults:    true,
+			description:           "Success should always meet quorum",
+		},
+		{
+			name:                  "RelayCountOnNodeError=0 with multiple node errors should NOT retry",
+			relayCountOnNodeError: 0,
+			successResults:        0,
+			nodeErrors:            3,
+			expectedHasResults:    true, // Node errors count as results
+			description:           "Multiple node errors should count toward quorum when flag is 0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Save original value and restore after test
+			originalValue := RelayCountOnNodeError
+			RelayCountOnNodeError = tt.relayCountOnNodeError
+			defer func() { RelayCountOnNodeError = originalValue }()
+
+			// Create fresh usedProviders for each test
+			usedProviders := lavasession.NewUsedProviders(nil)
+
+			relayProcessor := NewRelayProcessor(
+				ctx,
+				quorumParams,
+				nil,
+				RelayProcessorMetrics,
+				RelayProcessorMetrics,
+				RelayRetriesManagerInstance,
+				newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
+				qos.NewQoSManager(),
+			)
+
+			// Set up providers
+			consumerSessionsMap := lavasession.ConsumerSessionsMap{}
+			totalResponses := tt.successResults + tt.nodeErrors
+			for i := 0; i < totalResponses; i++ {
+				consumerSessionsMap[fmt.Sprintf("provider%d", i)] = &lavasession.SessionInfo{}
+			}
+			relayProcessor.GetUsedProviders().AddUsed(consumerSessionsMap, nil)
+
+			// Add success results (status 200, no error)
+			for i := 0; i < tt.successResults; i++ {
+				provider := fmt.Sprintf("provider%d", i)
+				relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), nil)
+				mockResponse := &RelayResponse{
+					RelayResult: common.RelayResult{
+						Request: &pairingtypes.RelayRequest{
+							RelaySession: &pairingtypes.RelaySession{},
+							RelayData:    &pairingtypes.RelayPrivateData{},
+						},
+						Reply:        &pairingtypes.RelayReply{Data: []byte(`{"result": "success"}`)},
+						ProviderInfo: common.ProviderInfo{ProviderAddress: provider},
+						StatusCode:   200, // Success status code
+					},
+					Err: nil,
+				}
+				relayProcessor.SetResponse(mockResponse)
+			}
+
+			// Add node error results (status 500, triggers CheckResponseError)
+			// REST API expects error format: {"message": "...", "code": ...} at top level
+			for i := 0; i < tt.nodeErrors; i++ {
+				provider := fmt.Sprintf("provider%d", i+tt.successResults)
+				relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), nil)
+				mockResponse := &RelayResponse{
+					RelayResult: common.RelayResult{
+						Request: &pairingtypes.RelayRequest{
+							RelaySession: &pairingtypes.RelaySession{},
+							RelayData:    &pairingtypes.RelayPrivateData{},
+						},
+						Reply:        &pairingtypes.RelayReply{Data: []byte(`{"message": "Slot was skipped", "code": 500}`)},
+						ProviderInfo: common.ProviderInfo{ProviderAddress: provider},
+						StatusCode:   500, // Node error status code - triggers CheckResponseError
+					},
+					Err: nil, // Must be nil to go through setValidResponse -> CheckResponseError
+				}
+				relayProcessor.SetResponse(mockResponse)
+			}
+
+			// Wait for responses to be processed
+			waitCtx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+			defer cancel()
+			relayProcessor.WaitForResults(waitCtx)
+
+			// Test HasRequiredNodeResults
+			hasResults, _, _ := relayProcessor.HasRequiredNodeResults(1)
+
+			require.Equal(t, tt.expectedHasResults, hasResults,
+				"%s: HasRequiredNodeResults mismatch", tt.description)
+		})
+	}
+}
+
+// TestRelayCountOnNodeErrorZeroBatchRequest simulates the real-world scenario
+// where a batch request returns partial errors (like Solana skipped slots)
+func TestRelayCountOnNodeErrorZeroBatchRequest(t *testing.T) {
+	ctx := context.Background()
+	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceRest, nil, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+	chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
+
+	quorumParams := common.QuorumParams{Rate: 1, Max: 1, Min: 1}
+
+	t.Run("Batch request with node error should not retry when RelayCountOnNodeError=0", func(t *testing.T) {
+		// Save and set RelayCountOnNodeError to 0
+		originalValue := RelayCountOnNodeError
+		RelayCountOnNodeError = 0
+		defer func() { RelayCountOnNodeError = originalValue }()
+
+		// Create fresh usedProviders for this test
+		usedProviders := lavasession.NewUsedProviders(nil)
+
+		relayProcessor := NewRelayProcessor(
+			ctx,
+			quorumParams,
+			nil,
+			RelayProcessorMetrics,
+			RelayProcessorMetrics,
+			RelayRetriesManagerInstance,
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
+			qos.NewQoSManager(),
+		)
+
+		// Set up one provider
+		consumerSessionsMap := lavasession.ConsumerSessionsMap{
+			"quicknode": &lavasession.SessionInfo{},
+		}
+		relayProcessor.GetUsedProviders().AddUsed(consumerSessionsMap, nil)
+
+		// Remove provider from used (simulates response received)
+		relayProcessor.GetUsedProviders().RemoveUsed("quicknode", lavasession.NewRouterKey(nil), nil)
+
+		// Simulate node error response (status 500 triggers CheckResponseError)
+		// REST API expects error format: {"message": "...", "code": ...} at top level
+		nodeErrorResponse := []byte(`{"message": "Slot was skipped", "code": 500}`)
+		mockResponse := &RelayResponse{
+			RelayResult: common.RelayResult{
+				Request: &pairingtypes.RelayRequest{
+					RelaySession: &pairingtypes.RelaySession{},
+					RelayData:    &pairingtypes.RelayPrivateData{},
+				},
+				Reply:        &pairingtypes.RelayReply{Data: nodeErrorResponse},
+				ProviderInfo: common.ProviderInfo{ProviderAddress: "quicknode"},
+				StatusCode:   500, // Node error status code
+			},
+			Err: nil, // Must be nil to go through setValidResponse
+		}
+		relayProcessor.SetResponse(mockResponse)
+
+		// Wait for response
+		waitCtx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+		defer cancel()
+		relayProcessor.WaitForResults(waitCtx)
+
+		// With RelayCountOnNodeError=0, should have required results (no retry needed)
+		hasResults, nodeErrorCount, _ := relayProcessor.HasRequiredNodeResults(1)
+
+		require.True(t, hasResults, "With RelayCountOnNodeError=0, batch node error should count as result")
+		require.Equal(t, 1, nodeErrorCount, "Should have 1 node error")
+	})
+
+	t.Run("Batch request with node error SHOULD retry when RelayCountOnNodeError=2", func(t *testing.T) {
+		// Save and set RelayCountOnNodeError to 2
+		originalValue := RelayCountOnNodeError
+		RelayCountOnNodeError = 2
+		defer func() { RelayCountOnNodeError = originalValue }()
+
+		// Create fresh usedProviders for this test
+		usedProviders := lavasession.NewUsedProviders(nil)
+
+		relayProcessor := NewRelayProcessor(
+			ctx,
+			quorumParams,
+			nil,
+			RelayProcessorMetrics,
+			RelayProcessorMetrics,
+			RelayRetriesManagerInstance,
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
+			qos.NewQoSManager(),
+		)
+
+		// Set up one provider
+		consumerSessionsMap := lavasession.ConsumerSessionsMap{
+			"quicknode": &lavasession.SessionInfo{},
+		}
+		relayProcessor.GetUsedProviders().AddUsed(consumerSessionsMap, nil)
+
+		// Remove provider from used (simulates response received)
+		relayProcessor.GetUsedProviders().RemoveUsed("quicknode", lavasession.NewRouterKey(nil), nil)
+
+		// Simulate node error response (status 500 triggers CheckResponseError)
+		// REST API expects error format: {"message": "...", "code": ...} at top level
+		nodeErrorResponse := []byte(`{"message": "Slot was skipped", "code": 500}`)
+		mockResponse := &RelayResponse{
+			RelayResult: common.RelayResult{
+				Request: &pairingtypes.RelayRequest{
+					RelaySession: &pairingtypes.RelaySession{},
+					RelayData:    &pairingtypes.RelayPrivateData{},
+				},
+				Reply:        &pairingtypes.RelayReply{Data: nodeErrorResponse},
+				ProviderInfo: common.ProviderInfo{ProviderAddress: "quicknode"},
+				StatusCode:   500, // Node error status code
+			},
+			Err: nil, // Must be nil to go through setValidResponse
+		}
+		relayProcessor.SetResponse(mockResponse)
+
+		// Wait for response
+		waitCtx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+		defer cancel()
+		relayProcessor.WaitForResults(waitCtx)
+
+		// With RelayCountOnNodeError=2, should NOT have required results (retry needed)
+		hasResults, nodeErrorCount, _ := relayProcessor.HasRequiredNodeResults(1)
+
+		require.False(t, hasResults, "With RelayCountOnNodeError=2, should retry to get a success")
+		require.Equal(t, 1, nodeErrorCount, "Should have 1 node error")
+	})
+}
+
+// TestRelayCountOnProtocolErrorSeparateFromNodeError tests that RelayCountOnProtocolError
+// is independent from RelayCountOnNodeError
+func TestRelayCountOnProtocolErrorSeparateFromNodeError(t *testing.T) {
+	ctx := context.Background()
+	// Create a minimal protocol message
+	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceRest, nil, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+	chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
+
+	// Quorum disabled params (Min=1)
+	quorumParams := common.QuorumParams{Rate: 1, Max: 1, Min: 1}
+
+	t.Run("Protocol errors use RelayCountOnProtocolError not RelayCountOnNodeError", func(t *testing.T) {
+		// Save original values
+		originalNodeError := RelayCountOnNodeError
+		originalProtocolError := RelayCountOnProtocolError
+
+		// Set RelayCountOnNodeError=0 (disable node error retries)
+		// Set RelayCountOnProtocolError=2 (allow protocol error retries)
+		RelayCountOnNodeError = 0
+		RelayCountOnProtocolError = 2
+
+		defer func() {
+			RelayCountOnNodeError = originalNodeError
+			RelayCountOnProtocolError = originalProtocolError
+		}()
+
+		// Create fresh usedProviders for this test
+		usedProviders := lavasession.NewUsedProviders(nil)
+
+		relayProcessor := NewRelayProcessor(
+			ctx,
+			quorumParams,
+			nil,
+			RelayProcessorMetrics,
+			RelayProcessorMetrics,
+			RelayRetriesManagerInstance,
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
+			qos.NewQoSManager(),
+		)
+
+		// Set up a provider
+		consumerSessionsMap := lavasession.ConsumerSessionsMap{"provider1": &lavasession.SessionInfo{}}
+		relayProcessor.GetUsedProviders().AddUsed(consumerSessionsMap, nil)
+
+		// Send a protocol error (connection timeout)
+		provider := "provider1"
+		relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), nil)
+		SendProtocolError(relayProcessor, provider, 0, fmt.Errorf("connection timeout"))
+
+		// Wait for response
+		waitCtx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+		defer cancel()
+		relayProcessor.WaitForResults(waitCtx)
+
+		// Check that protocol errors are tracked separately
+		hasResults, nodeErrorCount, protocolErrorCount := relayProcessor.HasRequiredNodeResults(1)
+
+		require.Equal(t, 0, nodeErrorCount, "Should have 0 node errors")
+		require.Equal(t, 1, protocolErrorCount, "Should have 1 protocol error")
+
+		// The system should allow retries since RelayCountOnProtocolError=2
+		// (This tests that protocol errors don't use RelayCountOnNodeError=0)
+		require.False(t, hasResults, "Should not have required results with protocol error")
+	})
+
+	t.Run("Node errors are independent of RelayCountOnProtocolError", func(t *testing.T) {
+		// Save original values
+		originalNodeError := RelayCountOnNodeError
+		originalProtocolError := RelayCountOnProtocolError
+
+		// Set RelayCountOnNodeError=0 (treat node errors as results)
+		// Set RelayCountOnProtocolError=2 (allow protocol error retries)
+		RelayCountOnNodeError = 0
+		RelayCountOnProtocolError = 2
+
+		defer func() {
+			RelayCountOnNodeError = originalNodeError
+			RelayCountOnProtocolError = originalProtocolError
+		}()
+
+		// Create fresh usedProviders for this test
+		usedProviders := lavasession.NewUsedProviders(nil)
+
+		relayProcessor := NewRelayProcessor(
+			ctx,
+			quorumParams,
+			nil,
+			RelayProcessorMetrics,
+			RelayProcessorMetrics,
+			RelayRetriesManagerInstance,
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
+			qos.NewQoSManager(),
+		)
+
+		// Set up a provider
+		consumerSessionsMap := lavasession.ConsumerSessionsMap{"provider1": &lavasession.SessionInfo{}}
+		relayProcessor.GetUsedProviders().AddUsed(consumerSessionsMap, nil)
+
+		// Send a node error
+		provider := "provider1"
+		relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), nil)
+		mockResponse := &RelayResponse{
+			RelayResult: common.RelayResult{
+				Request: &pairingtypes.RelayRequest{
+					RelaySession: &pairingtypes.RelaySession{},
+					RelayData:    &pairingtypes.RelayPrivateData{},
+				},
+				Reply:        &pairingtypes.RelayReply{Data: []byte(`{"message": "node error", "code": 500}`)},
+				ProviderInfo: common.ProviderInfo{ProviderAddress: provider},
+				StatusCode:   500,
+			},
+			Err: nil, // Must be nil to go through CheckResponseError
+		}
+		relayProcessor.SetResponse(mockResponse)
+
+		// Wait for response
+		waitCtx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+		defer cancel()
+		relayProcessor.WaitForResults(waitCtx)
+
+		// Check that node errors are tracked separately
+		hasResults, nodeErrorCount, protocolErrorCount := relayProcessor.HasRequiredNodeResults(1)
+
+		require.Equal(t, 1, nodeErrorCount, "Should have 1 node error")
+		require.Equal(t, 0, protocolErrorCount, "Should have 0 protocol errors")
+
+		// With RelayCountOnNodeError=0, node error should count as result
+		require.True(t, hasResults, "With RelayCountOnNodeError=0, node error should count as result")
+	})
 }

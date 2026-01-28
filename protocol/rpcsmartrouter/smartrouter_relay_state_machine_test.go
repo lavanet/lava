@@ -165,7 +165,7 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 				relaycoretest.SendSuccessResp(relayProcessor, "lava4@test", time.Millisecond*1)
 			case 4:
 				require.True(t, task.IsDone())
-				results, _ := relayProcessor.HasRequiredNodeResults(1)
+				results, _, _ := relayProcessor.HasRequiredNodeResults(1)
 				require.True(t, results)
 				returnedResult, err := relayProcessor.ProcessingResult()
 				require.NoError(t, err)
@@ -316,7 +316,7 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 				relaycoretest.SendSuccessRespJsonRpc(relayProcessor, "lava4@test", time.Millisecond*1)
 			case 2:
 				require.True(t, task.IsDone())
-				results, _ := relayProcessor.HasRequiredNodeResults(1)
+				results, _, _ := relayProcessor.HasRequiredNodeResults(1)
 				require.True(t, results)
 				returnedResult, err := relayProcessor.ProcessingResult()
 				require.NoError(t, err)
@@ -652,6 +652,229 @@ func TestProcessingContextStillValidAllowsRetries(t *testing.T) {
 		// ASSERTION: With valid context, we should have been able to retry multiple times
 		require.GreaterOrEqual(t, taskNumber, 5,
 			"Expected at least 5 retries when context is valid, but only got %d", taskNumber)
+	})
+}
+
+// TestRetryConditionWithRelayCountOnNodeError tests that RelayCountOnNodeError
+// is respected as the retry limit when quorum is disabled
+func TestRetryConditionWithRelayCountOnNodeError(t *testing.T) {
+	t.Run("RelayCountOnNodeError=0_stops_retries_immediately", func(t *testing.T) {
+		// Save and restore original value
+		originalValue := relaycore.RelayCountOnNodeError
+		relaycore.RelayCountOnNodeError = 0
+		defer func() { relaycore.RelayCountOnNodeError = originalValue }()
+
+		ctx := context.Background()
+		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		specId := "LAV1"
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+		if closeServer != nil {
+			defer closeServer()
+		}
+		require.NoError(t, err)
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "dapp", "123.11")
+		consistency := relaycore.NewConsistency(specId)
+		usedProviders := lavasession.NewUsedProviders(nil)
+
+		// Use DefaultQuorumParams (quorum disabled)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics), qos.NewQoSManager())
+
+		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}}
+
+		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
+		require.NoError(t, err)
+
+		taskNumber := 0
+		for task := range relayTaskChannel {
+			switch taskNumber {
+			case 0:
+				// Initial request
+				require.False(t, task.IsDone())
+				usedProviders.AddUsed(consumerSessionsMap, nil)
+				relayProcessor.UpdateBatch(nil)
+				relaycoretest.SendNodeError(relayProcessor, "lava@test", time.Millisecond*1)
+			case 1:
+				// With RelayCountOnNodeError=0, should be done after initial request
+				// No retries should happen
+				require.True(t, task.IsDone(), "With RelayCountOnNodeError=0, should stop after initial request")
+				return
+			default:
+				require.Fail(t, "Should not have more than 2 tasks with RelayCountOnNodeError=0")
+			}
+			taskNumber++
+		}
+	})
+
+	t.Run("RelayCountOnNodeError=2_allows_2_retries", func(t *testing.T) {
+		// Save and restore original value
+		originalValue := relaycore.RelayCountOnNodeError
+		relaycore.RelayCountOnNodeError = 2
+		defer func() { relaycore.RelayCountOnNodeError = originalValue }()
+
+		ctx := context.Background()
+		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		specId := "LAV1"
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+		if closeServer != nil {
+			defer closeServer()
+		}
+		require.NoError(t, err)
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "dapp", "123.11")
+		consistency := relaycore.NewConsistency(specId)
+		usedProviders := lavasession.NewUsedProviders(nil)
+
+		// Use DefaultQuorumParams (quorum disabled)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics), qos.NewQoSManager())
+
+		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}}
+
+		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
+		require.NoError(t, err)
+
+		taskNumber := 0
+		for task := range relayTaskChannel {
+			if task.IsDone() {
+				// Should be done after initial + 2 retries = 3 tasks total, then done task
+				require.GreaterOrEqual(t, taskNumber, 3, "Should have at least 3 tasks (initial + 2 retries) before done")
+				require.LessOrEqual(t, taskNumber, 4, "Should not have more than 4 tasks with RelayCountOnNodeError=2")
+				return
+			}
+
+			usedProviders.AddUsed(consumerSessionsMap, nil)
+			relayProcessor.UpdateBatch(nil)
+			relaycoretest.SendNodeError(relayProcessor, "lava@test", time.Millisecond*1)
+			time.Sleep(10 * time.Millisecond)
+			taskNumber++
+
+			if taskNumber > 10 {
+				require.Fail(t, "Too many tasks, RelayCountOnNodeError=2 should limit retries")
+			}
+		}
+	})
+}
+
+// TestRetryConditionWithQuorumEnabled tests that quorum.Max is respected
+// as the retry limit when quorum is enabled
+func TestRetryConditionWithQuorumEnabled(t *testing.T) {
+	t.Run("Quorum_Max_limits_retries_when_enabled", func(t *testing.T) {
+		// Save and restore original value
+		originalValue := relaycore.RelayCountOnNodeError
+		relaycore.RelayCountOnNodeError = 0 // This should be ignored when quorum is enabled
+		defer func() { relaycore.RelayCountOnNodeError = originalValue }()
+
+		ctx := context.Background()
+		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		specId := "LAV1"
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+		if closeServer != nil {
+			defer closeServer()
+		}
+		require.NoError(t, err)
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "dapp", "123.11")
+		consistency := relaycore.NewConsistency(specId)
+		usedProviders := lavasession.NewUsedProviders(nil)
+
+		// Quorum enabled with Max=3
+		quorumParams := common.QuorumParams{
+			Rate: 0.66,
+			Max:  3,
+			Min:  2,
+		}
+
+		relayProcessor := relaycore.NewRelayProcessor(ctx, quorumParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics), qos.NewQoSManager())
+
+		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}}
+
+		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
+		require.NoError(t, err)
+
+		taskNumber := 0
+		for task := range relayTaskChannel {
+			if task.IsDone() {
+				// With quorum Max=3, should stop after 4 tasks (initial + 3 retries)
+				require.GreaterOrEqual(t, taskNumber, 3, "Should have at least 3 retries before done with quorum Max=3")
+				require.LessOrEqual(t, taskNumber, 5, "Should not have more than 5 tasks with quorum Max=3")
+				return
+			}
+
+			usedProviders.AddUsed(consumerSessionsMap, nil)
+			relayProcessor.UpdateBatch(nil)
+			relaycoretest.SendNodeError(relayProcessor, "lava@test", time.Millisecond*1)
+			time.Sleep(10 * time.Millisecond)
+			taskNumber++
+
+			if taskNumber > 10 {
+				require.Fail(t, "Too many tasks, quorum Max=3 should limit retries")
+			}
+		}
+	})
+
+	t.Run("Quorum_ignores_RelayCountOnNodeError_when_enabled", func(t *testing.T) {
+		// Save and restore original value
+		originalValue := relaycore.RelayCountOnNodeError
+		relaycore.RelayCountOnNodeError = 0 // Should be ignored
+		defer func() { relaycore.RelayCountOnNodeError = originalValue }()
+
+		ctx := context.Background()
+		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		specId := "LAV1"
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+		if closeServer != nil {
+			defer closeServer()
+		}
+		require.NoError(t, err)
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "dapp", "123.11")
+		consistency := relaycore.NewConsistency(specId)
+		usedProviders := lavasession.NewUsedProviders(nil)
+
+		// Quorum enabled - should allow retries even though RelayCountOnNodeError=0
+		quorumParams := common.QuorumParams{
+			Rate: 0.66,
+			Max:  2,
+			Min:  2,
+		}
+
+		relayProcessor := relaycore.NewRelayProcessor(ctx, quorumParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics), qos.NewQoSManager())
+
+		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}}
+
+		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
+		require.NoError(t, err)
+
+		taskNumber := 0
+		for task := range relayTaskChannel {
+			if task.IsDone() {
+				// Even with RelayCountOnNodeError=0, quorum enabled should allow retries
+				require.GreaterOrEqual(t, taskNumber, 2, "Quorum enabled should allow retries even with RelayCountOnNodeError=0")
+				return
+			}
+
+			usedProviders.AddUsed(consumerSessionsMap, nil)
+			relayProcessor.UpdateBatch(nil)
+			relaycoretest.SendNodeError(relayProcessor, "lava@test", time.Millisecond*1)
+			time.Sleep(10 * time.Millisecond)
+			taskNumber++
+
+			if taskNumber > 10 {
+				require.Fail(t, "Too many tasks")
+			}
+		}
 	})
 }
 

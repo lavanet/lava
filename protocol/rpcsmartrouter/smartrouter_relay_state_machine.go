@@ -143,9 +143,9 @@ func (srsm *SmartRouterRelayStateMachine) stateTransition(relayState *relaycore.
 // Should retry implements the logic for when to send another relay.
 // As well as the decision of changing the protocol message,
 // into different extensions or addons based on certain conditions
-func (srsm *SmartRouterRelayStateMachine) shouldRetry(numberOfNodeErrors uint64) bool {
+func (srsm *SmartRouterRelayStateMachine) shouldRetry(numberOfNodeErrors, numberOfProtocolErrors uint64) bool {
 	batchNumber := srsm.usedProviders.BatchNumber()
-	shouldRetry := srsm.retryCondition(batchNumber)
+	shouldRetry := srsm.retryCondition(batchNumber, numberOfNodeErrors, numberOfProtocolErrors)
 	if shouldRetry {
 		srsm.stateTransition(srsm.getLatestState(), numberOfNodeErrors)
 	}
@@ -153,6 +153,7 @@ func (srsm *SmartRouterRelayStateMachine) shouldRetry(numberOfNodeErrors uint64)
 	utils.LavaFormatDebug("[StateMachine] shouldRetry called",
 		utils.LogAttr("GUID", srsm.ctx),
 		utils.LogAttr("numberOfNodeErrors", numberOfNodeErrors),
+		utils.LogAttr("numberOfProtocolErrors", numberOfProtocolErrors),
 		utils.LogAttr("batchNumber", srsm.usedProviders.BatchNumber()),
 		utils.LogAttr("selection", srsm.selection),
 		utils.LogAttr("shouldRetry", shouldRetry),
@@ -175,8 +176,14 @@ func (srsm *SmartRouterRelayStateMachine) hasUnsupportedMethodErrorsInStateMachi
 	return false
 }
 
-func (srsm *SmartRouterRelayStateMachine) retryCondition(numberOfRetriesLaunched int) bool {
-	utils.LavaFormatTrace("[StateMachine] retryCondition", utils.LogAttr("numberOfRetriesLaunched", numberOfRetriesLaunched), utils.LogAttr("GUID", srsm.ctx), utils.LogAttr("batchNumber", srsm.usedProviders.BatchNumber()), utils.LogAttr("selection", srsm.selection))
+func (srsm *SmartRouterRelayStateMachine) retryCondition(numberOfRetriesLaunched int, numberOfNodeErrors, numberOfProtocolErrors uint64) bool {
+	utils.LavaFormatTrace("[StateMachine] retryCondition",
+		utils.LogAttr("numberOfRetriesLaunched", numberOfRetriesLaunched),
+		utils.LogAttr("numberOfNodeErrors", numberOfNodeErrors),
+		utils.LogAttr("numberOfProtocolErrors", numberOfProtocolErrors),
+		utils.LogAttr("GUID", srsm.ctx),
+		utils.LogAttr("batchNumber", srsm.usedProviders.BatchNumber()),
+		utils.LogAttr("selection", srsm.selection))
 
 	// Never retry if we detect unsupported method errors at state machine level
 	if srsm.hasUnsupportedMethodErrorsInStateMachine() {
@@ -184,12 +191,65 @@ func (srsm *SmartRouterRelayStateMachine) retryCondition(numberOfRetriesLaunched
 		return false
 	}
 
-	if srsm.resultsChecker.GetQuorumParams().Enabled() && numberOfRetriesLaunched > srsm.resultsChecker.GetQuorumParams().Max {
-		return false
-	} else if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
+	// Determine retry limit based on quorum settings:
+	// - If quorum is enabled (user set lava-quorum-* headers): use quorumParams.Max
+	// - If quorum is disabled (no headers): use RelayCountOnNodeError/RelayCountOnProtocolError based on error type
+	if srsm.resultsChecker.GetQuorumParams().Enabled() {
+		// Quorum enabled: respect quorum.Max as the retry limit
+		if numberOfRetriesLaunched > srsm.resultsChecker.GetQuorumParams().Max {
+			utils.LavaFormatTrace("[StateMachine] retryCondition: quorum Max limit reached",
+				utils.LogAttr("GUID", srsm.ctx),
+				utils.LogAttr("numberOfRetriesLaunched", numberOfRetriesLaunched),
+				utils.LogAttr("quorumMax", srsm.resultsChecker.GetQuorumParams().Max))
+			return false
+		}
+	} else {
+		// Quorum disabled: use appropriate limit based on error type
+		// numberOfRetriesLaunched is the batch number (1 = initial request done, considering retry)
+		hasNodeErrors := numberOfNodeErrors > 0
+		hasProtocolErrors := numberOfProtocolErrors > 0
+
+		// Determine the appropriate retry limit based on error types
+		var retryLimit int
+		if hasNodeErrors && !hasProtocolErrors {
+			// Only node errors: use RelayCountOnNodeError
+			retryLimit = relaycore.RelayCountOnNodeError
+		} else if hasProtocolErrors && !hasNodeErrors {
+			// Only protocol errors: use RelayCountOnProtocolError
+			retryLimit = relaycore.RelayCountOnProtocolError
+		} else if hasNodeErrors && hasProtocolErrors {
+			// Both error types: use the maximum of the two limits
+			retryLimit = relaycore.RelayCountOnNodeError
+			if relaycore.RelayCountOnProtocolError > retryLimit {
+				retryLimit = relaycore.RelayCountOnProtocolError
+			}
+		} else {
+			// No errors yet (first retry attempt): use the maximum of both limits
+			retryLimit = relaycore.RelayCountOnNodeError
+			if relaycore.RelayCountOnProtocolError > retryLimit {
+				retryLimit = relaycore.RelayCountOnProtocolError
+			}
+		}
+
+		if numberOfRetriesLaunched > retryLimit {
+			utils.LavaFormatTrace("[StateMachine] retryCondition: retry limit reached",
+				utils.LogAttr("GUID", srsm.ctx),
+				utils.LogAttr("numberOfRetriesLaunched", numberOfRetriesLaunched),
+				utils.LogAttr("retryLimit", retryLimit),
+				utils.LogAttr("RelayCountOnNodeError", relaycore.RelayCountOnNodeError),
+				utils.LogAttr("RelayCountOnProtocolError", relaycore.RelayCountOnProtocolError),
+				utils.LogAttr("hasNodeErrors", hasNodeErrors),
+				utils.LogAttr("hasProtocolErrors", hasProtocolErrors))
+			return false
+		}
+	}
+
+	// Absolute maximum safety limit
+	if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
 		return false
 	}
-	// best result sends to top 10 providers anyway.
+
+	// BestResult mode doesn't retry (sends to top providers at once)
 	return srsm.selection != relaycore.BestResult
 }
 
@@ -254,13 +314,15 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 		defer processingCtxCancel()
 
 		numberOfNodeErrorsAtomic := atomic.Uint64{}
+		numberOfProtocolErrorsAtomic := atomic.Uint64{}
 		readResultsFromProcessor := func() {
 			// ProcessResults is reading responses while blocking until the conditions are met
 			utils.LavaFormatTrace("[StateMachine] Waiting for results", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
 			srsm.resultsChecker.WaitForResults(processingCtx)
 			// Decide if we need to resend or not
-			metRequiredNodeResults, numberOfNodeErrors := srsm.resultsChecker.HasRequiredNodeResults(srsm.usedProviders.BatchNumber())
+			metRequiredNodeResults, numberOfNodeErrors, numberOfProtocolErrors := srsm.resultsChecker.HasRequiredNodeResults(srsm.usedProviders.BatchNumber())
 			numberOfNodeErrorsAtomic.Store(uint64(numberOfNodeErrors))
+			numberOfProtocolErrorsAtomic.Store(uint64(numberOfProtocolErrors))
 			gotResults <- metRequiredNodeResults
 		}
 		go readResultsFromProcessor()
@@ -372,7 +434,7 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 				}
 
 				// If should retry == true, send a new batch. (success == false)
-				if srsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
+				if srsm.shouldRetry(numberOfNodeErrorsAtomic.Load(), numberOfProtocolErrorsAtomic.Load()) {
 					utils.LavaFormatTrace("[StateMachine] LavaFormatTrace success := <-gotResults - srsm.ShouldRetry(batchNumber)", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
 					relayTaskChannel <- RelayStateSendInstructions{RelayState: srsm.getLatestState(), NumOfProviders: 1}
 				} else {
@@ -385,7 +447,7 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 					return
 				}
 				// Only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
-				if srsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
+				if srsm.shouldRetry(numberOfNodeErrorsAtomic.Load(), numberOfProtocolErrorsAtomic.Load()) {
 					utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
 					relayTaskChannel <- RelayStateSendInstructions{RelayState: srsm.getLatestState(), NumOfProviders: 1}
 					// Add ticker launch metrics

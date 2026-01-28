@@ -251,9 +251,9 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 	return false
 }
 
-func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
+func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int, int) {
 	if rp == nil {
-		return false, 0
+		return false, 0, 0
 	}
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
@@ -293,7 +293,7 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 				utils.LogAttr("currentQourumEqualResults", rp.currentQourumEqualResults),
 			)
 		}
-		return true, nodeErrors
+		return true, nodeErrors, protocolErrors
 	}
 	if rp.selection == Quorum {
 		// We need a quorum of all node results
@@ -319,7 +319,14 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 			}
 		} else {
 			// Quorum feature disabled: check if we have enough results for quorum
-			retryForQuorumNeeded = !(resultsCount >= neededForQuorum)
+			// When RelayCountOnNodeError is 0, treat node errors as "results" for quorum purposes
+			// This ensures that when retries are disabled, we don't retry to replace node errors
+			if RelayCountOnNodeError == 0 {
+				totalNodeResults := resultsCount + nodeErrors
+				retryForQuorumNeeded = !(totalNodeResults >= neededForQuorum)
+			} else {
+				retryForQuorumNeeded = !(resultsCount >= neededForQuorum)
+			}
 		}
 
 		if !retryForQuorumNeeded {
@@ -338,7 +345,7 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 					utils.LogAttr("currentQourumEqualResults", rp.currentQourumEqualResults),
 				)
 			}
-			return !shouldRetry, nodeErrors
+			return !shouldRetry, nodeErrors, protocolErrors
 		}
 	}
 	// on BestResult we want to retry if there is no success
@@ -354,7 +361,7 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 			utils.LogAttr("currentQourumEqualResults", rp.currentQourumEqualResults),
 		)
 	}
-	return false, nodeErrors
+	return false, nodeErrors, protocolErrors
 }
 
 func (rp *RelayProcessor) handleResponse(response *RelayResponse) {

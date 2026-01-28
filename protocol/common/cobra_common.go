@@ -30,7 +30,8 @@ const (
 	SharedStateFlag         = "shared-state"
 	// Disable relay retries when we get node errors.
 	// This feature is suppose to help with successful relays in some chains that return node errors on rare race conditions on the serviced chains.
-	SetRelayCountOnNodeErrorFlag = "set-retry-count-on-node-error"
+	SetRelayCountOnNodeErrorFlag     = "set-retry-count-on-node-error"
+	SetRelayCountOnProtocolErrorFlag = "set-retry-count-on-protocol-error"
 	UseStaticSpecFlag            = "use-static-spec" // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
 	GitHubTokenFlag              = "github-token"    // GitHub personal access token for accessing private repositories and higher API rate limits
 	EpochDurationFlag            = "epoch-duration"  // duration of each epoch for time-based epoch system (standalone mode)

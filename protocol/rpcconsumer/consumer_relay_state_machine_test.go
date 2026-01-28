@@ -99,6 +99,12 @@ func (crsm *ConsumerRelaySenderMock) ParseRelay(
 
 func TestConsumerStateMachineHappyFlow(t *testing.T) {
 	t.Run("happy", func(t *testing.T) {
+		// Save and restore RelayCountOnNodeError - this test needs higher limit
+		// to allow 3 retries (protocol error + 2 node errors + success)
+		originalValue := relaycore.RelayCountOnNodeError
+		relaycore.RelayCountOnNodeError = 4
+		defer func() { relaycore.RelayCountOnNodeError = originalValue }()
+
 		ctx := context.Background()
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Handle the incoming request and provide the desired response
@@ -155,7 +161,7 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 				relaycoretest.SendSuccessResp(relayProcessor, "lava4@test", time.Millisecond*1)
 			case 4:
 				require.True(t, task.IsDone())
-				results, _ := relayProcessor.HasRequiredNodeResults(1)
+				results, _, _ := relayProcessor.HasRequiredNodeResults(1)
 				require.True(t, results)
 				returnedResult, err := relayProcessor.ProcessingResult()
 				require.NoError(t, err)
@@ -306,7 +312,7 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 				relaycoretest.SendSuccessRespJsonRpc(relayProcessor, "lava4@test", time.Millisecond*1)
 			case 2:
 				require.True(t, task.IsDone())
-				results, _ := relayProcessor.HasRequiredNodeResults(1)
+				results, _, _ := relayProcessor.HasRequiredNodeResults(1)
 				require.True(t, results)
 				returnedResult, err := relayProcessor.ProcessingResult()
 				require.NoError(t, err)

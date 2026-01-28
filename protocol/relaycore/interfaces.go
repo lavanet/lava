@@ -25,7 +25,7 @@ type RelayStateMachine interface {
 // ResultsCheckerInf interface for checking results
 type ResultsCheckerInf interface {
 	WaitForResults(ctx context.Context) error
-	HasRequiredNodeResults(tries int) (bool, int)
+	HasRequiredNodeResults(tries int) (bool, int, int) // returns (done, nodeErrors, protocolErrors)
 	GetQuorumParams() common.QuorumParams
 }
 
