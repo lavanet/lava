@@ -1211,47 +1211,11 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 
 			// Smart router uses 0 for syncGap since it doesn't track consensus
 			syncGap := int64(0)
-
-			// Check for node errors FIRST (before charging CU)
-			isNodeError, errorMessage := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
+			sessionHandled.Store(true) // Mark session as handled before OnSessionDone
+			errResponse = rpcss.sessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), syncGap, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
+			isNodeError, _ := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
 			localRelayResult.IsNodeError = isNodeError
-
-			// Check if this node error is an unsupported method
-			if isNodeError {
-				isUnsupported := common.IsUnsupportedMethodMessage(errorMessage)
-
-				// Additional check for REST APIs
-				if !isUnsupported && protocolMessage.GetApiCollection() != nil {
-					if strings.EqualFold(protocolMessage.GetApiCollection().CollectionData.ApiInterface, "rest") {
-						if localRelayResult.StatusCode == http.StatusNotFound || localRelayResult.StatusCode == http.StatusMethodNotAllowed {
-							isUnsupported = true
-						}
-					}
-				}
-
-				localRelayResult.IsUnsupportedMethod = isUnsupported
-
-				if isUnsupported {
-					utils.LavaFormatInfo("unsupported method detected in relay result",
-						utils.LogAttr("GUID", ctx),
-						utils.LogAttr("method", protocolMessage.GetApi().Name),
-						utils.LogAttr("error", errorMessage),
-					)
-				}
-			}
-
-			// Check if this is an unsupported method - don't charge CU
-			computeUnits := chainlib.GetComputeUnits(protocolMessage)
-			if localRelayResult.IsUnsupportedMethod {
-				computeUnits = 0 // Don't charge CU for unsupported methods
-				utils.LavaFormatDebug("Not charging CU for unsupported method",
-					utils.LogAttr("GUID", ctx),
-					utils.LogAttr("method", protocolMessage.GetApi().Name),
-				)
-			}
-
-			sessionHandled.Store(true)                                                                                                                                                                                                                                                                           // Mark session as handled before OnSessionDone
-			errResponse = rpcss.sessionManager.OnSessionDone(singleConsumerSession, latestBlock, computeUnits, relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), syncGap, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
+                                                                                                                                                                                                                                                                          // Mark session as handled before OnSessionDone
 			if rpcss.debugRelays {
 				utils.LavaFormatDebug("Result Code", utils.LogAttr("isNodeError", isNodeError), utils.LogAttr("StatusCode", localRelayResult.StatusCode), utils.LogAttr("GUID", ctx))
 			}
@@ -1260,21 +1224,14 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 				// - Always cache unsupported method errors (treat like regular API responses based on block)
 				// - Only cache successful responses when quorum is disabled
 				shouldCache := false
-				if localRelayResult.IsUnsupportedMethod {
-					// Cache unsupported method responses (with actual node error)
-					shouldCache = true
-					utils.LavaFormatDebug("Caching unsupported method response",
-						utils.LogAttr("GUID", ctx),
-						utils.LogAttr("method", protocolMessage.GetApi().Name),
-					)
-				} else if !quorumParams.Enabled() {
-					shouldCache = !localRelayResult.IsNodeError // Cache successful responses only when quorum is disabled
+				if !quorumParams.Enabled() {
+					shouldCache = !isNodeError // Cache successful responses only when quorum is disabled
 				} else {
 					// Quorum is enabled and this is not an unsupported method error
 					utils.LavaFormatDebug("Skipping cache for successful response due to quorum validation",
 						utils.LogAttr("GUID", ctx),
 						utils.LogAttr("quorumEnabled", true),
-						utils.LogAttr("isNodeError", localRelayResult.IsNodeError),
+						utils.LogAttr("isNodeError", isNodeError),
 						utils.LogAttr("reason", "quorum requires fresh provider validation on each request"),
 					)
 				}
