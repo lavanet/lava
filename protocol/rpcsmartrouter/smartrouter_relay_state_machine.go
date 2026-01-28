@@ -217,14 +217,9 @@ func (srsm *SmartRouterRelayStateMachine) retryCondition(numberOfRetriesLaunched
 		} else if hasProtocolErrors && !hasNodeErrors {
 			// Only protocol errors: use RelayCountOnProtocolError
 			retryLimit = relaycore.RelayCountOnProtocolError
-		} else if hasNodeErrors && hasProtocolErrors {
-			// Both error types: use the maximum of the two limits
-			retryLimit = relaycore.RelayCountOnNodeError
-			if relaycore.RelayCountOnProtocolError > retryLimit {
-				retryLimit = relaycore.RelayCountOnProtocolError
-			}
 		} else {
-			// No errors yet (first retry attempt): use the maximum of both limits
+			// Both error types or no errors yet: use the maximum of both limits
+			// This allows the relay to continue if either retry limit permits
 			retryLimit = relaycore.RelayCountOnNodeError
 			if relaycore.RelayCountOnProtocolError > retryLimit {
 				retryLimit = relaycore.RelayCountOnProtocolError
