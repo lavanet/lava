@@ -239,3 +239,47 @@ func TestCheckResponseErrorForJsonRpcBatch(t *testing.T) {
 		require.Empty(t, errorMsg)
 	})
 }
+
+func TestCheckResponseErrorForJsonRpcBatch_StrictMode(t *testing.T) {
+	// Save and restore original flag value
+	originalValue := BatchNodeErrorOnAny
+	defer func() { BatchNodeErrorOnAny = originalValue }()
+
+	t.Run("strict_mode_partial_success_is_error", func(t *testing.T) {
+		BatchNodeErrorOnAny = true // Enable strict mode
+
+		data := []byte(`[
+			{"jsonrpc":"2.0","id":1,"result":{"blockNumber":"0x123"}},
+			{"jsonrpc":"2.0","id":2,"error":{"code":-32000,"message":"Slot was skipped"}},
+			{"jsonrpc":"2.0","id":3,"result":{"blockNumber":"0x125"}}
+		]`)
+		hasError, errorMsg := CheckResponseErrorForJsonRpcBatch(data, 200)
+		require.True(t, hasError, "Strict mode: partial success should be an error")
+		require.Contains(t, errorMsg, "Slot was skipped")
+	})
+
+	t.Run("strict_mode_all_success_no_error", func(t *testing.T) {
+		BatchNodeErrorOnAny = true // Enable strict mode
+
+		data := []byte(`[
+			{"jsonrpc":"2.0","id":1,"result":{"blockNumber":"0x123"}},
+			{"jsonrpc":"2.0","id":2,"result":{"blockNumber":"0x124"}},
+			{"jsonrpc":"2.0","id":3,"result":{"blockNumber":"0x125"}}
+		]`)
+		hasError, errorMsg := CheckResponseErrorForJsonRpcBatch(data, 200)
+		require.False(t, hasError, "Strict mode: all success should not have error")
+		require.Empty(t, errorMsg)
+	})
+
+	t.Run("default_mode_partial_success_no_error", func(t *testing.T) {
+		BatchNodeErrorOnAny = false // Default mode
+
+		data := []byte(`[
+			{"jsonrpc":"2.0","id":1,"result":{"blockNumber":"0x123"}},
+			{"jsonrpc":"2.0","id":2,"error":{"code":-32000,"message":"Slot was skipped"}},
+			{"jsonrpc":"2.0","id":3,"result":{"blockNumber":"0x125"}}
+		]`)
+		hasError, _ := CheckResponseErrorForJsonRpcBatch(data, 200)
+		require.False(t, hasError, "Default mode: partial success should not be an error")
+	})
+}

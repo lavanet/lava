@@ -15,6 +15,11 @@ import (
 
 var ErrFailedToConvertMessage = sdkerrors.New("RPC error", 1000, "failed to convert a message")
 
+// BatchNodeErrorOnAny controls batch request error detection:
+// - false (default): batch is an error only if ALL sub-requests failed
+// - true: batch is an error if ANY sub-request failed (strict mode)
+var BatchNodeErrorOnAny = false
+
 type JsonrpcMessage struct {
 	Version                string               `json:"jsonrpc,omitempty"`
 	ID                     json.RawMessage      `json:"id,omitempty"`
@@ -228,9 +233,9 @@ func NewBatchMessage(msgs []JsonrpcMessage) (JsonrpcBatchMessage, error) {
 }
 
 // returns if error exists and
-// For batch requests: only consider it an error if ALL sub-requests failed.
-// If at least one sub-request succeeded (has result, no error), treat the batch as successful.
-// This prevents unnecessary retries when batch responses contain partial errors (e.g., Solana skipped slots).
+// Behavior controlled by BatchNodeErrorOnAny flag:
+// - false (default): batch is an error only if ALL sub-requests failed
+// - true: batch is an error if ANY sub-request failed (strict mode)
 func CheckResponseErrorForJsonRpcBatch(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
 	// Use a temporary struct that checks for both error and result presence
 	var result []struct {
@@ -243,16 +248,16 @@ func CheckResponseErrorForJsonRpcBatch(data []byte, httpStatusCode int) (hasErro
 		return false, ""
 	}
 
-	// Check if at least one sub-request succeeded (has result, no error)
 	hasAnySuccess := false
+	hasAnyError := false
 	aggregatedErrors := ""
 
 	for _, batchResult := range result {
 		if batchResult.Error == nil && len(batchResult.Result) > 0 {
-			// This sub-request succeeded
 			hasAnySuccess = true
 		}
 		if batchResult.Error != nil && batchResult.Error.Message != "" {
+			hasAnyError = true
 			if aggregatedErrors != "" {
 				aggregatedErrors += ",-," // add a unique comma separator between results
 			}
@@ -260,11 +265,16 @@ func CheckResponseErrorForJsonRpcBatch(data []byte, httpStatusCode int) (hasErro
 		}
 	}
 
-	// Only return error if ALL sub-requests failed (no successes)
-	// If we have any success, the batch response is valid and should not trigger a retry
+	// BatchNodeErrorOnAny=true (strict): error if ANY sub-request failed
+	// BatchNodeErrorOnAny=false (default): error only if ALL sub-requests failed
+	if BatchNodeErrorOnAny {
+		// Strict mode: any error means batch failed
+		return hasAnyError, aggregatedErrors
+	}
+
+	// Default mode: only error if no successes at all
 	if hasAnySuccess {
 		return false, ""
 	}
-
 	return aggregatedErrors != "", aggregatedErrors
 }
