@@ -1211,8 +1211,8 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 
 			// Smart router uses 0 for syncGap since it doesn't track consensus
 			syncGap := int64(0)
-			// Mark session as handled before OnSessionDone
 			sessionHandled.Store(true)
+			// Mark session as handled before OnSessionDone
 			errResponse = rpcss.sessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), syncGap, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi, extensions) // session done successfully
 			isNodeError, _ := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
 			localRelayResult.IsNodeError = isNodeError
