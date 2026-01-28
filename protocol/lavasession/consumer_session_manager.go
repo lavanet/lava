@@ -67,6 +67,10 @@ type ConsumerSessionManager struct {
 
 	addonAddresses    map[string][]string // key is RouterKey.String()
 	reportedProviders *ReportedProviders
+
+	// Latest selection stats for debugging provider selection (thread-safe access)
+	selectionStatsLock   sync.RWMutex
+	latestSelectionStats *provideroptimizer.SelectionStats
 	// pairingPurge - contains all pairings that are unwanted this epoch, keeps them in memory in order to avoid release.
 	// (if a consumer session still uses one of them or we want to report it.)
 	pairingPurge                       map[string]*ConsumerSessionsWithProvider
@@ -833,6 +837,26 @@ func (csm *ConsumerSessionManager) getTopTenProvidersForStatefulCalls(validAddre
 	return addresses
 }
 
+// convertSelectionStatsToMetrics converts SelectionStats to metrics format with all provider scores
+func convertSelectionStatsToMetrics(stats *provideroptimizer.SelectionStats) (allScores []metrics.ProviderSelectionScores, rngValue float64) {
+	if stats == nil {
+		return nil, 0
+	}
+	rngValue = stats.RNGValue
+	allScores = make([]metrics.ProviderSelectionScores, 0, len(stats.ProviderScores))
+	for _, score := range stats.ProviderScores {
+		allScores = append(allScores, metrics.ProviderSelectionScores{
+			ProviderAddress: score.Address,
+			Availability:    score.Availability,
+			Latency:         score.Latency,
+			Sync:            score.Sync,
+			Stake:           score.Stake,
+			Composite:       score.Composite,
+		})
+	}
+	return allScores, rngValue
+}
+
 // Get a valid provider address.
 func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context, wantedProviders int, ignoredProvidersList map[string]struct{}, cu uint64, requestedBlock int64, addon string, extensions []string, stateful uint32, stickiness string) (addresses []string, err error) {
 	// cs.Lock must be Rlocked here.
@@ -872,7 +896,34 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 	if stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS && csm.providerOptimizer.Strategy() != provideroptimizer.StrategyCost {
 		providers = csm.getTopTenProvidersForStatefulCalls(validAddresses, ignoredProvidersList)
 	} else if stickiness != "" {
-		providers = csm.providerOptimizer.ChooseProviderFromTopTier(validAddresses, ignoredProvidersList, cu, requestedBlock)
+		var selectionStats *provideroptimizer.SelectionStats
+		providers, selectionStats = csm.providerOptimizer.ChooseBestProviderWithStats(validAddresses, ignoredProvidersList, cu, requestedBlock)
+		if selectionStats != nil {
+			csm.setSelectionStats(selectionStats)
+		}
+		// Track provider selection for metrics with all provider scores
+		if len(providers) > 0 {
+			if selectionStats == nil {
+				utils.LavaFormatWarning("Selection stats missing for sticky session provider", nil,
+					utils.LogAttr("provider", providers[0]),
+					utils.LogAttr("chainId", csm.rpcEndpoint.ChainID),
+					utils.LogAttr("addon", addon),
+					utils.LogAttr("extensions", extensions),
+					utils.LogAttr("GUID", ctx),
+				)
+			} else if len(selectionStats.ProviderScores) == 0 {
+				utils.LavaFormatWarning("Selection stats missing provider scores for sticky session", nil,
+					utils.LogAttr("provider", providers[0]),
+					utils.LogAttr("selectedProvider", selectionStats.SelectedProvider),
+					utils.LogAttr("chainId", csm.rpcEndpoint.ChainID),
+					utils.LogAttr("addon", addon),
+					utils.LogAttr("extensions", extensions),
+					utils.LogAttr("GUID", ctx),
+				)
+			}
+			allScores, rngValue := convertSelectionStatsToMetrics(selectionStats)
+			csm.consumerMetricsManager.SetProviderSelected(csm.rpcEndpoint.ChainID, providers[0], allScores, rngValue)
+		}
 	} else {
 		// Make a copy of ignoredProvidersList to avoid modifying the original
 		ignoredProvidersListCopy := make(map[string]struct{}, len(ignoredProvidersList))
@@ -880,12 +931,37 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 			ignoredProvidersListCopy[k] = v
 		}
 		for i := 0; i < wantedProviders; i++ {
-			provider, _ := csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersListCopy, cu, requestedBlock)
+			provider, selectionStats := csm.providerOptimizer.ChooseProviderWithStats(validAddresses, ignoredProvidersListCopy, cu, requestedBlock)
 			if len(provider) == 0 {
 				break
 			}
-			for _, provider := range provider {
-				ignoredProvidersListCopy[provider] = struct{}{}
+			// Store the latest selection stats for the first provider selection
+			if i == 0 && selectionStats != nil {
+				csm.setSelectionStats(selectionStats)
+			}
+			// Track provider selection for metrics with all provider scores
+			if selectionStats == nil {
+				utils.LavaFormatWarning("Selection stats missing for provider selection", nil,
+					utils.LogAttr("provider", provider[0]),
+					utils.LogAttr("chainId", csm.rpcEndpoint.ChainID),
+					utils.LogAttr("addon", addon),
+					utils.LogAttr("extensions", extensions),
+					utils.LogAttr("GUID", ctx),
+				)
+			} else if len(selectionStats.ProviderScores) == 0 {
+				utils.LavaFormatWarning("Selection stats missing provider scores", nil,
+					utils.LogAttr("provider", provider[0]),
+					utils.LogAttr("selectedProvider", selectionStats.SelectedProvider),
+					utils.LogAttr("chainId", csm.rpcEndpoint.ChainID),
+					utils.LogAttr("addon", addon),
+					utils.LogAttr("extensions", extensions),
+					utils.LogAttr("GUID", ctx),
+				)
+			}
+			allScores, rngValue := convertSelectionStatsToMetrics(selectionStats)
+			for _, providerAddr := range provider {
+				ignoredProvidersListCopy[providerAddr] = struct{}{}
+				csm.consumerMetricsManager.SetProviderSelected(csm.rpcEndpoint.ChainID, providerAddr, allScores, rngValue)
 			}
 			providers = append(providers, provider...)
 		}
@@ -1448,6 +1524,20 @@ func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleC
 	go func() {
 		csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, publicProviderAddress, publicProviderEndpoint, lastQos, lastReputation, consumerSession.LatestBlock, consumerSession.RelayNum, relayLatency, sessionSuccessful)
 	}()
+}
+
+// setSelectionStats stores the latest selection stats (thread-safe)
+func (csm *ConsumerSessionManager) setSelectionStats(stats *provideroptimizer.SelectionStats) {
+	csm.selectionStatsLock.Lock()
+	defer csm.selectionStatsLock.Unlock()
+	csm.latestSelectionStats = stats
+}
+
+// GetSelectionStats retrieves the latest selection stats (thread-safe)
+func (csm *ConsumerSessionManager) GetSelectionStats() *provideroptimizer.SelectionStats {
+	csm.selectionStatsLock.RLock()
+	defer csm.selectionStatsLock.RUnlock()
+	return csm.latestSelectionStats
 }
 
 // Get the reported providers currently stored in the session manager.

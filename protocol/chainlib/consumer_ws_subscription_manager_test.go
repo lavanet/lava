@@ -722,9 +722,11 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 func CreateConsumerSessionManager(chainID, apiInterface, consumerPublicAddress string) *lavasession.ConsumerSessionManager {
 	rand.InitRandomSeed()
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, 0, 1, nil, "dontcare")
+	optimizer.SetDeterministicSeed(1234567)
 	return lavasession.NewConsumerSessionManager(
 		&lavasession.RPCEndpoint{NetworkAddress: "stub", ChainID: chainID, ApiInterface: apiInterface, TLSEnabled: false, HealthCheckPath: "/", Geolocation: 0},
-		provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, 0, 1, nil, "dontcare", false),
+		optimizer,
 		nil, nil, consumerPublicAddress,
 		lavasession.NewActiveSubscriptionProvidersStorage(),
 	)

@@ -37,7 +37,7 @@ echo "Using static specs: $SPECS_DIR"
 echo "[Test Setup] starting Provider 1 (non-archive, standalone mode)"
 screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
 config/provider_examples/provider1_noarchive.yml \
---test_mode --test_responses ./scripts/test_data/test_responses_jsonrpc_noarchive.json \
+--test_mode --test_responses ./scripts/test_data/optimizer_wrs_provider1.json \
 --static-providers \
 --use-static-spec $SPECS_DIR \
 --geolocation 1 --log_level debug --metrics-listen-address ':7766' 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
@@ -46,7 +46,7 @@ config/provider_examples/provider1_noarchive.yml \
 echo "[Test Setup] starting Provider 2 (non-archive, standalone mode)"
 screen -d -m -S provider2 bash -c "source ~/.bashrc; lavap rpcprovider \
 config/provider_examples/provider2_noarchive.yml \
---test_mode --test_responses ./scripts/test_data/test_responses_jsonrpc_noarchive.json \
+--test_mode --test_responses ./scripts/test_data/optimizer_wrs_provider2.json \
 --static-providers \
 --use-static-spec $SPECS_DIR \
 --geolocation 1 --log_level debug --metrics-listen-address ':7756' 2>&1 | tee $LOGS_DIR/PROVIDER2.log" && sleep 0.25
@@ -55,7 +55,7 @@ config/provider_examples/provider2_noarchive.yml \
 echo "[Test Setup] starting Provider 3 (archive, standalone mode)"
 screen -d -m -S provider3 bash -c "source ~/.bashrc; lavap rpcprovider \
 config/provider_examples/lava_example_archive.yml \
---test_mode --test_responses ./scripts/test_data/test_responses_jsonrpc_archive.json \
+--test_mode --test_responses ./scripts/test_data/optimizer_wrs_provider3_archive.json \
 --static-providers \
 --use-static-spec $SPECS_DIR \
 --geolocation 1 --log_level debug --metrics-listen-address ':7777' 2>&1 | tee $LOGS_DIR/PROVIDER3.log" && sleep 0.25
@@ -66,10 +66,12 @@ sleep 2
 echo "[Test Setup] starting consumer (rpcsmartrouter with cache, standalone mode)"
 screen -d -m -S consumer bash -c "source ~/.bashrc; lavap rpcsmartrouter \
 config/consumer_examples/lava_consumer_static_peers.yml \
---geolocation 1 --log_level trace --debug-relays \
+--geolocation 1 --log_level trace --debug-relays --enable-selection-stats \
 --cache-be 127.0.0.1:20100 \
 --allow-insecure-provider-dialing \
 --use-static-spec $SPECS_DIR \
+--enable-selection-stats \
+--optimizer-qos-listen :7779 \
 --metrics-listen-address ':7779' 2>&1 | tee $LOGS_DIR/CONSUMER.log" && sleep 0.25
 
 echo "--- setting up screens done ---"
@@ -85,7 +87,15 @@ echo "Provider 2: $PROVIDER2_LISTENER (non-archive, fully standalone)"
 echo "Provider 3: $PROVIDER3_LISTENER (archive, fully standalone)"
 echo "Consumer:   rpcsmartrouter (fully standalone, cache-enabled)"
 echo ""
+echo "Optimizer QoS Metrics: http://localhost:7779/provider_optimizer_metrics"
+echo ""
 echo "All components disconnected from Lava blockchain!"
 echo "Using static specs: specs/mainnet-1/specs/"
 echo "Logs: $LOGS_DIR"
 echo "============================================"
+echo ""
+echo "Quick check (tendermintrpc health) via consumer:"
+echo "  curl -s -i -X POST http://127.0.0.1:3361 -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"health\",\"params\":[]}' | egrep -i 'lava-provider-address|lava-selection-stats|provider-latest-block'"
+echo ""
+echo "Load test (prints provider distribution):"
+echo "  ./scripts/e2e/run_optimizer_wrs_health_load.sh 50 http://127.0.0.1:3361"

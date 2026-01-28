@@ -41,6 +41,7 @@ const (
 	FORCE_CACHE_REFRESH_HEADER_NAME       = "lava-force-cache-refresh"
 	LAVA_DEBUG_RELAY                      = "lava-debug-relay"
 	LAVA_LB_UNIQUE_ID_HEADER              = "lava-lb-unique-id"
+	SELECTION_STATS_HEADER_NAME           = "lava-selection-stats"
 	STICKINESS_HEADER_NAME                = "lava-stickiness"
 	QUORUM_HEADER_RATE                    = "lava-quorum-rate"
 	QUORUM_HEADER_MAX                     = "lava-quorum-max"

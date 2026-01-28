@@ -1,15 +1,11 @@
 package provideroptimizer
 
 import (
-	"fmt"
+	"math"
 	"strings"
 	"sync"
 	"time"
 
-	stdMath "math"
-
-	"cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/dgraph-io/ristretto/v2"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/utils"
@@ -17,29 +13,20 @@ import (
 	"github.com/lavanet/lava/v5/utils/rand"
 	"github.com/lavanet/lava/v5/utils/score"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"gonum.org/v1/gonum/mathext"
 )
 
 // The provider optimizer is a mechanism within the consumer that is responsible for choosing
 // the optimal provider for the consumer.
 // The choice depends on the provider's QoS reputation metrics: latency, sync and availability.
-// Providers are picked by selection tiers that take into account their stake amount and QoS
-// reputation score.
+// Providers are selected using weighted random selection based on their composite QoS scores
+// and stake amounts.
 
 const (
 	CacheMaxCost             = 20000 // each item cost would be 1
 	CacheNumCounters         = 20000 // expect 2000 items
 	DefaultExplorationChance = 0.1
 	CostExplorationChance    = 0.01
-)
-
-var (
-	OptimizerNumTiers = 4 // number of tiers to use
-	MinimumEntries    = 5 // minimum number of entries in a tier to be considered for selection
-	ATierChance       = 0.75
-	LastTierChance    = 0.0
-	AutoAdjustTiers   = false
 )
 
 type ConcurrentBlockStore struct {
@@ -64,21 +51,13 @@ type ProviderOptimizer struct {
 	averageBlockTime                time.Duration
 	wantedNumProvidersInConcurrency uint
 	latestSyncData                  ConcurrentBlockStore
-	selectionWeighter               SelectionWeighter // weights are the providers stake
-	OptimizerNumTiers               int               // number of tiers to use
-	OptimizerMinTierEntries         int               // minimum number of entries in a tier to be considered for selection
-	OptimizerQoSSelectionEnabled    bool              // enables QoS-based selection within tiers instead of stake-based
+	stakeCache                      ProviderStakeCache // provider stake amounts used in weighted selection
 	consumerOptimizerQoSClient      consumerOptimizerQoSClientInf
 	chainId                         string
-}
-
-// The exploration mechanism makes the optimizer return providers that were not talking
-// to the consumer for a long time (a couple of seconds). This allows better distribution
-// of paired providers by avoiding returning the same best providers over and over.
-// The Exploration struct holds a provider address and last QoS metrics update time (ScoreStore)
-type Exploration struct {
-	address string
-	time    time.Time
+	weightedSelector                *WeightedSelector            // Weighted random selection based on composite QoS scores
+	globalLatencyCalculator         *score.AdaptiveMaxCalculator // Global T-Digest for all providers' latency samples
+	globalSyncCalculator            *score.AdaptiveMaxCalculator // Global T-Digest for all providers' sync samples
+	adaptiveLock                    sync.RWMutex                 // Lock for accessing adaptive calculators
 }
 
 type ProviderData struct {
@@ -124,26 +103,84 @@ func (s Strategy) String() string {
 	return ""
 }
 
-// GetStrategyFactor gets the appropriate factor to multiply the sync factor
-// with according to the strategy
-func (s Strategy) GetStrategyFactor() math.LegacyDec {
-	switch s {
-	case StrategyLatency:
-		return pairingtypes.LatencyStrategyFactor
-	case StrategySyncFreshness:
-		return pairingtypes.SyncFreshnessStrategyFactor
-	}
-
-	return pairingtypes.BalancedStrategyFactor
-}
-
 func (po *ProviderOptimizer) Strategy() Strategy {
 	return po.strategy
 }
 
-// UpdateWeights update the selection weighter weights
+// ConfigureWeightedSelector rebuilds the weighted selector using the supplied
+// configuration. Strategy is always enforced from the optimizer so callers only
+// provide weights and selection chance values.
+func (po *ProviderOptimizer) ConfigureWeightedSelector(config WeightedSelectorConfig) {
+	if po == nil {
+		return
+	}
+	config.Strategy = po.strategy
+
+	// Wire up Phase 2: Enable adaptive P10-P90 normalization
+	config.UseAdaptiveLatencyMax = true
+	config.AdaptiveLatencyGetter = po.getAdaptiveLatencyBounds
+
+	config.UseAdaptiveSyncMax = true
+	config.AdaptiveSyncGetter = po.getAdaptiveSyncBounds
+
+	po.weightedSelector = NewWeightedSelector(config)
+}
+
+// getAdaptiveLatencyBounds returns the current P10 and P90 bounds for latency normalization
+// from the global T-Digest that aggregates data from all providers
+func (po *ProviderOptimizer) getAdaptiveLatencyBounds() (p10, p90 float64) {
+	if po == nil {
+		return score.AdaptiveP10MinBound, score.DefaultLatencyAdaptiveMaxMax
+	}
+
+	po.adaptiveLock.RLock()
+	defer po.adaptiveLock.RUnlock()
+
+	if po.globalLatencyCalculator == nil {
+		return score.AdaptiveP10MinBound, score.DefaultLatencyAdaptiveMaxMax
+	}
+
+	p10, p90 = po.globalLatencyCalculator.GetAdaptiveBounds()
+	if math.IsNaN(p10) || math.IsNaN(p90) || math.IsInf(p10, 0) || math.IsInf(p90, 0) || p10 <= 0 || p90 <= 0 || p90 <= p10 {
+		utils.LavaFormatWarning("invalid adaptive latency bounds, using defaults",
+			nil,
+			utils.LogAttr("p10", p10),
+			utils.LogAttr("p90", p90),
+		)
+		return score.AdaptiveP10MinBound, score.DefaultLatencyAdaptiveMaxMax
+	}
+	return p10, p90
+}
+
+// getAdaptiveSyncBounds returns the current P10 and P90 bounds for sync normalization
+// from the global T-Digest that aggregates data from all providers
+func (po *ProviderOptimizer) getAdaptiveSyncBounds() (p10, p90 float64) {
+	if po == nil {
+		return score.AdaptiveSyncP10MinBound, score.DefaultSyncAdaptiveMaxMax
+	}
+
+	po.adaptiveLock.RLock()
+	defer po.adaptiveLock.RUnlock()
+
+	if po.globalSyncCalculator == nil {
+		return score.AdaptiveSyncP10MinBound, score.DefaultSyncAdaptiveMaxMax
+	}
+
+	p10, p90 = po.globalSyncCalculator.GetAdaptiveBounds()
+	if math.IsNaN(p10) || math.IsNaN(p90) || math.IsInf(p10, 0) || math.IsInf(p90, 0) || p10 <= 0 || p90 <= 0 || p90 <= p10 {
+		utils.LavaFormatWarning("invalid adaptive sync bounds, using defaults",
+			nil,
+			utils.LogAttr("p10", p10),
+			utils.LogAttr("p90", p90),
+		)
+		return score.AdaptiveSyncP10MinBound, score.DefaultSyncAdaptiveMaxMax
+	}
+	return p10, p90
+}
+
+// UpdateWeights updates provider stake amounts in the cache and metrics
 func (po *ProviderOptimizer) UpdateWeights(weights map[string]int64, epoch uint64) {
-	po.selectionWeighter.SetWeights(weights)
+	po.stakeCache.UpdateStakes(weights)
 
 	// Update the stake map for metrics
 	if po.consumerOptimizerQoSClient != nil {
@@ -240,228 +277,327 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 	)
 }
 
+// CalculateQoSScoresForMetrics calculates QoS scores for all providers for metrics reporting
 func (po *ProviderOptimizer) CalculateQoSScoresForMetrics(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) []*metrics.OptimizerQoSReport {
-	selectionTier, _, providersScores := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
-	reports := []*metrics.OptimizerQoSReport{}
+	// Get provider data for weighted selection
+	providerDataGetter := func(addr string) (*pairingtypes.QualityOfServiceReport, time.Time, bool) {
+		qos, lastUpdate := po.GetReputationReportForProvider(addr)
+		if qos == nil {
+			return nil, time.Time{}, false
+		}
+		return qos, lastUpdate, true
+	}
 
-	rawScores := selectionTier.GetRawScores()
-	tierChances := selectionTier.ShiftTierChance(po.OptimizerNumTiers, map[int]float64{0: ATierChance})
-	for idx, entry := range rawScores {
-		qosReport := providersScores[entry.Address]
-		qosReport.EntryIndex = idx
-		qosReport.TierChances = PrintTierChances(tierChances)
-		qosReport.Tier = po.GetProviderTier(entry.Address, selectionTier)
-		reports = append(reports, qosReport)
+	stakeGetter := func(addr string) int64 {
+		return po.stakeCache.GetStake(addr)
+	}
+
+	// Calculate provider scores using weighted selector
+	_, qosReports, _ := po.weightedSelector.CalculateProviderScores(
+		allAddresses,
+		ignoredProviders,
+		providerDataGetter,
+		stakeGetter,
+	)
+
+	// Convert map to slice and add entry indices
+	reports := make([]*metrics.OptimizerQoSReport, 0, len(qosReports))
+	idx := 0
+	for _, report := range qosReports {
+		report.EntryIndex = idx
+		reports = append(reports, report)
+		idx++
 	}
 
 	return reports
 }
 
-func PrintTierChances(tierChances map[int]float64) string {
-	var tierChancesString string
-	for tier, chance := range tierChances {
-		tierChancesString += fmt.Sprintf("%d: %f, ", tier, chance)
-	}
-	return tierChancesString
+// ChooseProvider returns a subset of selected providers using weighted random selection based on QoS scores
+func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string) {
+	addresses, _ = po.ChooseProviderWithStats(allAddresses, ignoredProviders, cu, requestedBlock)
+	return addresses
 }
 
-func (po *ProviderOptimizer) GetProviderTier(providerAddress string, selectionTier SelectionTier) int {
-	selectionTierScoresCount := selectionTier.ScoresCount()
-	numTiersWanted := po.GetNumTiersWanted(selectionTier, selectionTierScoresCount)
-	minTierEntries := po.GetMinTierEntries(selectionTier, selectionTierScoresCount)
-	for tier := 0; tier < numTiersWanted; tier++ {
-		tierProviders := selectionTier.GetTier(tier, numTiersWanted, minTierEntries)
-		for _, provider := range tierProviders {
-			if provider.Address == providerAddress {
-				return tier
-			}
-		}
-	}
-	return -1
-}
-
-func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (SelectionTier, Exploration, map[string]*metrics.OptimizerQoSReport) {
-	explorationCandidate := Exploration{address: "", time: time.Now().Add(time.Hour)}
-	selectionTier := NewSelectionTier()
-	providerScores := make(map[string]*metrics.OptimizerQoSReport)
-	for _, providerAddress := range allAddresses {
-		if _, ok := ignoredProviders[providerAddress]; ok {
-			// ignored provider, skip it
-			continue
-		}
-
-		qos, lastUpdateTime := po.GetReputationReportForProvider(providerAddress)
+// ChooseProviderWithStats returns a subset of selected providers and detailed selection statistics
+func (po *ProviderOptimizer) ChooseProviderWithStats(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, stats *SelectionStats) {
+	// Get provider data for weighted selection
+	providerDataGetter := func(addr string) (*pairingtypes.QualityOfServiceReport, time.Time, bool) {
+		qos, lastUpdate := po.GetReputationReportForProvider(addr)
 		if qos == nil {
-			utils.LavaFormatWarning("[Optimizer] cannot calculate selection tiers",
-				fmt.Errorf("could not get QoS excellece report for provider"),
-				utils.LogAttr("provider", providerAddress),
-			)
-			return NewSelectionTier(), Exploration{}, nil
+			return nil, time.Time{}, false
 		}
+		return qos, lastUpdate, true
+	}
 
-		utils.LavaFormatTrace("[Optimizer] scores information",
-			utils.LogAttr("providerAddress", providerAddress),
-			utils.LogAttr("latencyScore", qos.Latency.String()),
-			utils.LogAttr("syncScore", qos.Sync.String()),
-			utils.LogAttr("availabilityScore", qos.Availability.String()),
+	stakeGetter := func(addr string) int64 {
+		// Get stake from provider stake cache
+		return po.stakeCache.GetStake(addr)
+	}
+
+	// Calculate provider scores using weighted selector
+	providerScores, qosReports, scoreDetails := po.weightedSelector.CalculateProviderScores(
+		allAddresses,
+		ignoredProviders,
+		providerDataGetter,
+		stakeGetter,
+	)
+
+	if len(providerScores) == 0 {
+		// No providers to choose from
+		utils.LavaFormatWarning("[Optimizer] no providers available for selection", nil)
+		return []string{}, nil
+	}
+
+	// Apply block availability penalty for historical queries
+	if requestedBlock > 0 {
+		utils.LavaFormatTrace("[Optimizer] applying block availability for historical query",
+			utils.LogAttr("requestedBlock", requestedBlock),
 		)
 
-		opts := []pairingtypes.Option{pairingtypes.WithStrategyFactor(po.strategy.GetStrategyFactor())}
-		if requestedBlock >= 0 {
-			providerData, found := po.getProviderData(providerAddress)
-			if !found {
-				utils.LavaFormatTrace("[Optimizer] could not get provider data, using default", utils.LogAttr("provider", providerAddress))
+		for i := range providerScores {
+			blockAvail := po.calculateBlockAvailability(providerScores[i].Address, requestedBlock)
+
+			// Multiplicative penalty: SelectionWeight *= blockAvailability
+			// This naturally gates providers unlikely to have the block
+			originalWeight := providerScores[i].SelectionWeight
+			providerScores[i].SelectionWeight *= blockAvail
+
+			if blockAvail < 1.0 {
+				utils.LavaFormatTrace("[Optimizer] adjusted provider weight for block availability",
+					utils.LogAttr("provider", providerScores[i].Address),
+					utils.LogAttr("originalWeight", originalWeight),
+					utils.LogAttr("blockAvailability", blockAvail),
+					utils.LogAttr("adjustedWeight", providerScores[i].SelectionWeight),
+				)
 			}
-			// add block error probability config if the request block is positive
-			opts = append(opts, pairingtypes.WithBlockErrorProbability(po.CalculateProbabilityOfBlockError(requestedBlock, providerData)))
-		} else { // all negative blocks (latest/earliest/pending/safe/finalized) will be considered as latest
-			requestedBlock = spectypes.LATEST_BLOCK
-		}
-		score, err := qos.ComputeReputationFloat64(opts...)
-		if err != nil {
-			utils.LavaFormatWarning("[Optimizer] cannot calculate selection tiers", err,
-				utils.LogAttr("provider", providerAddress),
-				utils.LogAttr("qos_report", qos.String()),
-			)
-			return NewSelectionTier(), Exploration{}, nil
-		}
-		latency, sync, availability := qos.GetScoresFloat64()
-		providerScores[providerAddress] = &metrics.OptimizerQoSReport{
-			ProviderAddress:   providerAddress,
-			SyncScore:         sync,
-			AvailabilityScore: availability,
-			LatencyScore:      latency,
-			GenericScore:      score,
-		}
-
-		selectionTier.AddScore(providerAddress, score)
-
-		// check if candidate for exploration
-		if lastUpdateTime.Add(10*time.Second).Before(time.Now()) && lastUpdateTime.Before(explorationCandidate.time) {
-			// if the provider didn't update its data for 10 seconds, it is a candidate for exploration
-			explorationCandidate = Exploration{address: providerAddress, time: lastUpdateTime}
 		}
 	}
-	return selectionTier, explorationCandidate, providerScores
-}
 
-// returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
-func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int) {
-	selectionTier, explorationCandidate, _ := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock) // spliting to tiers by score
-	selectionTierScoresCount := selectionTier.ScoresCount()                                                                  // length of the selectionTier
-	localMinimumEntries := po.GetMinTierEntries(selectionTier, selectionTierScoresCount)
-
-	if selectionTierScoresCount == 0 {
-		// no providers to choose from
-		return []string{}, -1
-	}
-	initialChances := map[int]float64{0: ATierChance}
-
-	numberOfTiersWanted := po.GetNumTiersWanted(selectionTier, selectionTierScoresCount)
-	if selectionTierScoresCount >= localMinimumEntries*2 {
-		// if we have more than 2*localMinimumEntries we set the LastTierChance configured
-		initialChances[(numberOfTiersWanted - 1)] = LastTierChance
-	}
-	shiftedChances := selectionTier.ShiftTierChance(numberOfTiersWanted, initialChances)
-	tier = selectionTier.SelectTierRandomly(numberOfTiersWanted, shiftedChances)
-	// Get tier inputs, what tier, how many tiers we have, and how many providers are in each tier
-	tierProviders := selectionTier.GetTier(tier, numberOfTiersWanted, localMinimumEntries)
-	// TODO: add penalty if a provider is chosen too much
-	var selectedProvider string
-	if po.OptimizerQoSSelectionEnabled {
-		selectedProvider = po.selectionWeighter.WeightedChoiceByQoS(tierProviders)
-	} else {
-		selectedProvider = po.selectionWeighter.WeightedChoice(tierProviders)
-	}
+	// Select provider using weighted random selection with stats
+	selectedProvider, selectionStats := po.weightedSelector.SelectProviderWithStats(providerScores, scoreDetails)
 	returnedProviders := []string{selectedProvider}
-	if explorationCandidate.address != "" && explorationCandidate.address != selectedProvider && po.shouldExplore(1) {
-		returnedProviders = append(returnedProviders, explorationCandidate.address)
+
+	// Add exploration candidate if should explore
+	// Find the exploration candidate (provider not updated recently)
+	explorationCandidate := ""
+	oldestUpdateTime := time.Now()
+	for addr := range qosReports {
+		if _, ignored := ignoredProviders[addr]; ignored {
+			continue
+		}
+		if addr == selectedProvider {
+			continue // Don't add the same provider twice
+		}
+		_, lastUpdate, found := providerDataGetter(addr)
+		if found && lastUpdate.Add(10*time.Second).Before(time.Now()) && lastUpdate.Before(oldestUpdateTime) {
+			explorationCandidate = addr
+			oldestUpdateTime = lastUpdate
+		}
 	}
+
+	if explorationCandidate != "" && po.shouldExplore(1) {
+		returnedProviders = append(returnedProviders, explorationCandidate)
+	}
+
 	utils.LavaFormatTrace("[Optimizer] returned providers",
 		utils.LogAttr("providers", strings.Join(returnedProviders, ",")),
-		utils.LogAttr("shiftedChances", shiftedChances),
-		utils.LogAttr("tier", tier),
+		utils.LogAttr("selectedWeight", getProviderSelectionWeight(selectedProvider, providerScores)),
+		utils.LogAttr("selectedCompositeScore", getProviderCompositeScore(selectedProvider, providerScores)),
+		utils.LogAttr("numScores", len(providerScores)),
+		utils.LogAttr("requestedBlock", requestedBlock),
 	)
 
-	return returnedProviders, tier
+	return returnedProviders, selectionStats
 }
 
-// returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
-func (po *ProviderOptimizer) ChooseProviderFromTopTier(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string) {
-	selectionTier, _, _ := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
-	selectionTierScoresCount := selectionTier.ScoresCount()
-	numberOfTiersWanted := po.GetNumTiersWanted(selectionTier, selectionTierScoresCount)
-	localMinimumEntries := po.GetMinTierEntries(selectionTier, selectionTierScoresCount)
-
-	// Get tier inputs, what tier, how many tiers we have, and how many providers are in each tier
-	tierProviders := selectionTier.GetTier(0, numberOfTiersWanted, localMinimumEntries)
-	// TODO: add penalty if a provider is chosen too much
-	var selectedProvider string
-	if po.OptimizerQoSSelectionEnabled {
-		selectedProvider = po.selectionWeighter.WeightedChoiceByQoS(tierProviders)
-	} else {
-		selectedProvider = po.selectionWeighter.WeightedChoice(tierProviders)
+// getProviderScore is a helper function to find a provider's score in the scores list
+func getProviderSelectionWeight(address string, scores []ProviderScore) float64 {
+	for _, ps := range scores {
+		if ps.Address == address {
+			return ps.SelectionWeight
+		}
 	}
-	returnedProviders := []string{selectedProvider}
+	return 0.0
+}
 
-	utils.LavaFormatTrace("[Optimizer] returned top tier provider",
-		utils.LogAttr("providers", strings.Join(returnedProviders, ",")),
+func getProviderCompositeScore(address string, scores []ProviderScore) float64 {
+	for _, ps := range scores {
+		if ps.Address == address {
+			return ps.CompositeScore
+		}
+	}
+	return 0.0
+}
+
+// ChooseBestProvider selects a single high-quality provider using weighted selection
+// This is used for sticky sessions and other scenarios requiring consistent provider selection
+func (po *ProviderOptimizer) ChooseBestProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string) {
+	addresses, _ = po.ChooseBestProviderWithStats(allAddresses, ignoredProviders, cu, requestedBlock)
+	return addresses
+}
+
+// ChooseBestProviderWithStats selects a single high-quality provider and returns detailed selection statistics
+func (po *ProviderOptimizer) ChooseBestProviderWithStats(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, stats *SelectionStats) {
+	// Get provider data for weighted selection
+	providerDataGetter := func(addr string) (*pairingtypes.QualityOfServiceReport, time.Time, bool) {
+		qos, lastUpdate := po.GetReputationReportForProvider(addr)
+		if qos == nil {
+			return nil, time.Time{}, false
+		}
+		return qos, lastUpdate, true
+	}
+
+	stakeGetter := func(addr string) int64 {
+		return po.stakeCache.GetStake(addr)
+	}
+
+	// Calculate provider scores
+	providerScores, _, scoreDetails := po.weightedSelector.CalculateProviderScores(
+		allAddresses,
+		ignoredProviders,
+		providerDataGetter,
+		stakeGetter,
 	)
 
-	return returnedProviders
-}
+	if len(providerScores) == 0 {
+		utils.LavaFormatWarning("[Optimizer] no providers available for selection", nil)
+		return []string{}, nil
+	}
 
-// GetMinTierEntries gets minimum number of entries in a tier to be considered for selection
-// if AutoAdjustTiers global is true, the number of providers per tier is divided equally
-// between them
-func (po *ProviderOptimizer) GetMinTierEntries(selectionTier SelectionTier, selectionTierScoresCount int) int {
-	localMinimumEntries := po.OptimizerMinTierEntries
-	if AutoAdjustTiers {
-		adjustedProvidersPerTier := int(stdMath.Ceil(float64(selectionTierScoresCount) / float64(po.OptimizerNumTiers)))
-		if localMinimumEntries > adjustedProvidersPerTier {
-			utils.LavaFormatTrace("optimizer AutoAdjustTiers activated",
-				utils.LogAttr("set_to_adjustedProvidersPerTier", adjustedProvidersPerTier),
-				utils.LogAttr("was_MinimumEntries", po.OptimizerMinTierEntries),
-				utils.LogAttr("tiers_count_po.OptimizerNumTiers", po.OptimizerNumTiers),
-				utils.LogAttr("selectionTierScoresCount", selectionTierScoresCount))
-			localMinimumEntries = adjustedProvidersPerTier
+	// Apply block availability penalty for historical queries
+	if requestedBlock > 0 {
+		for i := range providerScores {
+			blockAvail := po.calculateBlockAvailability(providerScores[i].Address, requestedBlock)
+			providerScores[i].SelectionWeight *= blockAvail
 		}
 	}
-	return localMinimumEntries
+
+	// Select the single best provider using weighted random selection
+	// This gives higher probability to better providers while still allowing variety
+	selectedProvider, selectionStats := po.weightedSelector.SelectProviderWithStats(providerScores, scoreDetails)
+
+	utils.LavaFormatTrace("[Optimizer] returned provider",
+		utils.LogAttr("provider", selectedProvider),
+		utils.LogAttr("selectedWeight", getProviderSelectionWeight(selectedProvider, providerScores)),
+		utils.LogAttr("selectedCompositeScore", getProviderCompositeScore(selectedProvider, providerScores)),
+		utils.LogAttr("numCandidates", len(providerScores)),
+		utils.LogAttr("requestedBlock", requestedBlock),
+	)
+
+	return []string{selectedProvider}, selectionStats
 }
 
-// GetNumTiersWanted returns the number of tiers wanted
-// if we have enough providers to create the tiers return the configured number of tiers wanted
-// if not, set the number of tiers to the number of providers we currently have
-func (po *ProviderOptimizer) GetNumTiersWanted(selectionTier SelectionTier, selectionTierScoresCount int) int {
-	numberOfTiersWanted := po.OptimizerNumTiers
-	if selectionTierScoresCount < po.OptimizerNumTiers {
-		numberOfTiersWanted = selectionTierScoresCount
+// calculateBlockAvailability calculates the probability that a provider has synced
+// to the requested block height using a Poisson distribution model.
+//
+// Returns:
+//   - 1.0 if requestedBlock <= 0 (latest/pending queries, no block-specific requirement)
+//   - 1.0 if provider's syncBlock >= requestedBlock (provider is already synced)
+//   - Poisson probability (0.0-1.0) otherwise, based on time since last update
+//
+// The Poisson model assumes blocks arrive at a constant average rate (po.averageBlockTime).
+// Lambda represents the expected number of new blocks since the last sync observation.
+func (po *ProviderOptimizer) calculateBlockAvailability(
+	providerAddress string,
+	requestedBlock int64,
+) float64 {
+	// No block-specific requirement (latest/pending/safe/finalized queries)
+	if requestedBlock <= 0 {
+		return 1.0
 	}
 
-	return numberOfTiersWanted
-}
+	// Get provider data to access SyncBlock and last update time
+	providerData, found := po.getProviderData(providerAddress)
+	if !found {
+		// Provider has no data yet - assume neutral (don't penalize for lack of data)
+		utils.LavaFormatTrace("[Optimizer] no provider data for block availability, returning neutral",
+			utils.LogAttr("provider", providerAddress),
+			utils.LogAttr("requestedBlock", requestedBlock),
+		)
+		return 1.0 // Neutral: don't penalize unknown providers
+	}
 
-// CalculateProbabilityOfBlockError calculates the probability that a provider doesn't a specific requested
-// block when the consumer asks the optimizer to fetch a provider with the specific block
-func (po *ProviderOptimizer) CalculateProbabilityOfBlockError(requestedBlock int64, providerData ProviderData) sdk.Dec {
-	probabilityBlockError := float64(0)
-	// if there is no syncBlock data we assume successful relays so we don't over fit providers who were lucky to update
-	if requestedBlock > 0 && providerData.SyncBlock < uint64(requestedBlock) && providerData.SyncBlock > 0 {
-		// requested a specific block, so calculate a probability of provider having that block
-		averageBlockTime := po.averageBlockTime.Seconds()
-		blockDistanceRequired := uint64(requestedBlock) - providerData.SyncBlock
-		if blockDistanceRequired > 0 {
-			timeSinceSyncReceived := time.Since(providerData.Sync.GetLastUpdateTime()).Seconds()
-			eventRate := timeSinceSyncReceived / averageBlockTime // a new block every average block time, numerator is time passed, gamma=rt
-			// probValueAfterRepetitions(k,lambda) calculates the probability for k events or less meaning p(x<=k),
-			// an error occurs if we didn't have enough blocks, so the chance of error is p(x<k) where k is the required number of blocks so we do p(x<=k-1)
-			probabilityBlockError = CumulativeProbabilityFunctionForPoissonDist(blockDistanceRequired-1, eventRate) // this calculates the probability we received insufficient blocks. too few
-		} else {
-			probabilityBlockError = 0
+	// Provider already at or past the requested block
+	if providerData.SyncBlock >= uint64(requestedBlock) {
+		return 1.0
+	}
+
+	// Calculate how many blocks the provider needs to catch up
+	distanceRequired := uint64(requestedBlock) - providerData.SyncBlock
+	if distanceRequired == 0 {
+		return 1.0
+	}
+
+	// Get time since we last observed this provider's sync block
+	lastUpdateTime := providerData.Sync.GetLastUpdateTime()
+	if lastUpdateTime.IsZero() {
+		// No sync data available - assume neutral (don't penalize for lack of data)
+		// This happens when providers only have probe data but no relay data yet
+		utils.LavaFormatTrace("[Optimizer] no sync update time for block availability, returning neutral",
+			utils.LogAttr("provider", providerAddress),
+			utils.LogAttr("requestedBlock", requestedBlock),
+		)
+		return 1.0
+	}
+
+	timeSinceLastSync := time.Since(lastUpdateTime)
+	if timeSinceLastSync < 0 {
+		// Clock skew or invalid data
+		utils.LavaFormatWarning("[Optimizer] negative time since last sync",
+			nil,
+			utils.LogAttr("provider", providerAddress),
+			utils.LogAttr("timeSinceLastSync", timeSinceLastSync),
+		)
+		return 0.5 // Neutral probability
+	}
+
+	// Calculate lambda: expected number of blocks produced since last observation
+	// lambda = timeSinceLastSync / averageBlockTime
+	avgBlockTimeSeconds := po.averageBlockTime.Seconds()
+	if avgBlockTimeSeconds <= 0 {
+		utils.LavaFormatWarning("[Optimizer] invalid average block time",
+			nil,
+			utils.LogAttr("averageBlockTime", po.averageBlockTime),
+		)
+		return 0.5
+	}
+
+	lambda := timeSinceLastSync.Seconds() / avgBlockTimeSeconds
+
+	// Poisson probability that provider has produced AT LEAST distanceRequired blocks.
+	//
+	// Let X ~ Poisson(lambda), where lambda is the expected number of new blocks since last observation.
+	// We want:
+	//   blockAvail = P(X >= distanceRequired)
+	//
+	// Note: CumulativeProbabilityFunctionForPoissonDist(k, lambda) returns P(X <= k).
+	// Therefore:
+	//   P(X >= d) = 1 - P(X <= d-1)
+	if distanceRequired > 0 {
+		// Probability provider has NOT caught up yet (insufficient blocks): P(X <= d-1)
+		insufficient := CumulativeProbabilityFunctionForPoissonDist(distanceRequired-1, lambda)
+		blockAvail := 1 - insufficient
+		if blockAvail < 0 {
+			blockAvail = 0
+		} else if blockAvail > 1 {
+			blockAvail = 1
 		}
+
+		utils.LavaFormatTrace("[Optimizer] calculated block availability",
+			utils.LogAttr("provider", providerAddress),
+			utils.LogAttr("requestedBlock", requestedBlock),
+			utils.LogAttr("syncBlock", providerData.SyncBlock),
+			utils.LogAttr("distanceRequired", distanceRequired),
+			utils.LogAttr("lambda", lambda),
+			utils.LogAttr("timeSinceLastSync", timeSinceLastSync),
+			utils.LogAttr("insufficientProbability", insufficient),
+			utils.LogAttr("blockAvailability", blockAvail),
+		)
+
+		return blockAvail
 	}
-	return score.ConvertToDec(probabilityBlockError)
+
+	return 1.0
 }
 
 // calculate the probability a random variable with a poisson distribution
@@ -582,6 +718,21 @@ func (po *ProviderOptimizer) updateDecayingWeightedAverage(providerData Provider
 			return providerData, po.validateUpdateError(err, "[Update] did not update provider latency score")
 		}
 
+		// Phase 2: Feed sample to global T-Digest for adaptive normalization
+		// Apply the same latency CU factor as the score store
+		adjustedSample := sample * score.GetLatencyFactor(cu)
+		po.adaptiveLock.Lock()
+		if po.globalLatencyCalculator != nil {
+			if err := po.globalLatencyCalculator.AddSample(adjustedSample, sampleTime); err != nil {
+				utils.LavaFormatWarning("failed to update global latency adaptive calculator",
+					err,
+					utils.LogAttr("sample", adjustedSample),
+					utils.LogAttr("sampleTime", sampleTime),
+				)
+			}
+		}
+		po.adaptiveLock.Unlock()
+
 	case score.SyncScoreType:
 		err := providerData.Sync.UpdateConfig(score.WithWeight(weight), score.WithDecayHalfLife(halfTime))
 		if err != nil {
@@ -592,6 +743,19 @@ func (po *ProviderOptimizer) updateDecayingWeightedAverage(providerData Provider
 		if err != nil {
 			return providerData, po.validateUpdateError(err, "[Update] did not update provider sync score")
 		}
+
+		// Phase 2: Feed sample to global T-Digest for adaptive normalization
+		po.adaptiveLock.Lock()
+		if po.globalSyncCalculator != nil {
+			if err := po.globalSyncCalculator.AddSample(sample, sampleTime); err != nil {
+				utils.LavaFormatWarning("failed to update global sync adaptive calculator",
+					err,
+					utils.LogAttr("sample", sample),
+					utils.LogAttr("sampleTime", sampleTime),
+				)
+			}
+		}
+		po.adaptiveLock.Unlock()
 
 	case score.AvailabilityScoreType:
 		err := providerData.Availability.UpdateConfig(score.WithWeight(weight), score.WithDecayHalfLife(halfTime))
@@ -662,7 +826,7 @@ func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.T
 	return nil
 }
 
-func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerQoSClient consumerOptimizerQoSClientInf, chainId string, qosSelectionEnabled bool) *ProviderOptimizer {
+func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerQoSClient consumerOptimizerQoSClientInf, chainId string) *ProviderOptimizer {
 	cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
@@ -675,18 +839,43 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wan
 		// overwrite
 		wantedNumProvidersInConcurrency = 1
 	}
+
+	// Initialize weighted selector with default configuration
+	weightedConfig := DefaultWeightedSelectorConfig()
+	weightedConfig.Strategy = strategy
+	weightedSelector := NewWeightedSelector(weightedConfig)
+
+	// Initialize global adaptive calculators for Phase 2 (P10-P90 normalization)
+	globalLatencyCalculator := score.NewAdaptiveMaxCalculator(
+		score.DefaultHalfLifeTime,          // halfLife (1 hour default)
+		score.AdaptiveP10MinBound,          // minP10 (0.001s = 1ms)
+		score.AdaptiveP10MaxBound,          // maxP10 (10s)
+		score.DefaultLatencyAdaptiveMinMax, // minMax (P90 lower bound: 1.0s)
+		score.DefaultLatencyAdaptiveMaxMax, // maxMax (P90 upper bound: 30.0s)
+		score.DefaultTDigestCompression,    // compression (100.0)
+	)
+
+	globalSyncCalculator := score.NewAdaptiveMaxCalculator(
+		score.DefaultHalfLifeTime,       // halfLife (1 hour default)
+		score.AdaptiveSyncP10MinBound,   // minP10 (0.1s)
+		score.AdaptiveSyncP10MaxBound,   // maxP10 (60s)
+		score.DefaultSyncAdaptiveMinMax, // minMax (P90 lower bound: 30.0s)
+		score.DefaultSyncAdaptiveMaxMax, // maxMax (P90 upper bound: 1200.0s)
+		score.DefaultTDigestCompression, // compression (100.0)
+	)
+
 	return &ProviderOptimizer{
 		strategy:                        strategy,
 		providersStorage:                cache,
 		averageBlockTime:                averageBlockTIme,
 		providerRelayStats:              relayCache,
 		wantedNumProvidersInConcurrency: wantedNumProvidersInConcurrency,
-		selectionWeighter:               NewSelectionWeighter(),
-		OptimizerNumTiers:               OptimizerNumTiers,
-		OptimizerMinTierEntries:         MinimumEntries,
-		OptimizerQoSSelectionEnabled:    qosSelectionEnabled,
+		stakeCache:                      NewProviderStakeCache(),
 		consumerOptimizerQoSClient:      consumerOptimizerQoSClient,
 		chainId:                         chainId,
+		weightedSelector:                weightedSelector,
+		globalLatencyCalculator:         globalLatencyCalculator,
+		globalSyncCalculator:            globalSyncCalculator,
 	}
 }
 
@@ -738,4 +927,31 @@ func (po *ProviderOptimizer) GetReputationReportForProvider(providerAddress stri
 	)
 
 	return report, providerData.Latency.GetLastUpdateTime()
+}
+
+// UpdateWeightedSelectorStrategy updates the weighted selector's strategy
+// This should be called when the optimizer's strategy changes
+func (po *ProviderOptimizer) UpdateWeightedSelectorStrategy(strategy Strategy) {
+	if po.weightedSelector != nil {
+		po.weightedSelector.UpdateStrategy(strategy)
+		utils.LavaFormatTrace("[Optimizer] weighted selector strategy updated",
+			utils.LogAttr("strategy", strategy.String()),
+		)
+	}
+}
+
+// GetWeightedSelectorConfig returns the current weighted selector configuration
+func (po *ProviderOptimizer) GetWeightedSelectorConfig() WeightedSelectorConfig {
+	if po.weightedSelector != nil {
+		return po.weightedSelector.GetConfig()
+	}
+	return WeightedSelectorConfig{}
+}
+
+// SetDeterministicSeed sets a deterministic seed for the weighted selector
+// This is used for testing purposes only to ensure reproducible provider selection
+func (po *ProviderOptimizer) SetDeterministicSeed(seed int64) {
+	if po.weightedSelector != nil {
+		po.weightedSelector.SetDeterministicSeed(seed)
+	}
 }

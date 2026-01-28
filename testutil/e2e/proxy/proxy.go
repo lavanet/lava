@@ -232,13 +232,15 @@ func startProxyProcess(process proxyProcess) {
 
 				// Change Response
 				if fakeResponse {
-					val = fakeResult(val, "0xe000000000000000000")
-					// val = "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"0xe000000000000000000\"}"
-					println(process.port+" ::: Fake Response ::: ", val)
+					orderedJSON = fakeResult(orderedJSON, "0xe000000000000000000")
+					println(process.port+" ::: Fake Response ::: ", orderedJSON)
 					fakeCount += 1
 				}
 				time.Sleep(500 * time.Millisecond)
-				conn.WriteMessage(msgType, []byte(orderedJSON))
+				if err := conn.WriteMessage(msgType, []byte(orderedJSON)); err != nil {
+					log.Println("Write error (cached response):", err)
+					break
+				}
 			} else if err = conn.WriteMessage(msgType, msg); err != nil {
 				// Write message back to browser
 				log.Println("Write error:", err)

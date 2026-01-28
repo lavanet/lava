@@ -54,6 +54,16 @@ type TestModeConfig struct {
 	TestMode     bool                    `json:"test_mode"`
 	Responses    map[string]TestResponse `json:"responses"`
 	ResponseFile string                  `json:"response_file"`
+
+	// HeadBlock is an optional synthetic chain head used in test mode when per-method latest_block is not set.
+	// This is intended for deterministic optimizer sync behavior in tests.
+	HeadBlock int64 `json:"head_block"`
+	// GapBlocks is an optional synthetic lag in blocks used in test mode when per-method latest_block is not set.
+	// If HeadOnFirstRequest is true, the first request will use HeadBlock and subsequent requests will use HeadBlock-GapBlocks.
+	GapBlocks int64 `json:"gap_blocks"`
+	// HeadOnFirstRequest controls whether the first relay reply in this provider process should return HeadBlock (seeding consumer latestSync),
+	// and subsequent replies return HeadBlock-GapBlocks. This helps make tests deterministic regardless of which provider is selected first.
+	HeadOnFirstRequest bool `json:"head_on_first_request"`
 }
 
 // TestResponse represents a test response configuration for a specific API method
@@ -66,6 +76,22 @@ type TestResponse struct {
 	ErrorProbability       float64 `json:"error_probability"`
 	RateLimitProbability   float64 `json:"rate_limit_probability"`
 	UnsupportedProbability float64 `json:"unsupported_probability"`
+
+	// Availability is the probability (0..1) that this provider is "available" for this method.
+	// If the request falls into the unavailable bucket (1-Availability), test mode will return a gRPC-level error
+	// (network-style failure), causing the consumer to update optimizer availability with a failure sample (0).
+	// If nil, defaults to 1.0 (always available).
+	Availability *float64 `json:"availability"`
+
+	// DelayMs is an optional per-method artificial delay added before returning a test response.
+	DelayMs int64 `json:"delay_ms"`
+	// DelayJitterMs is a random additive jitter in [0, DelayJitterMs] applied to DelayMs.
+	DelayJitterMs int64 `json:"delay_jitter_ms"`
+
+	// LatestBlock overridesRelayReply.LatestBlock for this method in test mode (if set non-zero).
+	LatestBlock int64 `json:"latest_block"`
+	// LatestBlockJitter is a random additive jitter in [0, LatestBlockJitter] applied to LatestBlock.
+	LatestBlockJitter int64 `json:"latest_block_jitter"`
 }
 
 // TestModeContextKey is used to pass test mode context through the call chain
@@ -1005,11 +1031,6 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 	// Populate reply.LatestBlock with the provider's current latest block
 	// Previously done by BuildRelayFinalizedBlockHashes() when DR was enabled
 	// Consumers use this for consistency tracking and provider selection
-	utils.LavaFormatDebug("setting reply.LatestBlock from cache parameters",
-		utils.LogAttr("latestBlock", latestBlock),
-		utils.LogAttr("chainID", rpcps.rpcProviderEndpoint.ChainID),
-		utils.LogAttr("GUID", ctx),
-	)
 	reply.LatestBlock = latestBlock
 
 	// utils.LavaFormatDebug("response signing", utils.LogAttr("request block", request.RelayData.RequestBlock), utils.LogAttr("GUID", ctx), utils.LogAttr("latestBlock", reply.LatestBlock))

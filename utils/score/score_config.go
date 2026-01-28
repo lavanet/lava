@@ -42,6 +42,36 @@ const (
 
 	HighCuThreshold = uint64(100)
 	MidCuThreshold  = uint64(50)
+
+	// Adaptive Normalization Constants (Phase 2)
+	// P10 bounds: Used to clamp the 10th percentile (adaptive minimum)
+	AdaptiveP10MinBound float64 = 0.001 // 1ms - extremely fast local/optimized providers
+	AdaptiveP10MaxBound float64 = 10.0  // 10s - maximum reasonable P10
+
+	// P90 bounds: Use existing score bounds as fallback
+	// AdaptiveP90MinBound = minMax parameter (typically 1.0s)
+	// AdaptiveP90MaxBound = maxMax parameter (typically 30.0s = WorstLatencyScore)
+
+	// T-Digest compression for adaptive max calculator
+	DefaultTDigestCompression float64 = 100.0 // Good balance of accuracy vs memory
+
+	// Default bounds for latency adaptive max calculator
+	DefaultLatencyAdaptiveMinMax float64 = 1.0  // 1 second minimum for P90
+	DefaultLatencyAdaptiveMaxMax float64 = 30.0 // 30 seconds maximum for P90 (WorstLatencyScore)
+
+	// Sync-specific adaptive normalization constants (Phase 2)
+	// P10 bounds for sync: Used to clamp the 10th percentile (adaptive minimum)
+	AdaptiveSyncP10MinBound float64 = 0.1  // 100ms - very fast sync (perfect or near-perfect)
+	AdaptiveSyncP10MaxBound float64 = 60.0 // 60s - maximum reasonable P10 for sync
+
+	// Default bounds for sync adaptive max calculator
+	DefaultSyncAdaptiveMinMax float64 = 30.0   // 30 seconds minimum for P90
+	DefaultSyncAdaptiveMaxMax float64 = 1200.0 // 1200 seconds (20 min) maximum for P90 (WorstSyncScore)
+
+	// Availability-specific normalization constants (Phase 1: Simple Rescaling)
+	// Availability is already in [0,1] range but has poor distribution (typically 0.95-1.0 = only 5% of range)
+	// Rescaling [MIN_ACCEPTABLE, 1.0] → [0.0, 1.0] achieves 100% range utilization
+	MinAcceptableAvailability float64 = 0.80 // Below 80% availability = score of 0 (reasonable minimum)
 )
 
 type Config struct {

@@ -1,0 +1,46 @@
+{
+  "test_mode": true,
+  "head_block": 1000000,
+  "gap_blocks": 50,
+  "head_on_first_request": true,
+  "responses": {
+    "health": {
+      "success_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{}}",
+      "error_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"Server error\"}}",
+      "rate_limit_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":429,\"message\":\"Too many requests\"}}",
+      "success_probability": 1.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 0.0,
+      "unsupported_probability": 0.0,
+      "availability": 1.0,
+      "delay_ms": 200,
+      "delay_jitter_ms": 0
+    },
+    "status": {
+      "success_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"node_info\":{\"protocol_version\":{\"p2p\":\"8\",\"block\":\"11\",\"app\":\"0\"},\"id\":\"ABCDEF\",\"listen_addr\":\"tcp://0.0.0.0:26656\",\"network\":\"lava-testnet\",\"version\":\"0.34.0\"},\"sync_info\":{\"latest_block_hash\":\"ABCDEF\",\"latest_app_hash\":\"ABCDEF\",\"latest_block_height\":\"1234\",\"latest_block_time\":\"2023-01-01T00:00:00Z\",\"catching_up\":false},\"validator_info\":{\"address\":\"ABCDEF\",\"pub_key\":{\"type\":\"tendermint/PubKeyEd25519\",\"value\":\"ABCDEF\"},\"voting_power\":\"100\"}}}",
+      "error_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"Server error\"}}",
+      "rate_limit_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":429,\"message\":\"Too many requests\"}}",
+      "success_probability": 1.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 0.0,
+      "unsupported_probability": 0.0,
+      "availability": 1.0,
+      "delay_ms": 200,
+      "delay_jitter_ms": 0
+    },
+    "abci_info": {
+      "success_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"response\":{\"data\":\"lava\",\"version\":\"1.0.0\",\"last_block_height\":\"1234\",\"last_block_app_hash\":\"ABCDEF\"}}}",
+      "error_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"Server error\"}}",
+      "rate_limit_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":429,\"message\":\"Too many requests\"}}",
+      "success_probability": 1.0,
+      "error_probability": 0.0,
+      "rate_limit_probability": 0.0,
+      "unsupported_probability": 0.0,
+      "availability": 1.0,
+      "delay_ms": 200,
+      "delay_jitter_ms": 0
+    }
+  }
+}
+
+

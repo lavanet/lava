@@ -17,31 +17,37 @@ static-providers:
         addons:
           - archive
           - debug
+        skip-verifications: [chain-id,minimum-gas-price, tx-indexing, node-info]
   - name: primary-2220-grpc
     api-interface: grpc
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2220
+        skip-verifications: [chain-id,minimum-gas-price, tx-indexing, node-info]
   - name: primary-2220-rest
     api-interface: rest
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2220
+        skip-verifications: [chain-id,minimum-gas-price, tx-indexing, node-info]
   - name: primary-2221-tendermintrpc
     api-interface: tendermintrpc
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2221
+        skip-verifications: [chain-id,minimum-gas-price, tx-indexing, node-info]
   - name: primary-2221-grpc
     api-interface: grpc
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2221
+        skip-verifications: [chain-id,minimum-gas-price, tx-indexing, node-info]
   - name: primary-2221-rest
     api-interface: rest
     chain-id: LAV1
     node-urls:
       - url: 127.0.0.1:2221
+        skip-verifications: [chain-id,minimum-gas-price, tx-indexing, node-info]
 
 backup-providers:
   - name: backup-2220-tendermintrpc

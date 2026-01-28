@@ -332,6 +332,7 @@ const (
 
 type LatencyScoreStore struct {
 	*ScoreStore
+	adaptiveMax *AdaptiveMaxCalculator // Optional: T-Digest for adaptive max calculation
 }
 
 // Update updates the Latency ScoreStore's numerator and denominator with a new sample.
@@ -343,13 +344,81 @@ func (ls *LatencyScoreStore) Update(sample float64, sampleTime time.Time) error 
 	// normalize the sample with the latency CU factor
 	sample *= ls.ScoreStore.Config.LatencyCuFactor
 
-	return ls.ScoreStore.Update(sample, sampleTime)
+	// Update the decaying weighted average (existing logic)
+	err := ls.ScoreStore.Update(sample, sampleTime)
+	if err != nil {
+		return err
+	}
+
+	// NEW: Also add sample to T-Digest for adaptive max calculation
+	// (if adaptive max is enabled)
+	if ls.adaptiveMax != nil {
+		if err := ls.adaptiveMax.AddSample(sample, sampleTime); err != nil {
+			// Log error but don't fail the update - adaptive max is optional
+			utils.LavaFormatWarning("failed to update adaptive max for latency",
+				err,
+				utils.LogAttr("sample", sample),
+				utils.LogAttr("sampleTime", sampleTime),
+			)
+		}
+	}
+
+	return nil
+}
+
+// GetAdaptiveMax returns the adaptive max value if enabled, otherwise returns 0
+// DEPRECATED: Use GetAdaptiveBounds() for the P10-P90 approach (Phase 2 hybrid).
+func (ls *LatencyScoreStore) GetAdaptiveMax() float64 {
+	if ls == nil || ls.adaptiveMax == nil {
+		return 0
+	}
+	return ls.adaptiveMax.GetAdaptiveMax()
+}
+
+// GetAdaptiveBounds returns both P10 and P90 for adaptive normalization (Phase 2 hybrid)
+// Returns (p10, p90) where both values are clamped to reasonable bounds.
+// If adaptive max is not enabled, returns safe defaults.
+func (ls *LatencyScoreStore) GetAdaptiveBounds() (p10, p90 float64) {
+	if ls == nil || ls.adaptiveMax == nil {
+		// Return safe defaults if adaptive max is not enabled
+		return 0.5, 3.0
+	}
+	return ls.adaptiveMax.GetAdaptiveBounds()
+}
+
+// EnableAdaptiveMax enables adaptive max calculation with T-Digest
+func (ls *LatencyScoreStore) EnableAdaptiveMax(halfLife time.Duration, minMax, maxMax, compression float64) {
+	if ls == nil {
+		return
+	}
+	ls.adaptiveMax = NewAdaptiveMaxCalculator(
+		halfLife,
+		AdaptiveP10MinBound, // Latency-specific P10 min bound (0.001s = 1ms)
+		AdaptiveP10MaxBound, // Latency-specific P10 max bound (10s)
+		minMax,
+		maxMax,
+		compression,
+	)
+}
+
+// IsAdaptiveMaxEnabled returns whether adaptive max is enabled
+func (ls *LatencyScoreStore) IsAdaptiveMaxEnabled() bool {
+	return ls != nil && ls.adaptiveMax != nil
+}
+
+// GetAdaptiveMaxStats returns statistics about the adaptive max calculator
+func (ls *LatencyScoreStore) GetAdaptiveMaxStats() map[string]interface{} {
+	if ls == nil || ls.adaptiveMax == nil {
+		return map[string]interface{}{"enabled": false}
+	}
+	return ls.adaptiveMax.GetStats()
 }
 
 /* ########## Sync ScoreStore ############ */
 
 type SyncScoreStore struct {
 	*ScoreStore
+	adaptiveMax *AdaptiveMaxCalculator // Optional: T-Digest for adaptive max calculation
 }
 
 // Update updates the Sync ScoreStore's numerator and denominator with a new sample.
@@ -357,7 +426,66 @@ func (ss *SyncScoreStore) Update(sample float64, sampleTime time.Time) error {
 	if ss == nil {
 		return fmt.Errorf("SyncScoreStore is nil")
 	}
-	return ss.ScoreStore.Update(sample, sampleTime)
+
+	// Update the decaying weighted average (existing logic)
+	err := ss.ScoreStore.Update(sample, sampleTime)
+	if err != nil {
+		return err
+	}
+
+	// NEW: Also add sample to T-Digest for adaptive max calculation
+	// (if adaptive max is enabled)
+	if ss.adaptiveMax != nil {
+		if err := ss.adaptiveMax.AddSample(sample, sampleTime); err != nil {
+			// Log error but don't fail the update - adaptive max is optional
+			utils.LavaFormatWarning("failed to update adaptive max for sync",
+				err,
+				utils.LogAttr("sample", sample),
+				utils.LogAttr("sampleTime", sampleTime),
+			)
+		}
+	}
+
+	return nil
+}
+
+// GetAdaptiveBounds returns both P10 and P90 for adaptive normalization (Phase 2 hybrid)
+// Returns (p10, p90) where both values are clamped to reasonable bounds.
+// If adaptive max is not enabled, returns safe defaults.
+func (ss *SyncScoreStore) GetAdaptiveBounds() (p10, p90 float64) {
+	if ss == nil || ss.adaptiveMax == nil {
+		// Return safe defaults if adaptive max is not enabled
+		return 30.0, 300.0
+	}
+	return ss.adaptiveMax.GetAdaptiveBounds()
+}
+
+// EnableAdaptiveMax enables adaptive max calculation with T-Digest
+func (ss *SyncScoreStore) EnableAdaptiveMax(halfLife time.Duration, minMax, maxMax, compression float64) {
+	if ss == nil {
+		return
+	}
+	ss.adaptiveMax = NewAdaptiveMaxCalculator(
+		halfLife,
+		AdaptiveSyncP10MinBound, // Sync-specific P10 min bound (0.1s = 100ms)
+		AdaptiveSyncP10MaxBound, // Sync-specific P10 max bound (60s)
+		minMax,
+		maxMax,
+		compression,
+	)
+}
+
+// IsAdaptiveMaxEnabled returns whether adaptive max is enabled
+func (ss *SyncScoreStore) IsAdaptiveMaxEnabled() bool {
+	return ss != nil && ss.adaptiveMax != nil
+}
+
+// GetAdaptiveMaxStats returns statistics about the adaptive max calculator
+func (ss *SyncScoreStore) GetAdaptiveMaxStats() map[string]interface{} {
+	if ss == nil || ss.adaptiveMax == nil {
+		return map[string]interface{}{"enabled": false}
+	}
+	return ss.adaptiveMax.GetStats()
 }
 
 /* ########## Availability ScoreStore ############ */

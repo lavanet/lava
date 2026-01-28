@@ -1,0 +1,9 @@
+endpoints:
+  - name: provider-2220-tendermintrpc
+    api-interface: tendermintrpc
+    chain-id: LAV1
+    network-address:
+      address: "127.0.0.1:2220"
+    node-urls:
+      - url: wss://lav1.tendermintrpc.lava.build:443/websocket
+      - url: https://lav1.tendermintrpc.lava.build:443
