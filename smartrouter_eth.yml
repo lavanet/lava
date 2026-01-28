@@ -1,0 +1,41 @@
+# Smart Router Direct RPC Configuration
+# Testing Phases 1-5: JSON-RPC over HTTP/HTTPS + WebSocket Subscriptions
+# Mode: Direct connections to Ethereum RPC endpoints (no Lava providers!)
+
+endpoints:
+  - listen-address: "0.0.0.0:3360"
+    chain-id: "ETH1"
+    api-interface: "jsonrpc"
+    network-address: "0.0.0.0:3360"  # Simple string format
+
+# Static providers - DIRECT RPC mode (bypasses Lava provider-relay protocol)
+static-providers:
+  # Endpoint 1: Infura (primary)
+  - name: "infura-eth-mainnet"
+    chain-id: "ETH1"
+    api-interface: "jsonrpc"
+    node-urls:
+      - url: "https://mainnet.infura.io/v3/6d55c1274e59429c85183cf40d755de5"
+        addons:
+          - archive  # Infura typically provides archive data
+      # WebSocket endpoint for subscriptions (Phase 5)
+      - url: "wss://mainnet.infura.io/ws/v3/6d55c1274e59429c85183cf40d755de5"
+        addons:
+          - archive
+
+  # Endpoint 2: Second endpoint (parallel relay / backup)
+  - name: "eth-endpoint-2"
+    chain-id: "ETH1"
+    api-interface: "jsonrpc"
+    node-urls:
+      - url: "https://purple-newest-dew.quiknode.pro/be59a25a50fa05d23c85f41200d59442a275100c"
+        addons:
+          - archive
+          - debug
+          - trace
+      # WebSocket endpoint for subscriptions (Phase 5)
+      - url: "https://purple-newest-dew.quiknode.pro/be59a25a50fa05d23c85f41200d59442a275100c"
+        addons:
+          - archive
+          - debug
+          - trace

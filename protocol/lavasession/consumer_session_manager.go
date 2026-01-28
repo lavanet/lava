@@ -260,7 +260,7 @@ func (csm *ConsumerSessionManager) CalculateAddonValidAddresses(addon string, ex
 				utils.LogAttr("GUID", ctx))
 		}
 	}
-	utils.LavaFormatInfo("✅ CALCULATION RESULT", utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("supportingProviderCount", len(supportingProviderAddresses)), utils.LogAttr("supportingProviders", supportingProviderAddresses), utils.LogAttr("GUID", ctx))
+	utils.LavaFormatInfo("CALCULATION RESULT", utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("supportingProviderCount", len(supportingProviderAddresses)), utils.LogAttr("supportingProviders", supportingProviderAddresses), utils.LogAttr("GUID", ctx))
 	return supportingProviderAddresses
 }
 
@@ -386,6 +386,13 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 		return 0, providerAddress, err
 	}
 
+	// Check if this is a direct RPC endpoint (smart router mode)
+	// Direct RPC endpoints return empty endpoints list but connected=true
+	// We need to probe them differently - using the DirectRPCConnection health check
+	if len(endpoints) == 0 && connected {
+		return csm.probeDirectRPCEndpoints(ctx, consumerSessionsWithProvider, providerAddress)
+	}
+
 	var endpointInfos []EndpointInfo
 	lastError := fmt.Errorf("endpoints list is empty") // this error will happen if we had 0 endpoints
 	for _, endpointAndConnection := range endpoints {
@@ -399,7 +406,8 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 			if endpointAndConnection == nil ||
 				endpointAndConnection.chosenEndpointConnection == nil ||
 				endpointAndConnection.chosenEndpointConnection.Client == nil {
-				// returned nil client in endpoint, this should never happen, but checking just in case.
+				// returned nil client in endpoint - this shouldn't happen for provider-relay endpoints
+				// For direct RPC, we handle this case above
 				consumerSessionsWithProvider.Lock.Lock()
 				defer consumerSessionsWithProvider.Lock.Unlock()
 				return utils.LavaFormatError("returned nil client in endpoint", nil, utils.Attribute{Key: "consumerSessionWithProvider", Value: consumerSessionsWithProvider})
@@ -452,6 +460,87 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 	sort.Sort(EndpointInfoList(endpointInfos))
 	consumerSessionsWithProvider.sortEndpointsByLatency(endpointInfos)
 	return endpointInfos[0].Latency, providerAddress, nil
+}
+
+// probeDirectRPCEndpoints handles health checking for direct RPC endpoints (smart router mode).
+// Unlike provider-relay endpoints which use gRPC Probe() calls, direct RPC endpoints
+// are probed by checking the health status of their DirectRPCConnections.
+// This avoids the "nil client" errors that occur when trying to use provider gRPC clients
+// for endpoints that don't have them.
+func (csm *ConsumerSessionManager) probeDirectRPCEndpoints(
+	ctx context.Context,
+	consumerSessionsWithProvider *ConsumerSessionsWithProvider,
+	providerAddress string,
+) (latency time.Duration, address string, err error) {
+	consumerSessionsWithProvider.Lock.RLock()
+	defer consumerSessionsWithProvider.Lock.RUnlock()
+
+	var healthyEndpoints int
+	var totalEndpoints int
+	var minLatency time.Duration = time.Hour // Start with a large value
+
+	for _, endpoint := range consumerSessionsWithProvider.Endpoints {
+		if !endpoint.IsDirectRPC() {
+			continue
+		}
+
+		totalEndpoints++
+		for _, conn := range endpoint.DirectConnections {
+			if conn == nil {
+				continue
+			}
+
+			// Check connection health - this is a cheap operation
+			// that checks the internal health state without making a network call
+			startTime := time.Now()
+			healthy := conn.IsHealthy()
+			checkLatency := time.Since(startTime)
+
+			if healthy {
+				healthyEndpoints++
+				// Track minimum latency (for consistent API with provider probe)
+				if checkLatency < minLatency {
+					minLatency = checkLatency
+				}
+
+				if DebugProbes {
+					utils.LavaFormatDebug("Direct RPC endpoint probe succeeded",
+						utils.LogAttr("provider", providerAddress),
+						utils.LogAttr("url", conn.GetURL()),
+						utils.LogAttr("protocol", conn.GetProtocol()),
+					)
+				}
+			} else {
+				utils.LavaFormatDebug("Direct RPC endpoint is unhealthy",
+					utils.LogAttr("provider", providerAddress),
+					utils.LogAttr("url", conn.GetURL()),
+					utils.LogAttr("protocol", conn.GetProtocol()),
+				)
+			}
+		}
+	}
+
+	if totalEndpoints == 0 {
+		return 0, providerAddress, fmt.Errorf("no direct RPC endpoints found for provider %s", providerAddress)
+	}
+
+	if healthyEndpoints == 0 {
+		return 0, providerAddress, fmt.Errorf("all direct RPC endpoints unhealthy for provider %s", providerAddress)
+	}
+
+	// Reset latency to a reasonable default if we didn't measure any
+	if minLatency == time.Hour {
+		minLatency = time.Millisecond // Default minimal latency for healthy direct connections
+	}
+
+	utils.LavaFormatTrace("Direct RPC endpoints probe completed",
+		utils.LogAttr("provider", providerAddress),
+		utils.LogAttr("healthyEndpoints", healthyEndpoints),
+		utils.LogAttr("totalEndpoints", totalEndpoints),
+		utils.LogAttr("latency", minLatency),
+	)
+
+	return minLatency, providerAddress, nil
 }
 
 // csm needs to be locked here
@@ -583,11 +672,11 @@ func (csm *ConsumerSessionManager) cacheAddonAddresses(addon string, extensions 
 func (csm *ConsumerSessionManager) validatePairingListNotEmpty(addon string, extensions []string, ctx context.Context) uint64 {
 	numberOfResets := csm.atomicReadNumberOfResets()
 	validAddresses := csm.cacheAddonAddresses(addon, extensions, ctx)
-	utils.LavaFormatInfo("🔍 VALIDATING PROVIDERS", utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("validAddressesCount", len(validAddresses)), utils.LogAttr("validAddresses", validAddresses), utils.LogAttr("currentlyBlockedCount", len(csm.currentlyBlockedProviderAddresses)), utils.LogAttr("GUID", ctx))
+	utils.LavaFormatInfo("VALIDATING PROVIDERS", utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("validAddressesCount", len(validAddresses)), utils.LogAttr("validAddresses", validAddresses), utils.LogAttr("currentlyBlockedCount", len(csm.currentlyBlockedProviderAddresses)), utils.LogAttr("GUID", ctx))
 	if len(validAddresses) == 0 {
-		utils.LavaFormatWarning("🚨 NO VALID PROVIDERS - TRIGGERING RESET", nil, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("GUID", ctx))
+		utils.LavaFormatWarning("NO VALID PROVIDERS - TRIGGERING RESET", nil, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("GUID", ctx))
 		numberOfResets = csm.resetValidAddresses(addon, extensions)
-		utils.LavaFormatInfo("🔄 RESET COMPLETED", utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("newValidAddressesCount", len(csm.cacheAddonAddresses(addon, extensions, ctx))), utils.LogAttr("GUID", ctx))
+		utils.LavaFormatInfo("RESET COMPLETED", utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("newValidAddressesCount", len(csm.cacheAddonAddresses(addon, extensions, ctx))), utils.LogAttr("GUID", ctx))
 	}
 	return numberOfResets
 }
@@ -708,7 +797,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, wantedProvid
 			reportedProviders := csm.GetReportedProviders(sessionEpoch)
 
 			// Get session from endpoint or create new or continue. if more than 10 connections are open.
-			consumerSession, pairingEpoch, err := consumerSessionsWithProvider.GetConsumerSessionInstanceFromEndpoint(endpoint.chosenEndpointConnection, numberOfResets, csm.qosManager)
+		consumerSession, pairingEpoch, err := consumerSessionsWithProvider.GetConsumerSessionInstanceFromEndpoint(endpoint.chosenEndpointConnection, numberOfResets, csm.qosManager, endpoint.endpoint.NetworkAddress)
 			if err != nil {
 				utils.LavaFormatError("Error on consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint", err,
 					utils.LogAttr("providerAddress", providerAddress),
@@ -1285,7 +1374,10 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 		)
 
 		// Block the endpoint and the consumer session from future usages
+		// Only block EndpointConnection for provider-relay sessions
+		if consumerSession.EndpointConnection != nil {
 		consumerSession.EndpointConnection.blockListed.Store(true)
+		}
 		consumerSession.BlockListed = true
 	}
 

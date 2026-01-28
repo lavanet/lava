@@ -38,7 +38,7 @@ type ConsumerWebsocketManager struct {
 	apiInterface                  string
 	connectionType                string
 	relaySender                   RelaySender
-	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
+	consumerWsSubscriptionManager WSSubscriptionManager
 	WebsocketConnectionUID        string
 	headerRateLimit               uint64
 }
@@ -52,7 +52,7 @@ type ConsumerWebsocketManagerOptions struct {
 	ApiInterface                  string
 	ConnectionType                string
 	RelaySender                   RelaySender
-	ConsumerWsSubscriptionManager *ConsumerWSSubscriptionManager
+	ConsumerWsSubscriptionManager WSSubscriptionManager
 	WebsocketConnectionUID        string
 	headerRateLimit               uint64
 }

@@ -27,6 +27,7 @@ const (
 	ERRORED_PROVIDERS_HEADER_NAME                   = "Lava-Errored-Providers"
 	NODE_ERRORS_PROVIDERS_HEADER_NAME               = "Lava-Node-Errors-providers"
 	REPORTED_PROVIDERS_HEADER_NAME                  = "Lava-Reported-Providers"
+	LAVA_RELAY_PROTOCOL_HEADER_NAME                 = "Lava-Relay-Protocol"
 	USER_REQUEST_TYPE                               = "lava-user-request-type"
 	STATEFUL_API_HEADER                             = "lava-stateful-api"
 	STATEFUL_ALL_PROVIDERS_HEADER_NAME              = "lava-fast-tx-participants"
@@ -77,6 +78,8 @@ type NodeUrl struct {
 	Addons            []string      `yaml:"addons,omitempty" json:"addons,omitempty" mapstructure:"addons"`
 	SkipVerifications []string      `yaml:"skip-verifications,omitempty" json:"skip-verifications,omitempty" mapstructure:"skip-verifications"`
 	Methods           []string      `yaml:"methods,omitempty" json:"methods,omitempty" mapstructure:"methods"`
+	// GrpcConfig holds gRPC-specific configuration for direct gRPC connections (smart router)
+	GrpcConfig GrpcConfig `yaml:"grpc-config,omitempty" json:"grpc-config,omitempty" mapstructure:"grpc-config"`
 }
 
 type ChainMessageGetApiInterface interface {
@@ -189,6 +192,104 @@ func (ac *AuthConfig) AddAuthPath(url string) string {
 	}
 	// path doesn't have query parameters
 	return url + URL_QUERY_PARAMETERS_SEPARATOR_FROM_PATH + ac.AuthQuery
+}
+
+// GrpcConfig holds gRPC-specific configuration for direct gRPC connections.
+// Used by the smart router for direct connections to gRPC endpoints (Cosmos SDK, Solana, etc.)
+type GrpcConfig struct {
+	// DescriptorSource specifies how to obtain protobuf descriptors for dynamic message handling.
+	// Options:
+	//   - "reflection" (default): Use gRPC server reflection to auto-discover proto definitions
+	//   - "file": Load from a pre-compiled FileDescriptorSet (.pb file)
+	//   - "hybrid": Try reflection first, fallback to file if reflection is unavailable
+	DescriptorSource string `yaml:"descriptor-source,omitempty" json:"descriptor-source,omitempty" mapstructure:"descriptor-source"`
+
+	// DescriptorSetPath is the path to a FileDescriptorSet file (.pb or .prototxt).
+	// Required when DescriptorSource is "file" or "hybrid".
+	// Can be absolute path or relative to the working directory.
+	DescriptorSetPath string `yaml:"descriptor-set-path,omitempty" json:"descriptor-set-path,omitempty" mapstructure:"descriptor-set-path"`
+
+	// ReflectionTimeout is the timeout for gRPC reflection queries.
+	// Only used when DescriptorSource is "reflection" or "hybrid".
+	// Default: 5s
+	ReflectionTimeout time.Duration `yaml:"reflection-timeout,omitempty" json:"reflection-timeout,omitempty" mapstructure:"reflection-timeout"`
+
+	// AllowInsecure permits grpc:// (non-TLS) connections.
+	// Should only be enabled for local development/testing.
+	// Default: false (only grpcs:// allowed)
+	AllowInsecure bool `yaml:"allow-insecure,omitempty" json:"allow-insecure,omitempty" mapstructure:"allow-insecure"`
+}
+
+// GrpcDescriptorSource constants for DescriptorSource field
+const (
+	GrpcDescriptorSourceReflection = "reflection"
+	GrpcDescriptorSourceFile       = "file"
+	GrpcDescriptorSourceHybrid     = "hybrid"
+)
+
+// GetDescriptorSource returns the descriptor source, defaulting to "reflection"
+func (gc *GrpcConfig) GetDescriptorSource() string {
+	if gc == nil || gc.DescriptorSource == "" {
+		return GrpcDescriptorSourceReflection
+	}
+	return gc.DescriptorSource
+}
+
+// GetReflectionTimeout returns the reflection timeout, defaulting to 5 seconds
+func (gc *GrpcConfig) GetReflectionTimeout() time.Duration {
+	if gc == nil || gc.ReflectionTimeout <= 0 {
+		return 5 * time.Second
+	}
+	return gc.ReflectionTimeout
+}
+
+// NeedsDescriptorFile returns true if descriptor source requires a file path
+func (gc *GrpcConfig) NeedsDescriptorFile() bool {
+	if gc == nil {
+		return false
+	}
+	source := gc.GetDescriptorSource()
+	return source == GrpcDescriptorSourceFile || source == GrpcDescriptorSourceHybrid
+}
+
+// Validate checks the GrpcConfig for correctness
+func (gc *GrpcConfig) Validate() error {
+	if gc == nil {
+		return nil
+	}
+
+	// Validate descriptor source
+	source := gc.GetDescriptorSource()
+	switch source {
+	case GrpcDescriptorSourceReflection, GrpcDescriptorSourceFile, GrpcDescriptorSourceHybrid, "":
+		// Valid
+	default:
+		return utils.LavaFormatError("invalid gRPC descriptor source", nil,
+			utils.LogAttr("source", source),
+			utils.LogAttr("valid_options", "reflection, file, hybrid"))
+	}
+
+	// Validate descriptor path is provided when needed
+	if gc.NeedsDescriptorFile() && gc.DescriptorSetPath == "" {
+		return utils.LavaFormatError("descriptor-set-path is required when descriptor-source is file or hybrid", nil,
+			utils.LogAttr("descriptor_source", source))
+	}
+
+	// Validate reflection timeout bounds
+	if gc.ReflectionTimeout > 0 {
+		if gc.ReflectionTimeout < 100*time.Millisecond {
+			return utils.LavaFormatError("reflection-timeout too short", nil,
+				utils.LogAttr("timeout", gc.ReflectionTimeout),
+				utils.LogAttr("min", "100ms"))
+		}
+		if gc.ReflectionTimeout > 30*time.Second {
+			return utils.LavaFormatError("reflection-timeout too long", nil,
+				utils.LogAttr("timeout", gc.ReflectionTimeout),
+				utils.LogAttr("max", "30s"))
+		}
+	}
+
+	return nil
 }
 
 func ValidateEndpoint(endpoint, apiInterface string) error {

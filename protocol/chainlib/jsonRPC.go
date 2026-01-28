@@ -322,7 +322,7 @@ type JsonRPCChainListener struct {
 	relaySender                   RelaySender
 	healthReporter                HealthReporter
 	logger                        *metrics.RPCConsumerLogs
-	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
+	consumerWsSubscriptionManager WSSubscriptionManager
 	listeningAddress              string
 	websocketConnectionLimiter    *WebsocketConnectionLimiter
 }
@@ -331,7 +331,7 @@ type JsonRPCChainListener struct {
 func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	relaySender RelaySender, healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
-	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager,
+	consumerWsSubscriptionManager WSSubscriptionManager,
 ) (chainListener *JsonRPCChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &JsonRPCChainListener{

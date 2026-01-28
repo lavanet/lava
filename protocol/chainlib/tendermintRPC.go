@@ -344,7 +344,7 @@ type TendermintRpcChainListener struct {
 	relaySender                   RelaySender
 	healthReporter                HealthReporter
 	logger                        *metrics.RPCConsumerLogs
-	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
+	consumerWsSubscriptionManager WSSubscriptionManager
 	listeningAddress              string
 	websocketConnectionLimiter    *WebsocketConnectionLimiter
 }
@@ -353,9 +353,9 @@ type TendermintRpcChainListener struct {
 func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	relaySender RelaySender, healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
-	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager,
+	consumerWsSubscriptionManager WSSubscriptionManager,
 ) (chainListener *TendermintRpcChainListener) {
-	// Create a new instance of JsonRPCChainListener
+	// Create a new instance of TendermintRpcChainListener
 	chainListener = &TendermintRpcChainListener{
 		endpoint:                      listenEndpoint,
 		relaySender:                   relaySender,

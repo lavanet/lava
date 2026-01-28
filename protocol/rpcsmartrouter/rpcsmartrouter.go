@@ -32,7 +32,6 @@ package rpcsmartrouter
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -40,14 +39,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/app"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
+	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/common"
-	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
@@ -58,8 +56,8 @@ import (
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
-	"github.com/lavanet/lava/v5/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -69,6 +67,8 @@ const (
 	DefaultRPCSmartRouterFileName = "rpcsmartrouter.yml"
 	DebugRelaysFlagName           = "debug-relays"
 	DebugProbesFlagName           = "debug-probes"
+	refererBackendAddressFlagName = "referer-be-address"
+	refererMarkerFlagName         = "referer-marker"
 	reportsSendBEAddress          = "reports-be-address"
 )
 
@@ -167,7 +167,6 @@ type RPCSmartRouter struct {
 
 type rpcSmartRouterStartOptions struct {
 	rpcEndpoints             []*lavasession.RPCEndpoint
-	requiredResponses        int
 	cache                    *performance.Cache
 	strategy                 provideroptimizer.Strategy
 	maxConcurrentProviders   uint
@@ -178,11 +177,9 @@ type rpcSmartRouterStartOptions struct {
 	backupProvidersList      []*lavasession.RPCStaticProviderEndpoint // define backup providers as emergency fallback when no providers available
 	geoLocation              uint64
 	clientCtx                client.Context    // Blockchain client context for querying specs
-	privKey                  *btcec.PrivateKey // Private key for signing relay requests
-	lavaChainID              string            // Lava blockchain chain ID
 }
 
-// spawns a new RPCConsumer server with all it's processes and internals ready for communications
+// spawns a new RPCSmartRouter server with all its processes and internals ready for communications
 func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterStartOptions) (err error) {
 	if common.IsTestMode(ctx) {
 		testModeWarn("RPCSmartRouter running tests")
@@ -507,12 +504,37 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 					extensions[extension] = struct{}{}
 				}
 
+				// Create DirectRPCConnection for smart router (direct mode)
+				// Use default parallel connections for HTTP connection pooling
+				// Pass ApiInterface for proper protocol detection (bare host:port → gRPC when interface is gRPC)
+				directConn, err := lavasession.NewDirectRPCConnection(
+					ctx,
+					url,
+					uint(lavasession.DefaultMaximumStreamsOverASingleConnection),
+					provider.ApiInterface, // Used for protocol detection when URL has no scheme
+				)
+				if err != nil {
+					utils.LavaFormatWarning("failed to create direct RPC connection", err,
+						utils.LogAttr("url", url.Url),
+						utils.LogAttr("provider", provider.Name),
+					)
+					continue
+				}
+
+				utils.LavaFormatInfo("created direct RPC connection",
+					utils.LogAttr("url", url.Url),
+					utils.LogAttr("protocol", directConn.GetProtocol()),
+					utils.LogAttr("provider", provider.Name),
+				)
+
 				endpoint := &lavasession.Endpoint{
-					NetworkAddress: url.Url,
-					Enabled:        true,
-					Addons:         extensions,
-					Extensions:     extensions,
-					Connections:    []*lavasession.EndpointConnection{},
+					NetworkAddress:    url.Url,
+					Enabled:           true,
+					Addons:            extensions,
+					Extensions:        extensions,
+					Connections:       nil,                                           // rpcconsumer only - not used in smart router
+					DirectConnections: []lavasession.DirectRPCConnection{directConn}, // Smart router uses direct RPC
+					Geolocation:       planstypes.Geolocation(provider.Geolocation),
 				}
 				endpoints = append(endpoints, endpoint)
 			}
@@ -581,17 +603,192 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 
 	rpcSmartRouterServer := &RPCSmartRouterServer{}
 
-	var wsSubscriptionManager *chainlib.ConsumerWSSubscriptionManager
-	var specMethodType string
-	if rpcEndpoint.ApiInterface == spectypes.APIInterfaceJsonRPC {
-		specMethodType = http.MethodPost
+	// Create WebSocket subscription manager
+	// Uses interface type to support both provider-based (ConsumerWSSubscriptionManager)
+	// and direct RPC (DirectWSSubscriptionManager) implementations
+	var wsSubscriptionManager chainlib.WSSubscriptionManager
+
+	// Collect ALL WebSocket-capable endpoints from static providers for direct subscriptions
+	// WebSocket URLs are identified by ws:// or wss:// prefix
+	var wsEndpoints []*common.NodeUrl
+	for _, provider := range relevantStaticProviderList {
+		for i := range provider.NodeUrls {
+			url := strings.ToLower(provider.NodeUrls[i].Url)
+			if strings.HasPrefix(url, "ws://") || strings.HasPrefix(url, "wss://") {
+				wsEndpoints = append(wsEndpoints, &provider.NodeUrls[i])
+				utils.LavaFormatInfo("Found WebSocket endpoint for direct subscriptions",
+					utils.LogAttr("url", provider.NodeUrls[i].Url),
+					utils.LogAttr("provider", provider.Name),
+					utils.LogAttr("chainID", provider.ChainID),
+				)
+			}
+		}
 	}
-	wsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(sessionManager, rpcSmartRouterServer, specMethodType, chainParser, activeSubscriptionProvidersStorage, smartRouterMetricsManager)
+
+	// Create DirectWSSubscriptionManager if WebSocket endpoints are available
+	// Otherwise fall back to provider-based subscription manager
+	if len(wsEndpoints) > 0 {
+		directWSManager := NewDirectWSSubscriptionManager(
+			smartRouterMetricsManager,
+			spectypes.APIInterfaceJsonRPC, // WebSocket subscriptions use JSON-RPC
+			rpcEndpoint.ChainID,
+			rpcEndpoint.ApiInterface,
+			wsEndpoints,
+			optimizer, // Pass optimizer for endpoint selection
+			nil,       // Use default WebSocket config (configurable via CLI flags later)
+		)
+		// Start background cleanup goroutine
+		directWSManager.Start(ctx)
+		wsSubscriptionManager = directWSManager
+		utils.LavaFormatInfo("Using DirectWSSubscriptionManager for direct WebSocket subscriptions",
+			utils.LogAttr("chainID", rpcEndpoint.ChainID),
+			utils.LogAttr("apiInterface", rpcEndpoint.ApiInterface),
+			utils.LogAttr("wsEndpointCount", len(wsEndpoints)),
+			utils.LogAttr("optimizerEnabled", optimizer != nil),
+		)
+	} else {
+		// No WebSocket endpoints configured - use NoOp manager that returns clear errors
+		// Smart router does NOT fall back to provider-based subscriptions (per implementation plan)
+		// Provider-based subscriptions are only for rpcconsumer, not rpcsmartrouter
+		wsSubscriptionManager = NewNoOpWSSubscriptionManager(rpcEndpoint.ChainID, rpcEndpoint.ApiInterface)
+		utils.LavaFormatInfo("No WebSocket endpoints configured for direct subscriptions",
+			utils.LogAttr("chainID", rpcEndpoint.ChainID),
+			utils.LogAttr("apiInterface", rpcEndpoint.ApiInterface),
+			utils.LogAttr("hint", "Add ws:// or wss:// URLs to static-providers-list to enable subscriptions"),
+		)
+	}
+
+	// Create gRPC streaming subscription manager for gRPC server-streaming methods
+	// This supports Cosmos Event Streaming, Solana Geyser, and other gRPC streaming protocols
+	var grpcEndpoints []*common.NodeUrl
+	if rpcEndpoint.ApiInterface == spectypes.APIInterfaceGrpc {
+		// Collect gRPC endpoints from static providers
+		for _, provider := range relevantStaticProviderList {
+			if provider.ApiInterface == spectypes.APIInterfaceGrpc {
+				for i := range provider.NodeUrls {
+					grpcEndpoints = append(grpcEndpoints, &provider.NodeUrls[i])
+					utils.LavaFormatInfo("Found gRPC endpoint for streaming subscriptions",
+						utils.LogAttr("url", provider.NodeUrls[i].Url),
+						utils.LogAttr("provider", provider.Name),
+						utils.LogAttr("chainID", provider.ChainID),
+					)
+				}
+			}
+		}
+	}
+
+	// Initialize DirectGRPCSubscriptionManager if gRPC endpoints are available
+	if len(grpcEndpoints) > 0 {
+		grpcSubManager := NewDirectGRPCSubscriptionManager(
+			smartRouterMetricsManager, // Metrics manager for tracking
+			rpcEndpoint.ChainID,
+			rpcEndpoint.ApiInterface,
+			grpcEndpoints,
+			optimizer, // Pass optimizer for endpoint selection (same as WS manager)
+			nil,       // Use default GRPCStreamingConfig
+		)
+		// Start background cleanup goroutine
+		grpcSubManager.Start(ctx)
+		rpcSmartRouterServer.grpcSubscriptionManager = grpcSubManager
+		utils.LavaFormatInfo("Using DirectGRPCSubscriptionManager for gRPC streaming subscriptions",
+			utils.LogAttr("chainID", rpcEndpoint.ChainID),
+			utils.LogAttr("apiInterface", rpcEndpoint.ApiInterface),
+			utils.LogAttr("grpcEndpointCount", len(grpcEndpoints)),
+			utils.LogAttr("optimizerEnabled", optimizer != nil),
+		)
+	}
+
+	// Create ChainTracker for latest block tracking (reuse provider's implementation)
+	// Use first static provider endpoint for ChainTracker
+	var chainTracker chaintracker.IChainTracker
+	if len(relevantStaticProviderList) > 0 {
+		firstProvider := relevantStaticProviderList[0]
+		
+		// Create minimal endpoint for ChainTracker (no addons needed)
+		// ChainTracker only polls eth_blockNumber (latest block) - doesn't need archive/debug
+		chainTrackerEndpoint := &lavasession.RPCProviderEndpoint{
+			NetworkAddress: firstProvider.NetworkAddress,
+			ChainID:        firstProvider.ChainID,
+			ApiInterface:   firstProvider.ApiInterface,
+			Geolocation:    firstProvider.Geolocation,
+			NodeUrls: []common.NodeUrl{
+				{
+					Url:        firstProvider.NodeUrls[0].Url,
+					AuthConfig: firstProvider.NodeUrls[0].AuthConfig,  // Preserve auth
+					Addons:     []string{},  // No addons - ChainTracker only needs latest block!
+				},
+			},
+		}
+
+		// Create chain router with minimal endpoint (same as provider)
+		parallelConnections := uint(lavasession.DefaultMaximumStreamsOverASingleConnection)
+		chainRouter, err := chainlib.GetChainRouter(ctx, parallelConnections, chainTrackerEndpoint, chainParser)
+		if err != nil {
+			utils.LavaFormatWarning("Failed to create chain router for chain tracker", err,
+				utils.LogAttr("chain", rpcEndpoint.ChainID),
+			)
+		} else {
+			// Create chain fetcher (same as provider - verifications only mode)
+			chainFetcher := chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, chainTrackerEndpoint)
+
+			// Validate chain fetcher
+			if err := chainFetcher.Validate(ctx); err != nil {
+				utils.LavaFormatWarning("Chain fetcher validation failed, sync tracking disabled", err,
+					utils.LogAttr("chain", rpcEndpoint.ChainID),
+				)
+			} else {
+				// Get chain stats
+				_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
+
+				// Create chain tracker config (same as provider)
+				blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
+				chainTrackerConfig := chaintracker.ChainTrackerConfig{
+					BlocksToSave:          blocksToSaveChainTracker,
+					AverageBlockTime:      averageBlockTime,
+					ServerBlockMemory:     rpcprovider.ChainTrackerDefaultMemory + blocksToSaveChainTracker,
+					ChainId:               rpcEndpoint.ChainID,
+					ParseDirectiveEnabled: chainParser.ParseDirectiveEnabled(),
+				}
+
+				// Create chain tracker (same as provider)
+				chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
+				if err != nil {
+					utils.LavaFormatWarning("Failed to create chain tracker, sync tracking disabled", err,
+						utils.LogAttr("chain", rpcEndpoint.ChainID),
+					)
+					chainTracker = nil
+				} else {
+					// Start chain tracker background polling
+					go func() {
+						err := chainTracker.StartAndServe(ctx)
+						if err != nil {
+							utils.LavaFormatError("Chain tracker failed", err,
+								utils.LogAttr("chain", rpcEndpoint.ChainID),
+							)
+						}
+					}()
+
+					utils.LavaFormatInfo("Chain tracker started for smart router",
+						utils.LogAttr("chain", rpcEndpoint.ChainID),
+						utils.LogAttr("polling_interval", averageBlockTime/time.Duration(chaintracker.MostFrequentPollingMultiplier)),
+						utils.LogAttr("blocks_to_save", blocksToSaveChainTracker),
+					)
+				}
+			}
+		}
+	}
+
+	// If chainTracker creation failed, it will be nil (degrades gracefully)
+	if chainTracker == nil {
+		utils.LavaFormatInfo("RPCSmartRouter starting without chain tracker (sync tracking disabled)",
+			utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()},
+			utils.LogAttr("chain", rpcEndpoint.ChainID),
+		)
+	}
 
 	utils.LavaFormatInfo("RPCSmartRouter Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
 	// Convert smartRouterIdentifier string to empty sdk.AccAddress for smart router
-	emptyConsumerAddr := []byte{}
-	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, sessionManager, options.requiredResponses, options.privKey, options.lavaChainID, options.cache, rpcSmartRouterMetrics, emptyConsumerAddr, smartRouterConsistency, relaysMonitor, options.cmdFlags, options.stateShare, smartRouterReportsManager, wsSubscriptionManager)
+	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, chainTracker, sessionManager, options.cache, rpcSmartRouterMetrics, smartRouterConsistency, relaysMonitor, options.cmdFlags, options.stateShare, wsSubscriptionManager)
 	if err != nil {
 		err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 		errCh <- err
@@ -664,16 +861,12 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			closeLoggerOnFinish := common.SetupRollingLogger()
 			defer closeLoggerOnFinish()
 
-			utils.LavaFormatInfo("RPCConsumer started:", utils.Attribute{Key: "args", Value: strings.Join(args, ",")})
+			utils.LavaFormatInfo("RPCSmartRouter started:", utils.Attribute{Key: "args", Value: strings.Join(args, ",")})
 
 			// setting the insecure option on provider dial, this should be used in development only!
 			lavasession.AllowInsecureConnectionToProviders = viper.GetBool(lavasession.AllowInsecureConnectionToProvidersFlag)
 			if lavasession.AllowInsecureConnectionToProviders {
 				utils.LavaFormatWarning("AllowInsecureConnectionToProviders is set to true, this should be used only in development", nil, utils.Attribute{Key: lavasession.AllowInsecureConnectionToProvidersFlag, Value: lavasession.AllowInsecureConnectionToProviders})
-			}
-			lavasession.AllowGRPCCompressionForConsumerProviderCommunication = viper.GetBool(lavasession.AllowGRPCCompressionFlag)
-			if lavasession.AllowGRPCCompressionForConsumerProviderCommunication {
-				utils.LavaFormatInfo("AllowGRPCCompressionForConsumerProviderCommunication is set to true, messages will be compressed", utils.Attribute{Key: lavasession.AllowGRPCCompressionFlag, Value: lavasession.AllowGRPCCompressionForConsumerProviderCommunication})
 			}
 
 			var rpcEndpoints []*lavasession.RPCEndpoint
@@ -829,27 +1022,8 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			}
 
 			rpcSmartRouter := RPCSmartRouter{}
-			requiredResponses := 1 // TODO: handle secure flag, for a majority between providers
 			utils.LavaFormatInfo("lavap Binary Version: " + upgrade.GetCurrentVersion().ConsumerVersion)
 			rand.InitRandomSeed()
-
-			// Smart router automatically enables skip-relay-signing for performance unless explicitly disabled
-			// This saves CPU and memory since rewards are not claimed in smart router mode
-			if !viper.IsSet(common.SkipRelaySigningFlag) {
-				lavaprotocol.SkipRelaySigning = true
-				utils.LavaFormatInfo("[SkipRelaySigning] Smart router mode: automatically enabling skip-relay-signing for performance",
-					utils.Attribute{Key: "skipRelaySigning", Value: lavaprotocol.SkipRelaySigning},
-					utils.Attribute{Key: "reason", Value: "auto-enabled for smart router mode"},
-				)
-			} else {
-				// Flag was explicitly set, log the value
-				explicitValue := viper.GetBool(common.SkipRelaySigningFlag)
-				lavaprotocol.SkipRelaySigning = explicitValue
-				utils.LavaFormatInfo("[SkipRelaySigning] Smart router mode: using explicit flag value",
-					utils.Attribute{Key: "skipRelaySigning", Value: lavaprotocol.SkipRelaySigning},
-					utils.Attribute{Key: "source", Value: "command-line/config file"},
-				)
-			}
 
 			var cache *performance.Cache = nil
 			cacheAddr, err := cmd.Flags().GetString(performance.CacheFlagName)
@@ -908,37 +1082,9 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				EpochDuration:            epochDuration,
 			}
 
-			// Get private key for signing relay requests
-			// Smart router uses ephemeral key in static provider mode since providers
-			// are configured to accept requests from anyone (no signature verification)
-			keyName, err := sigs.GetKeyName(clientCtx)
-			var privKey *btcec.PrivateKey
-			if err != nil {
-				// If no key in keyring, generate ephemeral key for static provider mode
-				utils.LavaFormatWarning("No key found in keyring, generating ephemeral key for signing (static provider mode)", err)
-				privKey, err = btcec.NewPrivateKey()
-				if err != nil {
-					utils.LavaFormatFatal("failed generating ephemeral private key", err)
-				}
-			} else {
-				// Use key from keyring if available
-				privKey, err = sigs.GetPrivKey(clientCtx, keyName)
-				if err != nil {
-					utils.LavaFormatWarning("Failed getting key from keyring, generating ephemeral key for signing (static provider mode)", err, utils.Attribute{Key: "keyName", Value: keyName})
-					privKey, err = btcec.NewPrivateKey()
-					if err != nil {
-						utils.LavaFormatFatal("failed generating ephemeral private key", err)
-					}
-				}
-			}
-
-			// Get Lava chain ID
-			lavaChainID := clientCtx.ChainID
-
 			rpcSmartRouterSharedState := viper.GetBool(common.SharedStateFlag)
 			err = rpcSmartRouter.Start(ctx, &rpcSmartRouterStartOptions{
 				rpcEndpoints:             rpcEndpoints,
-				requiredResponses:        requiredResponses,
 				cache:                    cache,
 				strategy:                 strategyFlag.Strategy,
 				maxConcurrentProviders:   maxConcurrentProviders,
@@ -949,10 +1095,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				backupProvidersList:      backupProviderEndpoints,
 				geoLocation:              geolocation,
 				clientCtx:                clientCtx,
-				privKey:                  privKey,
-				lavaChainID:              lavaChainID,
 			})
-
 			return err
 		},
 	}
@@ -962,7 +1105,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().Uint(common.MaximumConcurrentProvidersFlagName, 3, "max number of concurrent providers to communicate with")
 	cmdRPCSmartRouter.MarkFlagRequired(common.GeolocationFlag)
 	cmdRPCSmartRouter.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allow insecure provider-dialing. used for development and testing")
-	cmdRPCSmartRouter.Flags().Bool(lavasession.AllowGRPCCompressionFlag, false, "allow messages to be compressed when communicating between the consumer and provider")
 	cmdRPCSmartRouter.Flags().Uint64Var(&lavasession.MaximumStreamsOverASingleConnection, lavasession.MaximumStreamsOverASingleConnectionFlag, lavasession.DefaultMaximumStreamsOverASingleConnection, "maximum number of parallel streams over a single provider connection")
 	cmdRPCSmartRouter.Flags().Bool(common.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
 	cmdRPCSmartRouter.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
@@ -994,6 +1136,8 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	// relays health check related flags
 	cmdRPCSmartRouter.Flags().Bool(common.RelaysHealthEnableFlag, RelaysHealthEnableFlagDefault, "enables relays health check")
 	cmdRPCSmartRouter.Flags().Duration(common.RelayHealthIntervalFlag, RelayHealthIntervalFlagDefault, "interval between relay health checks")
+	cmdRPCSmartRouter.Flags().String(refererBackendAddressFlagName, "", "address to send referer to")
+	cmdRPCSmartRouter.Flags().String(refererMarkerFlagName, "lava-referer-", "the string marker to identify referer")
 	cmdRPCSmartRouter.Flags().String(reportsSendBEAddress, "", "address to send reports to")
 	cmdRPCSmartRouter.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
 	cmdRPCSmartRouter.Flags().String(common.UseStaticSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain")
@@ -1020,7 +1164,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().Int64Var(&chainlib.MaxIdleTimeInSeconds, common.LimitWebsocketIdleTimeFlag, chainlib.MaxIdleTimeInSeconds, "limit the idle time in seconds for a websocket connection, default is 20 minutes ( 20 * 60 )")
 	cmdRPCSmartRouter.Flags().DurationVar(&chainlib.WebSocketBanDuration, common.BanDurationForWebsocketRateLimitExceededFlag, chainlib.WebSocketBanDuration, "once websocket rate limit is reached, user will be banned Xfor a duration, default no ban")
 	cmdRPCSmartRouter.Flags().BoolVar(&chainlib.SkipPolicyVerification, common.SkipPolicyVerificationFlag, chainlib.SkipPolicyVerification, "skip policy verifications, this flag will skip onchain policy verification and will use the static provider list")
-	cmdRPCSmartRouter.Flags().BoolVar(&lavaprotocol.SkipRelaySigning, common.SkipRelaySigningFlag, lavaprotocol.SkipRelaySigning, "skip cryptographic signing of relay requests/responses to reduce CPU and memory usage (use only with static providers)")
+	cmdRPCSmartRouter.Flags().BoolVar(&chainlib.SkipWebsocketVerification, common.SkipWebsocketVerificationFlag, chainlib.SkipWebsocketVerification, "skip websocket verification for chains that require ws/wss endpoints")
 
 	cmdRPCSmartRouter.Flags().BoolVar(&lavasession.PeriodicProbeProviders, common.PeriodicProbeProvidersFlagName, lavasession.PeriodicProbeProviders, "enable periodic probing of providers")
 	cmdRPCSmartRouter.Flags().DurationVar(&lavasession.PeriodicProbeProvidersInterval, common.PeriodicProbeProvidersIntervalFlagName, lavasession.PeriodicProbeProvidersInterval, "interval for periodic probing of providers")

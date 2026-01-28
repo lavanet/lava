@@ -361,7 +361,17 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 					utils.LavaFormatTrace("[StateMachine] successfully sent message", utils.LogAttr("GUID", srsm.ctx))
 					// Reset pairing error counter on success
 					srsm.consecutivePairingErrors = 0
+
+					utils.LavaFormatInfo("STATE MACHINE: ABOUT TO SEND DONE=TRUE",
+						utils.LogAttr("GUID", srsm.ctx),
+					)
+
 					relayTaskChannel <- RelayStateSendInstructions{Done: true}
+
+					utils.LavaFormatInfo("STATE MACHINE: DONE MESSAGE SENT (BLOCKING SEND COMPLETED)",
+						utils.LogAttr("GUID", srsm.ctx),
+					)
+
 					return
 				}
 
