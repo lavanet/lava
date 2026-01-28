@@ -475,7 +475,6 @@ func (rpcss *RPCSmartRouterServer) GetChainIdAndApiInterface() (string, string) 
 	return rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface
 }
 
-
 func (rpcss *RPCSmartRouterServer) ProcessRelaySend(ctx context.Context, protocolMessage chainlib.ProtocolMessage, analytics *metrics.RelayMetrics) (*relaycore.RelayProcessor, error) {
 	// make sure all of the child contexts are cancelled when we exit
 	ctx, cancel := context.WithCancel(ctx)
@@ -869,25 +868,33 @@ func (rpcss *RPCSmartRouterServer) sendRelayToEndpoint(
 	latestBlockHashRequested := spectypes.NOT_APPLICABLE
 	var cacheError error
 	quorumParams := relayProcessor.GetQuorumParams()
-	if rpcss.cache.CacheActive() && !quorumParams.Enabled() { // use cache only if its defined and quorum is disabled.
-		utils.LavaFormatDebug("Cache lookup attempt",
-			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("cacheActive", true),
-			utils.LogAttr("reqBlock", reqBlock),
-			utils.LogAttr("forceCacheRefresh", protocolMessage.GetForceCacheRefresh()),
-			utils.LogAttr("quorumEnabled", false),
-		)
-	} else if rpcss.cache.CacheActive() && quorumParams.Enabled() {
-		utils.LavaFormatDebug("Cache bypassed due to quorum validation requirements",
-			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("cacheActive", true),
-			utils.LogAttr("quorumEnabled", true),
-			utils.LogAttr("quorumMin", quorumParams.Min),
-			utils.LogAttr("reason", "quorum requires fresh endpoint validation, cache would defeat consensus verification"),
-		)
-	}
-	if rpcss.cache.CacheActive() && !quorumParams.Enabled() { // use cache only if its defined and quorum is disabled.
-		if !protocolMessage.GetForceCacheRefresh() {
+
+	// Cache lookup: only if cache is active and quorum is disabled
+	if rpcss.cache.CacheActive() {
+		if quorumParams.Enabled() {
+			// Quorum requires fresh endpoint validation - cache would defeat consensus verification
+			utils.LavaFormatDebug("Cache bypassed due to quorum validation requirements",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("cacheActive", true),
+				utils.LogAttr("quorumEnabled", true),
+				utils.LogAttr("quorumMin", quorumParams.Min),
+				utils.LogAttr("reason", "quorum requires fresh endpoint validation, cache would defeat consensus verification"),
+			)
+		} else if protocolMessage.GetForceCacheRefresh() {
+			// User requested cache bypass via header
+			utils.LavaFormatDebug("Cache bypassed due to force-cache-refresh header",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("cacheActive", true),
+			)
+		} else {
+			// Proceed with cache lookup
+			utils.LavaFormatDebug("Cache lookup attempt",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("cacheActive", true),
+				utils.LogAttr("reqBlock", reqBlock),
+				utils.LogAttr("forceCacheRefresh", false),
+				utils.LogAttr("quorumEnabled", false),
+			)
 			allowCacheLookup := reqBlock != spectypes.NOT_APPLICABLE
 
 			if allowCacheLookup {
