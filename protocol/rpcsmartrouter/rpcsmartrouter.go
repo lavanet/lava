@@ -954,9 +954,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 					return utils.LavaFormatError("failed to start pyroscope profiler", err)
 				}
 			}
-			// Note: VerifyAndHandleUnsupportedFlags is not called here because rpcsmartrouter
-			// doesn't use blockchain transaction flags (--fees, --from, etc.) since it operates
-			// in centralized mode without blockchain interactions
 
 			// check if StaticProvidersConfigName exists in viper, if it does parse it with ParseStaticProviderEndpoints function
 			var staticProviderEndpoints []*lavasession.RPCStaticProviderEndpoint
