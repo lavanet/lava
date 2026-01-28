@@ -33,7 +33,7 @@ func newMockRelayStateMachine(protocolMessage chainlib.ProtocolMessage, usedProv
 		protocolMessage: protocolMessage,
 		usedProviders:   usedProviders,
 		debugState:      false,
-		selection:       BestResult, // Default to BestResult for backward compatibility
+		selection:       Stateful, // Default to Stateful for backward compatibility
 	}
 }
 
@@ -550,7 +550,7 @@ func TestHasRequiredNodeResultsQuorumScenarios(t *testing.T) {
 				RelayProcessorMetrics,
 				RelayProcessorMetrics,
 				RelayRetriesManagerInstance,
-				newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
+				newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
 				qos.NewQoSManager(),
 			)
 
@@ -628,7 +628,7 @@ func TestNodeErrorQuorumMet(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
 
-		// Use Quorum selection to enable quorum logic
+		// Use Stateless selection to enable quorum logic
 		relayProcessor := NewRelayProcessor(
 			ctx,
 			common.QuorumParams{Min: 3, Rate: 0.6, Max: 5},
@@ -636,7 +636,7 @@ func TestNodeErrorQuorumMet(t *testing.T) {
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
-			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
 			qos.NewQoSManager(),
 		)
 
@@ -699,7 +699,7 @@ func TestNodeErrorQuorumNotMet(t *testing.T) {
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
-			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
 			qos.NewQoSManager(),
 		)
 
@@ -762,7 +762,7 @@ func TestNodeErrorQuorumWithProtocolErrors(t *testing.T) {
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
-			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
 			qos.NewQoSManager(),
 		)
 
@@ -820,7 +820,7 @@ func TestNodeErrorPrioritizedOverProtocolErrors(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
 
-		// Quorum disabled (BestResult selection)
+		// Quorum disabled (Stateful selection)
 		relayProcessor := NewRelayProcessor(
 			ctx,
 			common.DefaultQuorumParams,
@@ -888,7 +888,7 @@ func TestNodeErrorPrioritizedOverProtocolErrors(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
 
-		// Quorum selection but quorum feature disabled (DefaultQuorumParams)
+		// Stateless selection but quorum feature disabled (DefaultQuorumParams)
 		relayProcessor := NewRelayProcessor(
 			ctx,
 			common.DefaultQuorumParams,
@@ -896,7 +896,7 @@ func TestNodeErrorPrioritizedOverProtocolErrors(t *testing.T) {
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
-			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
 			qos.NewQoSManager(),
 		)
 
@@ -932,7 +932,7 @@ func TestNodeErrorPrioritizedOverProtocolErrors(t *testing.T) {
 		require.Equal(t, uint64(4), protocolErrors, "Should have 4 protocol errors")
 
 		// Process results - should return node error (prioritized over protocol errors)
-		// Even with Quorum selection, when quorum feature is disabled, node errors should be prioritized
+		// Even with Stateless selection, when quorum feature is disabled, node errors should be prioritized
 		returnedResult, err := relayProcessor.ProcessingResult()
 		require.NoError(t, err, "Should return node error, not an error")
 		require.NotNil(t, returnedResult)
@@ -972,7 +972,7 @@ func TestSuccessQuorumTakesPriorityOverNodeError(t *testing.T) {
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
-			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
 			qos.NewQoSManager(),
 		)
 
@@ -1044,7 +1044,7 @@ func TestNodeErrorQuorumWhenSuccessInsufficient(t *testing.T) {
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
-			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
 			qos.NewQoSManager(),
 		)
 
@@ -1122,7 +1122,7 @@ func TestSuccessQuorumIgnoresNodeErrors(t *testing.T) {
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
-			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
 			qos.NewQoSManager(),
 		)
 
@@ -1193,7 +1193,7 @@ func TestSuccessQuorumFailsWhenQuorumDisabled(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
 
-		// Quorum feature DISABLED (BestResult selection) - Min will be used as requiredQuorumSize
+		// Quorum feature DISABLED (Stateful selection) - Min will be used as requiredQuorumSize
 		relayProcessor := NewRelayProcessor(
 			ctx,
 			common.QuorumParams{Min: 1, Rate: 0.6, Max: 5},
@@ -1201,7 +1201,7 @@ func TestSuccessQuorumFailsWhenQuorumDisabled(t *testing.T) {
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
-			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, BestResult), // BestResult = quorum disabled
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateful), // Stateful = quorum disabled
 			qos.NewQoSManager(),
 		)
 
@@ -1499,11 +1499,11 @@ func TestNodeErrorsRecoveryMetricWithQuorum(t *testing.T) {
 		quorumParams,
 		consistency,
 		mockMetrics,
-		mockMetrics,
-		RelayRetriesManagerInstance,
-		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
-		qos.NewQoSManager(),
-	)
+	mockMetrics,
+	RelayRetriesManagerInstance,
+	newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
+	qos.NewQoSManager(),
+)
 
 	// Add providers
 	canUse := usedProviders.TryLockSelection(ctx)
@@ -1602,11 +1602,11 @@ func TestProtocolErrorsRecoveryMetricWithQuorum(t *testing.T) {
 		quorumParams,
 		consistency,
 		mockMetrics,
-		mockMetrics,
-		RelayRetriesManagerInstance,
-		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
-		qos.NewQoSManager(),
-	)
+	mockMetrics,
+	RelayRetriesManagerInstance,
+	newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
+	qos.NewQoSManager(),
+)
 
 	// Add providers
 	canUse := usedProviders.TryLockSelection(ctx)
@@ -1691,11 +1691,11 @@ func TestBothErrorTypesRecoveryMetricsWithQuorum(t *testing.T) {
 		quorumParams,
 		consistency,
 		mockMetrics,
-		mockMetrics,
-		RelayRetriesManagerInstance,
-		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
-		qos.NewQoSManager(),
-	)
+	mockMetrics,
+	RelayRetriesManagerInstance,
+	newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
+	qos.NewQoSManager(),
+)
 
 	// Add providers
 	canUse := usedProviders.TryLockSelection(ctx)
@@ -1791,11 +1791,11 @@ func TestNoRecoveryMetricsWhenQuorumNotMet(t *testing.T) {
 		quorumParams,
 		consistency,
 		mockMetrics,
-		mockMetrics,
-		RelayRetriesManagerInstance,
-		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
-		qos.NewQoSManager(),
-	)
+	mockMetrics,
+	RelayRetriesManagerInstance,
+	newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
+	qos.NewQoSManager(),
+)
 
 	// Add providers
 	canUse := usedProviders.TryLockSelection(ctx)

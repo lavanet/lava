@@ -10,6 +10,6 @@ var RelayCountOnNodeError = 2
 
 // selection Enum, do not add other const
 const (
-	Quorum     Selection = iota // get the majority out of requiredSuccesses
-	BestResult                  // get the best result, even if it means waiting
+	Stateless Selection = iota // retries enabled, seeks majority consensus from node responses
+	Stateful                   // all top providers at once, waits for best result (no retries)
 )
