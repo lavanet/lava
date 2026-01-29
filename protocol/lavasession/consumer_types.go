@@ -141,6 +141,7 @@ type Endpoint struct {
 	Addons             map[string]struct{}
 	Extensions         map[string]struct{}
 	Geolocation        planstypes.Geolocation
+	mu                 sync.RWMutex // Protects Connections, ConnectionRefusals, and Enabled fields
 }
 
 func (e *Endpoint) CheckSupportForServices(addon string, extensions []string) (supported bool) {
@@ -386,21 +387,23 @@ func (cswp *ConsumerSessionsWithProvider) ConnectRawClientWithTimeout(ctx contex
 	if err != nil {
 		return nil, nil, err
 	}
-	ch := make(chan bool)
-	go func() {
-		for {
-			// Check if the connection state is not Connecting
-			if conn.GetState() == connectivity.Ready {
-				ch <- true
-				return
-			}
-			// Add some delay to avoid busy-waiting
-			time.Sleep(20 * time.Millisecond)
+
+	// Wait for the connection to become Ready without spawning a goroutine.
+	// If the context is cancelled/times out first, return an error and close the connection.
+	for {
+		state := conn.GetState()
+		if state == connectivity.Ready {
+			break
 		}
-	}()
-	select {
-	case <-connectCtx.Done():
-	case <-ch:
+		if connectCtx.Err() != nil {
+			_ = conn.Close()
+			return nil, nil, connectCtx.Err()
+		}
+		// WaitForStateChange blocks until the state changes or ctx is done.
+		if !conn.WaitForStateChange(connectCtx, state) {
+			_ = conn.Close()
+			return nil, nil, connectCtx.Err()
+		}
 	}
 	c := pairingtypes.NewRelayerClient(conn)
 	return c, conn, nil
@@ -497,7 +500,10 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 		for idx, endpoint := range cswp.Endpoints {
 			// retryDisabledEndpoints will attempt to reconnect to the provider even though we have disabled the endpoint
 			// this is used on a routine that tries to reconnect to a provider that has been disabled due to being unable to connect to it.
-			if !retryDisabledEndpoints && !endpoint.Enabled {
+			endpoint.mu.RLock()
+			enabled := endpoint.Enabled
+			endpoint.mu.RUnlock()
+			if !retryDisabledEndpoints && !enabled {
 				continue
 			}
 			if retryDisabledEndpoints {
@@ -509,8 +515,12 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 			if !supported {
 				continue
 			}
-			// return
+			// connectEndpoint tries to get an existing connection or creates a new one.
+			// Uses explicit lock scopes to avoid holding lock during network calls.
 			connectEndpoint := func(cswp *ConsumerSessionsWithProvider, ctx context.Context, endpoint *Endpoint) (endpointConnection_ *EndpointConnection, connected_ bool) {
+				// Lock the endpoint to protect concurrent access to Connections, ConnectionRefusals, and Enabled
+				endpoint.mu.Lock()
+
 				// Clean up dead connections before iterating to prevent accumulation
 				cleanedConnections := make([]*EndpointConnection, 0, len(endpoint.Connections))
 				deadConnectionCount := 0
@@ -575,16 +585,27 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 						}
 						// Check we didn't reach the maximum streams per connection.
 						if endpointConnection.getNumberOfLiveSessionsUsingThisConnection() < MaximumStreamsOverASingleConnection {
+							endpoint.mu.Unlock()
 							return endpointConnection, true
 						}
 					}
 				}
-				client, conn, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.NetworkAddress)
+
+				// Release lock before making network call to avoid blocking other goroutines.
+				networkAddress := endpoint.NetworkAddress
+				endpoint.mu.Unlock()
+
+				client, conn, err := cswp.ConnectRawClientWithTimeout(ctx, networkAddress)
+
+				// Re-acquire lock to update endpoint state.
+				endpoint.mu.Lock()
+				defer endpoint.mu.Unlock()
+
 				if err != nil {
 					endpoint.ConnectionRefusals++
 					utils.LavaFormatInfo("error connecting to provider",
 						utils.LogAttr("err", err),
-						utils.LogAttr("provider endpoint", endpoint.NetworkAddress),
+						utils.LogAttr("provider endpoint", networkAddress),
 						utils.LogAttr("providerName", cswp.PublicLavaAddress),
 						utils.LogAttr("endpoint", endpoint),
 						utils.LogAttr("refusals", endpoint.ConnectionRefusals),
@@ -594,7 +615,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 					if endpoint.ConnectionRefusals >= MaxConsecutiveConnectionAttempts {
 						endpoint.Enabled = false
 						utils.LavaFormatWarning("disabling provider endpoint for the duration of current epoch.", nil,
-							utils.LogAttr("Endpoint", endpoint.NetworkAddress),
+							utils.LogAttr("Endpoint", networkAddress),
 							utils.LogAttr("address", cswp.PublicLavaAddress),
 							utils.LogAttr("GUID", ctx),
 						)
@@ -611,7 +632,9 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 			if !connected_ {
 				continue
 			}
+			endpoint.mu.Lock()
 			cswp.Endpoints[idx].Enabled = true // return enabled once we successfully reconnect
+			endpoint.mu.Unlock()
 			// successful new connection add to endpoints list
 			endpoints = append(endpoints, &EndpointAndChosenConnection{endpoint: endpoint, chosenEndpointConnection: endpointConnection})
 			if !getAllEndpoints {
@@ -628,7 +651,10 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 		// before verifying all are Disabled.
 		allDisabled = true
 		for _, endpoint := range cswp.Endpoints {
-			if !endpoint.Enabled {
+			endpoint.mu.RLock()
+			enabled := endpoint.Enabled
+			endpoint.mu.RUnlock()
+			if !enabled {
 				continue
 			}
 			// even one endpoint is enough for us to not purge.

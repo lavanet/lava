@@ -20,6 +20,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
@@ -1195,4 +1196,128 @@ func TestDeadConnectionCleanup(t *testing.T) {
 	require.False(t, endpoint.Connections[0].disconnected, "Remaining connection should not be disconnected")
 	require.NotEqual(t, connectivity.Shutdown, endpoint.Connections[0].connection.GetState(), "Remaining connection should not be in Shutdown state")
 	require.Equal(t, validConn, endpoint.Connections[0].connection, "Remaining connection should be the valid one")
+}
+
+// grpcGoleakOptions returns common goleak options that ignore known gRPC internal goroutines.
+// gRPC spawns background goroutines for connection management that persist briefly after
+// connection close, which are not actual leaks.
+func grpcGoleakOptions() []goleak.Option {
+	return []goleak.Option{
+		goleak.IgnoreCurrent(),
+		goleak.IgnoreTopFunction("google.golang.org/grpc.(*addrConn).resetTransport"),
+		goleak.IgnoreTopFunction("google.golang.org/grpc/internal/grpcsync.(*CallbackSerializer).run"),
+		goleak.IgnoreTopFunction("google.golang.org/grpc.(*ccBalancerWrapper).watcher"),
+		goleak.IgnoreTopFunction("google.golang.org/grpc/internal/transport.(*controlBuffer).get"),
+		goleak.IgnoreTopFunction("google.golang.org/grpc/internal/transport.(*http2Client).keepalive"),
+		goleak.IgnoreTopFunction("internal/poll.runtime_pollWait"),
+	}
+}
+
+// TestConnectRawClientWithTimeoutGoroutineCleanup verifies that ConnectRawClientWithTimeout
+// returns promptly and without leaking goroutines when context is cancelled.
+// This is a regression test using goleak to detect actual goroutine leaks.
+func TestConnectRawClientWithTimeoutGoroutineCleanup(t *testing.T) {
+	// Use goleak to verify no goroutines are leaked after the test
+	defer goleak.VerifyNone(t, grpcGoleakOptions()...)
+
+	csp := &ConsumerSessionsWithProvider{}
+
+	// Use a short timeout that will expire before connection is established
+	// to an unreachable address, triggering the context cancellation path
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	// Use an address that will never connect (non-routable IP)
+	unreachableAddr := "10.255.255.1:12345"
+
+	// Call the actual function - this should return error due to timeout
+	// and importantly, should not leak any goroutines
+	_, conn, err := csp.ConnectRawClientWithTimeout(ctx, unreachableAddr)
+
+	// We expect an error (context deadline exceeded or cancelled)
+	require.Error(t, err)
+	require.Nil(t, conn)
+
+	// Give goroutines a moment to clean up
+	time.Sleep(50 * time.Millisecond)
+
+	// goleak.VerifyNone in defer will catch any leaked goroutines
+}
+
+// TestConnectRawClientWithTimeoutReturnsOnContextCancel verifies that
+// ConnectRawClientWithTimeout returns promptly when context is cancelled,
+// rather than hanging until the connection attempt completes.
+// Uses goleak to verify no goroutines are leaked.
+func TestConnectRawClientWithTimeoutReturnsOnContextCancel(t *testing.T) {
+	// Use goleak to verify no goroutines are leaked
+	defer goleak.VerifyNone(t, grpcGoleakOptions()...)
+
+	// Use an address that will never connect (non-routable IP)
+	unreachableAddr := "10.255.255.1:12345"
+	csp := &ConsumerSessionsWithProvider{}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	done := make(chan struct{})
+	var conn *grpc.ClientConn
+	var err error
+
+	go func() {
+		defer close(done)
+		_, conn, err = csp.ConnectRawClientWithTimeout(ctx, unreachableAddr)
+	}()
+
+	// Wait a bit for the connection attempt to start
+	time.Sleep(50 * time.Millisecond)
+
+	// Cancel the context
+	cancel()
+
+	// The function should return promptly after cancellation
+	select {
+	case <-done:
+		// Success - function returned after context cancellation
+		// Should return context.Canceled error
+		require.Error(t, err, "Expected error when context is cancelled")
+		require.ErrorIs(t, err, context.Canceled, "Expected context.Canceled error")
+		require.Nil(t, conn, "Connection should be nil when context is cancelled")
+	case <-time.After(2 * time.Second):
+		t.Fatal("ConnectRawClientWithTimeout did not return promptly after context cancellation")
+	}
+
+	// Give goroutines a moment to clean up
+	time.Sleep(50 * time.Millisecond)
+}
+
+// TestConnectRawClientWithTimeoutSuccessfulConnection verifies that successful
+// connections still work correctly and don't leak goroutines.
+func TestConnectRawClientWithTimeoutSuccessfulConnection(t *testing.T) {
+	// Use goleak to verify no goroutines are leaked
+	defer goleak.VerifyNone(t, grpcGoleakOptions()...)
+
+	// Use the test grpc server that's set up in TestMain
+	if grpcListener == "localhost:0" {
+		t.Skip("grpcListener not initialized - run full test suite")
+	}
+
+	csp := &ConsumerSessionsWithProvider{}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	client, conn, err := csp.ConnectRawClientWithTimeout(ctx, grpcListener)
+
+	require.NoError(t, err)
+	require.NotNil(t, client)
+	require.NotNil(t, conn)
+
+	// Verify connection is usable
+	state := conn.GetState()
+	require.True(t, state == connectivity.Ready || state == connectivity.Idle,
+		"Connection should be in Ready or Idle state, got: %v", state)
+
+	// Clean up - close connection before goleak check
+	conn.Close()
+
+	// Give goroutines a moment to clean up
+	time.Sleep(50 * time.Millisecond)
 }
