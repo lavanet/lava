@@ -296,6 +296,17 @@ func (csm *ConsumerSessionManager) closePurgedUnusedPairingsConnections(pairingP
 	}
 
 	for providerAddr, purgedPairing := range pairingPurge {
+		// Skip closing connections for static providers.
+		// Static providers (used by smart router) reuse the same Endpoint objects across epochs,
+		// so closing connections here would break in-flight requests using the shared endpoints.
+		// Static provider connections are managed separately and persist for the lifetime of the process.
+		if purgedPairing.StaticProvider {
+			utils.LavaFormatTrace("skipping purge for static provider, connections are shared across epochs",
+				utils.LogAttr("providerAddr", providerAddr),
+			)
+			continue
+		}
+
 		callbackPurge := func() {
 			for _, endpoint := range purgedPairing.Endpoints {
 				for _, endpointConnection := range endpoint.Connections {
