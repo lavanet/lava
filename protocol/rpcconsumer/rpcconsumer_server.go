@@ -259,24 +259,24 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 	var err error
 	usedProviders := lavasession.NewUsedProviders(nil)
 
-	// Get quorum parameters from protocol message
-	quorumParams, err := protocolMessage.GetQuorumParameters()
+	// Get cross-validation parameters from protocol message
+	crossValidationParams, err := protocolMessage.GetCrossValidationParameters()
 	if err != nil {
 		return false, err
 	}
 
-	// Validate that quorum min doesn't exceed available providers
-	if quorumParams.Enabled() && quorumParams.Min > rpccs.consumerSessionManager.GetNumberOfValidProviders() {
-		return false, utils.LavaFormatError("requested quorum min exceeds available providers",
+	// Validate that cross-validation min doesn't exceed available providers
+	if crossValidationParams.Enabled() && crossValidationParams.Min > rpccs.consumerSessionManager.GetNumberOfValidProviders() {
+		return false, utils.LavaFormatError("requested cross-validation min exceeds available providers",
 			lavasession.PairingListEmptyError,
-			utils.LogAttr("quorumMin", quorumParams.Min),
+			utils.LogAttr("crossValidationMin", crossValidationParams.Min),
 			utils.LogAttr("availableProviders", rpccs.consumerSessionManager.GetNumberOfValidProviders()),
 			utils.LogAttr("GUID", ctx))
 	}
 
 	relayProcessor := relaycore.NewRelayProcessor(
 		ctx,
-		quorumParams,
+		crossValidationParams,
 		rpccs.consumerConsistency,
 		rpccs.rpcConsumerLogs,
 		rpccs,
@@ -494,23 +494,23 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 	defer cancel()
 	usedProviders := lavasession.NewUsedProviders(protocolMessage)
 
-	quorumParams, err := protocolMessage.GetQuorumParameters()
+	crossValidationParams, err := protocolMessage.GetCrossValidationParameters()
 	if err != nil {
 		return nil, err
 	}
 
-	// Validate that quorum min doesn't exceed available providers
-	if quorumParams.Enabled() && quorumParams.Min > rpccs.consumerSessionManager.GetNumberOfValidProviders() {
-		return nil, utils.LavaFormatError("requested quorum min exceeds available providers",
+	// Validate that cross-validation min doesn't exceed available providers
+	if crossValidationParams.Enabled() && crossValidationParams.Min > rpccs.consumerSessionManager.GetNumberOfValidProviders() {
+		return nil, utils.LavaFormatError("requested cross-validation min exceeds available providers",
 			lavasession.PairingListEmptyError,
-			utils.LogAttr("quorumMin", quorumParams.Min),
+			utils.LogAttr("crossValidationMin", crossValidationParams.Min),
 			utils.LogAttr("availableProviders", rpccs.consumerSessionManager.GetNumberOfValidProviders()),
 			utils.LogAttr("GUID", ctx))
 	}
 
 	relayProcessor := relaycore.NewRelayProcessor(
 		ctx,
-		quorumParams,
+		crossValidationParams,
 		rpccs.consumerConsistency,
 		rpccs.rpcConsumerLogs,
 		rpccs,
@@ -800,25 +800,25 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	earliestBlockHashRequested := spectypes.NOT_APPLICABLE
 	latestBlockHashRequested := spectypes.NOT_APPLICABLE
 	var cacheError error
-	quorumParams := relayProcessor.GetQuorumParams()
-	if rpccs.cache.CacheActive() && !quorumParams.Enabled() { // use cache only if its defined and quorum is disabled.
+	crossValidationParams := relayProcessor.GetCrossValidationParams()
+	if rpccs.cache.CacheActive() && !crossValidationParams.Enabled() { // use cache only if its defined and cross-validation is disabled.
 		utils.LavaFormatDebug("Cache lookup attempt",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("cacheActive", true),
 			utils.LogAttr("reqBlock", reqBlock),
 			utils.LogAttr("forceCacheRefresh", protocolMessage.GetForceCacheRefresh()),
-			utils.LogAttr("quorumEnabled", false),
+			utils.LogAttr("crossValidationEnabled", false),
 		)
-	} else if rpccs.cache.CacheActive() && quorumParams.Enabled() {
-		utils.LavaFormatDebug("Cache bypassed due to quorum validation requirements",
+	} else if rpccs.cache.CacheActive() && crossValidationParams.Enabled() {
+		utils.LavaFormatDebug("Cache bypassed due to cross-validation requirements",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("cacheActive", true),
-			utils.LogAttr("quorumEnabled", true),
-			utils.LogAttr("quorumMin", quorumParams.Min),
-			utils.LogAttr("reason", "quorum requires fresh provider validation, cache would defeat consensus verification"),
+			utils.LogAttr("crossValidationEnabled", true),
+			utils.LogAttr("crossValidationMin", crossValidationParams.Min),
+			utils.LogAttr("reason", "cross-validation requires fresh provider validation, cache would defeat consensus verification"),
 		)
 	}
-	if rpccs.cache.CacheActive() && !quorumParams.Enabled() { // use cache only if its defined and quorum is disabled.
+	if rpccs.cache.CacheActive() && !crossValidationParams.Enabled() { // use cache only if its defined and cross-validation is disabled.
 		if !protocolMessage.GetForceCacheRefresh() { // don't use cache if user specified
 			// Skip cache for NOT_APPLICABLE requests as they are never cached on the write side
 			// (see line ~1180 where NOT_APPLICABLE requests skip caching)
@@ -1269,7 +1269,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			if rpccs.cache.CacheActive() && rpcclient.ValidateStatusCodes(localRelayResult.StatusCode, true) == nil {
 				// Determine if we should cache this response
 				// - Always cache unsupported method errors (treat like regular API responses based on block)
-				// - Only cache successful responses when quorum is disabled
+				// - Only cache successful responses when cross-validation is disabled
 				shouldCache := false
 				if localRelayResult.IsUnsupportedMethod {
 					// Cache unsupported method responses (with actual node error)
@@ -1278,15 +1278,15 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						utils.LogAttr("GUID", ctx),
 						utils.LogAttr("method", protocolMessage.GetApi().Name),
 					)
-				} else if !quorumParams.Enabled() {
-					shouldCache = !localRelayResult.IsNodeError // Cache successful responses only when quorum is disabled
+				} else if !crossValidationParams.Enabled() {
+					shouldCache = !localRelayResult.IsNodeError // Cache successful responses only when cross-validation is disabled
 				} else {
-					// Quorum is enabled and this is not an unsupported method error
-					utils.LavaFormatDebug("Skipping cache for successful response due to quorum validation",
+					// Cross-validation is enabled and this is not an unsupported method error
+					utils.LavaFormatDebug("Skipping cache for successful response due to cross-validation",
 						utils.LogAttr("GUID", ctx),
-						utils.LogAttr("quorumEnabled", true),
+						utils.LogAttr("crossValidationEnabled", true),
 						utils.LogAttr("isNodeError", localRelayResult.IsNodeError),
-						utils.LogAttr("reason", "quorum requires fresh provider validation on each request"),
+						utils.LogAttr("reason", "cross-validation requires fresh provider validation on each request"),
 					)
 				}
 
@@ -1799,7 +1799,7 @@ func (rpccs *RPCConsumerServer) getMetadataFromRelayTrailer(metadataHeaders []st
 
 // RelayProcessorForHeaders interface for methods used by appendHeadersToRelayResult
 type RelayProcessorForHeaders interface {
-	GetQuorumParams() common.QuorumParams
+	GetCrossValidationParams() common.CrossValidationParams
 	GetResultsData() ([]common.RelayResult, []common.RelayResult, []relaycore.RelayError)
 	GetStatefulRelayTargets() []string
 	GetUsedProviders() *lavasession.UsedProviders
@@ -1813,11 +1813,11 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 
 	metadataReply := []pairingtypes.Metadata{}
 
-	// Check if quorum feature is enabled
-	quorumParams := relayProcessor.GetQuorumParams()
+	// Check if cross-validation feature is enabled
+	crossValidationParams := relayProcessor.GetCrossValidationParams()
 
-	if quorumParams.Enabled() {
-		// For quorum mode: show all participating providers instead of single provider
+	if crossValidationParams.Enabled() {
+		// For cross-validation mode: show all participating providers instead of single provider
 		successResults, nodeErrors, _ := relayProcessor.GetResultsData()
 
 		allProvidersMap := make(map[string]bool)
@@ -1845,12 +1845,12 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 		if len(allProvidersList) > 0 {
 			allProvidersString := fmt.Sprintf("%v", allProvidersList)
 			metadataReply = append(metadataReply, pairingtypes.Metadata{
-				Name:  common.QUORUM_ALL_PROVIDERS_HEADER_NAME,
+				Name:  common.CROSS_VALIDATION_ALL_PROVIDERS_HEADER_NAME,
 				Value: allProvidersString,
 			})
 		}
 	} else {
-		// For non-quorum mode: keep existing single provider behavior
+		// For non-cross-validation mode: keep existing single provider behavior
 		providerAddress := relayResult.GetProvider()
 		if providerAddress == "" {
 			providerAddress = "Cached"

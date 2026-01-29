@@ -24,7 +24,7 @@ import (
 type RelayProcessor struct {
 	usedProviders                *lavasession.UsedProviders
 	responses                    chan *RelayResponse
-	quorumParams                 common.QuorumParams
+	crossValidationParams        common.CrossValidationParams
 	lock                         sync.RWMutex
 	guid                         uint64
 	selection                    Selection
@@ -36,15 +36,15 @@ type RelayProcessor struct {
 	relayRetriesManager          *lavaprotocol.RelayRetriesManager
 	ResultsManager
 	RelayStateMachine
-	availabilityDegrader      QoSAvailabilityDegrader
-	quorumMap                 map[[32]byte]int
-	currentQourumEqualResults int
-	statefulRelayTargets      []string // stores all providers that received a stateful relay
+	availabilityDegrader               QoSAvailabilityDegrader
+	crossValidationMap                 map[[32]byte]int
+	currentCrossValidationEqualResults int
+	statefulRelayTargets               []string // stores all providers that received a stateful relay
 }
 
 func NewRelayProcessor(
 	ctx context.Context,
-	quorumParams common.QuorumParams,
+	crossValidationParams common.CrossValidationParams,
 	consistency Consistency,
 	metricsInf MetricsInterface,
 	chainIdAndApiInterfaceGetter ChainIdAndApiInterfaceGetter,
@@ -53,33 +53,33 @@ func NewRelayProcessor(
 	availabilityDegrader QoSAvailabilityDegrader,
 ) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
-	if quorumParams.Min <= 0 {
-		utils.LavaFormatFatal("invalid requirement, successes count must be greater than 0", nil, utils.LogAttr("requiredSuccesses", quorumParams.Min))
+	if crossValidationParams.Min <= 0 {
+		utils.LavaFormatFatal("invalid requirement, successes count must be greater than 0", nil, utils.LogAttr("requiredSuccesses", crossValidationParams.Min))
 	}
 	relayProcessor := &RelayProcessor{
-		quorumParams:                 quorumParams,
-		responses:                    make(chan *RelayResponse, MaxCallsPerRelay), // we set it as buffered so it is not blocking
-		ResultsManager:               NewResultsManager(guid),
-		guid:                         guid,
-		consistency:                  consistency,
-		debugRelay:                   relayStateMachine.GetDebugState(),
-		metricsInf:                   metricsInf,
-		chainIdAndApiInterfaceGetter: chainIdAndApiInterfaceGetter,
-		relayRetriesManager:          relayRetriesManager,
-		RelayStateMachine:            relayStateMachine,
-		selection:                    relayStateMachine.GetSelection(),
-		usedProviders:                relayStateMachine.GetUsedProviders(),
-		availabilityDegrader:         availabilityDegrader,
-		quorumMap:                    make(map[[32]byte]int),
-		currentQourumEqualResults:    0,
+		crossValidationParams:              crossValidationParams,
+		responses:                          make(chan *RelayResponse, MaxCallsPerRelay), // we set it as buffered so it is not blocking
+		ResultsManager:                     NewResultsManager(guid),
+		guid:                               guid,
+		consistency:                        consistency,
+		debugRelay:                         relayStateMachine.GetDebugState(),
+		metricsInf:                         metricsInf,
+		chainIdAndApiInterfaceGetter:       chainIdAndApiInterfaceGetter,
+		relayRetriesManager:                relayRetriesManager,
+		RelayStateMachine:                  relayStateMachine,
+		selection:                          relayStateMachine.GetSelection(),
+		usedProviders:                      relayStateMachine.GetUsedProviders(),
+		availabilityDegrader:               availabilityDegrader,
+		crossValidationMap:                 make(map[[32]byte]int),
+		currentCrossValidationEqualResults: 0,
 	}
 	relayProcessor.RelayStateMachine.SetResultsChecker(relayProcessor)
 	relayProcessor.RelayStateMachine.SetRelayRetriesManager(relayRetriesManager)
 	return relayProcessor
 }
 
-func (rp *RelayProcessor) GetQuorumParams() common.QuorumParams {
-	return rp.quorumParams
+func (rp *RelayProcessor) GetCrossValidationParams() common.CrossValidationParams {
+	return rp.crossValidationParams
 }
 
 // true if we never got an extension. (default value)
@@ -151,8 +151,8 @@ func (rp *RelayProcessor) SetResponse(response *RelayResponse) {
 func (rp *RelayProcessor) checkEndProcessing(responsesCount int) bool {
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
-	if rp.ResultsManager.RequiredResults(rp.quorumParams.Min, rp.selection) {
-		utils.LavaFormatDebug("[RelayProcessor] checkEndProcessing - RequiredResults", utils.LogAttr("GUID", rp.guid), utils.LogAttr("requiredSuccesses", rp.quorumParams.Min), utils.LogAttr("selection", rp.selection))
+	if rp.ResultsManager.RequiredResults(rp.crossValidationParams.Min, rp.selection) {
+		utils.LavaFormatDebug("[RelayProcessor] checkEndProcessing - RequiredResults", utils.LogAttr("GUID", rp.guid), utils.LogAttr("requiredSuccesses", rp.crossValidationParams.Min), utils.LogAttr("selection", rp.selection))
 		return true
 	}
 	// check if we got all of the responses
@@ -257,9 +257,9 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 	resultsCount, nodeErrors, specialNodeErrors, protocolErrors := rp.GetResults()
 
 	hash, hashErr := rp.getInputMsgInfoHashString()
-	neededForQuorum := rp.getRequiredQuorumSize(resultsCount)
-	if rp.quorumParams.Enabled() && neededForQuorum <= rp.currentQourumEqualResults ||
-		!rp.quorumParams.Enabled() && resultsCount >= neededForQuorum {
+	neededForCrossValidation := rp.getRequiredCrossValidationSize(resultsCount)
+	if rp.crossValidationParams.Enabled() && neededForCrossValidation <= rp.currentCrossValidationEqualResults ||
+		!rp.crossValidationParams.Enabled() && resultsCount >= neededForCrossValidation {
 		if hashErr == nil { // Incase we had a successful relay we can remove the hash from our relay retries map
 			// Use a routine to run it in parallel
 			go rp.relayRetriesManager.RemoveHashFromCache(hash)
@@ -279,47 +279,47 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 			}
 		}
 		if rp.debugRelay {
-			utils.LavaFormatDebug("HasRequiredNodeResults quorum met",
+			utils.LavaFormatDebug("HasRequiredNodeResults cross-validation met",
 				utils.LogAttr("GUID", rp.guid),
 				utils.LogAttr("tries", tries),
-				utils.LogAttr("neededForQuorum", neededForQuorum),
-				utils.LogAttr("quorumParams.Min", rp.quorumParams.Min),
+				utils.LogAttr("neededForCrossValidation", neededForCrossValidation),
+				utils.LogAttr("crossValidationParams.Min", rp.crossValidationParams.Min),
 				utils.LogAttr("resultsCount", resultsCount),
 				utils.LogAttr("nodeErrors", nodeErrors),
 				utils.LogAttr("specialNodeErrors", specialNodeErrors),
-				utils.LogAttr("currentQourumEqualResults", rp.currentQourumEqualResults),
+				utils.LogAttr("currentCrossValidationEqualResults", rp.currentCrossValidationEqualResults),
 			)
 		}
 		return true, nodeErrors
 	}
 	if rp.selection == Stateless {
-		// We need a quorum of all node results
+		// Check if we need to continue retrying for consensus
 
-		// Define retryOnNodeErrorFlow based on quorum feature status
-		var retryForQuorumNeeded bool
+		// Determine if more retries are needed based on cross-validation feature status
+		var needsMoreRetries bool
 
-		if rp.quorumParams.Enabled() {
-			// Quorum feature enabled: check if quorum is still mathematically possible and quorum is not yet reached
-			// Only count successful results for quorum calculation
-			maxRemainingProviders := rp.quorumParams.Max - resultsCount
+		if rp.crossValidationParams.Enabled() {
+			// Cross-validation feature enabled: check if consensus is still mathematically possible
+			// Only count successful results for consensus calculation
+			maxRemainingProviders := rp.crossValidationParams.Max - resultsCount
 			// The following line checks if, after accounting for the maximum possible additional successful responses (maxRemainingProviders)
-			// and the current highest number of matching responses (rp.currentQourumEqualResults), it is still mathematically possible
-			// to reach the required quorum threshold (calculated as quorum rate * max providers).
-			// If not, then retrying is not needed because quorum cannot be achieved anymore.
-			retryForQuorumNeeded = maxRemainingProviders+rp.currentQourumEqualResults >= int(math.Ceil(rp.quorumParams.Rate*float64(rp.quorumParams.Max)))
+			// and the current highest number of matching responses (rp.currentCrossValidationEqualResults), it is still mathematically possible
+			// to reach the required consensus threshold (calculated as cross-validation rate * max providers).
+			// If not, then retrying is not needed because consensus cannot be achieved anymore.
+			needsMoreRetries = maxRemainingProviders+rp.currentCrossValidationEqualResults >= int(math.Ceil(rp.crossValidationParams.Rate*float64(rp.crossValidationParams.Max)))
 			if rp.debugRelay {
-				utils.LavaFormatDebug("HasRequiredNodeResults retryForQuorumNeeded calculation", utils.LogAttr("GUID", rp.guid),
+				utils.LavaFormatDebug("HasRequiredNodeResults needsMoreRetries calculation", utils.LogAttr("GUID", rp.guid),
 					utils.LogAttr("maxRemainingProviders", maxRemainingProviders),
-					utils.LogAttr("rp.currentQourumEqualResults", rp.currentQourumEqualResults),
-					utils.LogAttr("retryForQuorumNeeded", retryForQuorumNeeded),
+					utils.LogAttr("rp.currentCrossValidationEqualResults", rp.currentCrossValidationEqualResults),
+					utils.LogAttr("needsMoreRetries", needsMoreRetries),
 				)
 			}
 		} else {
-			// Quorum feature disabled: check if we have enough results for quorum
-			retryForQuorumNeeded = !(resultsCount >= neededForQuorum)
+			// Cross-validation feature disabled: check if we have enough results
+			needsMoreRetries = !(resultsCount >= neededForCrossValidation)
 		}
 
-		if !retryForQuorumNeeded {
+		if !needsMoreRetries {
 			// Retry on node error flow:
 			shouldRetry := rp.shouldRetryRelay(resultsCount, hashErr, nodeErrors, specialNodeErrors)
 			if rp.debugRelay {
@@ -327,12 +327,12 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 					utils.LogAttr("GUID", rp.guid),
 					utils.LogAttr("shouldRetry", shouldRetry),
 					utils.LogAttr("tries", tries),
-					utils.LogAttr("neededForQuorum", neededForQuorum),
-					utils.LogAttr("quorumParams.Min", rp.quorumParams.Min),
+					utils.LogAttr("neededForCrossValidation", neededForCrossValidation),
+					utils.LogAttr("crossValidationParams.Min", rp.crossValidationParams.Min),
 					utils.LogAttr("resultsCount", resultsCount),
 					utils.LogAttr("nodeErrors", nodeErrors),
 					utils.LogAttr("specialNodeErrors", specialNodeErrors),
-					utils.LogAttr("currentQourumEqualResults", rp.currentQourumEqualResults),
+					utils.LogAttr("currentCrossValidationEqualResults", rp.currentCrossValidationEqualResults),
 				)
 			}
 			return !shouldRetry, nodeErrors
@@ -343,12 +343,12 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 		utils.LavaFormatDebug("HasRequiredNodeResults returning false",
 			utils.LogAttr("GUID", rp.guid),
 			utils.LogAttr("tries", tries),
-			utils.LogAttr("neededForQuorum", neededForQuorum),
-			utils.LogAttr("quorumParams.Min", rp.quorumParams.Min),
+			utils.LogAttr("neededForCrossValidation", neededForCrossValidation),
+			utils.LogAttr("crossValidationParams.Min", rp.crossValidationParams.Min),
 			utils.LogAttr("resultsCount", resultsCount),
 			utils.LogAttr("nodeErrors", nodeErrors),
 			utils.LogAttr("specialNodeErrors", specialNodeErrors),
-			utils.LogAttr("currentQourumEqualResults", rp.currentQourumEqualResults),
+			utils.LogAttr("currentCrossValidationEqualResults", rp.currentCrossValidationEqualResults),
 		)
 	}
 	return false, nodeErrors
@@ -364,15 +364,15 @@ func (rp *RelayProcessor) handleResponse(response *RelayResponse) {
 		utils.LavaFormatInfo("Relay received a node error", utils.LogAttr("Error", nodeError), utils.LogAttr("provider", response.RelayResult.ProviderInfo), utils.LogAttr("Request", rp.RelayStateMachine.GetProtocolMessage().GetApi().Name))
 	}
 
-	// Only hash successful responses (not errors) for quorum tracking
-	// This prevents error responses from being counted toward quorum
+	// Only hash successful responses (not errors) for cross-validation tracking
+	// This prevents error responses from being counted toward cross-validation
 	if response != nil && nodeError == nil && response.Err == nil {
 		// Hash the response data once and cache it in the RelayResult
 		hash := sha256.Sum256(response.RelayResult.GetReply().GetData())
 		response.RelayResult.ResponseHash = hash // Cache the hash for later reuse
-		rp.quorumMap[hash]++
-		if rp.quorumMap[hash] > rp.currentQourumEqualResults {
-			rp.currentQourumEqualResults = rp.quorumMap[hash]
+		rp.crossValidationMap[hash]++
+		if rp.crossValidationMap[hash] > rp.currentCrossValidationEqualResults {
+			rp.currentCrossValidationEqualResults = rp.crossValidationMap[hash]
 		}
 	}
 
@@ -419,20 +419,20 @@ func (rp *RelayProcessor) WaitForResults(ctx context.Context) error {
 	}
 }
 
-// getRequiredQuorumSize calculates the required number of matching responses.
-// When quorum feature is enabled: applies the quorum rate formula to the response count
-// When quorum feature is disabled: returns the configured minimum (typically 1)
-// This ensures consistent quorum calculation across all scenarios.
-func (rp *RelayProcessor) getRequiredQuorumSize(responseCount int) int {
-	if rp.quorumParams.Enabled() {
-		return int(math.Ceil(rp.quorumParams.Rate * float64(utils.Max(rp.quorumParams.Min, responseCount))))
+// getRequiredCrossValidationSize calculates the required number of matching responses.
+// When cross-validation feature is enabled: applies the cross-validation rate formula to the response count
+// When cross-validation feature is disabled: returns the configured minimum (typically 1)
+// This ensures consistent cross-validation calculation across all scenarios.
+func (rp *RelayProcessor) getRequiredCrossValidationSize(responseCount int) int {
+	if rp.crossValidationParams.Enabled() {
+		return int(math.Ceil(rp.crossValidationParams.Rate * float64(utils.Max(rp.crossValidationParams.Min, responseCount))))
 	}
-	return rp.quorumParams.Min
+	return rp.crossValidationParams.Min
 }
 
-func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSize int) (returnedResult *common.RelayResult, processingError error) {
-	if quorumSize <= 0 {
-		return nil, errors.New("quorumSize must be greater than zero")
+func (rp *RelayProcessor) responsesCrossValidation(results []common.RelayResult, crossValidationSize int) (returnedResult *common.RelayResult, processingError error) {
+	if crossValidationSize <= 0 {
+		return nil, errors.New("crossValidationSize must be greater than zero")
 	}
 
 	type resultCount struct {
@@ -504,36 +504,36 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 		}
 	}
 
-	if nilReplies >= quorumSize && maxCount < quorumSize {
+	if nilReplies >= crossValidationSize && maxCount < crossValidationSize {
 		maxCount = nilReplies
 		mostCommonResult = results[nilReplyIdx]
 	}
 
-	if maxCount < quorumSize {
+	if maxCount < crossValidationSize {
 		if !deterministic {
-			bestQosResult.Quorum = 1
+			bestQosResult.CrossValidation = 1
 			return &bestQosResult, nil
 		}
-		// Only apply quorum logic when quorum feature is enabled
-		if rp.quorumParams.Enabled() {
-			return nil, utils.LavaFormatInfo("equal results count is less than requiredQuorumSize",
+		// Only apply cross-validation logic when cross-validation feature is enabled
+		if rp.crossValidationParams.Enabled() {
+			return nil, utils.LavaFormatInfo("equal results count is less than requiredCrossValidationSize",
 				utils.LogAttr("nilReplies", nilReplies),
 				utils.LogAttr("results", len(results)),
-				utils.LogAttr("quorumEqualResults", maxCount),
-				utils.LogAttr("requiredQuorumSize", quorumSize),
+				utils.LogAttr("crossValidationEqualResults", maxCount),
+				utils.LogAttr("requiredCrossValidationSize", crossValidationSize),
 				utils.LogAttr("succeededReplies", len(results)),
-				utils.LogAttr("quorumRate", rp.quorumParams.Rate))
+				utils.LogAttr("crossValidationRate", rp.crossValidationParams.Rate))
 		} else {
-			// Quorum feature disabled - return original error message
-			return nil, utils.LavaFormatInfo("majority count is less than quorumSize",
+			// Cross-validation feature disabled - return original error message
+			return nil, utils.LavaFormatInfo("majority count is less than crossValidationSize",
 				utils.LogAttr("nilReplies", nilReplies),
 				utils.LogAttr("results", len(results)),
 				utils.LogAttr("maxCount", maxCount),
-				utils.LogAttr("quorumSize", quorumSize))
+				utils.LogAttr("crossValidationSize", crossValidationSize))
 		}
 	}
 
-	mostCommonResult.Quorum = maxCount
+	mostCommonResult.CrossValidation = maxCount
 	return &mostCommonResult, nil
 }
 
@@ -541,7 +541,7 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 // results were stored in WaitForResults and now there's logic to select which results are returned to the user
 // will return an error if we did not meet quota of replies, if we did we follow the strategies:
 // if return strategy == get_first: return the first success, if none: get best node error
-// if strategy == quorum get majority of node responses
+// if strategy == stateless get majority of node responses
 // on error: we will return a placeholder relayResult, with a provider address and a status code
 func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult, processingError error) {
 	if rp == nil {
@@ -577,12 +577,12 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 		}
 	}()
 
-	// Calculate the required quorum size using the unified function
-	requiredQuorumSize := rp.getRequiredQuorumSize(successResultsCount)
+	// Calculate the required cross-validation size using the unified function
+	requiredCrossValidationSize := rp.getRequiredCrossValidationSize(successResultsCount)
 
 	if rp.debugRelay {
 		// adding as much debug info as possible. all successful relays, all node errors and all protocol errors
-		utils.LavaFormatDebug("[Processing Result] Debug Relay", utils.LogAttr("rp.quorumParams.Min", rp.quorumParams.Min))
+		utils.LavaFormatDebug("[Processing Result] Debug Relay", utils.LogAttr("rp.crossValidationParams.Min", rp.crossValidationParams.Min))
 		utils.LavaFormatDebug("[Processing Debug] number of node results", utils.LogAttr("successResultsCount", successResultsCount), utils.LogAttr("nodeErrorCount", nodeErrorCount), utils.LogAttr("protocolErrorCount", protocolErrorCount))
 		for idx, result := range successResults {
 			utils.LavaFormatDebug("[Processing Debug] success result", utils.LogAttr("idx", idx), utils.LogAttr("result", result))
@@ -593,91 +593,91 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 		for idx, result := range protocolErrors {
 			utils.LavaFormatDebug("[Processing Debug] protocol error", utils.LogAttr("idx", idx), utils.LogAttr("result", result))
 		}
-		utils.LavaFormatDebug("[ProcessingResult]:", utils.LogAttr("GUID", rp.guid), utils.LogAttr("successResultsCount", successResultsCount), utils.LogAttr("quorumParams.Min", rp.quorumParams.Min), utils.LogAttr("requiredQuorumSize", requiredQuorumSize))
+		utils.LavaFormatDebug("[ProcessingResult]:", utils.LogAttr("GUID", rp.guid), utils.LogAttr("successResultsCount", successResultsCount), utils.LogAttr("crossValidationParams.Min", rp.crossValidationParams.Min), utils.LogAttr("requiredCrossValidationSize", requiredCrossValidationSize))
 	}
 
 	// there are enough successes
-	if successResultsCount >= requiredQuorumSize {
-		// Try to form a quorum with successes first
-		result, err := rp.responsesQuorum(successResults, requiredQuorumSize)
+	if successResultsCount >= requiredCrossValidationSize {
+		// Try to form cross-validation with successes first
+		result, err := rp.responsesCrossValidation(successResults, requiredCrossValidationSize)
 		if err == nil {
-			// Successes formed a quorum
+			// Successes formed cross-validation
 			if len(nodeErrors) > 0 && !isSpecialApi { // if we have node errors and it's not a default api, we should degrade availability
 				shouldDegradeAvailability = true
 			}
 			return result, nil
 		}
 
-		// Successes couldn't form a quorum (they don't match), try node errors if available
-		requiredNodeErrorsQuorumSize := rp.getRequiredQuorumSize(nodeErrorCount)
-		if nodeErrorCount >= requiredNodeErrorsQuorumSize {
-			utils.LavaFormatInfo("Success responses didn't match, attempting node error quorum as fallback",
+		// Successes couldn't form cross-validation (they don't match), try node errors if available
+		requiredNodeErrorsCrossValidationSize := rp.getRequiredCrossValidationSize(nodeErrorCount)
+		if nodeErrorCount >= requiredNodeErrorsCrossValidationSize {
+			utils.LavaFormatInfo("Success responses didn't match, attempting node error cross-validation as fallback",
 				utils.LogAttr("GUID", rp.guid),
 				utils.LogAttr("successCount", successResultsCount),
 				utils.LogAttr("nodeErrorCount", nodeErrorCount),
-				utils.LogAttr("requiredNodeErrorsQuorumSize", requiredNodeErrorsQuorumSize),
-				utils.LogAttr("quorumEnabled", rp.quorumParams.Enabled()),
+				utils.LogAttr("requiredNodeErrorsCrossValidationSize", requiredNodeErrorsCrossValidationSize),
+				utils.LogAttr("crossValidationEnabled", rp.crossValidationParams.Enabled()),
 			)
-			nodeErrorResult, nodeErrorErr := rp.responsesQuorum(nodeErrors, requiredNodeErrorsQuorumSize)
+			nodeErrorResult, nodeErrorErr := rp.responsesCrossValidation(nodeErrors, requiredNodeErrorsCrossValidationSize)
 			if nodeErrorErr == nil {
-				// Node errors formed a quorum, use them as fallback
-				utils.LavaFormatInfo("Using node error quorum as fallback (success responses didn't match)",
+				// Node errors formed cross-validation, use them as fallback
+				utils.LavaFormatInfo("Using node error cross-validation as fallback (success responses didn't match)",
 					utils.LogAttr("GUID", rp.guid),
 					utils.LogAttr("successCount", successResultsCount),
 					utils.LogAttr("nodeErrorCount", nodeErrorCount),
-					utils.LogAttr("nodeErrorQuorum", nodeErrorResult.Quorum),
+					utils.LogAttr("nodeErrorCrossValidation", nodeErrorResult.CrossValidation),
 				)
 				return nodeErrorResult, nil
 			}
-			utils.LavaFormatDebug("Node errors also failed to form quorum",
+			utils.LavaFormatDebug("Node errors also failed to form cross-validation",
 				utils.LogAttr("GUID", rp.guid),
 				utils.LogAttr("nodeErrorCount", nodeErrorCount),
-				utils.LogAttr("requiredQuorumSize", requiredNodeErrorsQuorumSize),
+				utils.LogAttr("requiredCrossValidationSize", requiredNodeErrorsCrossValidationSize),
 				utils.LogAttr("error", nodeErrorErr),
 			)
 		}
-		// Neither successes nor node errors could form a quorum, return the error from successes
+		// Neither successes nor node errors could form cross-validation, return the error from successes
 		return result, err
 	}
 
 	// there are not enough successes, let's check if there are enough node errors and protocol errors
 	// Protocol errors (like consistency violations) should count as attempted responses
 	totalResponses := successResultsCount + nodeErrorCount + protocolErrorCount
-	if totalResponses >= rp.quorumParams.Min && rp.selection == Stateless {
-		// Check if we have enough node errors to form a quorum
-		// Recalculate required quorum size based on node error count
-		requiredQuorumSize = rp.getRequiredQuorumSize(nodeErrorCount)
-		if successResultsCount == 0 && nodeErrorCount >= requiredQuorumSize {
-			// Try to form a quorum with node errors first (no successes available)
-			utils.LavaFormatInfo("No success responses, attempting quorum with node errors only",
+	if totalResponses >= rp.crossValidationParams.Min && rp.selection == Stateless {
+		// Check if we have enough node errors to form cross-validation
+		// Recalculate required cross-validation size based on node error count
+		requiredCrossValidationSize = rp.getRequiredCrossValidationSize(nodeErrorCount)
+		if successResultsCount == 0 && nodeErrorCount >= requiredCrossValidationSize {
+			// Try to form cross-validation with node errors first (no successes available)
+			utils.LavaFormatInfo("No success responses, attempting cross-validation with node errors only",
 				utils.LogAttr("GUID", rp.guid),
 				utils.LogAttr("nodeErrorCount", nodeErrorCount),
-				utils.LogAttr("requiredQuorumSize", requiredQuorumSize),
+				utils.LogAttr("requiredCrossValidationSize", requiredCrossValidationSize),
 				utils.LogAttr("protocolErrorCount", protocolErrorCount),
-				utils.LogAttr("quorumEnabled", rp.quorumParams.Enabled()),
+				utils.LogAttr("crossValidationEnabled", rp.crossValidationParams.Enabled()),
 			)
-			return rp.responsesQuorum(nodeErrors, requiredQuorumSize)
+			return rp.responsesCrossValidation(nodeErrors, requiredCrossValidationSize)
 		}
 
-		// If we couldn't form a quorum with node errors, try combining with successes
-		if nodeErrorCount+successResultsCount >= requiredQuorumSize {
-			utils.LavaFormatInfo("Attempting quorum with combined node errors and successes",
+		// If we couldn't form cross-validation with node errors, try combining with successes
+		if nodeErrorCount+successResultsCount >= requiredCrossValidationSize {
+			utils.LavaFormatInfo("Attempting cross-validation with combined node errors and successes",
 				utils.LogAttr("GUID", rp.guid),
 				utils.LogAttr("successCount", successResultsCount),
 				utils.LogAttr("nodeErrorCount", nodeErrorCount),
 				utils.LogAttr("combinedCount", nodeErrorCount+successResultsCount),
-				utils.LogAttr("requiredQuorumSize", requiredQuorumSize),
-				utils.LogAttr("quorumEnabled", rp.quorumParams.Enabled()),
+				utils.LogAttr("requiredCrossValidationSize", requiredCrossValidationSize),
+				utils.LogAttr("crossValidationEnabled", rp.crossValidationParams.Enabled()),
 			)
 			nodeResults := make([]common.RelayResult, 0, len(successResults)+len(nodeErrors))
 			nodeResults = append(nodeResults, successResults...)
 			nodeResults = append(nodeResults, nodeErrors...)
-			return rp.responsesQuorum(nodeResults, requiredQuorumSize)
+			return rp.responsesCrossValidation(nodeResults, requiredCrossValidationSize)
 		}
 	}
 
 	if rp.selection == Stateful && nodeErrorCount > 0 {
-		return rp.responsesQuorum(nodeErrors, rp.quorumParams.Min)
+		return rp.responsesCrossValidation(nodeErrors, rp.crossValidationParams.Min)
 	}
 
 	// Not enough successful results - continue waiting for more responses

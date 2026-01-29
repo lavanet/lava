@@ -111,61 +111,61 @@ func NewProtocolMessage(chainMessage ChainMessage, directiveHeaders map[string]s
 }
 
 const (
-	DEFAULT_QUORUM_RATE = 0.66
-	DEFAULT_QUORUM_MAX  = 5
-	DEFAULT_QUORUM_MIN  = 2
+	DEFAULT_CROSS_VALIDATION_RATE = 0.66
+	DEFAULT_CROSS_VALIDATION_MAX  = 5
+	DEFAULT_CROSS_VALIDATION_MIN  = 2
 )
 
-func (bpm *BaseProtocolMessage) GetQuorumParameters() (common.QuorumParams, error) {
+func (bpm *BaseProtocolMessage) GetCrossValidationParameters() (common.CrossValidationParams, error) {
 	var err error
 	enabled := false
-	var quorumRate float64
-	var quorumMax int
-	var quorumMin int
+	var crossValidationRate float64
+	var crossValidationMax int
+	var crossValidationMin int
 
-	quorumRateString, ok := bpm.directiveHeaders[common.QUORUM_HEADER_RATE]
+	crossValidationRateString, ok := bpm.directiveHeaders[common.CROSS_VALIDATION_HEADER_RATE]
 	enabled = enabled || ok
 	if !ok {
-		quorumRate = DEFAULT_QUORUM_RATE
+		crossValidationRate = DEFAULT_CROSS_VALIDATION_RATE
 	} else {
-		quorumRate, err = strconv.ParseFloat(quorumRateString, 64)
-		if err != nil || quorumRate < 0 || quorumRate > 1 {
-			return common.QuorumParams{}, errors.New("invalid quorum rate")
+		crossValidationRate, err = strconv.ParseFloat(crossValidationRateString, 64)
+		if err != nil || crossValidationRate < 0 || crossValidationRate > 1 {
+			return common.CrossValidationParams{}, errors.New("invalid cross-validation rate")
 		}
 	}
 
-	quorumMaxRateString, ok := bpm.directiveHeaders[common.QUORUM_HEADER_MAX]
+	crossValidationMaxRateString, ok := bpm.directiveHeaders[common.CROSS_VALIDATION_HEADER_MAX]
 	enabled = enabled || ok
 	if !ok {
-		quorumMax = DEFAULT_QUORUM_MAX
+		crossValidationMax = DEFAULT_CROSS_VALIDATION_MAX
 	} else {
-		quorumMax, err = strconv.Atoi(quorumMaxRateString)
-		if err != nil || quorumMax < 0 {
-			return common.QuorumParams{}, errors.New("invalid quorum max")
+		crossValidationMax, err = strconv.Atoi(crossValidationMaxRateString)
+		if err != nil || crossValidationMax < 0 {
+			return common.CrossValidationParams{}, errors.New("invalid cross-validation max")
 		}
 	}
 
-	quorumMinRateString, ok := bpm.directiveHeaders[common.QUORUM_HEADER_MIN]
+	crossValidationMinRateString, ok := bpm.directiveHeaders[common.CROSS_VALIDATION_HEADER_MIN]
 	enabled = enabled || ok
 	if !ok {
-		quorumMin = DEFAULT_QUORUM_MIN
+		crossValidationMin = DEFAULT_CROSS_VALIDATION_MIN
 	} else {
-		quorumMin, err = strconv.Atoi(quorumMinRateString)
-		if err != nil || quorumMin < 0 {
-			return common.QuorumParams{}, errors.New("invalid quorum min")
+		crossValidationMin, err = strconv.Atoi(crossValidationMinRateString)
+		if err != nil || crossValidationMin < 0 {
+			return common.CrossValidationParams{}, errors.New("invalid cross-validation min")
 		}
 	}
 
-	if quorumMin > quorumMax {
-		return common.QuorumParams{}, errors.New("quorum min is greater than quorum max")
+	if crossValidationMin > crossValidationMax {
+		return common.CrossValidationParams{}, errors.New("cross-validation min is greater than cross-validation max")
 	}
 
 	if enabled {
-		utils.LavaFormatInfo("Quorum parameters", utils.LogAttr("quorumRate", quorumRate), utils.LogAttr("quorumMax", quorumMax), utils.LogAttr("quorumMin", quorumMin))
-		return common.QuorumParams{Rate: quorumRate, Max: quorumMax, Min: quorumMin}, nil
+		utils.LavaFormatInfo("CrossValidation parameters", utils.LogAttr("crossValidationRate", crossValidationRate), utils.LogAttr("crossValidationMax", crossValidationMax), utils.LogAttr("crossValidationMin", crossValidationMin))
+		return common.CrossValidationParams{Rate: crossValidationRate, Max: crossValidationMax, Min: crossValidationMin}, nil
 	} else {
-		utils.LavaFormatInfo("Quorum parameters not enabled")
-		return common.QuorumParams{Rate: 1, Max: 1, Min: 1}, nil
+		utils.LavaFormatInfo("CrossValidation parameters not enabled")
+		return common.CrossValidationParams{Rate: 1, Max: 1, Min: 1}, nil
 	}
 }
 
@@ -178,5 +178,5 @@ type ProtocolMessage interface {
 	GetUserData() common.UserData
 	IsDefaultApi() bool
 	UpdateEarliestAndValidateExtensionRules(extensionParser *extensionslib.ExtensionParser, earliestBlockHashRequested int64, addon string, seenBlock int64) bool
-	GetQuorumParameters() (common.QuorumParams, error)
+	GetCrossValidationParameters() (common.CrossValidationParams, error)
 }

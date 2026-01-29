@@ -26,7 +26,7 @@ type RelayStateMachine interface {
 type ResultsCheckerInf interface {
 	WaitForResults(ctx context.Context) error
 	HasRequiredNodeResults(tries int) (bool, int)
-	GetQuorumParams() common.QuorumParams
+	GetCrossValidationParams() common.CrossValidationParams
 }
 
 // MetricsInterface for relay processor metrics

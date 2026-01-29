@@ -263,7 +263,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 
 	totalProtocolErrorsRecoveredSuccessfullyMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_total_protocol_errors_recovered_successfully",
-		Help: "The total number of protocol errors that managed to recover using a retry or quorum",
+		Help: "The total number of protocol errors that managed to recover using a retry or cross-validation",
 	}, []string{"spec", "apiInterface", "attempt"})
 
 	relayProcessingLatencyBeforeProvider := prometheus.NewGaugeVec(prometheus.GaugeOpts{
