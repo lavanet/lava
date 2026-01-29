@@ -10,6 +10,6 @@ var RelayCountOnNodeError = 2
 
 // selection Enum, do not add other const
 const (
-	Stateless Selection = iota // retries enabled, seeks node responses
+	Stateless Selection = iota // Retries enabled, sequential provider attempts (+ optional quorum checking if feature enabled)
 	Stateful                   // all top providers at once, waits for best result (no retries) or for all the providers to return a response
 )
