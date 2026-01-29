@@ -289,7 +289,7 @@ done
 echo ""
 
 # Start consumer (rpcsmartrouter - standalone mode, works with static providers)
-echo "[Test Setup] starting consumer (rpcsmartrouter with cache, standalone mode)"
+echo "[Test Setup] starting consumer (standalone mode)"
 screen -d -m -S consumer bash -c "cd $PROJECT_ROOT && source ~/.bashrc; lavap rpcsmartrouter \
 config/consumer_examples/lava_consumer_static_with_backup_eth.yml \
 --geolocation 1 --log_level trace \
