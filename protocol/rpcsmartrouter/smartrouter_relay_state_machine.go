@@ -67,9 +67,9 @@ func NewSmartRouterRelayStateMachine(
 	debugRelays bool,
 	tickerMetricSetter tickerMetricSetterInf,
 ) RelayStateMachine {
-	selection := relaycore.Quorum // select the majority of node responses
+	selection := relaycore.Stateless // retries enabled, seeks majority consensus
 	if chainlib.GetStateful(protocolMessage) == common.CONSISTENCY_SELECT_ALL_PROVIDERS {
-		selection = relaycore.BestResult // select the majority of node successes
+		selection = relaycore.Stateful // all top providers at once, waits for best result
 	}
 
 	return &SmartRouterRelayStateMachine{
@@ -189,8 +189,8 @@ func (srsm *SmartRouterRelayStateMachine) retryCondition(numberOfRetriesLaunched
 	} else if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
 		return false
 	}
-	// best result sends to top 10 providers anyway.
-	return srsm.selection != relaycore.BestResult
+	// Stateful sends to top providers anyway (no retries).
+	return srsm.selection != relaycore.Stateful
 }
 
 func (srsm *SmartRouterRelayStateMachine) GetDebugState() bool {
@@ -384,7 +384,7 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 				if srsm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, "ticker_retry") {
 					return
 				}
-				// Only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
+				// Only trigger another batch for non Stateful relays or if we didn't pass the retry limit.
 				if srsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
 					utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
 					relayTaskChannel <- RelayStateSendInstructions{RelayState: srsm.getLatestState(), NumOfProviders: 1}

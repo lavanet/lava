@@ -66,9 +66,9 @@ func NewRelayStateMachine(
 	debugRelays bool,
 	tickerMetricSetter tickerMetricSetterInf,
 ) RelayStateMachine {
-	selection := relaycore.Quorum // select the majority of node responses
+	selection := relaycore.Stateless // retries enabled, seeks majority consensus
 	if chainlib.GetStateful(protocolMessage) == common.CONSISTENCY_SELECT_ALL_PROVIDERS {
-		selection = relaycore.BestResult // select the majority of node successes
+		selection = relaycore.Stateful // all top providers at once, waits for best result
 	}
 
 	return &ConsumerRelayStateMachine{
@@ -188,8 +188,8 @@ func (crsm *ConsumerRelayStateMachine) retryCondition(numberOfRetriesLaunched in
 	} else if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
 		return false
 	}
-	// best result sends to top 10 providers anyway.
-	return crsm.selection != relaycore.BestResult
+	// Stateful sends to top providers anyway (no retries).
+	return crsm.selection != relaycore.Stateful
 }
 
 func (crsm *ConsumerRelayStateMachine) GetDebugState() bool {
@@ -301,7 +301,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 				}
 				go readResultsFromProcessor()
 			case <-startNewBatchTicker.C:
-				// Only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
+				// Only trigger another batch for non Stateful relays or if we didn't pass the retry limit.
 				if crsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
 					utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", crsm.ctx))
 					relayTaskChannel <- RelayStateSendInstructions{RelayState: crsm.getLatestState(), NumOfProviders: 1}

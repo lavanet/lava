@@ -265,7 +265,7 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 			go rp.relayRetriesManager.RemoveHashFromCache(hash)
 		}
 		// Check if we need to add node errors retry metrics
-		if rp.selection == Quorum {
+		if rp.selection == Stateless {
 			// If nodeErrors length is larger than 0, our retry mechanism was activated. we add our metrics now.
 			if nodeErrors > 0 {
 				chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
@@ -292,7 +292,7 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 		}
 		return true, nodeErrors
 	}
-	if rp.selection == Quorum {
+	if rp.selection == Stateless {
 		// We need a quorum of all node results
 
 		// Define retryOnNodeErrorFlow based on quorum feature status
@@ -338,7 +338,7 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 			return !shouldRetry, nodeErrors
 		}
 	}
-	// on BestResult we want to retry if there is no success
+	// on Stateful we want to retry if there is no success
 	if rp.debugRelay {
 		utils.LavaFormatDebug("HasRequiredNodeResults returning false",
 			utils.LogAttr("GUID", rp.guid),
@@ -358,7 +358,7 @@ func (rp *RelayProcessor) handleResponse(response *RelayResponse) {
 	nodeError := rp.ResultsManager.SetResponse(response, rp.RelayStateMachine.GetProtocolMessage())
 
 	// send relay error metrics only on non stateful queries, as stateful queries always return X-1/X errors.
-	if nodeError != nil && rp.selection != BestResult {
+	if nodeError != nil && rp.selection != Stateful {
 		chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
 		go rp.metricsInf.SetRelayNodeErrorMetric(response.RelayResult.ProviderInfo.ProviderAddress, chainId, apiInterface)
 		utils.LavaFormatInfo("Relay received a node error", utils.LogAttr("Error", nodeError), utils.LogAttr("provider", response.RelayResult.ProviderInfo), utils.LogAttr("Request", rp.RelayStateMachine.GetProtocolMessage().GetApi().Name))
@@ -643,7 +643,7 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 	// there are not enough successes, let's check if there are enough node errors and protocol errors
 	// Protocol errors (like consistency violations) should count as attempted responses
 	totalResponses := successResultsCount + nodeErrorCount + protocolErrorCount
-	if totalResponses >= rp.quorumParams.Min && rp.selection == Quorum {
+	if totalResponses >= rp.quorumParams.Min && rp.selection == Stateless {
 		// Check if we have enough node errors to form a quorum
 		// Recalculate required quorum size based on node error count
 		requiredQuorumSize = rp.getRequiredQuorumSize(nodeErrorCount)
@@ -676,7 +676,7 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 		}
 	}
 
-	if rp.selection == BestResult && nodeErrorCount > 0 {
+	if rp.selection == Stateful && nodeErrorCount > 0 {
 		return rp.responsesQuorum(nodeErrors, rp.quorumParams.Min)
 	}
 
