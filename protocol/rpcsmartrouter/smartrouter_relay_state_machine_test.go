@@ -736,3 +736,95 @@ func TestProcessingContextRaceCondition(t *testing.T) {
 			tasksAfterTimeout)
 	})
 }
+
+// TestSmartRouterStateMachineCrossValidationNoRetry tests that when cross-validation feature is enabled,
+// no ticker-based retries are triggered - the state machine should complete with
+// whatever responses it receives from the initial batch.
+func TestSmartRouterStateMachineCrossValidationNoRetry(t *testing.T) {
+	t.Run("cross_validation_no_retry", func(t *testing.T) {
+		ctx := context.Background()
+		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})
+		specId := "LAV1"
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+		if closeServer != nil {
+			defer closeServer()
+		}
+		require.NoError(t, err)
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+		dappId := "dapp"
+		consumerIp := "123.11"
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
+		consistency := relaycore.NewConsistency(specId)
+		usedProviders := lavasession.NewUsedProviders(nil)
+
+		// Create cross-validation params with cross-validation feature ENABLED
+		crossValidationParams := common.CrossValidationParams{
+			Min:  3,
+			Max:  5,
+			Rate: 0.67,
+		}
+
+		// Use a very short ticker to ensure it would fire during the test if retries were allowed
+		relayProcessor := relaycore.NewRelayProcessor(ctx, crossValidationParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil, tickerValue: 10 * time.Millisecond}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics), qos.NewQoSManager())
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
+		defer cancel()
+		canUse := usedProviders.TryLockSelection(ctx)
+		require.NoError(t, ctx.Err())
+		require.Nil(t, canUse)
+		require.Zero(t, usedProviders.CurrentlyUsed())
+		require.Zero(t, usedProviders.SessionsLatestBatch())
+
+		consumerSessionsMap := lavasession.ConsumerSessionsMap{
+			"lava1@test": &lavasession.SessionInfo{},
+			"lava2@test": &lavasession.SessionInfo{},
+			"lava3@test": &lavasession.SessionInfo{},
+		}
+
+		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
+		require.NoError(t, err)
+		taskNumber := 0
+		startTime := time.Now()
+
+		for task := range relayTaskChannel {
+			elapsed := time.Since(startTime)
+			t.Logf("Task %d at %v, IsDone: %v", taskNumber, elapsed, task.IsDone())
+
+			switch taskNumber {
+			case 0:
+				// Initial batch - send 3 responses (2 success, 1 node error)
+				require.False(t, task.IsDone())
+				usedProviders.AddUsed(consumerSessionsMap, nil)
+				relayProcessor.UpdateBatch(nil)
+
+				// Send responses with some delay to allow ticker to potentially fire
+				relaycoretest.SendSuccessResp(relayProcessor, "lava1@test", time.Millisecond*5)
+				relaycoretest.SendSuccessResp(relayProcessor, "lava2@test", time.Millisecond*5)
+				relaycoretest.SendNodeError(relayProcessor, "lava3@test", time.Millisecond*5)
+
+				// Wait a bit to ensure ticker would have fired if retries were enabled
+				time.Sleep(30 * time.Millisecond)
+			case 1:
+				// With cross-validation enabled, this should be the final Done task
+				// No ticker-based retries should have been triggered
+				require.True(t, task.IsDone(), "Expected Done task immediately after initial responses when cross-validation is enabled")
+
+				// Verify the elapsed time is short (no retry delays)
+				require.Less(t, elapsed, 100*time.Millisecond, "Expected fast completion with cross-validation enabled, no retries")
+
+				results, _ := relayProcessor.HasRequiredNodeResults(1)
+				require.True(t, results, "Should have required results with cross-validation enabled")
+
+				t.Logf("Test completed successfully - no ticker retries with cross-validation enabled")
+				return
+			default:
+				// Should never reach here with cross-validation enabled - no retries expected
+				t.Fatalf("Unexpected task %d - ticker retries should be disabled when cross-validation is enabled", taskNumber)
+			}
+			taskNumber++
+		}
+	})
+}

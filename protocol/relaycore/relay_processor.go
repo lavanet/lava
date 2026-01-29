@@ -299,25 +299,20 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 		var needsMoreRetries bool
 
 		if rp.crossValidationParams.Enabled() {
-			// Cross-validation feature enabled: check if consensus is still mathematically possible
-			// Only count successful results for consensus calculation
-			maxRemainingProviders := rp.crossValidationParams.Max - resultsCount
-			// The following line checks if, after accounting for the maximum possible additional successful responses (maxRemainingProviders)
-			// and the current highest number of matching responses (rp.currentCrossValidationEqualResults), it is still mathematically possible
-			// to reach the required consensus threshold (calculated as cross-validation rate * max providers).
-			// If not, then retrying is not needed because consensus cannot be achieved anymore.
-			needsMoreRetries = maxRemainingProviders+rp.currentCrossValidationEqualResults >= int(math.Ceil(rp.crossValidationParams.Rate*float64(rp.crossValidationParams.Max)))
+			// Cross-validation feature enabled: never retry, just use whatever responses we got
+			// The user explicitly requested cross-validation with specific providers - don't add more
 			if rp.debugRelay {
-				utils.LavaFormatDebug("HasRequiredNodeResults needsMoreRetries calculation", utils.LogAttr("GUID", rp.guid),
-					utils.LogAttr("maxRemainingProviders", maxRemainingProviders),
+				utils.LavaFormatDebug("HasRequiredNodeResults cross-validation feature enabled - no retries",
+					utils.LogAttr("GUID", rp.guid),
+					utils.LogAttr("resultsCount", resultsCount),
 					utils.LogAttr("rp.currentCrossValidationEqualResults", rp.currentCrossValidationEqualResults),
-					utils.LogAttr("needsMoreRetries", needsMoreRetries),
 				)
 			}
-		} else {
-			// Cross-validation feature disabled: check if we have enough results
-			needsMoreRetries = !(resultsCount >= neededForCrossValidation)
+			// When cross-validation feature is enabled, we don't retry - return done immediately
+			return true, nodeErrors
 		}
+		// Cross-validation feature disabled: check if we have enough results
+		needsMoreRetries = !(resultsCount >= neededForCrossValidation)
 
 		if !needsMoreRetries {
 			// Retry on node error flow:

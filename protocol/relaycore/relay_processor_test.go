@@ -467,7 +467,7 @@ func TestHasRequiredNodeResultsCrossValidationScenarios(t *testing.T) {
 			successResults: 2,
 			nodeErrors:     0,
 			tries:          1,
-			expectedResult: false, // Different data won't meet cross-validation
+			expectedResult: true, // Cross-validation feature enabled = no retries, return done immediately
 			expectedErrors: 0,
 			useSameData:    0, // 0 means all different data
 		},
@@ -523,7 +523,7 @@ func TestHasRequiredNodeResultsCrossValidationScenarios(t *testing.T) {
 			successResults: 3,
 			nodeErrors:     0,
 			tries:          1,
-			expectedResult: false, // Mixed data won't meet cross-validation
+			expectedResult: true, // Cross-validation feature enabled = no retries, return done immediately
 			expectedErrors: 0,
 			useSameData:    1, // Only 1 provider with same data
 		},
@@ -1827,7 +1827,9 @@ func TestNoRecoveryMetricsWhenCrossValidationNotMet(t *testing.T) {
 	hasResults, nodeErrorCount := relayProcessor.HasRequiredNodeResults(1)
 
 	// Verify results
-	require.False(t, hasResults, "Should NOT have required results (only 1 success, need 3)")
+	// When cross-validation feature is enabled, HasRequiredNodeResults returns true (done, no retry)
+	// regardless of whether cross-validation was actually met - cross-validation validation happens in ProcessingResult
+	require.True(t, hasResults, "CrossValidation feature enabled = no retries, returns done immediately")
 	require.Equal(t, 2, nodeErrorCount, "Should have 2 node errors")
 
 	// Give time for async metric calls (if any)

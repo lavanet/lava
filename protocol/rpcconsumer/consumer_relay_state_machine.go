@@ -183,9 +183,14 @@ func (crsm *ConsumerRelayStateMachine) retryCondition(numberOfRetriesLaunched in
 		return false
 	}
 
-	if crsm.resultsChecker.GetCrossValidationParams().Enabled() && numberOfRetriesLaunched > crsm.resultsChecker.GetCrossValidationParams().Max {
+	// When cross-validation feature is enabled, never trigger ticker-based retries
+	// The user explicitly requested cross-validation with specific providers - don't add more
+	if crsm.resultsChecker.GetCrossValidationParams().Enabled() {
+		utils.LavaFormatTrace("[StateMachine] retryCondition: cross-validation feature enabled, no ticker retries", utils.LogAttr("GUID", crsm.ctx))
 		return false
-	} else if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
+	}
+
+	if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
 		return false
 	}
 	// Stateful sends to top providers anyway (no retries).
