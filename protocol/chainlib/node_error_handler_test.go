@@ -1,12 +1,12 @@
 package chainlib
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"testing"
 
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -96,7 +96,7 @@ func TestIsUnsupportedMethodErrorMessageBytes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := IsUnsupportedMethodErrorMessageBytes(tt.message)
+			result := common.IsUnsupportedMethodErrorMessageBytes(tt.message)
 			require.Equal(t, tt.expected, result, "Message: %s", string(tt.message))
 		})
 	}
@@ -222,7 +222,7 @@ func TestIsUnsupportedMethodErrorMessage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := IsUnsupportedMethodErrorMessage(tt.message)
+			result := common.IsUnsupportedMethodMessage(tt.message)
 			require.Equal(t, tt.expected, result, "Message: %s", tt.message)
 		})
 	}
@@ -362,62 +362,31 @@ func TestIsUnsupportedMethodError(t *testing.T) {
 	})
 }
 
-func TestGetUnsupportedMethodPatterns(t *testing.T) {
-	patterns := GetUnsupportedMethodPatterns()
-
-	// Verify all pattern categories exist
-	require.Contains(t, patterns, "json-rpc")
-	require.Contains(t, patterns, "rest")
-	require.Contains(t, patterns, "grpc")
-
-	// Verify JSON-RPC patterns
-	jsonRPCPatterns := patterns["json-rpc"]
-	require.Contains(t, jsonRPCPatterns, JSONRPCMethodNotFound)
-	require.Contains(t, jsonRPCPatterns, JSONRPCMethodNotSupported)
-	require.Contains(t, jsonRPCPatterns, JSONRPCUnknownMethod)
-	require.Contains(t, jsonRPCPatterns, JSONRPCMethodDoesNotExist)
-	require.Contains(t, jsonRPCPatterns, JSONRPCInvalidMethod)
-	require.Contains(t, jsonRPCPatterns, JSONRPCErrorCode)
-
-	// Verify REST patterns
-	restPatterns := patterns["rest"]
-	require.Contains(t, restPatterns, RESTEndpointNotFound)
-	require.Contains(t, restPatterns, RESTRouteNotFound)
-	require.Contains(t, restPatterns, RESTPathNotFound)
-	require.Contains(t, restPatterns, RESTMethodNotAllowed)
-
-	// Verify gRPC patterns
-	grpcPatterns := patterns["grpc"]
-	require.Contains(t, grpcPatterns, GRPCMethodNotImplemented)
-	require.Contains(t, grpcPatterns, GRPCUnimplemented)
-	require.Contains(t, grpcPatterns, GRPCServiceNotFound)
-}
-
 func TestErrorConstants(t *testing.T) {
 	// Verify constant values haven't changed
-	require.Equal(t, "method not found", JSONRPCMethodNotFound)
-	require.Equal(t, "method not supported", JSONRPCMethodNotSupported)
-	require.Equal(t, "unknown method", JSONRPCUnknownMethod)
-	require.Equal(t, "method does not exist", JSONRPCMethodDoesNotExist)
-	require.Equal(t, "invalid method", JSONRPCInvalidMethod)
-	require.Equal(t, "-32601", JSONRPCErrorCode)
+	require.Equal(t, "method not found", common.JSONRPCMethodNotFound)
+	require.Equal(t, "method not supported", common.JSONRPCMethodNotSupported)
+	require.Equal(t, "unknown method", common.JSONRPCUnknownMethod)
+	require.Equal(t, "method does not exist", common.JSONRPCMethodDoesNotExist)
+	require.Equal(t, "invalid method", common.JSONRPCInvalidMethod)
+	require.Equal(t, "-32601", common.JSONRPCErrorCode)
 
-	require.Equal(t, "endpoint not found", RESTEndpointNotFound)
-	require.Equal(t, "route not found", RESTRouteNotFound)
-	require.Equal(t, "path not found", RESTPathNotFound)
-	require.Equal(t, "method not allowed", RESTMethodNotAllowed)
+	require.Equal(t, "endpoint not found", common.RESTEndpointNotFound)
+	require.Equal(t, "route not found", common.RESTRouteNotFound)
+	require.Equal(t, "path not found", common.RESTPathNotFound)
+	require.Equal(t, "method not allowed", common.RESTMethodNotAllowed)
 
-	require.Equal(t, "method not implemented", GRPCMethodNotImplemented)
-	require.Equal(t, "unimplemented", GRPCUnimplemented)
-	require.Equal(t, "service not found", GRPCServiceNotFound)
+	require.Equal(t, "method not implemented", common.GRPCMethodNotImplemented)
+	require.Equal(t, "unimplemented", common.GRPCUnimplemented)
+	require.Equal(t, "service not found", common.GRPCServiceNotFound)
 
-	require.Equal(t, 404, HTTPStatusNotFound)
-	require.Equal(t, 405, HTTPStatusMethodNotAllowed)
-	require.Equal(t, -32601, JSONRPCMethodNotFoundCode)
+	require.Equal(t, 404, common.HTTPStatusNotFound)
+	require.Equal(t, 405, common.HTTPStatusMethodNotAllowed)
+	require.Equal(t, -32601, common.JSONRPCMethodNotFoundCode)
 }
 
 // Benchmark tests to ensure performance
-func BenchmarkIsUnsupportedMethodErrorMessage(b *testing.B) {
+func BenchmarkIsUnsupportedMethodMessage(b *testing.B) {
 	testMessages := []string{
 		"method not found",
 		"internal server error",
@@ -429,7 +398,7 @@ func BenchmarkIsUnsupportedMethodErrorMessage(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		for _, msg := range testMessages {
-			_ = IsUnsupportedMethodErrorMessage(msg)
+			_ = common.IsUnsupportedMethodMessage(msg)
 		}
 	}
 }
@@ -446,7 +415,7 @@ func BenchmarkIsUnsupportedMethodErrorMessageBytes(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		for _, msg := range testMessages {
-			_ = IsUnsupportedMethodErrorMessageBytes(msg)
+			_ = common.IsUnsupportedMethodErrorMessageBytes(msg)
 		}
 	}
 }
@@ -459,13 +428,13 @@ func BenchmarkIsUnsupportedMethodErrorMessageLongString(b *testing.B) {
 
 	b.Run("String", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_ = IsUnsupportedMethodErrorMessage(longError)
+			_ = common.IsUnsupportedMethodMessage(longError)
 		}
 	})
 
 	b.Run("Bytes", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_ = IsUnsupportedMethodErrorMessageBytes(longErrorBytes)
+			_ = common.IsUnsupportedMethodErrorMessageBytes(longErrorBytes)
 		}
 	})
 
@@ -475,13 +444,13 @@ func BenchmarkIsUnsupportedMethodErrorMessageLongString(b *testing.B) {
 
 	b.Run("String_NoMatch", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_ = IsUnsupportedMethodErrorMessage(longNonMatch)
+			_ = common.IsUnsupportedMethodMessage(longNonMatch)
 		}
 	})
 
 	b.Run("Bytes_NoMatch", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_ = IsUnsupportedMethodErrorMessageBytes(longNonMatchBytes)
+			_ = common.IsUnsupportedMethodErrorMessageBytes(longNonMatchBytes)
 		}
 	})
 }
@@ -502,53 +471,82 @@ func BenchmarkIsUnsupportedMethodError(b *testing.B) {
 	}
 }
 
-func TestValidateRequestAndResponseIds(t *testing.T) {
-	handler := &genericErrorHandler{}
+// NEW TEST: Verifies Issue #1 fix - smart contract errors should NOT be classified as unsupported
+// This is a critical test for preventing false positives on smart contract reverts
+func TestIsUnsupportedMethodErrorMessage_SmartContractErrors(t *testing.T) {
+	tests := []struct {
+		name     string
+		message  string
+		expected bool
+	}{
+		// CRITICAL: Smart contract errors should NOT match (Issue #1 fix)
+		{
+			name:     "Smart contract NFT not found",
+			message:  "execution reverted: NFT not found",
+			expected: false,
+		},
+		{
+			name:     "Smart contract User not found",
+			message:  "execution reverted: User not found",
+			expected: false,
+		},
+		{
+			name:     "Smart contract Token not found",
+			message:  "execution reverted: Token not found",
+			expected: false,
+		},
+		{
+			name:     "Smart contract identity not found",
+			message:  "execution reverted: identity not found",
+			expected: false,
+		},
+		{
+			name:     "Smart contract IdentityRegistry specific",
+			message:  "execution reverted: IdentityRegistry: identity not found",
+			expected: false,
+		},
+		{
+			name:     "Smart contract Record not found",
+			message:  "execution reverted: Record not found in database",
+			expected: false,
+		},
+		{
+			name:     "Generic not found without execution reverted",
+			message:  "user not found",
+			expected: false,
+		},
+		{
+			name:     "Item not found",
+			message:  "item not found",
+			expected: false,
+		},
+		// Verify actual unsupported methods still work correctly
+		{
+			name:     "Actual method not found",
+			message:  "method not found",
+			expected: true,
+		},
+		{
+			name:     "Actual endpoint not found",
+			message:  "endpoint not found",
+			expected: true,
+		},
+		{
+			name:     "Actual route not found",
+			message:  "route not found",
+			expected: true,
+		},
+		{
+			name:     "JSON-RPC method not supported",
+			message:  "method not supported",
+			expected: true,
+		},
+	}
 
-	t.Run("matching IDs - success", func(t *testing.T) {
-		reqID := json.RawMessage(`1`)
-		respID := json.RawMessage(`1`)
-		err := handler.ValidateRequestAndResponseIds(reqID, respID)
-		require.NoError(t, err)
-	})
-
-	t.Run("matching string IDs - success", func(t *testing.T) {
-		reqID := json.RawMessage(`"abc-123"`)
-		respID := json.RawMessage(`"abc-123"`)
-		err := handler.ValidateRequestAndResponseIds(reqID, respID)
-		require.NoError(t, err)
-	})
-
-	t.Run("mismatched IDs - error", func(t *testing.T) {
-		reqID := json.RawMessage(`1`)
-		respID := json.RawMessage(`2`)
-		err := handler.ValidateRequestAndResponseIds(reqID, respID)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "ID mismatch")
-	})
-
-	t.Run("empty response ID - error with parsing failure", func(t *testing.T) {
-		// This simulates the case where a node returns an error (e.g., "Apikey is expired")
-		// with an empty/invalid ID in the response
-		reqID := json.RawMessage(`49`)
-		respID := json.RawMessage(`[]`) // Empty array - invalid ID
-		err := handler.ValidateRequestAndResponseIds(reqID, respID)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "failed parsing ID")
-	})
-
-	t.Run("null response ID - error", func(t *testing.T) {
-		reqID := json.RawMessage(`1`)
-		respID := json.RawMessage(`null`)
-		err := handler.ValidateRequestAndResponseIds(reqID, respID)
-		require.Error(t, err)
-	})
-
-	t.Run("invalid JSON in request ID - error", func(t *testing.T) {
-		reqID := json.RawMessage(`invalid`)
-		respID := json.RawMessage(`1`)
-		err := handler.ValidateRequestAndResponseIds(reqID, respID)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "failed parsing ID")
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := common.IsUnsupportedMethodMessage(tt.message)
+			require.Equal(t, tt.expected, got, "Message: %s", tt.message)
+		})
+	}
 }

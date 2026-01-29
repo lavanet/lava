@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
+	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	types "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
@@ -160,12 +161,12 @@ func TestTestModeUnsupportedMethodDetection(t *testing.T) {
 					"gRPC response should contain unimplemented patterns")
 			}
 
-			// Most importantly, verify that chainlib.IsUnsupportedMethodErrorMessage
+			// Most importantly, verify that common.IsUnsupportedMethodMessage
 			// would detect this as an unsupported method
 			if tc.apiInterface != "rest" { // REST relies on status code detection
-				isUnsupported := chainlib.IsUnsupportedMethodErrorMessage(responseData)
+				isUnsupported := common.IsUnsupportedMethodMessage(responseData)
 				require.True(t, isUnsupported,
-					"Generated response should be detected as unsupported method by chainlib.IsUnsupportedMethodErrorMessage")
+					"Generated response should be detected as unsupported method by common.IsUnsupportedMethodMessage")
 			}
 		})
 	}
