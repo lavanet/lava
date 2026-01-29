@@ -386,21 +386,23 @@ func (cswp *ConsumerSessionsWithProvider) ConnectRawClientWithTimeout(ctx contex
 	if err != nil {
 		return nil, nil, err
 	}
-	ch := make(chan bool)
-	go func() {
-		for {
-			// Check if the connection state is not Connecting
-			if conn.GetState() == connectivity.Ready {
-				ch <- true
-				return
-			}
-			// Add some delay to avoid busy-waiting
-			time.Sleep(20 * time.Millisecond)
+
+	// Wait for the connection to become Ready without spawning a goroutine.
+	// If the context is cancelled/times out first, return an error and close the connection.
+	for {
+		state := conn.GetState()
+		if state == connectivity.Ready {
+			break
 		}
-	}()
-	select {
-	case <-connectCtx.Done():
-	case <-ch:
+		if connectCtx.Err() != nil {
+			_ = conn.Close()
+			return nil, nil, connectCtx.Err()
+		}
+		// WaitForStateChange blocks until the state changes or ctx is done.
+		if !conn.WaitForStateChange(connectCtx, state) {
+			_ = conn.Close()
+			return nil, nil, connectCtx.Err()
+		}
 	}
 	c := pairingtypes.NewRelayerClient(conn)
 	return c, conn, nil
