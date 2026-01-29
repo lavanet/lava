@@ -31,11 +31,13 @@ const (
 	// Disable relay retries when we get node errors.
 	// This feature is suppose to help with successful relays in some chains that return node errors on rare race conditions on the serviced chains.
 	SetRelayCountOnNodeErrorFlag = "set-retry-count-on-node-error"
-	UseStaticSpecFlag            = "use-static-spec" // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
-	GitHubTokenFlag              = "github-token"    // GitHub personal access token for accessing private repositories and higher API rate limits
-	EpochDurationFlag            = "epoch-duration"  // duration of each epoch for time-based epoch system (standalone mode)
-	DefaultEpochDuration         = 30 * time.Minute  // default epoch duration for regular mode (if using time-based epochs)
-	StandaloneEpochDuration      = 15 * time.Minute  // default epoch duration for standalone/static provider mode
+	// BatchNodeErrorOnAny controls batch request error detection for JSON-RPC batch requests
+	BatchNodeErrorOnAnyFlag = "batch-node-error-on-any"
+	UseStaticSpecFlag       = "use-static-spec" // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
+	GitHubTokenFlag         = "github-token"    // GitHub personal access token for accessing private repositories and higher API rate limits
+	EpochDurationFlag       = "epoch-duration"  // duration of each epoch for time-based epoch system (standalone mode)
+	DefaultEpochDuration    = 30 * time.Minute  // default epoch duration for regular mode (if using time-based epochs)
+	StandaloneEpochDuration = 15 * time.Minute  // default epoch duration for standalone/static provider mode
 
 	// optimizer flags
 	SetProviderOptimizerBestTierPickChance       = "set-provider-optimizer-best-tier-pick-chance"
