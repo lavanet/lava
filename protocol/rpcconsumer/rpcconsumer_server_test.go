@@ -217,15 +217,15 @@ func TestRelayInnerProviderUniqueIdFlow(t *testing.T) {
 
 // Mock interface for RelayProcessor that only implements the methods we need for testing
 type MockRelayProcessorForHeaders struct {
-	quorumParams         common.QuorumParams
-	successResults       []common.RelayResult
-	nodeErrors           []common.RelayResult
-	protocolErrors       []relaycore.RelayError
-	statefulRelayTargets []string
+	crossValidationParams common.CrossValidationParams
+	successResults        []common.RelayResult
+	nodeErrors            []common.RelayResult
+	protocolErrors        []relaycore.RelayError
+	statefulRelayTargets  []string
 }
 
-func (m *MockRelayProcessorForHeaders) GetQuorumParams() common.QuorumParams {
-	return m.quorumParams
+func (m *MockRelayProcessorForHeaders) GetCrossValidationParams() common.CrossValidationParams {
+	return m.crossValidationParams
 }
 
 func (m *MockRelayProcessorForHeaders) GetResultsData() ([]common.RelayResult, []common.RelayResult, []relaycore.RelayError) {
@@ -251,12 +251,12 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 	providerAddress2 := "lava@provider2"
 	providerAddress3 := "lava@provider3"
 
-	t.Run("quorum disabled - single provider header", func(t *testing.T) {
-		// Create a mock relay processor with quorum disabled (use default values)
+	t.Run("cross-validation disabled - single provider header", func(t *testing.T) {
+		// Create a mock relay processor with cross-validation disabled (use default values)
 		relayProcessor := &MockRelayProcessorForHeaders{
-			quorumParams:   common.DefaultQuorumParams, // Disable quorum by using default values
-			successResults: []common.RelayResult{},
-			nodeErrors:     []common.RelayResult{},
+			crossValidationParams: common.DefaultCrossValidationParams, // Disable cross-validation by using default values
+			successResults:        []common.RelayResult{},
+			nodeErrors:            []common.RelayResult{},
 		}
 
 		// Create a relay result
@@ -293,10 +293,10 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 		require.Equal(t, providerAddress1, providerHeader.Value)
 	})
 
-	t.Run("quorum enabled - single successful provider", func(t *testing.T) {
-		// Create a mock relay processor with quorum enabled
+	t.Run("cross-validation enabled - single successful provider", func(t *testing.T) {
+		// Create a mock relay processor with cross-validation enabled
 		relayProcessor := &MockRelayProcessorForHeaders{
-			quorumParams: common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
+			crossValidationParams: common.CrossValidationParams{Min: 2, Rate: 0.6, Max: 5},
 			successResults: []common.RelayResult{
 				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
 			},
@@ -322,25 +322,25 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 		// Call the function
 		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api")
 
-		// Verify the result - should have quorum header + user request type header
+		// Verify the result - should have cross-validation header + user request type header
 		require.Len(t, relayResult.Reply.Metadata, 2)
 
-		// Find the quorum header
-		var quorumHeader *pairingtypes.Metadata
+		// Find the cross-validation header
+		var crossValidationHeader *pairingtypes.Metadata
 		for _, meta := range relayResult.Reply.Metadata {
-			if meta.Name == common.QUORUM_ALL_PROVIDERS_HEADER_NAME {
-				quorumHeader = &meta
+			if meta.Name == common.CROSS_VALIDATION_ALL_PROVIDERS_HEADER_NAME {
+				crossValidationHeader = &meta
 				break
 			}
 		}
-		require.NotNil(t, quorumHeader)
-		require.Equal(t, "[lava@provider1]", quorumHeader.Value)
+		require.NotNil(t, crossValidationHeader)
+		require.Equal(t, "[lava@provider1]", crossValidationHeader.Value)
 	})
 
-	t.Run("quorum enabled - multiple providers with mixed results", func(t *testing.T) {
-		// Create a mock relay processor with quorum enabled
+	t.Run("cross-validation enabled - multiple providers with mixed results", func(t *testing.T) {
+		// Create a mock relay processor with cross-validation enabled
 		relayProcessor := &MockRelayProcessorForHeaders{
-			quorumParams: common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
+			crossValidationParams: common.CrossValidationParams{Min: 2, Rate: 0.6, Max: 5},
 			successResults: []common.RelayResult{
 				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
 				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress2}},
@@ -369,32 +369,32 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 		// Call the function
 		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api")
 
-		// Verify the result - should have quorum header with all providers + user request type header
+		// Verify the result - should have cross-validation header with all providers + user request type header
 		require.Len(t, relayResult.Reply.Metadata, 2)
 
-		// Find the quorum header
-		var quorumHeader *pairingtypes.Metadata
+		// Find the cross-validation header
+		var crossValidationHeader *pairingtypes.Metadata
 		for _, meta := range relayResult.Reply.Metadata {
-			if meta.Name == common.QUORUM_ALL_PROVIDERS_HEADER_NAME {
-				quorumHeader = &meta
+			if meta.Name == common.CROSS_VALIDATION_ALL_PROVIDERS_HEADER_NAME {
+				crossValidationHeader = &meta
 				break
 			}
 		}
-		require.NotNil(t, quorumHeader)
+		require.NotNil(t, crossValidationHeader)
 
 		// Check that all three providers are in the header (order may vary)
-		headerValue := quorumHeader.Value
+		headerValue := crossValidationHeader.Value
 		require.Contains(t, headerValue, "lava@provider1")
 		require.Contains(t, headerValue, "lava@provider2")
 		require.Contains(t, headerValue, "lava@provider3")
 	})
 
-	t.Run("quorum enabled - no providers", func(t *testing.T) {
-		// Create a mock relay processor with quorum enabled but no providers
+	t.Run("cross-validation enabled - no providers", func(t *testing.T) {
+		// Create a mock relay processor with cross-validation enabled but no providers
 		relayProcessor := &MockRelayProcessorForHeaders{
-			quorumParams:   common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
-			successResults: []common.RelayResult{},
-			nodeErrors:     []common.RelayResult{},
+			crossValidationParams: common.CrossValidationParams{Min: 2, Rate: 0.6, Max: 5},
+			successResults:        []common.RelayResult{},
+			nodeErrors:            []common.RelayResult{},
 		}
 
 		// Create a relay result
@@ -416,7 +416,7 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 		// Call the function
 		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api")
 
-		// Verify the result - should have only user request type header (no quorum header since no providers)
+		// Verify the result - should have only user request type header (no cross-validation header since no providers)
 		require.Len(t, relayResult.Reply.Metadata, 1)
 
 		// Should only have the user request type header
@@ -426,9 +426,9 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 
 	t.Run("nil relay result - should not panic", func(t *testing.T) {
 		relayProcessor := &MockRelayProcessorForHeaders{
-			quorumParams:   common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
-			successResults: []common.RelayResult{},
-			nodeErrors:     []common.RelayResult{},
+			crossValidationParams: common.CrossValidationParams{Min: 2, Rate: 0.6, Max: 5},
+			successResults:        []common.RelayResult{},
+			nodeErrors:            []common.RelayResult{},
 		}
 
 		mockProtocolMessage := &MockProtocolMessage{
@@ -454,8 +454,8 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 	t.Run("stateful API - all providers header included", func(t *testing.T) {
 		// Create a mock relay processor with stateful relay targets
 		relayProcessor := &MockRelayProcessorForHeaders{
-			quorumParams:         common.DefaultQuorumParams,
-			statefulRelayTargets: []string{providerAddress1, providerAddress2, providerAddress3},
+			crossValidationParams: common.DefaultCrossValidationParams,
+			statefulRelayTargets:  []string{providerAddress1, providerAddress2, providerAddress3},
 			successResults: []common.RelayResult{
 				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
 			},
@@ -524,8 +524,8 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 	t.Run("stateful API - single provider in targets", func(t *testing.T) {
 		// Create a mock relay processor with only one stateful relay target
 		relayProcessor := &MockRelayProcessorForHeaders{
-			quorumParams:         common.DefaultQuorumParams,
-			statefulRelayTargets: []string{providerAddress1},
+			crossValidationParams: common.DefaultCrossValidationParams,
+			statefulRelayTargets:  []string{providerAddress1},
 			successResults: []common.RelayResult{
 				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
 			},
@@ -574,8 +574,8 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 	t.Run("stateful API - empty targets list", func(t *testing.T) {
 		// Create a mock relay processor with empty stateful relay targets
 		relayProcessor := &MockRelayProcessorForHeaders{
-			quorumParams:         common.DefaultQuorumParams,
-			statefulRelayTargets: []string{},
+			crossValidationParams: common.DefaultCrossValidationParams,
+			statefulRelayTargets:  []string{},
 			successResults: []common.RelayResult{
 				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
 			},
@@ -630,8 +630,8 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 	t.Run("non-stateful API - no stateful headers", func(t *testing.T) {
 		// Create a mock relay processor without stateful relay targets
 		relayProcessor := &MockRelayProcessorForHeaders{
-			quorumParams:         common.DefaultQuorumParams,
-			statefulRelayTargets: nil, // No stateful targets
+			crossValidationParams: common.DefaultCrossValidationParams,
+			statefulRelayTargets:  nil, // No stateful targets
 			successResults: []common.RelayResult{
 				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
 			},
@@ -683,11 +683,11 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 		require.Equal(t, providerAddress1, providerHeader.Value)
 	})
 
-	t.Run("stateful API with quorum enabled - both headers present", func(t *testing.T) {
-		// This is an edge case - stateful API shouldn't use quorum, but let's test the behavior
+	t.Run("stateful API with cross-validation enabled - both headers present", func(t *testing.T) {
+		// This is an edge case - stateful API shouldn't use cross-validation, but let's test the behavior
 		relayProcessor := &MockRelayProcessorForHeaders{
-			quorumParams:         common.QuorumParams{Min: 2, Rate: 0.6, Max: 5},
-			statefulRelayTargets: []string{providerAddress1, providerAddress2},
+			crossValidationParams: common.CrossValidationParams{Min: 2, Rate: 0.6, Max: 5},
+			statefulRelayTargets:  []string{providerAddress1, providerAddress2},
 			successResults: []common.RelayResult{
 				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
 				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress2}},
@@ -719,13 +719,13 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 		// Call the function
 		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_sendTransaction")
 
-		// Verify both quorum and stateful headers are present
+		// Verify both cross-validation and stateful headers are present
 		// (even though this is an unusual scenario)
-		var quorumHeader, statefulHeader, allProvidersHeader *pairingtypes.Metadata
+		var crossValidationHeader, statefulHeader, allProvidersHeader *pairingtypes.Metadata
 		for _, meta := range relayResult.Reply.Metadata {
 			switch meta.Name {
-			case common.QUORUM_ALL_PROVIDERS_HEADER_NAME:
-				quorumHeader = &meta
+			case common.CROSS_VALIDATION_ALL_PROVIDERS_HEADER_NAME:
+				crossValidationHeader = &meta
 			case common.STATEFUL_API_HEADER:
 				statefulHeader = &meta
 			case common.STATEFUL_ALL_PROVIDERS_HEADER_NAME:
@@ -738,8 +738,8 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 		require.Equal(t, "true", statefulHeader.Value)
 		require.NotNil(t, allProvidersHeader)
 
-		// Quorum header would also be present if quorum is enabled
-		require.NotNil(t, quorumHeader)
+		// CrossValidation header would also be present if cross-validation is enabled
+		require.NotNil(t, crossValidationHeader)
 	})
 }
 
@@ -850,8 +850,8 @@ func (m *MockProtocolMessage) GetDirectiveHeaders() map[string]string {
 	return nil
 }
 
-func (m *MockProtocolMessage) GetQuorumParameters() (common.QuorumParams, error) {
-	return common.QuorumParams{}, nil
+func (m *MockProtocolMessage) GetCrossValidationParameters() (common.CrossValidationParams, error) {
+	return common.CrossValidationParams{}, nil
 }
 
 func (m *MockProtocolMessage) IsDefaultApi() bool {

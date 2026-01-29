@@ -183,7 +183,7 @@ func (crsm *ConsumerRelayStateMachine) retryCondition(numberOfRetriesLaunched in
 		return false
 	}
 
-	if crsm.resultsChecker.GetQuorumParams().Enabled() && numberOfRetriesLaunched > crsm.resultsChecker.GetQuorumParams().Max {
+	if crsm.resultsChecker.GetCrossValidationParams().Enabled() && numberOfRetriesLaunched > crsm.resultsChecker.GetCrossValidationParams().Max {
 		return false
 	} else if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
 		return false
@@ -252,7 +252,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 		relayTaskChannel <- RelayStateSendInstructions{
 			Analytics:      crsm.analytics,
 			RelayState:     crsm.getLatestState(),
-			NumOfProviders: crsm.resultsChecker.GetQuorumParams().Min,
+			NumOfProviders: crsm.resultsChecker.GetCrossValidationParams().Min,
 		}
 
 		// Initialize parameters

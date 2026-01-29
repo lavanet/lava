@@ -184,7 +184,7 @@ func (srsm *SmartRouterRelayStateMachine) retryCondition(numberOfRetriesLaunched
 		return false
 	}
 
-	if srsm.resultsChecker.GetQuorumParams().Enabled() && numberOfRetriesLaunched > srsm.resultsChecker.GetQuorumParams().Max {
+	if srsm.resultsChecker.GetCrossValidationParams().Enabled() && numberOfRetriesLaunched > srsm.resultsChecker.GetCrossValidationParams().Max {
 		return false
 	} else if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
 		return false
@@ -282,7 +282,7 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 		relayTaskChannel <- RelayStateSendInstructions{
 			Analytics:      srsm.analytics,
 			RelayState:     srsm.getLatestState(),
-			NumOfProviders: srsm.resultsChecker.GetQuorumParams().Min,
+			NumOfProviders: srsm.resultsChecker.GetCrossValidationParams().Min,
 		}
 
 		// Initialize parameters

@@ -74,7 +74,7 @@ func (r *RelayErrors) GetBestErrorMessageForUser() RelayError {
 	if index >= 0 && errorCount >= (len(r.RelayErrors)/2) {
 		// we have majority of errors we can return this error.
 		if r.RelayErrors[index].Response != nil {
-			r.RelayErrors[index].Response.RelayResult.Quorum = errorCount
+			r.RelayErrors[index].Response.RelayResult.CrossValidation = errorCount
 		}
 		return r.RelayErrors[index]
 	}

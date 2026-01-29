@@ -14,7 +14,7 @@ import (
 )
 
 // BenchmarkMemoryUsageOnBatchRequests benchmarks memory usage when processing many batch requests
-// This benchmark verifies the fix where we switched from storing full string canonical forms to hashes in quorumMap
+// This benchmark verifies the fix where we switched from storing full string canonical forms to hashes in crossValidationMap
 func BenchmarkMemoryUsageOnBatchRequests(b *testing.B) {
 	// Create a large Solana-like batch response (similar to what caused the memory leak)
 	batchResponse := createLargeSolanaBatchResponse(100) // 100 items in batch
@@ -24,22 +24,22 @@ func BenchmarkMemoryUsageOnBatchRequests(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		quorumMap := make(map[[32]byte]int)
+		crossValidationMap := make(map[[32]byte]int)
 
 		// Process 1000 requests with the same large data
 		// In the old implementation, this would create 1000 copies of canonical string forms
 		// In the new implementation, it only stores 1000 hashes (32 bytes each)
 		for j := 0; j < 1000; j++ {
 			hash := sha256.Sum256(responseData)
-			quorumMap[hash]++
+			crossValidationMap[hash]++
 		}
 	}
 }
 
-// TestQuorumMapUsesHashesNotStrings verifies the algorithm uses hashes, not strings
+// TestCrossValidationMapUsesHashesNotStrings verifies the algorithm uses hashes, not strings
 // This is a functional correctness test that should remain stable long-term
-func TestQuorumMapUsesHashesNotStrings(t *testing.T) {
-	quorumMap := make(map[[32]byte]int)
+func TestCrossValidationMapUsesHashesNotStrings(t *testing.T) {
+	crossValidationMap := make(map[[32]byte]int)
 
 	// Create large data (100KB)
 	batchResponse := createLargeSolanaBatchResponse(100)
@@ -49,31 +49,31 @@ func TestQuorumMapUsesHashesNotStrings(t *testing.T) {
 
 	// Hash the data and store
 	hash := sha256.Sum256(responseData)
-	quorumMap[hash]++
+	crossValidationMap[hash]++
 
 	// Verify the map uses hash keys (32 bytes), not the full data
-	require.Equal(t, 1, len(quorumMap), "Should have 1 entry")
+	require.Equal(t, 1, len(crossValidationMap), "Should have 1 entry")
 	require.Equal(t, 32, len(hash), "Hash should always be 32 bytes")
 
 	// Verify the same data produces the same hash
 	hash2 := sha256.Sum256(responseData)
 	require.Equal(t, hash, hash2, "Same data should produce same hash")
-	quorumMap[hash2]++
-	require.Equal(t, 1, len(quorumMap), "Same hash should not create new entry")
-	require.Equal(t, 2, quorumMap[hash], "Count should increment")
+	crossValidationMap[hash2]++
+	require.Equal(t, 1, len(crossValidationMap), "Same hash should not create new entry")
+	require.Equal(t, 2, crossValidationMap[hash], "Count should increment")
 
 	// Verify different data produces different hash
 	batchResponse2 := createLargeSolanaBatchResponse(101)
 	responseData2, _ := json.Marshal(batchResponse2)
 	hash3 := sha256.Sum256(responseData2)
 	require.NotEqual(t, hash, hash3, "Different data should produce different hash")
-	quorumMap[hash3]++
-	require.Equal(t, 2, len(quorumMap), "Different hash should create new entry")
+	crossValidationMap[hash3]++
+	require.Equal(t, 2, len(crossValidationMap), "Different hash should create new entry")
 }
 
-// TestQuorumMapHashCollisions tests that different responses produce different hashes
-func TestQuorumMapHashCollisions(t *testing.T) {
-	quorumMap := make(map[[32]byte]int)
+// TestCrossValidationMapHashCollisions tests that different responses produce different hashes
+func TestCrossValidationMapHashCollisions(t *testing.T) {
+	crossValidationMap := make(map[[32]byte]int)
 
 	// Create 1000 different responses
 	for i := 0; i < 1000; i++ {
@@ -83,20 +83,20 @@ func TestQuorumMapHashCollisions(t *testing.T) {
 		require.NoError(t, err)
 
 		hash := sha256.Sum256(responseData)
-		quorumMap[hash]++
+		crossValidationMap[hash]++
 	}
 
 	// Should have 1000 unique hashes
-	require.Equal(t, 1000, len(quorumMap), "All different responses should have different hashes")
+	require.Equal(t, 1000, len(crossValidationMap), "All different responses should have different hashes")
 
 	// Each hash should have count of 1
-	for _, count := range quorumMap {
+	for _, count := range crossValidationMap {
 		require.Equal(t, 1, count, "Each unique response should have count of 1")
 	}
 }
 
-// BenchmarkRelayProcessorQuorumMemory benchmarks memory usage of RelayProcessor quorum functionality
-func BenchmarkRelayProcessorQuorumMemory(b *testing.B) {
+// BenchmarkRelayProcessorCrossValidationMemory benchmarks memory usage of RelayProcessor cross-validation functionality
+func BenchmarkRelayProcessorCrossValidationMemory(b *testing.B) {
 	// Create relay processor with mock dependencies
 	chainMsg := &mockChainMessage{
 		api: &spectypes.Api{
@@ -118,8 +118,8 @@ func BenchmarkRelayProcessorQuorumMemory(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		rp := &RelayProcessor{
-			RelayStateMachine: relayStateMachine,
-			quorumMap:         make(map[[32]byte]int),
+			RelayStateMachine:  relayStateMachine,
+			crossValidationMap: make(map[[32]byte]int),
 		}
 
 		for j := 0; j < 100; j++ {
@@ -139,17 +139,17 @@ func BenchmarkRelayProcessorQuorumMemory(b *testing.B) {
 			// Only hash successful responses
 			if response != nil && response.Err == nil {
 				hash := sha256.Sum256(response.RelayResult.GetReply().GetData())
-				rp.quorumMap[hash]++
-				if rp.quorumMap[hash] > rp.currentQourumEqualResults {
-					rp.currentQourumEqualResults = rp.quorumMap[hash]
+				rp.crossValidationMap[hash]++
+				if rp.crossValidationMap[hash] > rp.currentCrossValidationEqualResults {
+					rp.currentCrossValidationEqualResults = rp.crossValidationMap[hash]
 				}
 			}
 		}
 	}
 }
 
-// BenchmarkResponsesQuorumMemory benchmarks memory usage of responsesQuorum function
-func BenchmarkResponsesQuorumMemory(b *testing.B) {
+// BenchmarkResponsesCrossValidationMemory benchmarks memory usage of responsesCrossValidation function
+func BenchmarkResponsesCrossValidationMemory(b *testing.B) {
 	// Create large batch response
 	batchResponse := createLargeSolanaBatchResponse(100)
 	responseData, _ := json.Marshal(batchResponse)
@@ -172,7 +172,7 @@ func BenchmarkResponsesQuorumMemory(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		// Process quorum - this is where the old implementation would create many canonical strings
+		// Process cross-validation - this is where the old implementation would create many canonical strings
 		countMap := make(map[[32]byte]*struct {
 			count  int
 			result common.RelayResult

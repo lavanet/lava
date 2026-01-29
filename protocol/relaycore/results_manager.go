@@ -95,7 +95,7 @@ func (rp *ResultsManagerInst) setValidResponse(response *RelayResponse, protocol
 			utils.LogAttr("ProviderInfo", response.RelayResult.ProviderInfo),
 			utils.LogAttr("StatusCode", response.RelayResult.StatusCode),
 			utils.LogAttr("Finalized", response.RelayResult.Finalized),
-			utils.LogAttr("Quorum", response.RelayResult.Quorum),
+			utils.LogAttr("CrossValidation", response.RelayResult.CrossValidation),
 		)
 		return nil
 	}
@@ -203,7 +203,7 @@ func (rp *ResultsManagerInst) RequiredResults(requiredSuccesses int, selection S
 		utils.LavaFormatDebug("Reached RequiredResults", utils.LogAttr("resultsCount", resultsCount), utils.LogAttr("requiredSuccesses", requiredSuccesses), utils.LogAttr("GUID", rp.guid))
 		return true
 	}
-	// Only count successful results for quorum validation
+	// Only count successful results for cross-validation
 	return false
 }
 
