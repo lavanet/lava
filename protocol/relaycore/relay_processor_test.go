@@ -1499,11 +1499,11 @@ func TestNodeErrorsRecoveryMetricWithQuorum(t *testing.T) {
 		quorumParams,
 		consistency,
 		mockMetrics,
-	mockMetrics,
-	RelayRetriesManagerInstance,
-	newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
-	qos.NewQoSManager(),
-)
+		mockMetrics,
+		RelayRetriesManagerInstance,
+		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
+		qos.NewQoSManager(),
+	)
 
 	// Add providers
 	canUse := usedProviders.TryLockSelection(ctx)
@@ -1602,11 +1602,11 @@ func TestProtocolErrorsRecoveryMetricWithQuorum(t *testing.T) {
 		quorumParams,
 		consistency,
 		mockMetrics,
-	mockMetrics,
-	RelayRetriesManagerInstance,
-	newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
-	qos.NewQoSManager(),
-)
+		mockMetrics,
+		RelayRetriesManagerInstance,
+		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
+		qos.NewQoSManager(),
+	)
 
 	// Add providers
 	canUse := usedProviders.TryLockSelection(ctx)
@@ -1691,11 +1691,11 @@ func TestBothErrorTypesRecoveryMetricsWithQuorum(t *testing.T) {
 		quorumParams,
 		consistency,
 		mockMetrics,
-	mockMetrics,
-	RelayRetriesManagerInstance,
-	newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
-	qos.NewQoSManager(),
-)
+		mockMetrics,
+		RelayRetriesManagerInstance,
+		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
+		qos.NewQoSManager(),
+	)
 
 	// Add providers
 	canUse := usedProviders.TryLockSelection(ctx)
@@ -1791,11 +1791,11 @@ func TestNoRecoveryMetricsWhenQuorumNotMet(t *testing.T) {
 		quorumParams,
 		consistency,
 		mockMetrics,
-	mockMetrics,
-	RelayRetriesManagerInstance,
-	newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
-	qos.NewQoSManager(),
-)
+		mockMetrics,
+		RelayRetriesManagerInstance,
+		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
+		qos.NewQoSManager(),
+	)
 
 	// Add providers
 	canUse := usedProviders.TryLockSelection(ctx)

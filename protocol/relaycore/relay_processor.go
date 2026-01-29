@@ -266,10 +266,10 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 		if hashErr == nil { // Incase we had a successful relay we can remove the hash from our relay retries map
 			// Use a routine to run it in parallel
 			go rp.relayRetriesManager.RemoveHashFromCache(hash)
-	}
-	// Check if we need to add node errors retry metrics
-	if rp.selection == Stateless {
-		// If nodeErrors length is larger than 0, our retry mechanism was activated. we add our metrics now.
+		}
+		// Check if we need to add node errors retry metrics
+		if rp.selection == Stateless {
+			// If nodeErrors length is larger than 0, our retry mechanism was activated. we add our metrics now.
 			if nodeErrors > 0 {
 				chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
 				go rp.metricsInf.SetNodeErrorRecoveredSuccessfullyMetric(chainId, apiInterface, strconv.Itoa(nodeErrors))
