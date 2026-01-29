@@ -14,7 +14,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
-	"github.com/lavanet/lava/v5/protocol/qos"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -95,7 +94,7 @@ func TestRelayProcessorHappyFlow(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
 		consistency := NewConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultCrossValidationParams, consistency, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultCrossValidationParams, consistency, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -151,7 +150,7 @@ func TestRelayProcessorTimeout(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultCrossValidationParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultCrossValidationParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -204,7 +203,7 @@ func TestRelayProcessorRetry(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultCrossValidationParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultCrossValidationParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -249,7 +248,7 @@ func TestRelayProcessorRetryNodeError(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultCrossValidationParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultCrossValidationParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -297,7 +296,7 @@ func TestRelayProcessorStatefulApi(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultCrossValidationParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultCrossValidationParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -352,7 +351,7 @@ func TestRelayProcessorStatefulApiErr(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultCrossValidationParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultCrossValidationParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -400,7 +399,7 @@ func TestRelayProcessorLatest(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultCrossValidationParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, common.DefaultCrossValidationParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -551,7 +550,6 @@ func TestHasRequiredNodeResultsCrossValidationScenarios(t *testing.T) {
 				RelayProcessorMetrics,
 				RelayRetriesManagerInstance,
 				newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
-				qos.NewQoSManager(),
 			)
 
 			// Set the batch size so WaitForResults knows how many responses to expect
@@ -637,7 +635,6 @@ func TestNodeErrorCrossValidationMet(t *testing.T) {
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
 			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
-			qos.NewQoSManager(),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -700,7 +697,6 @@ func TestNodeErrorCrossValidationNotMet(t *testing.T) {
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
 			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
-			qos.NewQoSManager(),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -763,7 +759,6 @@ func TestNodeErrorCrossValidationWithProtocolErrors(t *testing.T) {
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
 			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
-			qos.NewQoSManager(),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -829,7 +824,6 @@ func TestNodeErrorPrioritizedOverProtocolErrors(t *testing.T) {
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
 			newMockRelayStateMachine(protocolMessage, usedProviders),
-			qos.NewQoSManager(),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -897,7 +891,6 @@ func TestNodeErrorPrioritizedOverProtocolErrors(t *testing.T) {
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
 			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
-			qos.NewQoSManager(),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -973,7 +966,6 @@ func TestSuccessCrossValidationTakesPriorityOverNodeError(t *testing.T) {
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
 			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
-			qos.NewQoSManager(),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -1045,7 +1037,6 @@ func TestNodeErrorCrossValidationWhenSuccessInsufficient(t *testing.T) {
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
 			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
-			qos.NewQoSManager(),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -1123,7 +1114,6 @@ func TestSuccessCrossValidationIgnoresNodeErrors(t *testing.T) {
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
 			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
-			qos.NewQoSManager(),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -1202,7 +1192,6 @@ func TestSuccessCrossValidationFailsWhenCrossValidationDisabled(t *testing.T) {
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
 			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateful), // Stateful = cross-validation disabled
-			qos.NewQoSManager(),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -1502,7 +1491,6 @@ func TestNodeErrorsRecoveryMetricWithCrossValidation(t *testing.T) {
 		mockMetrics,
 		RelayRetriesManagerInstance,
 		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
-		qos.NewQoSManager(),
 	)
 
 	// Add providers
@@ -1605,7 +1593,6 @@ func TestProtocolErrorsRecoveryMetricWithCrossValidation(t *testing.T) {
 		mockMetrics,
 		RelayRetriesManagerInstance,
 		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
-		qos.NewQoSManager(),
 	)
 
 	// Add providers
@@ -1694,7 +1681,6 @@ func TestBothErrorTypesRecoveryMetricsWithCrossValidation(t *testing.T) {
 		mockMetrics,
 		RelayRetriesManagerInstance,
 		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
-		qos.NewQoSManager(),
 	)
 
 	// Add providers
@@ -1794,7 +1780,6 @@ func TestNoRecoveryMetricsWhenCrossValidationNotMet(t *testing.T) {
 		mockMetrics,
 		RelayRetriesManagerInstance,
 		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
-		qos.NewQoSManager(),
 	)
 
 	// Add providers

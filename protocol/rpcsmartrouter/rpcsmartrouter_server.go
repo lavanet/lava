@@ -274,7 +274,6 @@ func (rpcss *RPCSmartRouterServer) sendRelayWithRetries(ctx context.Context, ret
 		rpcss,
 		rpcss.relayRetriesManager,
 		NewSmartRouterRelayStateMachine(ctx, usedProviders, rpcss, protocolMessage, nil, rpcss.debugRelays, rpcss.rpcSmartRouterLogs),
-		rpcss.sessionManager.GetQoSManager(),
 	)
 	usedProvidersResets := 1
 	for i := 0; i < retries; i++ {
@@ -504,7 +503,6 @@ func (rpcss *RPCSmartRouterServer) ProcessRelaySend(ctx context.Context, protoco
 		rpcss,
 		rpcss.relayRetriesManager,
 		NewSmartRouterRelayStateMachine(ctx, usedProviders, rpcss, protocolMessage, analytics, rpcss.debugRelays, rpcss.rpcSmartRouterLogs),
-		rpcss.sessionManager.GetQoSManager(),
 	)
 
 	relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()

@@ -36,11 +36,6 @@ type MetricsInterface interface {
 	SetProtocolErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string)
 }
 
-// QoSAvailabilityDegrader interface for QoS management
-type QoSAvailabilityDegrader interface {
-	DegradeAvailability(epoch uint64, sessionId int64)
-}
-
 // ChainIdAndApiInterfaceGetter interface
 type ChainIdAndApiInterfaceGetter interface {
 	GetChainIdAndApiInterface() (string, string)

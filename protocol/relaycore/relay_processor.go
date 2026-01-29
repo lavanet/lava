@@ -36,7 +36,6 @@ type RelayProcessor struct {
 	relayRetriesManager          *lavaprotocol.RelayRetriesManager
 	ResultsManager
 	RelayStateMachine
-	availabilityDegrader               QoSAvailabilityDegrader
 	crossValidationMap                 map[[32]byte]int
 	currentCrossValidationEqualResults int
 	statefulRelayTargets               []string // stores all providers that received a stateful relay
@@ -50,7 +49,6 @@ func NewRelayProcessor(
 	chainIdAndApiInterfaceGetter ChainIdAndApiInterfaceGetter,
 	relayRetriesManager *lavaprotocol.RelayRetriesManager,
 	relayStateMachine RelayStateMachine,
-	availabilityDegrader QoSAvailabilityDegrader,
 ) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
 	if crossValidationParams.Min <= 0 {
@@ -69,7 +67,6 @@ func NewRelayProcessor(
 		RelayStateMachine:                  relayStateMachine,
 		selection:                          relayStateMachine.GetSelection(),
 		usedProviders:                      relayStateMachine.GetUsedProviders(),
-		availabilityDegrader:               availabilityDegrader,
 		crossValidationMap:                 make(map[[32]byte]int),
 		currentCrossValidationEqualResults: 0,
 	}
@@ -550,32 +547,12 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 
 	// this must be here before the lock because this function locks
 	allProvidersAddresses := rp.GetUsedProviders().AllUnwantedAddresses()
-	shouldDegradeAvailability := false
 
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
 
-	isSpecialApi := rp.GetProtocolMessage().IsDefaultApi() || rp.GetProtocolMessage().GetApi().Category.Stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS
 	successResults, nodeErrors, protocolErrors := rp.GetResultsData()
 	successResultsCount, nodeErrorCount, protocolErrorCount := len(successResults), len(nodeErrors), len(protocolErrors)
-
-	defer func() {
-		if shouldDegradeAvailability {
-			if rp.availabilityDegrader == nil {
-				utils.LavaFormatWarning("Availability degrader is nil, skipping availability degradation", nil)
-				return
-			}
-			for _, result := range nodeErrors {
-				session := result.Request.RelaySession
-				utils.LavaFormatDebug("Degrading availability for provider",
-					utils.LogAttr("provider", result.ProviderInfo.ProviderAddress),
-					utils.LogAttr("epoch", session.Epoch),
-					utils.LogAttr("sessionId", session.SessionId),
-				)
-				rp.availabilityDegrader.DegradeAvailability(uint64(session.Epoch), int64(session.SessionId))
-			}
-		}
-	}()
 
 	// Calculate the required cross-validation size using the unified function
 	requiredCrossValidationSize := rp.getRequiredCrossValidationSize(successResultsCount)
@@ -602,9 +579,6 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 		result, err := rp.responsesCrossValidation(successResults, requiredCrossValidationSize)
 		if err == nil {
 			// Successes formed cross-validation
-			if len(nodeErrors) > 0 && !isSpecialApi { // if we have node errors and it's not a default api, we should degrade availability
-				shouldDegradeAvailability = true
-			}
 			return result, nil
 		}
 
