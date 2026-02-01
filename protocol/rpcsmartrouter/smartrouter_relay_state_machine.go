@@ -241,7 +241,10 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 	if !srsm.Initialized() {
 		return nil, utils.LavaFormatError("SmartRouterRelayStateMachine was not initialized properly", nil)
 	}
-	relayTaskChannel := make(chan RelayStateSendInstructions)
+	// Use a buffered channel with capacity 1 to prevent deadlock when the receiver
+	// exits prematurely (e.g., due to context cancellation or errors). Without buffering,
+	// sends to this channel would block indefinitely if the receiver is no longer consuming.
+	relayTaskChannel := make(chan RelayStateSendInstructions, 1)
 	go func() {
 		// A channel to be notified processing was done, true means we have results and can return
 		gotResults := make(chan bool, 1)
