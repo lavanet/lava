@@ -489,7 +489,7 @@ func (rpcps *RPCProviderServer) finalizeSession(isRelayError bool, ctx context.C
 	// For successful relays, call OnSessionDone to update session state
 	relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, request.RelaySession.RelayNum)
 	if relayError != nil {
-		utils.LavaFormatError("OnSession Done failure: ", relayError)
+		utils.LavaFormatError("OnSession Done failure", relayError, utils.LogAttr("GUID", ctx))
 	} else if sendRewards {
 		// SendProof gets the request copy, as in the case of data reliability enabled the request.blockNumber is changed.
 		// Therefore the signature changes, so we need the original copy to extract the address from it.
