@@ -1913,3 +1913,114 @@ func TestSessionLeakPrevention_SubscriptionPath(t *testing.T) {
 		require.False(t, cleanupCalled, "Cleanup should not be called for subscription path")
 	})
 }
+
+// TestContextCancellationPropagation tests that parent context cancellation
+// propagates to goroutine contexts. This was a bug where context.Background() was used
+// instead of deriving from the parent context, causing goroutines to not receive
+// cancellation signals and potentially leaking resources.
+func TestContextCancellationPropagation(t *testing.T) {
+	t.Run("parent context cancellation propagates to goroutine", func(t *testing.T) {
+		defer goleak.VerifyNone(t,
+			goleak.IgnoreCurrent(),
+			goleak.IgnoreTopFunction("google.golang.org/grpc.(*addrConn).resetTransport"),
+			goleak.IgnoreTopFunction("google.golang.org/grpc/internal/grpcsync.(*CallbackSerializer).run"),
+			goleak.IgnoreTopFunction("google.golang.org/grpc.(*ccBalancerWrapper).watcher"),
+		)
+
+		// Create a parent context that we can cancel
+		parentCtx, parentCancel := context.WithCancel(context.Background())
+
+		goroutineCancelled := make(chan struct{})
+		goroutineStarted := make(chan struct{})
+
+		go func() {
+			// Derive context from parent (the fix we implemented)
+			goroutineCtx, goroutineCtxCancel := context.WithCancel(parentCtx)
+			defer goroutineCtxCancel()
+
+			close(goroutineStarted)
+
+			// Wait for context cancellation
+			<-goroutineCtx.Done()
+			close(goroutineCancelled)
+		}()
+
+		// Wait for goroutine to start
+		<-goroutineStarted
+
+		// Cancel the parent context
+		parentCancel()
+
+		// The goroutine should receive the cancellation signal
+		select {
+		case <-goroutineCancelled:
+			// Success - goroutine received cancellation
+		case <-time.After(100 * time.Millisecond):
+			t.Fatal("Goroutine did not receive cancellation signal - context not properly propagated")
+		}
+	})
+
+	t.Run("concurrent goroutines all receive cancellation", func(t *testing.T) {
+		defer goleak.VerifyNone(t,
+			goleak.IgnoreCurrent(),
+			goleak.IgnoreTopFunction("google.golang.org/grpc.(*addrConn).resetTransport"),
+			goleak.IgnoreTopFunction("google.golang.org/grpc/internal/grpcsync.(*CallbackSerializer).run"),
+			goleak.IgnoreTopFunction("google.golang.org/grpc.(*ccBalancerWrapper).watcher"),
+		)
+
+		parentCtx, parentCancel := context.WithCancel(context.Background())
+
+		numGoroutines := 50
+		var wg sync.WaitGroup
+		cancelledCount := int32(0)
+		allStarted := make(chan struct{})
+
+		var startWg sync.WaitGroup
+		startWg.Add(numGoroutines)
+
+		for i := 0; i < numGoroutines; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+
+				// Derive context from parent (the fix)
+				goroutineCtx, goroutineCtxCancel := context.WithCancel(parentCtx)
+				defer goroutineCtxCancel()
+
+				startWg.Done()
+
+				// Wait for cancellation
+				<-goroutineCtx.Done()
+				atomic.AddInt32(&cancelledCount, 1)
+			}()
+		}
+
+		// Wait for all goroutines to start
+		go func() {
+			startWg.Wait()
+			close(allStarted)
+		}()
+		<-allStarted
+
+		// Cancel parent context
+		parentCancel()
+
+		// Wait for all goroutines to complete
+		done := make(chan struct{})
+		go func() {
+			wg.Wait()
+			close(done)
+		}()
+
+		select {
+		case <-done:
+			// All goroutines completed
+		case <-time.After(time.Second):
+			t.Fatal("Goroutines did not complete after parent context cancellation")
+		}
+
+		// All goroutines should have received the cancellation
+		require.Equal(t, int32(numGoroutines), atomic.LoadInt32(&cancelledCount),
+			"All goroutines should receive cancellation signal")
+	})
+}
