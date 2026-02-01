@@ -346,45 +346,51 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 
 	var logEvent *zerolog.Event
 	var rollingLoggerEvent *zerolog.Event
+	rollingLogEnabled := rollingLogLogger.GetLevel() != zerolog.Disabled
 	switch severity {
 	case LAVA_LOG_PANIC:
-		// prefix = "Panic:"
 		logEvent = zerologlog.Panic()
-		if rollingLogLogger.GetLevel() != zerolog.Disabled {
+		if rollingLogEnabled {
 			rollingLoggerEvent = rollingLogLogger.Panic()
 		}
 	case LAVA_LOG_FATAL:
-		// prefix = "Fatal:"
 		logEvent = zerologlog.Fatal()
-		if rollingLogLogger.GetLevel() != zerolog.Disabled {
+		if rollingLogEnabled {
 			rollingLoggerEvent = rollingLogLogger.Fatal()
 		}
 	case LAVA_LOG_ERROR:
-		// prefix = "Error:"
 		logEvent = zerologlog.Error()
-		rollingLoggerEvent = rollingLogLogger.Error()
+		if rollingLogEnabled {
+			rollingLoggerEvent = rollingLogLogger.Error()
+		}
 	case LAVA_LOG_WARN:
-		// prefix = "Warning:"
 		logEvent = zerologlog.Warn()
-		rollingLoggerEvent = rollingLogLogger.Warn()
+		if rollingLogEnabled {
+			rollingLoggerEvent = rollingLogLogger.Warn()
+		}
 	case LAVA_LOG_INFO:
 		logEvent = zerologlog.Info()
-		rollingLoggerEvent = rollingLogLogger.Info()
-		// prefix = "Info:"
+		if rollingLogEnabled {
+			rollingLoggerEvent = rollingLogLogger.Info()
+		}
 	case LAVA_LOG_DEBUG:
 		logEvent = zerologlog.Debug()
-		rollingLoggerEvent = rollingLogLogger.Debug()
-		// prefix = "Debug:"
+		if rollingLogEnabled {
+			rollingLoggerEvent = rollingLogLogger.Debug()
+		}
 	case LAVA_LOG_TRACE:
 		logEvent = zerologlog.Trace()
-		rollingLoggerEvent = rollingLogLogger.Trace()
-		// prefix = "Trace:"
+		if rollingLogEnabled {
+			rollingLoggerEvent = rollingLogLogger.Trace()
+		}
 	}
 	output := description
 	attrStrings := []string{}
 	if err != nil {
 		logEvent = logEvent.Err(err)
-		rollingLoggerEvent = rollingLoggerEvent.Err(err)
+		if rollingLoggerEvent != nil {
+			rollingLoggerEvent = rollingLoggerEvent.Err(err)
+		}
 		output = fmt.Sprintf("%s ErrMsg: %s", output, err.Error())
 	}
 	if len(attributes) > 0 {
@@ -393,14 +399,18 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 			val := attr.Value
 			st_val := StrValueForLog(val, key, idx, attributes)
 			logEvent = logEvent.Str(key, st_val)
-			rollingLoggerEvent = rollingLoggerEvent.Str(key, st_val)
+			if rollingLoggerEvent != nil {
+				rollingLoggerEvent = rollingLoggerEvent.Str(key, st_val)
+			}
 			attrStrings = append(attrStrings, fmt.Sprintf("%s:%s", attr.Key, st_val))
 		}
 		attributesStr := "{" + strings.Join(attrStrings, ",") + "}"
 		output = fmt.Sprintf("%s %+v", output, attributesStr)
 	}
 	logEvent.Msg(description)
-	rollingLoggerEvent.Msg(description)
+	if rollingLoggerEvent != nil {
+		rollingLoggerEvent.Msg(description)
+	}
 	// here we return the same type of the original error message, this handles nil case as well
 	errRet := sdkerrors.Wrap(err, output)
 	if errRet == nil { // we always want to return an error if lavaFormatError was called
