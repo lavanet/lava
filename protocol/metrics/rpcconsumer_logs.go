@@ -176,7 +176,7 @@ func (rpccl *RPCConsumerLogs) AnalyzeWebSocketErrorAndGetFormattedMessage(webSoc
 	if err != nil {
 		errMessage := err.Error()
 		if strings.Contains(errMessage, webSocketCloseMessage) {
-			utils.LavaFormatDebug("Websocket connection closed by the user, " + errMessage)
+			utils.LavaFormatDebug("Websocket connection closed by the user", utils.LogAttr("error", errMessage))
 			return nil
 		}
 		rpccl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", webSocketAddr, string(msg), "", msgSeed, timeTaken, err)

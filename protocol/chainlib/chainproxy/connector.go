@@ -14,7 +14,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -355,8 +354,7 @@ func addClientsAsynchronouslyGrpc(ctx context.Context, connector *GRPCConnector,
 	if (connector.numberOfFreeClients() + connector.numberOfUsedClients()) == 0 {
 		utils.LavaFormatFatal("Could not create any connections to the node check address", nil, utils.Attribute{Key: "address", Value: nodeUrl.UrlStr()})
 	}
-	utils.LavaFormatInfo("Finished adding Clients Asynchronously" + strconv.Itoa(len(connector.freeClients)))
-	utils.LavaFormatInfo("Number of parallel connections created: " + strconv.Itoa(len(connector.freeClients)))
+	utils.LavaFormatInfo("Finished adding clients asynchronously", utils.LogAttr("count", len(connector.freeClients)))
 	go connector.connectorLoop(ctx)
 }
 

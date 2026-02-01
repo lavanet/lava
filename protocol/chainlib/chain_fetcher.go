@@ -96,14 +96,14 @@ func (cf *ChainFetcher) getVerificationsKey(verification VerificationContainer, 
 
 func (cf *ChainFetcher) Validate(ctx context.Context) error {
 	for _, url := range cf.endpoint.NodeUrls {
-		utils.LavaFormatInfo(fmt.Sprintf("starting validation for url %s", url.String()))
+		utils.LavaFormatInfo("starting validation for url", utils.LogAttr("url", url.String()))
 		addons := url.Addons
 		verifications, err := cf.chainParser.GetVerifications(addons, url.InternalPath, cf.endpoint.ApiInterface)
 		if err != nil {
 			return err
 		}
 		if len(verifications) == 0 {
-			utils.LavaFormatWarning(fmt.Sprintf("no verifications for url %s", url.String()), nil)
+			utils.LavaFormatWarning("no verifications for url", nil, utils.LogAttr("url", url.String()))
 		}
 
 		var latestBlock int64
@@ -142,7 +142,7 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 			}
 			if err != nil {
 				cf.verificationsStatus.Store(cf.getVerificationsKey(verification, cf.endpoint.ApiInterface, cf.endpoint.ChainID), false)
-				utils.LavaFormatWarning(fmt.Sprintf("failed verification %s on provider startup", verification.Name), err)
+				utils.LavaFormatWarning("failed verification on provider startup", err, utils.LogAttr("verification", verification.Name))
 				if verification.Severity == spectypes.ParseValue_Fail {
 					return utils.LavaFormatError("invalid Verification on provider startup", err, utils.Attribute{Key: "Addons", Value: addons}, utils.Attribute{Key: "verification", Value: verification.Name})
 				}
