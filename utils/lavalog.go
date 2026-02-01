@@ -83,25 +83,29 @@ func LogLavaEventDebug(ctx sdk.Context, logger log.Logger, name string, attribut
 }
 
 func LogLavaEventWithLevel(ctx sdk.Context, logger log.Logger, name string, attributes map[string]string, description string, level uint) {
-	attributes_str := ""
-	eventAttrs := []sdk.Attribute{}
+	var sb strings.Builder
+	eventAttrs := make([]sdk.Attribute, 0, len(attributes))
 	for key, val := range attributes {
-		attributes_str += fmt.Sprintf("%s: %s,", key, val)
+		sb.WriteString(key)
+		sb.WriteString(": ")
+		sb.WriteString(val)
+		sb.WriteByte(',')
 		eventAttrs = append(eventAttrs, sdk.NewAttribute(key, val))
 	}
 	sort.Slice(eventAttrs, func(i, j int) bool {
 		return eventAttrs[i].Key < eventAttrs[j].Key
 	})
 
+	logMsg := EventPrefix + name + ":" + description + " " + sb.String()
 	switch level {
 	case LAVA_LOG_DEBUG:
-		logger.Debug(fmt.Sprintf("%s%s:%s %s", EventPrefix, name, description, attributes_str))
+		logger.Debug(logMsg)
 	case LAVA_LOG_INFO:
-		logger.Info(fmt.Sprintf("%s%s:%s %s", EventPrefix, name, description, attributes_str))
+		logger.Info(logMsg)
 	case LAVA_LOG_ERROR:
-		logger.Error(fmt.Sprintf("%s%s:%s %s", EventPrefix, name, description, attributes_str))
+		logger.Error(logMsg)
 	default:
-		logger.Info(fmt.Sprintf("%s%s:%s %s", EventPrefix, name, description, attributes_str))
+		logger.Info(logMsg)
 	}
 	ctx.EventManager().EmitEvent(sdk.NewEvent(EventPrefix+name, eventAttrs...))
 }
