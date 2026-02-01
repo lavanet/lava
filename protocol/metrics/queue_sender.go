@@ -50,7 +50,7 @@ func (cuc *QueueSender) sendQueueStart() {
 	if cuc == nil {
 		return
 	}
-	utils.LavaFormatDebug(fmt.Sprintf("[QueueSender:%s] Starting sendQueueStart loop", cuc.name))
+	utils.LavaFormatDebug("[QueueSender] Starting sendQueueStart loop", utils.LogAttr("name", cuc.name))
 	for range cuc.ticker.C {
 		cuc.sendQueueTick()
 	}
@@ -65,7 +65,7 @@ func (crc *QueueSender) sendQueueTick() {
 	defer crc.lock.Unlock()
 
 	if len(crc.addQueue) == 0 {
-		utils.LavaFormatDebug(fmt.Sprintf("[QueueSender:%s] sendQueueTick: addQueue is empty", crc.name))
+		utils.LavaFormatDebug("[QueueSender] sendQueueTick: addQueue is empty", utils.LogAttr("name", crc.name))
 		return
 	}
 
@@ -74,7 +74,7 @@ func (crc *QueueSender) sendQueueTick() {
 		crc.addQueue = make([]fmt.Stringer, 0)
 		crc.isSendQueueRunning = true
 		crc.sendID++
-		utils.LavaFormatDebug(fmt.Sprintf("[QueueSender:%s] Swapped queues", crc.name), utils.LogAttr("sendQueue_length", len((sendQueue))), utils.LogAttr("send_id", crc.sendID))
+		utils.LavaFormatDebug("[QueueSender] Swapped queues", utils.LogAttr("name", crc.name), utils.LogAttr("sendQueue_length", len(sendQueue)), utils.LogAttr("send_id", crc.sendID))
 
 		sendID := crc.sendID
 		cucEndpointAddress := crc.endpointAddress
@@ -87,7 +87,7 @@ func (crc *QueueSender) sendQueueTick() {
 			crc.lock.Unlock()
 		}()
 	} else {
-		utils.LavaFormatDebug(fmt.Sprintf("[QueueSender:%s] server is busy skipping send", crc.name), utils.LogAttr("id", crc.sendID))
+		utils.LavaFormatDebug("[QueueSender] server is busy skipping send", utils.LogAttr("name", crc.name), utils.LogAttr("id", crc.sendID))
 	}
 }
 
@@ -121,14 +121,14 @@ func (crc *QueueSender) send(sendQueue []fmt.Stringer, sendID int, endpointAddre
 	for i := 0; i < 3; i++ {
 		resp, err = client.Post(endpointAddress, "application/json", bytes.NewBuffer(jsonData))
 		if err != nil {
-			utils.LavaFormatDebug(fmt.Sprintf("[QueueSender:%s] Failed to post request", crc.name), utils.LogAttr("Attempt", i+1), utils.LogAttr("err", err))
+			utils.LavaFormatDebug("[QueueSender] Failed to post request", utils.LogAttr("name", crc.name), utils.LogAttr("Attempt", i+1), utils.LogAttr("err", err))
 			time.Sleep(2 * time.Second)
 		} else {
 			return resp, nil
 		}
 	}
 
-	return nil, utils.LavaFormatWarning(fmt.Sprintf("[QueueSender:%s] Failed to send requests after 3 attempts", crc.name), err)
+	return nil, utils.LavaFormatWarning("[QueueSender] Failed to send requests after 3 attempts", err, utils.LogAttr("name", crc.name))
 }
 
 func (crc *QueueSender) handleSendResponse(resp *http.Response, sendID int) {
@@ -139,9 +139,9 @@ func (crc *QueueSender) handleSendResponse(resp *http.Response, sendID int) {
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
-			utils.LavaFormatWarning(fmt.Sprintf("[QueueSender:%s] failed reading response body", crc.name), err)
+			utils.LavaFormatWarning("[QueueSender] failed reading response body", err, utils.LogAttr("name", crc.name))
 		} else {
-			utils.LavaFormatWarning(fmt.Sprintf("[QueueSender:%s] Received non-200 status code", crc.name), nil, utils.LogAttr("status_code", resp.StatusCode), utils.LogAttr("body", string(bodyBytes)))
+			utils.LavaFormatWarning("[QueueSender] Received non-200 status code", nil, utils.LogAttr("name", crc.name), utils.LogAttr("status_code", resp.StatusCode), utils.LogAttr("body", string(bodyBytes)))
 		}
 	}
 }

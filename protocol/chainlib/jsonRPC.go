@@ -437,8 +437,8 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		}
 
 		path := "/" + fiberCtx.Params("*")
-		utils.LavaFormatInfo(fmt.Sprintf("Consumer received a new JSON-RPC with GUID: %d", guid),
-			utils.LogAttr("GUID", ctx),
+		utils.LavaFormatInfo("Consumer received a new JSON-RPC request",
+			utils.LogAttr("GUID", guid),
 			utils.LogAttr(utils.KEY_REQUEST_ID, ctx),
 			utils.LogAttr(utils.KEY_TASK_ID, ctx),
 			utils.LogAttr(utils.KEY_TRANSACTION_ID, ctx),
