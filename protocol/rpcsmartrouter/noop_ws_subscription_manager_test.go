@@ -54,7 +54,7 @@ func TestNoOpWSSubscriptionManager_Unsubscribe(t *testing.T) {
 
 	ctx := context.Background()
 
-	err := manager.Unsubscribe(
+	_, err := manager.Unsubscribe(
 		ctx,
 		nil,       // protocolMessage
 		"dapp-2",  // dappID

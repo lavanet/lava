@@ -174,7 +174,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptionsOnSameDappIdIp(t *tes
 			// now we have numberOfParallelSubscriptions subscriptions currently running
 			require.Len(t, manager.connectedDapps, numberOfParallelSubscriptions)
 			// remove one
-			err = manager.Unsubscribe(ts.Ctx, protocolMessage1, dapp, ip, uniqueIdentifiers[0], metricsData)
+			_, err = manager.Unsubscribe(ts.Ctx, protocolMessage1, dapp, ip, uniqueIdentifiers[0], metricsData)
 			require.NoError(t, err)
 			// now we have numberOfParallelSubscriptions - 1
 			require.Len(t, manager.connectedDapps, numberOfParallelSubscriptions-1)
@@ -681,7 +681,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 			unsubProtocolMessage := NewProtocolMessage(unsubscribeChainMessage1, nil, relayResult1.Request.RelayData, dapp2, ts.Consumer.Addr.String())
-			err = manager.Unsubscribe(ctx, unsubProtocolMessage, dapp2, ts.Consumer.Addr.String(), uniqueId, metricsData)
+			_, err = manager.Unsubscribe(ctx, unsubProtocolMessage, dapp2, ts.Consumer.Addr.String(), uniqueId, metricsData)
 			require.NoError(t, err)
 
 			listenForExpectedMessages(ctx, repliesChan1, string(play.subscriptionFirstReply1))

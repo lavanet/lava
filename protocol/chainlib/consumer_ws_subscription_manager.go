@@ -652,7 +652,7 @@ func (cwsm *ConsumerWSSubscriptionManager) getHashedParams(chainMessage ChainMes
 	return hashedParams, params, nil
 }
 
-func (cwsm *ConsumerWSSubscriptionManager) Unsubscribe(webSocketCtx context.Context, protocolMessage ProtocolMessage, dappID, consumerIp string, webSocketConnectionUniqueId string, metricsData *metrics.RelayMetrics) error {
+func (cwsm *ConsumerWSSubscriptionManager) Unsubscribe(webSocketCtx context.Context, protocolMessage ProtocolMessage, dappID, consumerIp string, webSocketConnectionUniqueId string, metricsData *metrics.RelayMetrics) ([]byte, error) {
 	utils.LavaFormatTrace("want to unsubscribe",
 		utils.LogAttr("GUID", webSocketCtx),
 		utils.LogAttr("dappID", dappID),
@@ -666,11 +666,12 @@ func (cwsm *ConsumerWSSubscriptionManager) Unsubscribe(webSocketCtx context.Cont
 	defer cwsm.lock.Unlock()
 	hashedParams, err := cwsm.findActiveSubscriptionHashedParamsFromChainMessage(protocolMessage)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return cwsm.verifyAndDisconnectDappFromSubscription(webSocketCtx, dappKey, hashedParams, func() (*unsubscribeRelayData, error) {
+	err = cwsm.verifyAndDisconnectDappFromSubscription(webSocketCtx, dappKey, hashedParams, func() (*unsubscribeRelayData, error) {
 		return &unsubscribeRelayData{protocolMessage}, nil
 	})
+	return nil, err
 }
 
 func (cwsm *ConsumerWSSubscriptionManager) craftUnsubscribeMessage(hashedParams, dappID, consumerIp string, metricsData *metrics.RelayMetrics) (ProtocolMessage, error) {

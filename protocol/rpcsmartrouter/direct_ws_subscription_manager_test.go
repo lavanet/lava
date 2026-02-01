@@ -385,7 +385,7 @@ func TestDirectWSSubscriptionManager_Unsubscribe_NoSubscriptions(t *testing.T) {
 		params: []interface{}{"0x123"},
 	}
 
-	err := manager.Unsubscribe(ctx, protocolMessage, "dapp1", "192.168.1.1", "ws-uid-123", nil)
+	_, err := manager.Unsubscribe(ctx, protocolMessage, "dapp1", "192.168.1.1", "ws-uid-123", nil)
 
 	// Should return subscription not found error
 	assert.Error(t, err)
@@ -621,7 +621,7 @@ func TestUnsubscribeRateLimiting(t *testing.T) {
 			params: []interface{}{fmt.Sprintf("0x%d", i)},
 		}
 
-		err := manager.Unsubscribe(ctx, protocolMessage, "dapp1", "192.168.1.1", "ws-uid-123", nil)
+		_, err := manager.Unsubscribe(ctx, protocolMessage, "dapp1", "192.168.1.1", "ws-uid-123", nil)
 		// These will return "subscription not found" but shouldn't be rate limited
 		assert.Equal(t, common.SubscriptionNotFoundError, err,
 			"Unsubscribe %d should return subscription not found (not rate limited)", i+1)
@@ -633,7 +633,7 @@ func TestUnsubscribeRateLimiting(t *testing.T) {
 		params: []interface{}{"0x999"},
 	}
 
-	err := manager.Unsubscribe(ctx, protocolMessage, "dapp1", "192.168.1.1", "ws-uid-123", nil)
+	_, err := manager.Unsubscribe(ctx, protocolMessage, "dapp1", "192.168.1.1", "ws-uid-123", nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unsubscribe rate limit exceeded",
 		"Third unsubscribe should be rate limited")
@@ -879,7 +879,7 @@ func TestMultiClientIndependentUnsubscribe(t *testing.T) {
 		method: "eth_unsubscribe",
 		params: []interface{}{client2RouterID},
 	}
-	err := manager.Unsubscribe(ctx, protocolMessage, "dapp2", "10.0.0.2", "ws-2", nil)
+	_, err := manager.Unsubscribe(ctx, protocolMessage, "dapp2", "10.0.0.2", "ws-2", nil)
 	assert.NoError(t, err, "Client 2 unsubscribe should succeed")
 
 	// Verify client 2 was removed but clients 1 and 3 remain
@@ -915,7 +915,7 @@ func TestMultiClientIndependentUnsubscribe(t *testing.T) {
 		method: "eth_unsubscribe",
 		params: []interface{}{client3RouterID},
 	}
-	err = manager.Unsubscribe(ctx, protocolMessage3, "dapp3", "10.0.0.3", "ws-3", nil)
+	_, err = manager.Unsubscribe(ctx, protocolMessage3, "dapp3", "10.0.0.3", "ws-3", nil)
 	assert.NoError(t, err, "Client 3 unsubscribe should succeed")
 
 	// Verify only client 1 remains
@@ -1210,7 +1210,7 @@ func TestUnsubscribeRouterIDOwnershipValidation(t *testing.T) {
 	}
 
 	// Client 2 attempts to unsubscribe client 1's subscription (should be rejected)
-	err := manager.Unsubscribe(ctx, protocolMessage1, "dapp2", "192.168.1.2", "ws-2", nil)
+	_, err := manager.Unsubscribe(ctx, protocolMessage1, "dapp2", "192.168.1.2", "ws-2", nil)
 	assert.Equal(t, common.SubscriptionNotFoundError, err,
 		"Client 2 should NOT be able to unsubscribe using Client 1's router ID")
 
@@ -1233,7 +1233,7 @@ func TestUnsubscribeRouterIDOwnershipValidation(t *testing.T) {
 		params: []interface{}{client1RouterID},
 	}
 
-	err = manager.Unsubscribe(ctx, protocolMessage2, "dapp1", "192.168.1.1", "ws-1", nil)
+	_, err = manager.Unsubscribe(ctx, protocolMessage2, "dapp1", "192.168.1.1", "ws-1", nil)
 	assert.NoError(t, err, "Client 1 should be able to unsubscribe using their own router ID")
 
 	// Verify client 1 is now disconnected
