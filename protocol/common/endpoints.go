@@ -43,6 +43,7 @@ const (
 	LAVA_LB_UNIQUE_ID_HEADER              = "lava-lb-unique-id"
 	SELECTION_STATS_HEADER_NAME           = "lava-selection-stats"
 	STICKINESS_HEADER_NAME                = "lava-stickiness"
+	SELECT_PROVIDER_HEADER_NAME           = "lava-select-provider"
 	QUORUM_HEADER_RATE                    = "lava-quorum-rate"
 	QUORUM_HEADER_MAX                     = "lava-quorum-max"
 	QUORUM_HEADER_MIN                     = "lava-quorum-min"
@@ -59,6 +60,7 @@ var SPECIAL_LAVA_DIRECTIVE_HEADERS = map[string]struct{}{
 	FORCE_CACHE_REFRESH_HEADER_NAME:       {},
 	LAVA_DEBUG_RELAY:                      {},
 	STICKINESS_HEADER_NAME:                {},
+	SELECT_PROVIDER_HEADER_NAME:           {},
 	QUORUM_HEADER_RATE:                    {},
 	QUORUM_HEADER_MAX:                     {},
 	QUORUM_HEADER_MIN:                     {},
