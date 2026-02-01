@@ -34,6 +34,8 @@ type WSSubscriptionManager interface {
 
 	// Unsubscribe handles an explicit unsubscribe request from a client.
 	// The subscription ID is extracted from the protocolMessage.
+	// Returns the node's response bytes when available (e.g. DirectWS streams actual node response);
+	// returns nil when the implementation does not provide a response (e.g. provider relay path).
 	Unsubscribe(
 		ctx context.Context,
 		protocolMessage ProtocolMessage,
@@ -41,7 +43,7 @@ type WSSubscriptionManager interface {
 		consumerIp string,
 		webSocketConnectionUniqueId string,
 		metricsData *metrics.RelayMetrics,
-	) error
+	) (response []byte, err error)
 
 	// UnsubscribeAll removes all subscriptions for a specific client connection.
 	// Called when a WebSocket connection is closed.

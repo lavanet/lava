@@ -58,12 +58,12 @@ func (n *NoOpWSSubscriptionManager) Unsubscribe(
 	consumerIp string,
 	webSocketConnectionUniqueId string,
 	metricsData *metrics.RelayMetrics,
-) error {
+) ([]byte, error) {
 	utils.LavaFormatDebug("Unsubscribe attempted but no WebSocket endpoints configured",
 		utils.LogAttr("chainID", n.chainID),
 		utils.LogAttr("apiInterface", n.apiInterface),
 	)
-	return fmt.Errorf("WebSocket subscriptions not available: no ws:// or wss:// endpoints configured for chain %s", n.chainID)
+	return nil, fmt.Errorf("WebSocket subscriptions not available: no ws:// or wss:// endpoints configured for chain %s", n.chainID)
 }
 
 // UnsubscribeAll is a no-op since no subscriptions can exist without WebSocket endpoints.

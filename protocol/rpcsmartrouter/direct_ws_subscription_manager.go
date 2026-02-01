@@ -675,6 +675,7 @@ func (dwsm *DirectWSSubscriptionManager) StartSubscription(
 
 // Unsubscribe implements chainlib.WSSubscriptionManager.
 // It handles an explicit unsubscribe request from a client.
+// Returns the node's response bytes (streamed as-is) when successful; nil when no response available.
 func (dwsm *DirectWSSubscriptionManager) Unsubscribe(
 	ctx context.Context,
 	protocolMessage chainlib.ProtocolMessage,
@@ -682,7 +683,7 @@ func (dwsm *DirectWSSubscriptionManager) Unsubscribe(
 	consumerIp string,
 	webSocketConnectionUniqueId string,
 	metricsData *metrics.RelayMetrics,
-) error {
+) ([]byte, error) {
 	clientKey := dwsm.CreateWebSocketConnectionUniqueKey(dappID, consumerIp, webSocketConnectionUniqueId)
 
 	// Check unsubscribe rate limiting
@@ -691,7 +692,7 @@ func (dwsm *DirectWSSubscriptionManager) Unsubscribe(
 			utils.LogAttr("clientKey", clientKey),
 			utils.LogAttr("limit", dwsm.config.UnsubscribesPerMinutePerClient),
 		)
-		return fmt.Errorf("unsubscribe rate limit exceeded: max %d unsubscribes per minute",
+		return nil, fmt.Errorf("unsubscribe rate limit exceeded: max %d unsubscribes per minute",
 			dwsm.config.UnsubscribesPerMinutePerClient)
 	}
 
@@ -700,18 +701,11 @@ func (dwsm *DirectWSSubscriptionManager) Unsubscribe(
 	// - Tendermint: Query string (the actual query used to subscribe)
 	subIDFromRequest, err := dwsm.extractSubscriptionIDFromUnsubscribe(protocolMessage)
 	if err != nil {
-		return fmt.Errorf("failed to extract subscription ID: %w", err)
+		return nil, fmt.Errorf("failed to extract subscription ID: %w", err)
 	}
-
-	utils.LavaFormatTrace("DirectWS: unsubscribe request",
-		utils.LogAttr("subIDFromRequest", subIDFromRequest),
-		utils.LogAttr("clientKey", clientKey),
-		utils.LogAttr("apiInterface", dwsm.apiInterface),
-	)
 
 	// SECURITY: Validate that the subscription belongs to the calling client BEFORE removing it.
 	dwsm.lock.Lock()
-	defer dwsm.lock.Unlock()
 
 	// Find the subscription this client is connected to and verify ownership
 	var activeSub *directActiveSubscription
@@ -746,23 +740,64 @@ func (dwsm *DirectWSSubscriptionManager) Unsubscribe(
 	}
 
 	if !clientOwnsSubscription {
-		// Either the subscription doesn't exist or the client is trying to unsubscribe
-		// from a subscription they don't own
+		dwsm.lock.Unlock()
 		utils.LavaFormatWarning("DirectWS: unsubscribe rejected - client does not own subscription", nil,
 			utils.LogAttr("subIDFromRequest", subIDFromRequest),
 			utils.LogAttr("clientKey", clientKey),
 		)
-		return common.SubscriptionNotFoundError
+		return nil, common.SubscriptionNotFoundError
 	}
 
-	if activeSub == nil {
-		return common.SubscriptionNotFoundError
+	// Get upstream connection and params before unlock for the CallContext
+	conn := activeSub.upstreamConnection
+	upstreamID := activeSub.upstreamID
+	subscribeMethod := activeSub.subscribeMethod
+	// Only call upstream when we're the last client (single client on this subscription)
+	lastClient := len(activeSub.connectedClients) == 1
+
+	// Derive unsubscribe method: eth_subscribe -> eth_unsubscribe, subscribe -> unsubscribe
+	unsubscribeMethod := getUnsubscribeMethod(subscribeMethod)
+	requestID := extractRequestID(protocolMessage.RelayPrivateData().Data)
+
+	var unsubscribeParams interface{}
+	if dwsm.apiInterface == "tendermintrpc" {
+		unsubscribeParams = map[string]interface{}{"query": upstreamID}
+	} else {
+		unsubscribeParams = []interface{}{upstreamID}
 	}
 
-	// Now that ownership is verified, remove the mapping
-	_, lastClient := dwsm.idMapper.RemoveMapping(routerSubID)
+	dwsm.lock.Unlock()
 
-	// Remove this client and their router ID
+	// Call upstream node to unsubscribe only when last client - stream the actual node response
+	var nodeResp []byte
+	if lastClient && conn != nil {
+		client := conn.GetClient()
+		if client != nil {
+			// Use a timeout: some gateways may not return eth_unsubscribe responses.
+			// Without timeout, CallContext blocks forever and the client gets no reply.
+			callCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+			resp, callErr := client.CallContext(callCtx, requestID, unsubscribeMethod, unsubscribeParams, true, false)
+			cancel()
+			if callErr != nil {
+				utils.LavaFormatWarning("DirectWS: upstream unsubscribe call failed", callErr,
+					utils.LogAttr("upstreamID", upstreamID),
+					utils.LogAttr("clientKey", clientKey),
+				)
+				return nil, fmt.Errorf("upstream unsubscribe failed: %w", callErr)
+			}
+			if resp != nil {
+				// Forward the node's response directly to the end user - no transformation.
+				nodeResp, _ = json.Marshal(resp)
+			}
+		}
+	}
+
+	// Now do local cleanup under lock
+	dwsm.lock.Lock()
+	defer dwsm.lock.Unlock()
+
+	_, lastClient = dwsm.idMapper.RemoveMapping(routerSubID)
+
 	if sender, ok := activeSub.connectedClients[clientKey]; ok {
 		sender.Close()
 		delete(activeSub.connectedClients, clientKey)
@@ -777,19 +812,33 @@ func (dwsm *DirectWSSubscriptionManager) Unsubscribe(
 	}
 
 	if lastClient {
-		// This was the last client, unsubscribe upstream
 		activeSub.upstreamSubscription.Unsubscribe()
 		activeSub.cancel()
 		delete(dwsm.activeSubscriptions, hashedParams)
-		dwsm.totalSubscriptions.Add(-1) // Decrement global counter
-		// Notify pool to potentially scale down
+		dwsm.totalSubscriptions.Add(-1)
 		if activeSub.upstreamConnection != nil {
 			activeSub.upstreamPool.NotifySubscriptionRemoved(activeSub.upstreamConnection)
 		}
 		go dwsm.metricsManager.SetWsSubscriptioDisconnectRequestMetric(dwsm.chainID, dwsm.apiInterface, metrics.WsDisconnectionReasonUser)
 	}
 
-	return nil
+	return nodeResp, nil
+}
+
+// getUnsubscribeMethod derives the unsubscribe method from the subscribe method.
+// eth_subscribe -> eth_unsubscribe, subscribe -> unsubscribe
+func getUnsubscribeMethod(subscribeMethod string) string {
+	if subscribeMethod == "eth_subscribe" {
+		return "eth_unsubscribe"
+	}
+	if subscribeMethod == "subscribe" {
+		return "unsubscribe"
+	}
+	// Fallback: replace _subscribe with _unsubscribe
+	if len(subscribeMethod) > 9 && subscribeMethod[len(subscribeMethod)-10:] == "_subscribe" {
+		return subscribeMethod[:len(subscribeMethod)-10] + "_unsubscribe"
+	}
+	return "unsubscribe"
 }
 
 // UnsubscribeAll implements chainlib.WSSubscriptionManager.
