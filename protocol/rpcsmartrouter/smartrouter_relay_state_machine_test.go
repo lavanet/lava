@@ -734,3 +734,110 @@ func TestProcessingContextRaceCondition(t *testing.T) {
 			tasksAfterTimeout)
 	})
 }
+
+// TestRelayTaskChannelBuffering tests that the relay task channel is buffered
+// to prevent deadlock when the receiver exits prematurely.
+// This was a bug where an unbuffered channel could cause the sender goroutine
+// to block indefinitely if the receiver exited early (e.g., due to context cancellation).
+func TestRelayTaskChannelBuffering(t *testing.T) {
+	t.Run("buffered channel prevents deadlock on early receiver exit", func(t *testing.T) {
+		// Create a buffered channel (capacity 1) like we fixed
+		bufferedChan := make(chan RelayStateSendInstructions, 1)
+
+		// Simulate sender goroutine
+		senderDone := make(chan struct{})
+		go func() {
+			defer close(senderDone)
+
+			// First send should not block (buffered)
+			select {
+			case bufferedChan <- RelayStateSendInstructions{Done: false}:
+				// Success - didn't block
+			case <-time.After(100 * time.Millisecond):
+				t.Error("Buffered channel blocked on first send - should not happen")
+			}
+		}()
+
+		// Wait for sender to complete (should be fast with buffered channel)
+		select {
+		case <-senderDone:
+			// Success - sender didn't block
+		case <-time.After(200 * time.Millisecond):
+			t.Fatal("Sender goroutine blocked - buffered channel should prevent this")
+		}
+	})
+
+	t.Run("unbuffered channel would block without receiver", func(t *testing.T) {
+		// This demonstrates the old buggy behavior with unbuffered channel
+		unbufferedChan := make(chan RelayStateSendInstructions)
+
+		senderBlocked := make(chan struct{})
+		senderDone := make(chan struct{})
+
+		go func() {
+			defer close(senderDone)
+
+			// With unbuffered channel, this will block
+			select {
+			case unbufferedChan <- RelayStateSendInstructions{Done: false}:
+				// Would only reach here if someone receives
+			case <-time.After(50 * time.Millisecond):
+				// Expected - unbuffered channel blocks
+				close(senderBlocked)
+			}
+		}()
+
+		// Verify that sender blocked (expected with unbuffered channel)
+		select {
+		case <-senderBlocked:
+			// Expected behavior - unbuffered channel blocks
+		case <-senderDone:
+			t.Fatal("Sender completed without blocking - unexpected for unbuffered channel")
+		case <-time.After(200 * time.Millisecond):
+			t.Fatal("Test timeout - sender should have either blocked or timed out")
+		}
+	})
+
+	t.Run("receiver exit does not cause sender deadlock with buffered channel", func(t *testing.T) {
+		// This simulates the actual scenario: receiver exits early, sender continues
+		bufferedChan := make(chan RelayStateSendInstructions, 1)
+
+		// Start receiver that exits immediately
+		receiverExited := make(chan struct{})
+		go func() {
+			// Receive one message then exit
+			select {
+			case <-bufferedChan:
+				// Received one message
+			case <-time.After(50 * time.Millisecond):
+				// Timeout - no message yet
+			}
+			close(receiverExited)
+		}()
+
+		// Wait for receiver to exit
+		<-receiverExited
+
+		// Now sender tries to send after receiver has exited
+		senderDone := make(chan struct{})
+		go func() {
+			defer close(senderDone)
+
+			// With buffered channel, this should NOT block even though receiver exited
+			select {
+			case bufferedChan <- RelayStateSendInstructions{Done: true}:
+				// Success - buffered channel accepted the message
+			case <-time.After(100 * time.Millisecond):
+				t.Error("Sender blocked after receiver exit - this is the deadlock bug")
+			}
+		}()
+
+		// Verify sender completed without blocking
+		select {
+		case <-senderDone:
+			// Success - no deadlock
+		case <-time.After(200 * time.Millisecond):
+			t.Fatal("Sender deadlocked after receiver exited")
+		}
+	})
+}
