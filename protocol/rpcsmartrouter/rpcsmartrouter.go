@@ -176,7 +176,7 @@ type rpcSmartRouterStartOptions struct {
 	staticProvidersList      []*lavasession.RPCStaticProviderEndpoint // define static providers as primary providers
 	backupProvidersList      []*lavasession.RPCStaticProviderEndpoint // define backup providers as emergency fallback when no providers available
 	geoLocation              uint64
-	clientCtx                client.Context    // Blockchain client context for querying specs
+	clientCtx                client.Context // Blockchain client context for querying specs
 }
 
 // spawns a new RPCSmartRouter server with all its processes and internals ready for communications
@@ -698,14 +698,114 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 		)
 	}
 
-	// Create ChainTracker for latest block tracking (reuse provider's implementation)
-	// Use first static provider endpoint for ChainTracker
+	// ============================================================================
+	// PHASE 1: Static Provider Validation
+	// ============================================================================
+	// Validate ALL static providers BEFORE creating chain tracker (matches provider behavior).
+	// Only validates providers matching this endpoint's api-interface.
+	// See: rpcprovider.go:644-667 for provider's validation approach.
+	if len(relevantStaticProviderList) > 0 {
+		utils.LavaFormatInfo("Validating static providers",
+			utils.LogAttr("chain", rpcEndpoint.ChainID),
+			utils.LogAttr("apiInterface", rpcEndpoint.ApiInterface),
+			utils.LogAttr("providerCount", len(relevantStaticProviderList)),
+		)
+
+		validatedCount := 0
+		for _, staticProvider := range relevantStaticProviderList {
+			// Skip providers with different api-interface (validated by their own endpoint)
+			if staticProvider.ApiInterface != rpcEndpoint.ApiInterface {
+				utils.LavaFormatDebug("Skipping provider - different api-interface",
+					utils.LogAttr("provider", staticProvider.Name),
+					utils.LogAttr("providerInterface", staticProvider.ApiInterface),
+					utils.LogAttr("endpointInterface", rpcEndpoint.ApiInterface),
+				)
+				continue
+			}
+			validatedCount++
+
+			// Prepare ALL URLs for validation together (matches provider behavior).
+			// ChainRouter requires both with-addon and without-addon routes for addon URLs
+			// (see chain_router.go:258 which appends "" to addons list).
+			verificationNodeUrls := []common.NodeUrl{}
+			for _, nodeUrl := range staticProvider.NodeUrls {
+				verificationNodeUrls = append(verificationNodeUrls, nodeUrl)
+				// For addon URLs, also add a non-addon copy for routing flexibility
+				if len(nodeUrl.Addons) > 0 {
+					noAddonUrl := nodeUrl
+					noAddonUrl.Addons = []string{}
+					verificationNodeUrls = append(verificationNodeUrls, noAddonUrl)
+				}
+			}
+
+			verificationEndpoint := &lavasession.RPCProviderEndpoint{
+				NetworkAddress: staticProvider.NetworkAddress,
+				ChainID:        staticProvider.ChainID,
+				ApiInterface:   staticProvider.ApiInterface,
+				Geolocation:    staticProvider.Geolocation,
+				NodeUrls:       verificationNodeUrls,
+			}
+
+			// Create chain router with all URLs for complete supportedMap (HTTP + WebSocket)
+			parallelConnections := uint(lavasession.DefaultMaximumStreamsOverASingleConnection)
+			verificationRouter, err := chainlib.GetChainRouter(ctx, parallelConnections, verificationEndpoint, chainParser)
+			if err != nil {
+				err = utils.LavaFormatError("[PANIC] failed creating chain router for verification", err,
+					utils.LogAttr("chain", rpcEndpoint.ChainID),
+					utils.LogAttr("provider", staticProvider.Name),
+				)
+				errCh <- err
+				return err
+			}
+
+			// Create full ChainFetcher for verification (respects severity, skip-verifications)
+			verificationFetcher := chainlib.NewChainFetcher(ctx, &chainlib.ChainFetcherOptions{
+				ChainRouter: verificationRouter,
+				ChainParser: chainParser,
+				Endpoint:    verificationEndpoint,
+				Cache:       nil,
+			})
+
+			utils.LavaFormatInfo("Validating static provider",
+				utils.LogAttr("name", staticProvider.Name),
+				utils.LogAttr("chain", rpcEndpoint.ChainID),
+				utils.LogAttr("urlCount", len(staticProvider.NodeUrls)),
+			)
+
+			err = verificationFetcher.Validate(ctx)
+			if err != nil {
+				err = utils.LavaFormatError("[PANIC] static provider validation failed", err,
+					utils.LogAttr("chain", rpcEndpoint.ChainID),
+					utils.LogAttr("provider", staticProvider.Name),
+				)
+				errCh <- err
+				return err
+			}
+
+			utils.LavaFormatInfo("Static provider validated successfully",
+				utils.LogAttr("chain", rpcEndpoint.ChainID),
+				utils.LogAttr("provider", staticProvider.Name),
+			)
+		}
+
+		utils.LavaFormatInfo("All providers validated for api-interface",
+			utils.LogAttr("chain", rpcEndpoint.ChainID),
+			utils.LogAttr("apiInterface", rpcEndpoint.ApiInterface),
+			utils.LogAttr("validated", validatedCount),
+			utils.LogAttr("total", len(relevantStaticProviderList)),
+		)
+	}
+
+	// ============================================================================
+	// PHASE 2: Chain Tracker Setup
+	// ============================================================================
+	// Create ChainTracker for latest block tracking using first provider.
+	// ChainTracker polls for latest block and maintains block history for sync verification.
 	var chainTracker chaintracker.IChainTracker
 	if len(relevantStaticProviderList) > 0 {
 		firstProvider := relevantStaticProviderList[0]
-		
-		// Create minimal endpoint for ChainTracker (no addons needed)
-		// ChainTracker only polls eth_blockNumber (latest block) - doesn't need archive/debug
+
+		// Minimal endpoint for ChainTracker (no addons needed, only polls latest block)
 		chainTrackerEndpoint := &lavasession.RPCProviderEndpoint{
 			NetworkAddress: firstProvider.NetworkAddress,
 			ChainID:        firstProvider.ChainID,
@@ -714,13 +814,12 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 			NodeUrls: []common.NodeUrl{
 				{
 					Url:        firstProvider.NodeUrls[0].Url,
-					AuthConfig: firstProvider.NodeUrls[0].AuthConfig,  // Preserve auth
-					Addons:     []string{},  // No addons - ChainTracker only needs latest block!
+					AuthConfig: firstProvider.NodeUrls[0].AuthConfig,
+					Addons:     []string{},
 				},
 			},
 		}
 
-		// Create chain router with minimal endpoint (same as provider)
 		parallelConnections := uint(lavasession.DefaultMaximumStreamsOverASingleConnection)
 		chainRouter, err := chainlib.GetChainRouter(ctx, parallelConnections, chainTrackerEndpoint, chainParser)
 		if err != nil {
@@ -728,60 +827,52 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 				utils.LogAttr("chain", rpcEndpoint.ChainID),
 			)
 		} else {
-			// Create chain fetcher (same as provider - verifications only mode)
-			chainFetcher := chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, chainTrackerEndpoint)
+			// Full ChainFetcher for chain tracker (matches provider behavior)
+			chainFetcher := chainlib.NewChainFetcher(ctx, &chainlib.ChainFetcherOptions{
+				ChainRouter: chainRouter,
+				ChainParser: chainParser,
+				Endpoint:    chainTrackerEndpoint,
+				Cache:       options.cache,
+			})
 
-			// Validate chain fetcher
-			if err := chainFetcher.Validate(ctx); err != nil {
-				utils.LavaFormatWarning("Chain fetcher validation failed, sync tracking disabled", err,
+			_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
+			blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
+
+			chainTrackerConfig := chaintracker.ChainTrackerConfig{
+				BlocksToSave:          blocksToSaveChainTracker,
+				AverageBlockTime:      averageBlockTime,
+				ServerBlockMemory:     rpcprovider.ChainTrackerDefaultMemory + blocksToSaveChainTracker,
+				ChainId:               rpcEndpoint.ChainID,
+				ParseDirectiveEnabled: chainParser.ParseDirectiveEnabled(),
+			}
+
+			chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
+			if err != nil {
+				utils.LavaFormatWarning("Failed to create chain tracker, sync tracking disabled", err,
 					utils.LogAttr("chain", rpcEndpoint.ChainID),
 				)
+				chainTracker = nil
 			} else {
-				// Get chain stats
-				_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
+				go func() {
+					err := chainTracker.StartAndServe(ctx)
+					if err != nil {
+						utils.LavaFormatError("Chain tracker failed", err,
+							utils.LogAttr("chain", rpcEndpoint.ChainID),
+						)
+					}
+				}()
 
-				// Create chain tracker config (same as provider)
-				blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
-				chainTrackerConfig := chaintracker.ChainTrackerConfig{
-					BlocksToSave:          blocksToSaveChainTracker,
-					AverageBlockTime:      averageBlockTime,
-					ServerBlockMemory:     rpcprovider.ChainTrackerDefaultMemory + blocksToSaveChainTracker,
-					ChainId:               rpcEndpoint.ChainID,
-					ParseDirectiveEnabled: chainParser.ParseDirectiveEnabled(),
-				}
-
-				// Create chain tracker (same as provider)
-				chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
-				if err != nil {
-					utils.LavaFormatWarning("Failed to create chain tracker, sync tracking disabled", err,
-						utils.LogAttr("chain", rpcEndpoint.ChainID),
-					)
-					chainTracker = nil
-				} else {
-					// Start chain tracker background polling
-					go func() {
-						err := chainTracker.StartAndServe(ctx)
-						if err != nil {
-							utils.LavaFormatError("Chain tracker failed", err,
-								utils.LogAttr("chain", rpcEndpoint.ChainID),
-							)
-						}
-					}()
-
-					utils.LavaFormatInfo("Chain tracker started for smart router",
-						utils.LogAttr("chain", rpcEndpoint.ChainID),
-						utils.LogAttr("polling_interval", averageBlockTime/time.Duration(chaintracker.MostFrequentPollingMultiplier)),
-						utils.LogAttr("blocks_to_save", blocksToSaveChainTracker),
-					)
-				}
+				utils.LavaFormatInfo("Chain tracker started",
+					utils.LogAttr("chain", rpcEndpoint.ChainID),
+					utils.LogAttr("pollingInterval", averageBlockTime/time.Duration(chaintracker.MostFrequentPollingMultiplier)),
+					utils.LogAttr("blocksToSave", blocksToSaveChainTracker),
+				)
 			}
 		}
 	}
 
-	// If chainTracker creation failed, it will be nil (degrades gracefully)
 	if chainTracker == nil {
-		utils.LavaFormatInfo("RPCSmartRouter starting without chain tracker (sync tracking disabled)",
-			utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()},
+		utils.LavaFormatInfo("Starting without chain tracker (sync tracking disabled)",
 			utils.LogAttr("chain", rpcEndpoint.ChainID),
 		)
 	}
