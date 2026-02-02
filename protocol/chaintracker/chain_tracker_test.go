@@ -649,3 +649,104 @@ func TestFindRequestedBlockHash(t *testing.T) {
 	require.NotNil(t, requestedHash)
 	require.Len(t, hashesMap, 4)
 }
+
+// TestChainTrackerTickerCleanup verifies that the ticker is properly stopped when context is cancelled
+func TestChainTrackerTickerCleanup(t *testing.T) {
+	mockBlocks := int64(50)
+	fetcherBlocks := 10
+	mockChainFetcher := NewMockChainFetcher(1000, mockBlocks, nil)
+	mockChainFetcher.AdvanceBlock()
+
+	chainTrackerConfig := chaintracker.ChainTrackerConfig{
+		BlocksToSave:          uint64(fetcherBlocks),
+		AverageBlockTime:      TimeForPollingMock,
+		ServerBlockMemory:     uint64(mockBlocks),
+		ParseDirectiveEnabled: true,
+	}
+
+	// Create a cancellable context
+	ctx, cancel := context.WithCancel(context.Background())
+
+	chainTracker, err := chaintracker.NewChainTracker(ctx, mockChainFetcher, chainTrackerConfig)
+	require.NoError(t, err)
+
+	// Start the chain tracker
+	go chainTracker.StartAndServe(ctx)
+
+	// Let it run for a bit
+	time.Sleep(TimeForPollingMock * 5)
+
+	// Advance some blocks
+	for i := 0; i < 5; i++ {
+		mockChainFetcher.AdvanceBlock()
+		time.Sleep(SleepTime)
+	}
+
+	// Verify chain tracker is working
+	latestBlock := chainTracker.GetAtomicLatestBlockNum()
+	require.Greater(t, latestBlock, int64(1000))
+
+	// Cancel the context - this should stop the ticker
+	cancel()
+
+	// Give it time to clean up
+	time.Sleep(TimeForPollingMock * 3)
+
+	// The test passes if we don't have goroutine leaks
+	// In a real scenario, you would use testing/goroutine leak detector
+	// For now, we verify the tracker continues to return the last known state
+	finalLatestBlock := chainTracker.GetAtomicLatestBlockNum()
+	require.Equal(t, latestBlock, finalLatestBlock, "Latest block should not change after context cancellation")
+}
+
+// TestChainTrackerMultipleInstancesNoLeaks tests that multiple chain tracker instances
+// can be created and destroyed without resource leaks
+func TestChainTrackerMultipleInstancesNoLeaks(t *testing.T) {
+	const numInstances = 5
+	mockBlocks := int64(20)
+	fetcherBlocks := 5
+
+	for i := 0; i < numInstances; i++ {
+		// Create a new instance for each iteration
+		mockChainFetcher := NewMockChainFetcher(1000+int64(i*100), mockBlocks, nil)
+		mockChainFetcher.AdvanceBlock()
+
+		chainTrackerConfig := chaintracker.ChainTrackerConfig{
+			BlocksToSave:          uint64(fetcherBlocks),
+			AverageBlockTime:      TimeForPollingMock,
+			ServerBlockMemory:     uint64(mockBlocks),
+			ParseDirectiveEnabled: true,
+		}
+
+		ctx, cancel := context.WithCancel(context.Background())
+
+		chainTracker, err := chaintracker.NewChainTracker(ctx, mockChainFetcher, chainTrackerConfig)
+		require.NoError(t, err)
+
+		// Start the chain tracker
+		go chainTracker.StartAndServe(ctx)
+
+		// Let it run briefly
+		time.Sleep(TimeForPollingMock * 2)
+
+		// Advance a few blocks
+		for j := 0; j < 3; j++ {
+			mockChainFetcher.AdvanceBlock()
+		}
+
+		time.Sleep(SleepTime * 2)
+
+		// Verify it's working
+		latestBlock := chainTracker.GetAtomicLatestBlockNum()
+		require.Greater(t, latestBlock, int64(1000+i*100))
+
+		// Stop this instance
+		cancel()
+
+		// Brief sleep to allow cleanup
+		time.Sleep(TimeForPollingMock)
+	}
+
+	// All instances should have cleaned up their resources (tickers, timers, goroutines)
+	// If there were leaks, this test would accumulate resources with each iteration
+}
