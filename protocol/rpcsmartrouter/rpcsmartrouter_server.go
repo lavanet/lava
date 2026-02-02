@@ -238,6 +238,8 @@ func (rpcss *RPCSmartRouterServer) sendRelayWithRetries(ctx context.Context, ret
 			utils.LogAttr("GUID", ctx))
 	}
 
+	// Direct RPC flow: pass nil for availabilityDegrader since there are no Lava protocol sessions.
+	// QoS punishment for node errors is handled by the optimizer via AppendRelayFailure in OnSessionFailure.
 	relayProcessor := relaycore.NewRelayProcessor(
 		ctx,
 		quorumParams,
@@ -246,7 +248,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayWithRetries(ctx context.Context, ret
 		rpcss,
 		rpcss.relayRetriesManager,
 		NewSmartRouterRelayStateMachine(ctx, usedProviders, rpcss, protocolMessage, nil, rpcss.debugRelays, rpcss.rpcSmartRouterLogs),
-		rpcss.sessionManager.GetQoSManager(),
+		nil,
 	)
 	usedEndpointsResets := 1
 	for i := 0; i < retries; i++ {
@@ -495,6 +497,8 @@ func (rpcss *RPCSmartRouterServer) ProcessRelaySend(ctx context.Context, protoco
 			utils.LogAttr("GUID", ctx))
 	}
 
+	// Direct RPC flow: pass nil for availabilityDegrader since there are no Lava protocol sessions.
+	// QoS punishment for node errors is handled by the optimizer via AppendRelayFailure in OnSessionFailure.
 	relayProcessor := relaycore.NewRelayProcessor(
 		ctx,
 		quorumParams,
@@ -503,7 +507,7 @@ func (rpcss *RPCSmartRouterServer) ProcessRelaySend(ctx context.Context, protoco
 		rpcss,
 		rpcss.relayRetriesManager,
 		NewSmartRouterRelayStateMachine(ctx, usedProviders, rpcss, protocolMessage, analytics, rpcss.debugRelays, rpcss.rpcSmartRouterLogs),
-		rpcss.sessionManager.GetQoSManager(),
+		nil,
 	)
 
 	relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
