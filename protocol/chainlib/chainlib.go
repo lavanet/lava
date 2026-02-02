@@ -101,6 +101,8 @@ type ChainMessage interface {
 	UpdateEarliestInMessage(incomingEarliest int64) bool
 	SetExtension(extension *spectypes.Extension)
 	GetUsedDefaultValue() bool
+	// IsBatch returns true if this is a batch request (e.g., JSON-RPC batch)
+	IsBatch() bool
 
 	ChainMessageForSend
 }

@@ -171,6 +171,11 @@ func (rp *RelayProcessor) getInputMsgInfoHashString() (string, error) {
 	return hashString, err
 }
 
+// isBatchRequest returns true if the current request is a batch request (e.g., JSON-RPC batch).
+func (rp *RelayProcessor) isBatchRequest() bool {
+	return rp.RelayStateMachine.GetProtocolMessage().IsBatch()
+}
+
 // HasUnsupportedMethodErrors checks if any of the current errors are unsupported method errors.
 // Note: We only check nodeErrors and protocolErrors, not successResults, because:
 // - The IsUnsupportedMethod flag is only set when isNodeError=true (in consumer/smartrouter)
@@ -213,6 +218,11 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 
 	// Never retry if we detect unsupported method errors
 	if rp.HasUnsupportedMethodErrors() {
+		return false
+	}
+
+	// Never retry batch requests if DisableBatchRequestRetry is enabled
+	if DisableBatchRequestRetry && rp.isBatchRequest() {
 		return false
 	}
 

@@ -908,6 +908,10 @@ func (m *MockProtocolMessage) GetUsedDefaultValue() bool {
 	return false
 }
 
+func (m *MockProtocolMessage) IsBatch() bool {
+	return false
+}
+
 func (m *MockProtocolMessage) GetRPCMessage() rpcInterfaceMessages.GenericMessage {
 	return nil
 }

@@ -275,7 +275,21 @@ func (m *MockChainMessage) GetUsedDefaultValue() bool {
 	return ret0
 }
 
-// AppendHeader mocks base method.
+// IsBatch mocks base method.
+func (m *MockChainMessage) IsBatch() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsBatch")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsBatch indicates an expected call of IsBatch.
+func (mr *MockChainMessageMockRecorder) IsBatch() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsBatch", reflect.TypeOf((*MockChainMessage)(nil).IsBatch))
+}
+
+// GetRequestedBlocksHashes mocks base method.
 func (m *MockChainMessage) GetRequestedBlocksHashes() []string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRequestedBlocksHashes")
