@@ -1034,11 +1034,10 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 				ConflictHandler: sessionInfo.Session.Parent,
 			}
 			var errResponse error
-			goroutineCtx, goroutineCtxCancel := context.WithCancel(context.Background())
-			guid, found := utils.GetUniqueIdentifier(ctx)
-			if found {
-				goroutineCtx = utils.WithUniqueIdentifier(goroutineCtx, guid)
-			}
+			// Derive goroutine context from parent ctx to ensure proper cancellation propagation.
+			// Previously used context.Background() which ignored parent cancellation signals,
+			// potentially causing resource leaks when the parent context was cancelled.
+			goroutineCtx, goroutineCtxCancel := context.WithCancel(ctx)
 
 			// Track if session was properly handled (OnSessionDone/OnSessionFailure called)
 			// to prevent session leaks on early returns
