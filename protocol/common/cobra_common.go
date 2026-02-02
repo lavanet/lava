@@ -70,6 +70,9 @@ const (
 	MaxBatchRequestSizeFlag        = "max-batch-request-size"
 	DefaultMaxBatchRequestSize int = 0 // 0 means unlimited
 
+	// DisableBatchRequestRetryFlag prevents batch requests from being retried on consumer/smartrouter side
+	DisableBatchRequestRetryFlag = "disable-batch-request-retry"
+
 	ShowProviderEndpointInMetricsFlagName = "show-provider-address-in-metrics"
 
 	MemoryGCThresholdGBFlagName      = "memory-gc-threshold-gb"     // Memory GC threshold in GB (0 = disabled)

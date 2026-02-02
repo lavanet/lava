@@ -183,6 +183,12 @@ func (crsm *ConsumerRelayStateMachine) retryCondition(numberOfRetriesLaunched in
 		return false
 	}
 
+	// Check if batch request retries are disabled and this is a batch request
+	if relaycore.DisableBatchRequestRetry && crsm.protocolMessage.IsBatch() {
+		utils.LavaFormatTrace("[StateMachine] retryCondition: batch request retry disabled, no retry", utils.LogAttr("GUID", crsm.ctx))
+		return false
+	}
+
 	if crsm.resultsChecker.GetCrossValidationParams().Enabled() && numberOfRetriesLaunched > crsm.resultsChecker.GetCrossValidationParams().Max {
 		return false
 	} else if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {

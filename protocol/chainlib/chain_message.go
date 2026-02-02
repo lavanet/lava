@@ -130,6 +130,12 @@ func (bcnc baseChainMessageContainer) GetRPCMessage() rpcInterfaceMessages.Gener
 	return bcnc.msg
 }
 
+// IsBatch returns true if this is a batch request (e.g., JSON-RPC batch)
+func (bcnc baseChainMessageContainer) IsBatch() bool {
+	_, isBatch := bcnc.msg.(*rpcInterfaceMessages.JsonrpcBatchMessage)
+	return isBatch
+}
+
 func (bcnc *baseChainMessageContainer) UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modifiedOnLatestReq bool) {
 	requestedBlock, _ := bcnc.RequestedBlock()
 	if latestBlock <= spectypes.NOT_APPLICABLE || requestedBlock != spectypes.LATEST_BLOCK {

@@ -8,6 +8,12 @@ const (
 
 var RelayCountOnNodeError = 2
 
+// DisableBatchRequestRetry prevents batch requests from being retried when set to true.
+// Batch requests (JSON-RPC batches) cannot be hashed for caching, so retries may be unnecessary.
+// This is controlled via the --disable-batch-request-retry flag.
+// Disabled by default (true) because batch retries can cause issues with stateful operations.
+var DisableBatchRequestRetry = true
+
 // selection Enum, do not add other const
 const (
 	Stateless Selection = iota // Retries enabled, sequential provider attempts, seeks majority consensus

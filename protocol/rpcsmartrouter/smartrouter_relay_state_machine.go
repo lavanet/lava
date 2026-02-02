@@ -184,6 +184,12 @@ func (srsm *SmartRouterRelayStateMachine) retryCondition(numberOfRetriesLaunched
 		return false
 	}
 
+	// Check if batch request retries are disabled and this is a batch request
+	if relaycore.DisableBatchRequestRetry && srsm.protocolMessage.IsBatch() {
+		utils.LavaFormatTrace("[StateMachine] retryCondition: batch request retry disabled, no retry", utils.LogAttr("GUID", srsm.ctx))
+		return false
+	}
+
 	if srsm.resultsChecker.GetCrossValidationParams().Enabled() && numberOfRetriesLaunched > srsm.resultsChecker.GetCrossValidationParams().Max {
 		return false
 	} else if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
