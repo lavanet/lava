@@ -311,11 +311,9 @@ func TestProviderOptimizerAvailabilityBlockError(t *testing.T) {
 
 	time.Sleep(4 * time.Millisecond)
 
-	// Historical query selection should strongly prefer providers that already have the requested block.
-	// Here, "good sync" providers are at syncBlock=1000 while "bad sync" providers are 50 blocks behind.
-	// With requestedBlock=1000 and average block time of 10s, the probability that a provider catches up
-	// 50 blocks since the last observation (milliseconds ago in this test) is ~0, so they should be
-	// effectively gated by the block availability penalty.
+	// NOTE: Block-availability gating/penalty was removed from provider selection.
+	// Historical queries should therefore NOT hard-gate providers that are behind the requested block;
+	// selection should remain primarily QoS/weight driven and allow lagging providers to still be selected.
 	iterations := 10000
 	results := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, iterations, cu, requestBlock)
 
@@ -328,10 +326,12 @@ func TestProviderOptimizerAvailabilityBlockError(t *testing.T) {
 		}
 	}
 
-	require.Greater(t, sumGoodSync, iterations*90/100,
-		"providers with the requested block should dominate selection on historical queries")
-	require.Less(t, sumBadSync, iterations*10/100,
-		"providers far behind the requested block should be selected rarely on historical queries")
+	// With no block-availability penalty, the "good sync" trio should NOT dominate selection.
+	// We expect the remaining providers to still receive a substantial share.
+	require.Less(t, sumGoodSync, iterations*60/100,
+		"without block-availability gating, 'good sync' providers should not dominate selection")
+	require.Greater(t, sumBadSync, iterations*40/100,
+		"without block-availability gating, lagging providers should still be selected often")
 
 	t.Logf("Historical selection: good=%d/%d bad=%d/%d", sumGoodSync, iterations, sumBadSync, iterations)
 }
@@ -1237,22 +1237,25 @@ func TestProviderOptimizerBlockAvailabilityIntegration(t *testing.T) {
 	time.Sleep(4 * time.Millisecond)
 
 	scenarios := []struct {
-		name              string
-		requestedBlock    int64
-		expectedPreferred []int // Indices of providers that should be preferred
-		expectedAvoided   []int // Indices of providers that should be avoided
+		name           string
+		requestedBlock int64
+		// NOTE: Block-availability gating/penalty was removed from selection.
+		// These checks ensure lagging providers are still eligible (i.e. not artificially suppressed
+		// just because requestedBlock > 0).
+		laggingProviderIdx int
+		minLaggingPct      float64
 	}{
 		{
-			name:              "Request current block",
-			requestedBlock:    int64(currentBlock),
-			expectedPreferred: []int{0}, // Only provider 0 has it (others are behind)
-			expectedAvoided:   []int{4}, // Definitely doesn't have it
+			name:               "Request current block",
+			requestedBlock:     int64(currentBlock),
+			laggingProviderIdx: 4,
+			minLaggingPct:      5.0,
 		},
 		{
-			name:              "Request slightly old block",
-			requestedBlock:    int64(currentBlock - 10),
-			expectedPreferred: []int{0, 1}, // Providers 0 and 1 have it; the rest are behind this height
-			expectedAvoided:   []int{4},    // Way too far behind
+			name:               "Request slightly old block",
+			requestedBlock:     int64(currentBlock - 10),
+			laggingProviderIdx: 4,
+			minLaggingPct:      5.0,
 		},
 	}
 
@@ -1268,27 +1271,10 @@ func TestProviderOptimizerBlockAvailabilityIntegration(t *testing.T) {
 				t.Logf("  %s (block %d): %.1f%%", providersGen.providersAddresses[i], providers[i].syncBlock, pct)
 			}
 
-			// Verify preferred providers get more selections
-			if len(scenario.expectedPreferred) > 0 {
-				totalPreferred := 0
-				for _, idx := range scenario.expectedPreferred {
-					totalPreferred += res[providersGen.providersAddresses[idx]]
-				}
-				preferredPct := float64(totalPreferred) * 100 / float64(iterations)
-				require.Greater(t, preferredPct, 40.0,
-					"Preferred providers should get significant selections (got %.1f%%)", preferredPct)
-			}
-
-			// Verify avoided providers get fewer selections than preferred ones
-			// Note: With weighted selection and minimal time elapsed, block availability
-			// differences may be less pronounced than expected
-			for _, idx := range scenario.expectedAvoided {
-				avoidedPct := float64(res[providersGen.providersAddresses[idx]]) * 100 / float64(iterations)
-				// Relaxed from <10% to <25% to account for weighted selection probabilistic nature
-				require.Less(t, avoidedPct, 25.0,
-					"Avoided provider %s should get fewer selections, got %.1f%%",
-					providersGen.providersAddresses[idx], avoidedPct)
-			}
+			laggingPct := float64(res[providersGen.providersAddresses[scenario.laggingProviderIdx]]) * 100 / float64(iterations)
+			require.GreaterOrEqual(t, laggingPct, scenario.minLaggingPct,
+				"Lagging provider %s should still be eligible after removing block-availability penalty; got %.1f%%",
+				providersGen.providersAddresses[scenario.laggingProviderIdx], laggingPct)
 		})
 	}
 }

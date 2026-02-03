@@ -167,15 +167,15 @@ func TestCalculateScorePerfectProvider(t *testing.T) {
 	stake := sdk.NewCoin("ulava", math.NewInt(1000))
 	totalStake := sdk.NewCoin("ulava", math.NewInt(10000))
 
-	score := ws.CalculateScore(qos, stake, totalStake)
+	score := ws.CalculateScore(qos, stake, totalStake, "provider1")
 
 	// Perfect provider should have high score (close to 1.0)
 	// availability: 1.0 * 0.3 = 0.3
 	// latency: 1.0 * 0.3 = 0.3 (0 latency normalized to 1.0)
 	// sync: 1.0 * 0.2 = 0.2 (0 sync normalized to 1.0)
-	// stake: 0.1 * 0.2 = 0.02 (1000/10000 = 0.1)
-	// total: 0.3 + 0.3 + 0.2 + 0.02 = 0.82
-	require.InDelta(t, 0.82, score, 0.02)
+	// stake: sqrt(0.1) * 0.2 ≈ 0.0632456 (square-root stake scaling)
+	// total: 0.3 + 0.3 + 0.2 + 0.0632456 ≈ 0.8632456
+	require.InDelta(t, 0.8632, score, 0.02)
 }
 
 // TestCalculateScorePoorProvider tests scoring for a poor provider
@@ -187,15 +187,15 @@ func TestCalculateScorePoorProvider(t *testing.T) {
 	stake := sdk.NewCoin("ulava", math.NewInt(100))
 	totalStake := sdk.NewCoin("ulava", math.NewInt(10000))
 
-	score := ws.CalculateScore(qos, stake, totalStake)
+	score := ws.CalculateScore(qos, stake, totalStake, "provider1")
 
 	// Poor provider should have lower score
-	// availability: 0.5 * 0.3 = 0.15
+	// availability: below minimum threshold => 0
 	// latency: 0.0 * 0.3 = 0.0 (30s latency normalized to 0)
 	// sync: 0.0 * 0.2 = 0.0 (1200s sync normalized to 0)
-	// stake: 0.01 * 0.2 = 0.002 (100/10000 = 0.01)
-	// total: 0.15 + 0.0 + 0.0 + 0.002 = 0.152
-	require.InDelta(t, 0.15, score, 0.05)
+	// stake: sqrt(0.01) * 0.2 = 0.02 (square-root stake scaling)
+	// total: 0.02
+	require.InDelta(t, 0.02, score, 0.02)
 }
 
 // TestCalculateScoreMinimumChance ensures minimum selection chance is enforced
@@ -207,7 +207,7 @@ func TestCalculateScoreMinimumChance(t *testing.T) {
 	stake := sdk.NewCoin("ulava", math.NewInt(1))
 	totalStake := sdk.NewCoin("ulava", math.NewInt(1000000))
 
-	score := ws.CalculateScore(qos, stake, totalStake)
+	score := ws.CalculateScore(qos, stake, totalStake, "provider1")
 
 	// Even terrible provider should get minimum chance
 	require.GreaterOrEqual(t, score, 0.01)
@@ -275,10 +275,11 @@ func TestNormalizeStake(t *testing.T) {
 		expected   float64
 	}{
 		{"zero stake", 0, 10000, 0.0},
-		{"small stake", 100, 10000, 0.01},
-		{"medium stake", 2500, 10000, 0.25},
-		{"large stake", 5000, 10000, 0.5},
-		{"majority stake", 9000, 10000, 0.9},
+		// normalizeStake uses square-root scaling: normalized = sqrt(stake/totalStake)
+		{"small stake", 100, 10000, 0.1},               // sqrt(0.01)
+		{"medium stake", 2500, 10000, 0.5},             // sqrt(0.25)
+		{"large stake", 5000, 10000, 0.7071067811865},  // sqrt(0.5)
+		{"majority stake", 9000, 10000, 0.94868329805}, // sqrt(0.9)
 		{"full stake", 10000, 10000, 1.0},
 		{"exceeds total", 15000, 10000, 1.0}, // Capped at 1.0
 	}
@@ -658,7 +659,7 @@ func BenchmarkCalculateScore(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ws.CalculateScore(qos, stake, totalStake)
+		ws.CalculateScore(qos, stake, totalStake, "provider1")
 	}
 }
 

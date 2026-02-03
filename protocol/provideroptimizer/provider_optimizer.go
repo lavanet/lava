@@ -348,31 +348,6 @@ func (po *ProviderOptimizer) ChooseProviderWithStats(allAddresses []string, igno
 		return []string{}, nil
 	}
 
-	// Apply block availability penalty for historical queries
-	if requestedBlock > 0 {
-		utils.LavaFormatTrace("[Optimizer] applying block availability for historical query",
-			utils.LogAttr("requestedBlock", requestedBlock),
-		)
-
-		for i := range providerScores {
-			blockAvail := po.calculateBlockAvailability(providerScores[i].Address, requestedBlock)
-
-			// Multiplicative penalty: SelectionWeight *= blockAvailability
-			// This naturally gates providers unlikely to have the block
-			originalWeight := providerScores[i].SelectionWeight
-			providerScores[i].SelectionWeight *= blockAvail
-
-			if blockAvail < 1.0 {
-				utils.LavaFormatTrace("[Optimizer] adjusted provider weight for block availability",
-					utils.LogAttr("provider", providerScores[i].Address),
-					utils.LogAttr("originalWeight", originalWeight),
-					utils.LogAttr("blockAvailability", blockAvail),
-					utils.LogAttr("adjustedWeight", providerScores[i].SelectionWeight),
-				)
-			}
-		}
-	}
-
 	// Select provider using weighted random selection with stats
 	selectedProvider, selectionStats := po.weightedSelector.SelectProviderWithStats(providerScores, scoreDetails)
 	returnedProviders := []string{selectedProvider}
@@ -462,14 +437,6 @@ func (po *ProviderOptimizer) ChooseBestProviderWithStats(allAddresses []string, 
 	if len(providerScores) == 0 {
 		utils.LavaFormatWarning("[Optimizer] no providers available for selection", nil)
 		return []string{}, nil
-	}
-
-	// Apply block availability penalty for historical queries
-	if requestedBlock > 0 {
-		for i := range providerScores {
-			blockAvail := po.calculateBlockAvailability(providerScores[i].Address, requestedBlock)
-			providerScores[i].SelectionWeight *= blockAvail
-		}
 	}
 
 	// Select the single best provider using weighted random selection
