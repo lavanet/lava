@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"net/http"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/lavanet/lava/v5/protocol/chainlib"
@@ -31,9 +30,6 @@ type ProviderStateMachine struct {
 	relaySender         ProviderRelaySender
 	numberOfRetries     int
 	testModeConfig      *TestModeConfig
-
-	// used to implement deterministic "head on first request" behavior in test mode
-	headReturned atomic.Bool
 }
 
 func NewProviderStateMachine(chainId string, relayRetriesManager lavaprotocol.RelayRetriesManagerInf, relaySender ProviderRelaySender, numberOfRetries int, testModeConfig *TestModeConfig) *ProviderStateMachine {
@@ -334,13 +330,7 @@ func (psm *ProviderStateMachine) generateTestResponse(ctx context.Context, chain
 			gap = 0
 		}
 
-		if psm.testModeConfig.HeadOnFirstRequest && !psm.headReturned.Load() {
-			// Try to mark as returned; if racing, it is OK if a couple of concurrent first requests return head.
-			psm.headReturned.Store(true)
-			latestBlock = head
-		} else {
-			latestBlock = head - gap
-		}
+		latestBlock = head - gap
 	}
 	latestBlockJitter = clampNonNegativeInt64(latestBlockJitter)
 	if latestBlockJitter > 0 {

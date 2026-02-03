@@ -1028,10 +1028,14 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 		grpc.SetTrailer(ctx, metadata.Pairs(chainlib.RPCProviderNodeExtension, lavasession.NewRouterKey(request.RelayData.Extensions).String()))
 	}
 
-	// Populate reply.LatestBlock with the provider's current latest block
-	// Previously done by BuildRelayFinalizedBlockHashes() when DR was enabled
-	// Consumers use this for consistency tracking and provider selection
-	reply.LatestBlock = latestBlock
+	// Populate reply.LatestBlock.
+	// In production we use the provider's chain-tracker latest block (for consistency tracking and selection).
+	// In provider test mode we must NOT override the synthetic LatestBlock coming from the test-mode response,
+	// otherwise head_block/gap_blocks cannot drive sync tests.
+	if rpcps.testModeConfig == nil || !rpcps.testModeConfig.TestMode {
+		// Previously done by BuildRelayFinalizedBlockHashes() when DR was enabled
+		reply.LatestBlock = latestBlock
+	}
 
 	// utils.LavaFormatDebug("response signing", utils.LogAttr("request block", request.RelayData.RequestBlock), utils.LogAttr("GUID", ctx), utils.LogAttr("latestBlock", reply.LatestBlock))
 	reply, err = lavaprotocol.SignRelayResponse(consumerAddr, *request, rpcps.privKey, reply)

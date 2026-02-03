@@ -6,4 +6,8 @@ endpoints:
       address: "127.0.0.1:2220"
     node-urls:
       - url: wss://lav1.tendermintrpc.lava.build:443/websocket
+        # Test3 uses provider test-mode responses; avoid external flakiness/rate-limits during startup verifications.
+        skip-verifications: [chain-id, pruning, tx-indexing, node-info, minimum-gas-price]
       - url: https://lav1.tendermintrpc.lava.build:443
+        # Test3 uses provider test-mode responses; avoid external flakiness/rate-limits during startup verifications.
+        skip-verifications: [chain-id, pruning, tx-indexing, node-info, minimum-gas-price]
