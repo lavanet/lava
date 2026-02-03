@@ -21,6 +21,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/relaycore"
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/protocopy"
 
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
@@ -721,6 +722,9 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 					utils.LogAttr("latency", relayLatency),
 					utils.LogAttr("GUID", goroutineCtx),
 				)
+
+				// Cache write for successful responses (non-blocking)
+				rpcss.tryCacheWrite(goroutineCtx, protocolMessage, localRelayResult)
 			}
 
 			// Update session manager with result
@@ -832,6 +836,185 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 	)
 
 	return nil
+}
+
+// tryCacheWrite attempts to write a successful relay response to the cache.
+// It runs in a separate goroutine to avoid blocking the relay response.
+// Cache writes are skipped when:
+// - Cache is not active
+// - Quorum is enabled (quorum requires fresh endpoint validation)
+// - Response is a node error
+// - Requested block is NOT_APPLICABLE
+func (rpcss *RPCSmartRouterServer) tryCacheWrite(
+	ctx context.Context,
+	protocolMessage chainlib.ProtocolMessage,
+	relayResult *common.RelayResult,
+) {
+	// Skip if cache is not active
+	if !rpcss.cache.CacheActive() {
+		return
+	}
+
+	// Skip if quorum is enabled (quorum requires fresh endpoint validation on each request)
+	quorumParams, err := protocolMessage.GetQuorumParameters()
+	if err != nil {
+		utils.LavaFormatDebug("cache write skipped: failed to get quorum params",
+			utils.LogAttr("error", err),
+			utils.LogAttr("GUID", ctx),
+		)
+		return
+	}
+	if quorumParams.Enabled() {
+		utils.LavaFormatDebug("cache write skipped: quorum enabled",
+			utils.LogAttr("GUID", ctx),
+		)
+		return
+	}
+
+	// Skip if this is a node error
+	if relayResult.IsNodeError {
+		utils.LavaFormatDebug("cache write skipped: node error response",
+			utils.LogAttr("GUID", ctx),
+		)
+		return
+	}
+
+	// Skip if no reply data
+	if relayResult.Reply == nil {
+		utils.LavaFormatDebug("cache write skipped: no reply data",
+			utils.LogAttr("GUID", ctx),
+		)
+		return
+	}
+
+	// Get request data for cache key computation
+	relayData := protocolMessage.RelayPrivateData()
+	if relayData == nil {
+		utils.LavaFormatDebug("cache write skipped: no relay data",
+			utils.LogAttr("GUID", ctx),
+		)
+		return
+	}
+
+	// Skip if requested block is NOT_APPLICABLE
+	requestedBlock, _ := protocolMessage.RequestedBlock()
+	if requestedBlock == spectypes.NOT_APPLICABLE {
+		utils.LavaFormatDebug("cache write skipped: NOT_APPLICABLE block",
+			utils.LogAttr("GUID", ctx),
+		)
+		return
+	}
+
+	// Validate status code (same as consumer: skip caching for 429, 504, and non-2xx in strict mode)
+	// This is checked in the success path, but we double-check here for safety
+	statusCode := relayResult.StatusCode
+	if statusCode == http.StatusTooManyRequests || statusCode == http.StatusGatewayTimeout {
+		utils.LavaFormatDebug("cache write skipped: error status code",
+			utils.LogAttr("statusCode", statusCode),
+			utils.LogAttr("GUID", ctx),
+		)
+		return
+	}
+	// Strict mode: only cache 2xx responses
+	if statusCode != 0 && (statusCode < 200 || statusCode >= 300) {
+		utils.LavaFormatDebug("cache write skipped: non-2xx status code",
+			utils.LogAttr("statusCode", statusCode),
+			utils.LogAttr("GUID", ctx),
+		)
+		return
+	}
+
+	// Compute cache key
+	chainId := rpcss.listenEndpoint.ChainID
+	hashKey, _, hashErr := chainlib.HashCacheRequest(relayData, chainId)
+	if hashErr != nil {
+		utils.LavaFormatDebug("cache write skipped: hash computation failed",
+			utils.LogAttr("error", hashErr),
+			utils.LogAttr("GUID", ctx),
+		)
+		return
+	}
+
+	// Get chain stats for finalization check
+	_, averageBlockTime, blockDistanceForFinalizedData, _ := rpcss.chainParser.ChainBlockStats()
+
+	// Determine if response is finalized
+	latestBlock := relayResult.Reply.LatestBlock
+	finalized := spectypes.IsFinalizedBlock(requestedBlock, latestBlock, int64(blockDistanceForFinalizedData))
+
+	// Convert LATEST_BLOCK to actual block number for cache key
+	// This must match the logic in cache lookup (sendRelayToEndpoint) to ensure cache hits
+	requestedBlockForCache := requestedBlock
+	if requestedBlock == spectypes.LATEST_BLOCK {
+		// Use the latest block from the response (most accurate)
+		if latestBlock > 0 {
+			requestedBlockForCache = latestBlock
+		} else if relayData.SeenBlock > 0 {
+			// Fallback to seen block
+			requestedBlockForCache = relayData.SeenBlock
+		} else {
+			// Skip caching if we can't determine the actual block
+			utils.LavaFormatDebug("cache write skipped: cannot resolve LATEST_BLOCK",
+				utils.LogAttr("GUID", ctx),
+			)
+			return
+		}
+	}
+
+	// Get seen block
+	seenBlock := relayData.SeenBlock
+
+	// Get shared state ID if enabled
+	sharedStateId := ""
+	if rpcss.sharedState {
+		sharedStateId = rpcss.listenEndpoint.Key()
+	}
+
+	// Deep copy reply to avoid race conditions (cache write is async)
+	copyReply := &pairingtypes.RelayReply{}
+	if copyErr := protocopy.DeepCopyProtoObject(relayResult.Reply, copyReply); copyErr != nil {
+		utils.LavaFormatDebug("cache write skipped: failed to copy reply",
+			utils.LogAttr("error", copyErr),
+			utils.LogAttr("GUID", ctx),
+		)
+		return
+	}
+
+	// Write to cache in a non-blocking goroutine
+	go func() {
+		cacheCtx, cancel := context.WithTimeout(context.Background(), common.CacheWriteTimeout)
+		defer cancel()
+
+		err := rpcss.cache.SetEntry(cacheCtx, &pairingtypes.RelayCacheSet{
+			RequestHash:           hashKey,
+			ChainId:               chainId,
+			RequestedBlock:        requestedBlockForCache, // Use resolved block (LATEST_BLOCK converted to actual)
+			SeenBlock:             seenBlock,
+			BlockHash:             nil, // SmartRouter cache doesn't use block hashes
+			Response:              copyReply,
+			Finalized:             finalized,
+			OptionalMetadata:      nil,
+			SharedStateId:         sharedStateId,
+			AverageBlockTime:      int64(averageBlockTime),
+			IsNodeError:           false, // We only cache successful non-error responses
+			BlocksHashesToHeights: nil,   // Not available in direct RPC mode
+		})
+
+		if err != nil {
+			utils.LavaFormatWarning("cache write failed", err,
+				utils.LogAttr("chainId", chainId),
+				utils.LogAttr("requestedBlock", requestedBlockForCache),
+				utils.LogAttr("GUID", ctx),
+			)
+		} else {
+			utils.LavaFormatDebug("cache write succeeded",
+				utils.LogAttr("chainId", chainId),
+				utils.LogAttr("requestedBlock", requestedBlockForCache),
+				utils.LogAttr("finalized", finalized),
+				utils.LogAttr("GUID", ctx),
+			)
+		}
+	}()
 }
 
 func (rpcss *RPCSmartRouterServer) sendRelayToEndpoint(
@@ -989,8 +1172,12 @@ func (rpcss *RPCSmartRouterServer) sendRelayToEndpoint(
 
 					// handle cache reply
 					if cacheError == nil && reply != nil {
-						// Info was fetched from cache, so we don't need to change the state
-						// so we can return here, no need to update anything and calculate as this info was fetched from the cache
+						// Cache hit - return cached response
+						utils.LavaFormatDebug("cache hit",
+							utils.LogAttr("chainId", chainId),
+							utils.LogAttr("requestedBlock", requestedBlockForCache),
+							utils.LogAttr("GUID", ctx),
+						)
 						reply.Data = outputFormatter(reply.Data)
 
 						// If this is a cached error response with placeholder GUID, replace it with current request GUID
@@ -1023,12 +1210,9 @@ func (rpcss *RPCSmartRouterServer) sendRelayToEndpoint(
 						})
 						return nil
 					}
+					// Cache miss - will relay to endpoint
 					latestBlockHashRequested, earliestBlockHashRequested = rpcss.getEarliestBlockHashRequestedFromCacheReply(cacheReply)
 					utils.LavaFormatTrace("[Archive Debug] Reading block hashes from cache", utils.LogAttr("latestBlockHashRequested", latestBlockHashRequested), utils.LogAttr("earliestBlockHashRequested", earliestBlockHashRequested), utils.LogAttr("GUID", ctx))
-					// cache failed, move on to regular relay
-					if performance.NotConnectedError.Is(cacheError) {
-						utils.LavaFormatDebug("cache not connected", utils.LogAttr("error", cacheError), utils.LogAttr("GUID", ctx))
-					}
 				}
 			} else {
 				utils.LavaFormatDebug("skipping cache due to requested block being NOT_APPLICABLE",
