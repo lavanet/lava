@@ -855,6 +855,11 @@ func (rpcss *RPCSmartRouterServer) tryCacheWrite(
 		return
 	}
 
+	// Skip if stateful (stateful requests mutate state - must not cache)
+	if chainlib.GetStateful(protocolMessage) == common.CONSISTENCY_SELECT_ALL_PROVIDERS {
+		return
+	}
+
 	// Skip if quorum is enabled (quorum requires fresh endpoint validation on each request)
 	quorumParams, err := protocolMessage.GetQuorumParameters()
 	if err != nil {
@@ -1056,7 +1061,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToEndpoint(
 	var cacheError error
 	quorumParams := relayProcessor.GetQuorumParams()
 
-	// Cache lookup: only if cache is active and quorum is disabled
+	// Cache lookup: only if cache is active, quorum is disabled, and request is not stateful
 	if rpcss.cache.CacheActive() {
 		if quorumParams.Enabled() {
 			// Quorum requires fresh endpoint validation - cache would defeat consensus verification
@@ -1066,6 +1071,14 @@ func (rpcss *RPCSmartRouterServer) sendRelayToEndpoint(
 				utils.LogAttr("quorumEnabled", true),
 				utils.LogAttr("quorumMin", quorumParams.Min),
 				utils.LogAttr("reason", "quorum requires fresh endpoint validation, cache would defeat consensus verification"),
+			)
+		} else if chainlib.GetStateful(protocolMessage) == common.CONSISTENCY_SELECT_ALL_PROVIDERS {
+			// Stateful requests (e.g. eth_sendTransaction) mutate state - must not read from cache
+			utils.LavaFormatDebug("Cache bypassed due to stateful request",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("cacheActive", true),
+				utils.LogAttr("api", protocolMessage.GetApi().Name),
+				utils.LogAttr("reason", "stateful requests mutate state and cannot use cached responses"),
 			)
 		} else if protocolMessage.GetForceCacheRefresh() {
 			// User requested cache bypass via header
