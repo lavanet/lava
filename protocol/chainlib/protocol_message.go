@@ -110,63 +110,56 @@ func NewProtocolMessage(chainMessage ChainMessage, directiveHeaders map[string]s
 	}
 }
 
-const (
-	DEFAULT_CROSS_VALIDATION_RATE = 0.66
-	DEFAULT_CROSS_VALIDATION_MAX  = 5
-	DEFAULT_CROSS_VALIDATION_MIN  = 2
-)
-
-func (bpm *BaseProtocolMessage) GetCrossValidationParameters() (common.CrossValidationParams, error) {
+// GetCrossValidationParameters parses cross-validation headers from the request.
+// Returns (params, headersPresent, error).
+// - headersPresent is true if any cross-validation header was found (used by state machine to set Selection)
+// - error is returned if headers are present but invalid
+func (bpm *BaseProtocolMessage) GetCrossValidationParameters() (common.CrossValidationParams, bool, error) {
+	var maxParticipants, agreementThreshold int
 	var err error
-	enabled := false
-	var crossValidationRate float64
-	var crossValidationMax int
-	var crossValidationMin int
 
-	crossValidationRateString, ok := bpm.directiveHeaders[common.CROSS_VALIDATION_HEADER_RATE]
-	enabled = enabled || ok
-	if !ok {
-		crossValidationRate = DEFAULT_CROSS_VALIDATION_RATE
-	} else {
-		crossValidationRate, err = strconv.ParseFloat(crossValidationRateString, 64)
-		if err != nil || crossValidationRate < 0 || crossValidationRate > 1 {
-			return common.CrossValidationParams{}, errors.New("invalid cross-validation rate")
+	// Check if max-participants header is present
+	maxParticipantsStr, maxPresent := bpm.directiveHeaders[common.CROSS_VALIDATION_HEADER_MAX_PARTICIPANTS]
+	// Check if agreement-threshold header is present
+	agreementThresholdStr, thresholdPresent := bpm.directiveHeaders[common.CROSS_VALIDATION_HEADER_AGREEMENT_THRESHOLD]
+
+	// If no cross-validation headers are present, return defaults with headersPresent=false
+	if !maxPresent && !thresholdPresent {
+		return common.DefaultCrossValidationParams, false, nil
+	}
+
+	// At least one header is present - parse and validate both
+	if maxPresent {
+		maxParticipants, err = strconv.Atoi(maxParticipantsStr)
+		if err != nil || maxParticipants < 1 {
+			return common.CrossValidationParams{}, true, errors.New("invalid cross-validation max-participants: must be a positive integer")
 		}
+	} else {
+		return common.CrossValidationParams{}, true, errors.New("cross-validation max-participants header is required when using cross-validation")
 	}
 
-	crossValidationMaxRateString, ok := bpm.directiveHeaders[common.CROSS_VALIDATION_HEADER_MAX]
-	enabled = enabled || ok
-	if !ok {
-		crossValidationMax = DEFAULT_CROSS_VALIDATION_MAX
-	} else {
-		crossValidationMax, err = strconv.Atoi(crossValidationMaxRateString)
-		if err != nil || crossValidationMax < 0 {
-			return common.CrossValidationParams{}, errors.New("invalid cross-validation max")
+	if thresholdPresent {
+		agreementThreshold, err = strconv.Atoi(agreementThresholdStr)
+		if err != nil || agreementThreshold < 1 {
+			return common.CrossValidationParams{}, true, errors.New("invalid cross-validation agreement-threshold: must be a positive integer")
 		}
-	}
-
-	crossValidationMinRateString, ok := bpm.directiveHeaders[common.CROSS_VALIDATION_HEADER_MIN]
-	enabled = enabled || ok
-	if !ok {
-		crossValidationMin = DEFAULT_CROSS_VALIDATION_MIN
 	} else {
-		crossValidationMin, err = strconv.Atoi(crossValidationMinRateString)
-		if err != nil || crossValidationMin < 0 {
-			return common.CrossValidationParams{}, errors.New("invalid cross-validation min")
-		}
+		return common.CrossValidationParams{}, true, errors.New("cross-validation agreement-threshold header is required when using cross-validation")
 	}
 
-	if crossValidationMin > crossValidationMax {
-		return common.CrossValidationParams{}, errors.New("cross-validation min is greater than cross-validation max")
+	// Validate that agreementThreshold <= maxParticipants
+	if agreementThreshold > maxParticipants {
+		return common.CrossValidationParams{}, true, errors.New("cross-validation agreement-threshold cannot be greater than max-participants")
 	}
 
-	if enabled {
-		utils.LavaFormatInfo("CrossValidation parameters", utils.LogAttr("crossValidationRate", crossValidationRate), utils.LogAttr("crossValidationMax", crossValidationMax), utils.LogAttr("crossValidationMin", crossValidationMin))
-		return common.CrossValidationParams{Rate: crossValidationRate, Max: crossValidationMax, Min: crossValidationMin}, nil
-	} else {
-		utils.LavaFormatInfo("CrossValidation parameters not enabled")
-		return common.CrossValidationParams{Rate: 1, Max: 1, Min: 1}, nil
-	}
+	utils.LavaFormatInfo("CrossValidation parameters parsed",
+		utils.LogAttr("maxParticipants", maxParticipants),
+		utils.LogAttr("agreementThreshold", agreementThreshold))
+
+	return common.CrossValidationParams{
+		MaxParticipants:    maxParticipants,
+		AgreementThreshold: agreementThreshold,
+	}, true, nil
 }
 
 type ProtocolMessage interface {
@@ -178,5 +171,7 @@ type ProtocolMessage interface {
 	GetUserData() common.UserData
 	IsDefaultApi() bool
 	UpdateEarliestAndValidateExtensionRules(extensionParser *extensionslib.ExtensionParser, earliestBlockHashRequested int64, addon string, seenBlock int64) bool
-	GetCrossValidationParameters() (common.CrossValidationParams, error)
+	// GetCrossValidationParameters returns (params, headersPresent, error)
+	// headersPresent indicates if cross-validation headers were found (used to set Selection type)
+	GetCrossValidationParameters() (common.CrossValidationParams, bool, error)
 }

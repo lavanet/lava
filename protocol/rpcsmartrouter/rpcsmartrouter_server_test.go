@@ -206,15 +206,21 @@ func TestRelayInnerProviderUniqueIdFlow(t *testing.T) {
 
 // Mock interface for RelayProcessor that only implements the methods we need for testing
 type MockRelayProcessorForHeaders struct {
-	crossValidationParams common.CrossValidationParams
-	successResults        []common.RelayResult
-	nodeErrors            []common.RelayResult
-	protocolErrors        []relaycore.RelayError
-	statefulRelayTargets  []string
+	crossValidationParams           *common.CrossValidationParams // nil for Stateless/Stateful
+	selection                       relaycore.Selection
+	successResults                  []common.RelayResult
+	nodeErrors                      []common.RelayResult
+	protocolErrors                  []relaycore.RelayError
+	statefulRelayTargets            []string
+	crossValidationQueriedProviders []string
 }
 
-func (m *MockRelayProcessorForHeaders) GetCrossValidationParams() common.CrossValidationParams {
+func (m *MockRelayProcessorForHeaders) GetCrossValidationParams() *common.CrossValidationParams {
 	return m.crossValidationParams
+}
+
+func (m *MockRelayProcessorForHeaders) GetSelection() relaycore.Selection {
+	return m.selection
 }
 
 func (m *MockRelayProcessorForHeaders) GetResultsData() ([]common.RelayResult, []common.RelayResult, []relaycore.RelayError) {
@@ -223,6 +229,10 @@ func (m *MockRelayProcessorForHeaders) GetResultsData() ([]common.RelayResult, [
 
 func (m *MockRelayProcessorForHeaders) GetStatefulRelayTargets() []string {
 	return m.statefulRelayTargets
+}
+
+func (m *MockRelayProcessorForHeaders) GetCrossValidationQueriedProviders() []string {
+	return m.crossValidationQueriedProviders
 }
 
 func (m *MockRelayProcessorForHeaders) GetUsedProviders() *lavasession.UsedProviders {
@@ -243,7 +253,7 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 	t.Run("cross-validation disabled - single provider header", func(t *testing.T) {
 		// Create a mock relay processor with cross-validation disabled (use default values)
 		relayProcessor := &MockRelayProcessorForHeaders{
-			crossValidationParams: common.DefaultCrossValidationParams, // Disable cross-validation by using default values
+			crossValidationParams: nil, // nil for non-CrossValidation modes
 			successResults:        []common.RelayResult{},
 			nodeErrors:            []common.RelayResult{},
 		}
@@ -282,19 +292,22 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 		require.Equal(t, providerAddress1, providerHeader.Value)
 	})
 
-	t.Run("cross-validation enabled - single successful provider", func(t *testing.T) {
+	t.Run("cross-validation enabled - single successful provider (failure case - below threshold)", func(t *testing.T) {
 		// Create a mock relay processor with cross-validation enabled
 		relayProcessor := &MockRelayProcessorForHeaders{
-			crossValidationParams: common.CrossValidationParams{Min: 2, Rate: 0.6, Max: 5},
+			crossValidationParams:           &common.CrossValidationParams{AgreementThreshold: 2, MaxParticipants: 5},
+			selection:                       relaycore.CrossValidation,  // Enable cross-validation via Selection
+			crossValidationQueriedProviders: []string{providerAddress1}, // All queried providers
 			successResults: []common.RelayResult{
 				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
 			},
 			nodeErrors: []common.RelayResult{},
 		}
 
-		// Create a relay result
+		// Create a relay result - CrossValidation=1 means only 1 provider agreed (below threshold of 2)
 		relayResult := &common.RelayResult{
-			ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1},
+			ProviderInfo:    common.ProviderInfo{ProviderAddress: providerAddress1},
+			CrossValidation: 1, // Below threshold
 			Reply: &pairingtypes.RelayReply{
 				Metadata: []pairingtypes.Metadata{},
 			},
@@ -311,37 +324,53 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 		// Call the function
 		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api")
 
-		// Verify the result - should have cross-validation header + user request type header
-		require.Len(t, relayResult.Reply.Metadata, 2)
+		// Verify the result - should have status, all-providers, agreeing-providers, and user request type headers
+		require.Len(t, relayResult.Reply.Metadata, 4)
 
-		// Find the cross-validation header
-		var crossValidationHeader *pairingtypes.Metadata
-		for _, meta := range relayResult.Reply.Metadata {
-			if meta.Name == common.CROSS_VALIDATION_ALL_PROVIDERS_HEADER_NAME {
-				crossValidationHeader = &meta
-				break
+		// Find and verify headers
+		var statusHeader, allProvidersHeader, agreeingProvidersHeader *pairingtypes.Metadata
+		for i := range relayResult.Reply.Metadata {
+			meta := &relayResult.Reply.Metadata[i]
+			switch meta.Name {
+			case common.CROSS_VALIDATION_STATUS_HEADER_NAME:
+				statusHeader = meta
+			case common.CROSS_VALIDATION_ALL_PROVIDERS_HEADER_NAME:
+				allProvidersHeader = meta
+			case common.CROSS_VALIDATION_AGREEING_PROVIDERS_HEADER:
+				agreeingProvidersHeader = meta
 			}
 		}
-		require.NotNil(t, crossValidationHeader)
-		require.Equal(t, "[lava@provider1]", crossValidationHeader.Value)
+		require.NotNil(t, statusHeader)
+		require.Equal(t, "failed", statusHeader.Value) // Below threshold = failed
+		require.NotNil(t, allProvidersHeader)
+		require.Equal(t, "lava@provider1", allProvidersHeader.Value) // Comma-separated format
+		require.NotNil(t, agreeingProvidersHeader)
+		require.Equal(t, "", agreeingProvidersHeader.Value) // Empty on failure
 	})
 
-	t.Run("cross-validation enabled - multiple providers with mixed results", func(t *testing.T) {
+	t.Run("cross-validation enabled - multiple providers with mixed results (success case)", func(t *testing.T) {
+		// Create a hash for the winning response
+		winningHash := [32]byte{1, 2, 3, 4, 5, 6, 7, 8}
+
 		// Create a mock relay processor with cross-validation enabled
 		relayProcessor := &MockRelayProcessorForHeaders{
-			crossValidationParams: common.CrossValidationParams{Min: 2, Rate: 0.6, Max: 5},
+			crossValidationParams:           &common.CrossValidationParams{AgreementThreshold: 2, MaxParticipants: 5},
+			selection:                       relaycore.CrossValidation,                                      // Enable cross-validation via Selection
+			crossValidationQueriedProviders: []string{providerAddress1, providerAddress2, providerAddress3}, // All queried providers
 			successResults: []common.RelayResult{
-				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
-				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress2}},
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}, ResponseHash: winningHash},
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress2}, ResponseHash: winningHash},
 			},
 			nodeErrors: []common.RelayResult{
 				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress3}},
 			},
 		}
 
-		// Create a relay result
+		// Create a relay result - CrossValidation=2 meets threshold
 		relayResult := &common.RelayResult{
-			ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1},
+			ProviderInfo:    common.ProviderInfo{ProviderAddress: providerAddress1},
+			CrossValidation: 2, // Meets threshold
+			ResponseHash:    winningHash,
 			Reply: &pairingtypes.RelayReply{
 				Metadata: []pairingtypes.Metadata{},
 			},
@@ -358,37 +387,53 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 		// Call the function
 		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api")
 
-		// Verify the result - should have cross-validation header with all providers + user request type header
-		require.Len(t, relayResult.Reply.Metadata, 2)
+		// Verify the result - should have 4 headers: status, all-providers, agreeing-providers, user-request-type
+		require.Len(t, relayResult.Reply.Metadata, 4)
 
-		// Find the cross-validation header
-		var crossValidationHeader *pairingtypes.Metadata
-		for _, meta := range relayResult.Reply.Metadata {
-			if meta.Name == common.CROSS_VALIDATION_ALL_PROVIDERS_HEADER_NAME {
-				crossValidationHeader = &meta
-				break
+		// Find all CV headers
+		var statusHeader, allProvidersHeader, agreeingProvidersHeader *pairingtypes.Metadata
+		for i := range relayResult.Reply.Metadata {
+			meta := &relayResult.Reply.Metadata[i]
+			switch meta.Name {
+			case common.CROSS_VALIDATION_STATUS_HEADER_NAME:
+				statusHeader = meta
+			case common.CROSS_VALIDATION_ALL_PROVIDERS_HEADER_NAME:
+				allProvidersHeader = meta
+			case common.CROSS_VALIDATION_AGREEING_PROVIDERS_HEADER:
+				agreeingProvidersHeader = meta
 			}
 		}
-		require.NotNil(t, crossValidationHeader)
 
-		// Check that all three providers are in the header (order may vary)
-		headerValue := crossValidationHeader.Value
-		require.Contains(t, headerValue, "lava@provider1")
-		require.Contains(t, headerValue, "lava@provider2")
-		require.Contains(t, headerValue, "lava@provider3")
+		// Verify status header
+		require.NotNil(t, statusHeader)
+		require.Equal(t, "success", statusHeader.Value)
+
+		// Verify all providers header (includes all 3)
+		require.NotNil(t, allProvidersHeader)
+		require.Contains(t, allProvidersHeader.Value, "lava@provider1")
+		require.Contains(t, allProvidersHeader.Value, "lava@provider2")
+		require.Contains(t, allProvidersHeader.Value, "lava@provider3")
+
+		// Verify agreeing providers header (only providers 1 and 2 have matching hash)
+		require.NotNil(t, agreeingProvidersHeader)
+		require.Contains(t, agreeingProvidersHeader.Value, "lava@provider1")
+		require.Contains(t, agreeingProvidersHeader.Value, "lava@provider2")
+		require.NotContains(t, agreeingProvidersHeader.Value, "lava@provider3")
 	})
 
-	t.Run("cross-validation enabled - no providers", func(t *testing.T) {
+	t.Run("cross-validation enabled - no providers (failure case)", func(t *testing.T) {
 		// Create a mock relay processor with cross-validation enabled but no providers
 		relayProcessor := &MockRelayProcessorForHeaders{
-			crossValidationParams: common.CrossValidationParams{Min: 2, Rate: 0.6, Max: 5},
+			crossValidationParams: &common.CrossValidationParams{AgreementThreshold: 2, MaxParticipants: 5},
+			selection:             relaycore.CrossValidation, // Enable cross-validation via Selection
 			successResults:        []common.RelayResult{},
 			nodeErrors:            []common.RelayResult{},
 		}
 
-		// Create a relay result
+		// Create a relay result - CrossValidation=0 (no agreement)
 		relayResult := &common.RelayResult{
-			ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1},
+			ProviderInfo:    common.ProviderInfo{ProviderAddress: providerAddress1},
+			CrossValidation: 0, // No agreement
 			Reply: &pairingtypes.RelayReply{
 				Metadata: []pairingtypes.Metadata{},
 			},
@@ -405,17 +450,34 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 		// Call the function
 		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api")
 
-		// Verify the result - should have only user request type header (no cross-validation header since no providers)
-		require.Len(t, relayResult.Reply.Metadata, 1)
+		// Verify the result - should have 4 headers (status, all-providers, agreeing-providers, user-request-type)
+		require.Len(t, relayResult.Reply.Metadata, 4)
 
-		// Should only have the user request type header
-		require.Equal(t, common.USER_REQUEST_TYPE, relayResult.Reply.Metadata[0].Name)
-		require.Equal(t, "test-api", relayResult.Reply.Metadata[0].Value)
+		// Find and verify headers
+		var statusHeader, allProvidersHeader, agreeingProvidersHeader *pairingtypes.Metadata
+		for i := range relayResult.Reply.Metadata {
+			meta := &relayResult.Reply.Metadata[i]
+			switch meta.Name {
+			case common.CROSS_VALIDATION_STATUS_HEADER_NAME:
+				statusHeader = meta
+			case common.CROSS_VALIDATION_ALL_PROVIDERS_HEADER_NAME:
+				allProvidersHeader = meta
+			case common.CROSS_VALIDATION_AGREEING_PROVIDERS_HEADER:
+				agreeingProvidersHeader = meta
+			}
+		}
+		require.NotNil(t, statusHeader)
+		require.Equal(t, "failed", statusHeader.Value)
+		require.NotNil(t, allProvidersHeader)
+		require.Equal(t, "", allProvidersHeader.Value) // Empty list (comma-separated format)
+		require.NotNil(t, agreeingProvidersHeader)
+		require.Equal(t, "", agreeingProvidersHeader.Value) // Empty on failure
 	})
 
 	t.Run("nil relay result - should not panic", func(t *testing.T) {
 		relayProcessor := &MockRelayProcessorForHeaders{
-			crossValidationParams: common.CrossValidationParams{Min: 2, Rate: 0.6, Max: 5},
+			crossValidationParams: &common.CrossValidationParams{AgreementThreshold: 2, MaxParticipants: 5},
+			selection:             relaycore.CrossValidation, // Enable cross-validation via Selection
 			successResults:        []common.RelayResult{},
 			nodeErrors:            []common.RelayResult{},
 		}
@@ -443,7 +505,7 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 	t.Run("stateful API - all providers header included", func(t *testing.T) {
 		// Create a mock relay processor with stateful relay targets
 		relayProcessor := &MockRelayProcessorForHeaders{
-			crossValidationParams: common.DefaultCrossValidationParams,
+			crossValidationParams: nil,
 			statefulRelayTargets:  []string{providerAddress1, providerAddress2, providerAddress3},
 			successResults: []common.RelayResult{
 				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
@@ -513,7 +575,7 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 	t.Run("stateful API - single provider in targets", func(t *testing.T) {
 		// Create a mock relay processor with only one stateful relay target
 		relayProcessor := &MockRelayProcessorForHeaders{
-			crossValidationParams: common.DefaultCrossValidationParams,
+			crossValidationParams: nil,
 			statefulRelayTargets:  []string{providerAddress1},
 			successResults: []common.RelayResult{
 				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
@@ -563,7 +625,7 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 	t.Run("stateful API - empty targets list", func(t *testing.T) {
 		// Create a mock relay processor with empty stateful relay targets
 		relayProcessor := &MockRelayProcessorForHeaders{
-			crossValidationParams: common.DefaultCrossValidationParams,
+			crossValidationParams: nil,
 			statefulRelayTargets:  []string{},
 			successResults: []common.RelayResult{
 				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
@@ -619,7 +681,7 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 	t.Run("non-stateful API - no stateful headers", func(t *testing.T) {
 		// Create a mock relay processor without stateful relay targets
 		relayProcessor := &MockRelayProcessorForHeaders{
-			crossValidationParams: common.DefaultCrossValidationParams,
+			crossValidationParams: nil,
 			statefulRelayTargets:  nil, // No stateful targets
 			successResults: []common.RelayResult{
 				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
@@ -675,7 +737,8 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 	t.Run("stateful API with cross-validation enabled - both headers present", func(t *testing.T) {
 		// This is an edge case - stateful API shouldn't use cross-validation, but let's test the behavior
 		relayProcessor := &MockRelayProcessorForHeaders{
-			crossValidationParams: common.CrossValidationParams{Min: 2, Rate: 0.6, Max: 5},
+			crossValidationParams: &common.CrossValidationParams{AgreementThreshold: 2, MaxParticipants: 5},
+			selection:             relaycore.CrossValidation, // Enable cross-validation via Selection
 			statefulRelayTargets:  []string{providerAddress1, providerAddress2},
 			successResults: []common.RelayResult{
 				{ProviderInfo: common.ProviderInfo{ProviderAddress: providerAddress1}},
@@ -839,8 +902,8 @@ func (m *MockProtocolMessage) GetDirectiveHeaders() map[string]string {
 	return nil
 }
 
-func (m *MockProtocolMessage) GetCrossValidationParameters() (common.CrossValidationParams, error) {
-	return common.CrossValidationParams{}, nil
+func (m *MockProtocolMessage) GetCrossValidationParameters() (common.CrossValidationParams, bool, error) {
+	return common.DefaultCrossValidationParams, false, nil
 }
 
 func (m *MockProtocolMessage) IsDefaultApi() bool {

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -77,6 +79,7 @@ type ConsumerMetricsManager struct {
 	consumerOptimizerQoSClient                     *ConsumerOptimizerQoSClient
 	providerLivenessMetric                         *prometheus.GaugeVec
 	blockedProviderMetric                          *MappedLabelsGaugeVec
+	crossValidationRequestsMetric                  *prometheus.CounterVec
 }
 
 type ConsumerMetricsManagerOptions struct {
@@ -286,6 +289,21 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Help: "The number of protocol errors per provider and spec",
 	}, []string{"spec", "provider_address"})
 
+	// Note: all_providers and agreeing_providers labels create high cardinality metrics.
+	// This is intentional to enable detailed analysis of which provider combinations
+	// participated in cross-validation and reached consensus. Cross-validation is
+	// expected to be used sparingly (opt-in per request), so cardinality is bounded.
+	// Provider lists are sorted alphabetically before joining to ensure consistent
+	// label values (e.g., [B,A,C] and [A,B,C] both become "A,B,C"), reducing
+	// cardinality from n! permutations to unique combinations.
+	// If cardinality becomes problematic, consider switching to count-based labels
+	// (total_providers_count, agreeing_providers_count) and rely on response headers
+	// for detailed provider information.
+	crossValidationRequestsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_cross_validation_requests",
+		Help: "Cross-validation request outcomes with provider details",
+	}, []string{"spec", "apiInterface", "method", "status", "max_participants", "agreement_threshold", "all_providers", "agreeing_providers"})
+
 	// Register the metrics with the Prometheus registry.
 	// Use a helper function to handle AlreadyRegisteredError gracefully
 	registerMetric := func(c prometheus.Collector) {
@@ -331,6 +349,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	registerMetric(totalLoLErrorsMetric)
 	registerMetric(requestsPerProviderMetric)
 	registerMetric(protocolErrorsPerProviderMetric)
+	registerMetric(crossValidationRequestsMetric)
 
 	consumerMetricsManager := &ConsumerMetricsManager{
 		totalCURequestedMetric:                         totalCURequestedMetric,
@@ -373,6 +392,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		protocolErrorsPerProviderMetric:                protocolErrorsPerProviderMetric,
 		providerLivenessMetric:                         providerLivenessMetric,
 		blockedProviderMetric:                          blockedProviderMetric,
+		crossValidationRequestsMetric:                  crossValidationRequestsMetric,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -420,6 +440,24 @@ func (pme *ConsumerMetricsManager) SetRelaySentToProviderMetric(chainId string, 
 		return
 	}
 	pme.totalRelaysSentToProvidersMetric.WithLabelValues(chainId, apiInterface).Inc()
+}
+
+// SetCrossValidationMetric records a cross-validation request metric.
+// allProvidersSorted and agreeingProvidersSorted must be pre-sorted for consistent metric label values.
+func (pme *ConsumerMetricsManager) SetCrossValidationMetric(
+	chainId, apiInterface, method, status string,
+	maxParticipants, agreementThreshold int,
+	allProvidersSorted, agreeingProvidersSorted []string,
+) {
+	if pme == nil {
+		return
+	}
+	pme.crossValidationRequestsMetric.WithLabelValues(
+		chainId, apiInterface, method, status,
+		strconv.Itoa(maxParticipants), strconv.Itoa(agreementThreshold),
+		strings.Join(allProvidersSorted, ","),
+		strings.Join(agreeingProvidersSorted, ","),
+	).Inc()
 }
 
 func (pme *ConsumerMetricsManager) SetWebSocketConnectionActive(chainId string, apiInterface string, add bool) {

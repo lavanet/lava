@@ -17,6 +17,7 @@ type RelayStateMachine interface {
 	GetRelayTaskChannel() (chan RelayStateSendInstructions, error)
 	UpdateBatch(err error)
 	GetSelection() Selection
+	GetCrossValidationParams() *common.CrossValidationParams // nil for Stateless/Stateful, non-nil for CrossValidation
 	GetUsedProviders() *lavasession.UsedProviders
 	SetResultsChecker(resultsChecker ResultsCheckerInf)
 	SetRelayRetriesManager(relayRetriesManager *lavaprotocol.RelayRetriesManager)
@@ -26,7 +27,7 @@ type RelayStateMachine interface {
 type ResultsCheckerInf interface {
 	WaitForResults(ctx context.Context) error
 	HasRequiredNodeResults(tries int) (bool, int)
-	GetCrossValidationParams() common.CrossValidationParams
+	GetCrossValidationParams() *common.CrossValidationParams // nil for Stateless/Stateful, non-nil for CrossValidation
 }
 
 // MetricsInterface for relay processor metrics

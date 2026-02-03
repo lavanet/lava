@@ -21,27 +21,34 @@ import (
 
 // Mock RelayStateMachine for testing
 type mockRelayStateMachine struct {
-	protocolMessage chainlib.ProtocolMessage
-	usedProviders   *lavasession.UsedProviders
-	debugState      bool
-	selection       Selection
+	protocolMessage       chainlib.ProtocolMessage
+	usedProviders         *lavasession.UsedProviders
+	debugState            bool
+	selection             Selection
+	crossValidationParams *common.CrossValidationParams // nil for Stateless/Stateful
 }
 
 func newMockRelayStateMachine(protocolMessage chainlib.ProtocolMessage, usedProviders *lavasession.UsedProviders) *mockRelayStateMachine {
 	return &mockRelayStateMachine{
-		protocolMessage: protocolMessage,
-		usedProviders:   usedProviders,
-		debugState:      false,
-		selection:       Stateful, // Default to Stateful for backward compatibility
+		protocolMessage:       protocolMessage,
+		usedProviders:         usedProviders,
+		debugState:            false,
+		selection:             Stateful, // Default to Stateful for backward compatibility
+		crossValidationParams: nil,      // nil for non-CrossValidation modes
 	}
 }
 
 func newMockRelayStateMachineWithSelection(protocolMessage chainlib.ProtocolMessage, usedProviders *lavasession.UsedProviders, selection Selection) *mockRelayStateMachine {
+	var cvParams *common.CrossValidationParams
+	if selection == CrossValidation {
+		cvParams = &common.CrossValidationParams{MaxParticipants: 3, AgreementThreshold: 2}
+	}
 	return &mockRelayStateMachine{
-		protocolMessage: protocolMessage,
-		usedProviders:   usedProviders,
-		debugState:      false,
-		selection:       selection,
+		protocolMessage:       protocolMessage,
+		usedProviders:         usedProviders,
+		debugState:            false,
+		selection:             selection,
+		crossValidationParams: cvParams,
 	}
 }
 
@@ -62,6 +69,10 @@ func (m *mockRelayStateMachine) UpdateBatch(err error) {
 
 func (m *mockRelayStateMachine) GetSelection() Selection {
 	return m.selection
+}
+
+func (m *mockRelayStateMachine) GetCrossValidationParams() *common.CrossValidationParams {
+	return m.crossValidationParams
 }
 
 func (m *mockRelayStateMachine) GetUsedProviders() *lavasession.UsedProviders {
@@ -94,7 +105,7 @@ func TestRelayProcessorHappyFlow(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
 		consistency := NewConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultCrossValidationParams, consistency, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
+		relayProcessor := NewRelayProcessor(ctx, nil, consistency, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -150,7 +161,7 @@ func TestRelayProcessorTimeout(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultCrossValidationParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
+		relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -203,7 +214,7 @@ func TestRelayProcessorRetry(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultCrossValidationParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
+		relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -248,7 +259,7 @@ func TestRelayProcessorRetryNodeError(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultCrossValidationParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
+		relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -296,7 +307,7 @@ func TestRelayProcessorStatefulApi(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultCrossValidationParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
+		relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -351,7 +362,7 @@ func TestRelayProcessorStatefulApiErr(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultCrossValidationParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
+		relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -399,7 +410,7 @@ func TestRelayProcessorLatest(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultCrossValidationParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
+		relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -448,7 +459,8 @@ func TestHasRequiredNodeResultsCrossValidationScenarios(t *testing.T) {
 
 	tests := []struct {
 		name                  string
-		crossValidationParams common.CrossValidationParams
+		crossValidationParams *common.CrossValidationParams // nil for Stateless/Stateful
+		selection             Selection
 		successResults        int
 		nodeErrors            int
 		tries                 int
@@ -458,53 +470,39 @@ func TestHasRequiredNodeResultsCrossValidationScenarios(t *testing.T) {
 	}{
 		{
 			name: "cross-validation not met with different data from providers",
-			crossValidationParams: common.CrossValidationParams{
-				Min:  2,
-				Rate: 0.6,
-				Max:  5,
+			crossValidationParams: &common.CrossValidationParams{
+				AgreementThreshold: 2,
+				MaxParticipants:    5,
 			},
+			selection:      CrossValidation,
 			successResults: 2,
 			nodeErrors:     0,
 			tries:          1,
-			expectedResult: false, // Different data won't meet cross-validation
+			expectedResult: false, // Different data won't meet cross-validation threshold
 			expectedErrors: 0,
 			useSameData:    0, // 0 means all different data
 		},
 		{
-			name: "cross-validation not met with different data from providers",
-			crossValidationParams: common.CrossValidationParams{
-				Min:  2,
-				Rate: 1,
-				Max:  5,
+			name: "cross-validation met with same data meeting threshold",
+			crossValidationParams: &common.CrossValidationParams{
+				AgreementThreshold: 2,
+				MaxParticipants:    5,
 			},
-			successResults: 2,
-			nodeErrors:     0,
-			tries:          1,
-			expectedResult: true, // we have the final result and dont need to retry since there is no mathematical potentiol to meet cross-validation
-			expectedErrors: 0,
-			useSameData:    0, // 0 means all different data
-		},
-		{
-			name: "cross-validation met with same data from min providers",
-			crossValidationParams: common.CrossValidationParams{
-				Min:  3,
-				Rate: 0.6,
-				Max:  5,
-			},
+			selection:      CrossValidation,
 			successResults: 3,
 			nodeErrors:     0,
 			tries:          1,
-			expectedResult: true, // Same data should meet cross-validation
+			expectedResult: true, // 2 providers with same data meets threshold of 2
 			expectedErrors: 0,
-			useSameData:    2, // 2 providers with same data, 1 with different
+			useSameData:    2, // 2 providers with same data
 		},
 		{
 			name: "cross-validation met with all providers sending same data",
-			crossValidationParams: common.CrossValidationParams{
-				Min:  2,
-				Rate: 0.6,
-				Max:  5,
+			crossValidationParams: &common.CrossValidationParams{
+				AgreementThreshold: 2,
+				MaxParticipants:    5,
 			},
+			selection:      CrossValidation,
 			successResults: 3,
 			nodeErrors:     0,
 			tries:          1,
@@ -513,18 +511,29 @@ func TestHasRequiredNodeResultsCrossValidationScenarios(t *testing.T) {
 			useSameData:    3, // All 3 providers with same data
 		},
 		{
-			name: "cross-validation not met with mixed data (1 same, 2 different)",
-			crossValidationParams: common.CrossValidationParams{
-				Min:  3,
-				Rate: 0.6,
-				Max:  5,
+			name: "cross-validation not met with threshold of 3 but only 1 matching",
+			crossValidationParams: &common.CrossValidationParams{
+				AgreementThreshold: 3,
+				MaxParticipants:    5,
 			},
+			selection:      CrossValidation,
 			successResults: 3,
 			nodeErrors:     0,
 			tries:          1,
-			expectedResult: false, // Mixed data won't meet cross-validation
+			expectedResult: false, // Only 1 provider with same data, threshold is 3
 			expectedErrors: 0,
 			useSameData:    1, // Only 1 provider with same data
+		},
+		{
+			name:                  "stateless mode - single result is sufficient",
+			crossValidationParams: nil,
+			selection:             Stateless,
+			successResults:        1,
+			nodeErrors:            0,
+			tries:                 1,
+			expectedResult:        true, // Stateless mode needs just 1 successful result
+			expectedErrors:        0,
+			useSameData:           1,
 		},
 	}
 
@@ -549,7 +558,7 @@ func TestHasRequiredNodeResultsCrossValidationScenarios(t *testing.T) {
 				RelayProcessorMetrics,
 				RelayProcessorMetrics,
 				RelayRetriesManagerInstance,
-				newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
+				newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, tt.selection),
 			)
 
 			// Set the batch size so WaitForResults knows how many responses to expect
@@ -604,13 +613,16 @@ func TestHasRequiredNodeResultsCrossValidationScenarios(t *testing.T) {
 }
 
 // ============================================================================
-// CATEGORY 1: Node Error CrossValidation Tests
-// These tests validate that node errors can form their own cross-validation
+// CATEGORY 1: Selection Mode Result Tests
+// These tests validate the different result processing for each selection mode:
+// - Stateless: returns first result (no consensus)
+// - Stateful: returns first result (no consensus)
+// - CrossValidation: requires agreementThreshold matching successful responses
 // ============================================================================
 
-// Test 1.1: Node errors that match should form cross-validation
-func TestNodeErrorCrossValidationMet(t *testing.T) {
-	t.Run("three_matching_node_errors_meet_cross-validation", func(t *testing.T) {
+// Test 1.1: Stateless mode returns first node error when no successes
+func TestStatelessReturnsFirstNodeError(t *testing.T) {
+	t.Run("stateless_returns_first_node_error", func(t *testing.T) {
 		ctx := context.Background()
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -626,10 +638,10 @@ func TestNodeErrorCrossValidationMet(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
 
-		// Use Stateless selection to enable cross-validation logic
+		// Stateless mode - just returns first result, no consensus
 		relayProcessor := NewRelayProcessor(
 			ctx,
-			common.CrossValidationParams{Min: 3, Rate: 0.6, Max: 5},
+			nil, // nil for Stateless mode
 			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
@@ -651,7 +663,7 @@ func TestNodeErrorCrossValidationMet(t *testing.T) {
 		}
 		usedProviders.AddUsed(consumerSessionsMap, nil)
 
-		// Send 3 identical node errors (same error code and message) - using REST error format
+		// Send 3 node errors - using REST error format
 		nodeErrorData := []byte(`{"message":"invalid argument 0: hex string has length 3","code":400}`)
 		go sendNodeErrorWithData(relayProcessor, "lava@test1", time.Millisecond*5, nodeErrorData)
 		go sendNodeErrorWithData(relayProcessor, "lava@test2", time.Millisecond*10, nodeErrorData)
@@ -662,18 +674,18 @@ func TestNodeErrorCrossValidationMet(t *testing.T) {
 		err = relayProcessor.WaitForResults(ctx)
 		require.NoError(t, err)
 
-		// Process results - should succeed with node error cross-validation
+		// Process results - Stateless returns first result, no cross-validation
 		returnedResult, err := relayProcessor.ProcessingResult()
-		require.NoError(t, err, "Node error cross-validation should be met")
+		require.NoError(t, err, "Stateless mode should return first node error")
 		require.NotNil(t, returnedResult)
-		require.Equal(t, 3, returnedResult.CrossValidation, "CrossValidation should be 3 (all three node errors matched)")
+		require.Equal(t, 0, returnedResult.CrossValidation, "Stateless mode does not do cross-validation")
 		require.Equal(t, nodeErrorData, returnedResult.Reply.Data, "Should return the node error data")
 	})
 }
 
-// Test 1.2: Node errors that don't match should NOT form cross-validation
+// Test 1.2: CrossValidation mode fails when only node errors are received (no successful responses)
 func TestNodeErrorCrossValidationNotMet(t *testing.T) {
-	t.Run("three_different_node_errors_fail_cross-validation", func(t *testing.T) {
+	t.Run("cross_validation_mode_fails_with_only_node_errors", func(t *testing.T) {
 		ctx := context.Background()
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -689,14 +701,15 @@ func TestNodeErrorCrossValidationNotMet(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
 
+		// CrossValidation mode - node errors do NOT count towards consensus
 		relayProcessor := NewRelayProcessor(
 			ctx,
-			common.CrossValidationParams{Min: 3, Rate: 0.6, Max: 5},
+			&common.CrossValidationParams{AgreementThreshold: 2, MaxParticipants: 5},
 			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
-			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, CrossValidation),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -712,30 +725,28 @@ func TestNodeErrorCrossValidationNotMet(t *testing.T) {
 		}
 		usedProviders.AddUsed(consumerSessionsMap, nil)
 
-		// Send 3 DIFFERENT node errors - using REST error format
-		nodeError1 := []byte(`{"message":"error type 1","code":400}`)
-		nodeError2 := []byte(`{"message":"error type 2","code":401}`)
-		nodeError3 := []byte(`{"message":"error type 3","code":402}`)
+		// Send 3 MATCHING node errors - but in CrossValidation mode they don't count
+		nodeErrorData := []byte(`{"message":"error type 1","code":400}`)
 
-		go sendNodeErrorWithData(relayProcessor, "lava@test1", time.Millisecond*5, nodeError1)
-		go sendNodeErrorWithData(relayProcessor, "lava@test2", time.Millisecond*10, nodeError2)
-		go sendNodeErrorWithData(relayProcessor, "lava@test3", time.Millisecond*15, nodeError3)
+		go sendNodeErrorWithData(relayProcessor, "lava@test1", time.Millisecond*5, nodeErrorData)
+		go sendNodeErrorWithData(relayProcessor, "lava@test2", time.Millisecond*10, nodeErrorData)
+		go sendNodeErrorWithData(relayProcessor, "lava@test3", time.Millisecond*15, nodeErrorData)
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*200)
 		defer cancel()
 		err = relayProcessor.WaitForResults(ctx)
 		require.NoError(t, err)
 
-		// Process results - should fail (no cross-validation)
+		// Process results - should fail because node errors don't count in CrossValidation mode
 		_, err = relayProcessor.ProcessingResult()
-		require.Error(t, err, "Should fail when node errors don't match")
-		require.Contains(t, err.Error(), "equal results count is less than requiredCrossValidationSize")
+		require.Error(t, err, "CrossValidation mode should fail when only node errors are received")
+		require.Contains(t, err.Error(), "cross-validation failed: insufficient successful responses")
 	})
 }
 
-// Test 1.3: Node error cross-validation with protocol errors mixed in
-func TestNodeErrorCrossValidationWithProtocolErrors(t *testing.T) {
-	t.Run("node_error_cross-validation_ignores_protocol_errors", func(t *testing.T) {
+// Test 1.3: Stateless mode returns first node error, ignoring protocol errors
+func TestStatelessReturnsNodeErrorOverProtocolError(t *testing.T) {
+	t.Run("stateless_returns_node_error_over_protocol_error", func(t *testing.T) {
 		ctx := context.Background()
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -751,9 +762,10 @@ func TestNodeErrorCrossValidationWithProtocolErrors(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
 
+		// Stateless mode - returns first result
 		relayProcessor := NewRelayProcessor(
 			ctx,
-			common.CrossValidationParams{Min: 3, Rate: 0.6, Max: 5},
+			nil, // nil for Stateless mode
 			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
@@ -775,7 +787,7 @@ func TestNodeErrorCrossValidationWithProtocolErrors(t *testing.T) {
 		}
 		usedProviders.AddUsed(consumerSessionsMap, nil)
 
-		// Send 3 matching node errors + 1 protocol error - using REST error format
+		// Send node errors + protocol error
 		nodeErrorData := []byte(`{"message":"invalid params","code":400}`)
 		go sendNodeErrorWithData(relayProcessor, "lava@test1", time.Millisecond*5, nodeErrorData)
 		go sendNodeErrorWithData(relayProcessor, "lava@test2", time.Millisecond*10, nodeErrorData)
@@ -787,11 +799,11 @@ func TestNodeErrorCrossValidationWithProtocolErrors(t *testing.T) {
 		err = relayProcessor.WaitForResults(ctx)
 		require.NoError(t, err)
 
-		// Process results - node error cross-validation should be met despite protocol error
+		// Stateless returns first node error, no cross-validation
 		returnedResult, err := relayProcessor.ProcessingResult()
-		require.NoError(t, err, "Node error cross-validation should be met, protocol error should not interfere")
+		require.NoError(t, err, "Stateless mode should return first node error")
 		require.NotNil(t, returnedResult)
-		require.Equal(t, 3, returnedResult.CrossValidation, "CrossValidation should be 3 (node errors only)")
+		require.Equal(t, 0, returnedResult.CrossValidation, "Stateless mode does not do cross-validation")
 		require.Equal(t, nodeErrorData, returnedResult.Reply.Data, "Should return the node error data")
 	})
 }
@@ -818,7 +830,7 @@ func TestNodeErrorPrioritizedOverProtocolErrors(t *testing.T) {
 		// CrossValidation disabled (Stateful selection)
 		relayProcessor := NewRelayProcessor(
 			ctx,
-			common.DefaultCrossValidationParams,
+			nil,
 			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
@@ -885,7 +897,7 @@ func TestNodeErrorPrioritizedOverProtocolErrors(t *testing.T) {
 		// Stateless selection but cross-validation feature disabled (DefaultCrossValidationParams)
 		relayProcessor := NewRelayProcessor(
 			ctx,
-			common.DefaultCrossValidationParams,
+			nil,
 			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
@@ -960,12 +972,12 @@ func TestSuccessCrossValidationTakesPriorityOverNodeError(t *testing.T) {
 
 		relayProcessor := NewRelayProcessor(
 			ctx,
-			common.CrossValidationParams{Min: 3, Rate: 0.6, Max: 6},
+			&common.CrossValidationParams{AgreementThreshold: 3, MaxParticipants: 6},
 			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
-			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, CrossValidation),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -1011,9 +1023,9 @@ func TestSuccessCrossValidationTakesPriorityOverNodeError(t *testing.T) {
 	})
 }
 
-// Test 2.2: Node error cross-validation is used when success results are insufficient
+// Test 2.2: CrossValidation mode fails when success results are insufficient (node errors don't count)
 func TestNodeErrorCrossValidationWhenSuccessInsufficient(t *testing.T) {
-	t.Run("node_error_cross-validation_used_when_success_insufficient", func(t *testing.T) {
+	t.Run("cross_validation_mode_fails_when_success_insufficient", func(t *testing.T) {
 		ctx := context.Background()
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -1029,14 +1041,15 @@ func TestNodeErrorCrossValidationWhenSuccessInsufficient(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
 
+		// CrossValidation mode - node errors do NOT count towards consensus
 		relayProcessor := NewRelayProcessor(
 			ctx,
-			common.CrossValidationParams{Min: 3, Rate: 0.6, Max: 5},
+			&common.CrossValidationParams{AgreementThreshold: 3, MaxParticipants: 5},
 			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
-			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, CrossValidation),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -1060,7 +1073,7 @@ func TestNodeErrorCrossValidationWhenSuccessInsufficient(t *testing.T) {
 		go sendSuccessWithData(relayProcessor, "lava@test1", time.Millisecond*5, successData1)
 		go sendSuccessWithData(relayProcessor, "lava@test2", time.Millisecond*10, successData2)
 
-		// Send 3 matching node errors (CAN form cross-validation) - using REST error format
+		// Send 3 matching node errors - but they don't count in CrossValidation mode
 		nodeErrorData := []byte(`{"message":"invalid params","code":400}`)
 		go sendNodeErrorWithData(relayProcessor, "lava@test3", time.Millisecond*15, nodeErrorData)
 		go sendNodeErrorWithData(relayProcessor, "lava@test4", time.Millisecond*20, nodeErrorData)
@@ -1071,20 +1084,11 @@ func TestNodeErrorCrossValidationWhenSuccessInsufficient(t *testing.T) {
 		err = relayProcessor.WaitForResults(ctx)
 		require.NoError(t, err)
 
-		// Debug: Check what was actually stored
-		_, nodeErrors, _ := relayProcessor.GetResultsData()
-		t.Logf("Number of node errors stored: %d", len(nodeErrors))
-		for i, ne := range nodeErrors {
-			t.Logf("Node error %d data: %s", i, string(ne.Reply.Data))
-		}
-
-		// Process results - should return node error cross-validation (success insufficient)
-		returnedResult, err := relayProcessor.ProcessingResult()
-		require.NoError(t, err, "Node error cross-validation should be used when success can't form cross-validation")
-		require.NotNil(t, returnedResult)
-		require.Equal(t, 3, returnedResult.CrossValidation, "CrossValidation should be 3 from node errors")
-		require.Equal(t, nodeErrorData, returnedResult.Reply.Data, "Should return node error data")
-		require.Equal(t, 500, returnedResult.StatusCode, "Status should be 500 (node error)")
+		// Process results - should fail because only 2 successes and they don't match
+		// Node errors don't count towards cross-validation in CrossValidation mode
+		_, err = relayProcessor.ProcessingResult()
+		require.Error(t, err, "CrossValidation mode should fail when success can't form consensus (node errors don't count)")
+		require.Contains(t, err.Error(), "cross-validation failed: insufficient successful responses")
 	})
 }
 
@@ -1108,12 +1112,12 @@ func TestSuccessCrossValidationIgnoresNodeErrors(t *testing.T) {
 
 		relayProcessor := NewRelayProcessor(
 			ctx,
-			common.CrossValidationParams{Min: 3, Rate: 0.6, Max: 8},
+			&common.CrossValidationParams{AgreementThreshold: 3, MaxParticipants: 8},
 			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
-			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, CrossValidation),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -1183,10 +1187,10 @@ func TestSuccessCrossValidationFailsWhenCrossValidationDisabled(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
 
-		// CrossValidation feature DISABLED (Stateful selection) - Min will be used as requiredCrossValidationSize
+		// CrossValidation feature DISABLED (Stateful selection) - uses default params, needs just 1 successful result
 		relayProcessor := NewRelayProcessor(
 			ctx,
-			common.CrossValidationParams{Min: 1, Rate: 0.6, Max: 5},
+			nil,
 			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
@@ -1473,34 +1477,29 @@ func TestNodeErrorsRecoveryMetricWithCrossValidation(t *testing.T) {
 	require.NoError(t, err)
 
 	protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "dapp", "127.0.0.1")
-	usedProviders := lavasession.NewUsedProviders(nil)
+	usedProvidersFirst := lavasession.NewUsedProviders(nil)
 	mockMetrics := NewMockMetricsTracker()
 	consistency := NewConsistency(specId)
 
-	crossValidationParams := common.CrossValidationParams{
-		Min:  3,
-		Max:  5,
-		Rate: 0.6,
-	}
-
+	// Use Stateless mode - recovery metrics are only recorded for Stateless mode
 	relayProcessor := NewRelayProcessor(
 		ctx,
-		crossValidationParams,
+		nil,
 		consistency,
 		mockMetrics,
 		mockMetrics,
 		RelayRetriesManagerInstance,
-		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
+		newMockRelayStateMachineWithSelection(protocolMessage, usedProvidersFirst, Stateless),
 	)
 
 	// Add providers
-	canUse := usedProviders.TryLockSelection(ctx)
+	canUse := usedProvidersFirst.TryLockSelection(ctx)
 	require.Nil(t, canUse)
 	consumerSessionsMap := lavasession.ConsumerSessionsMap{}
 	for i := 0; i < 5; i++ {
 		consumerSessionsMap[fmt.Sprintf("provider%d", i)] = &lavasession.SessionInfo{}
 	}
-	usedProviders.AddUsed(consumerSessionsMap, nil)
+	usedProvidersFirst.AddUsed(consumerSessionsMap, nil)
 
 	// Simulate 3 successful responses
 	for i := 0; i < 3; i++ {
@@ -1579,10 +1578,9 @@ func TestProtocolErrorsRecoveryMetricWithCrossValidation(t *testing.T) {
 	mockMetrics := NewMockMetricsTracker()
 	consistency := NewConsistency(specId)
 
-	crossValidationParams := common.CrossValidationParams{
-		Min:  3,
-		Max:  5,
-		Rate: 0.6,
+	crossValidationParams := &common.CrossValidationParams{
+		AgreementThreshold: 2,
+		MaxParticipants:    5,
 	}
 
 	relayProcessor := NewRelayProcessor(
@@ -1646,7 +1644,7 @@ func TestProtocolErrorsRecoveryMetricWithCrossValidation(t *testing.T) {
 	}
 }
 
-// Test: CrossValidation met with both error types
+// Test: Recovery metrics are called in Stateless mode when errors occur
 func TestBothErrorTypesRecoveryMetricsWithCrossValidation(t *testing.T) {
 	ctx := context.Background()
 	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -1667,15 +1665,10 @@ func TestBothErrorTypesRecoveryMetricsWithCrossValidation(t *testing.T) {
 	mockMetrics := NewMockMetricsTracker()
 	consistency := NewConsistency(specId)
 
-	crossValidationParams := common.CrossValidationParams{
-		Min:  3,
-		Max:  5,
-		Rate: 0.6,
-	}
-
+	// Use Stateless mode - recovery metrics are only tracked in Stateless mode
 	relayProcessor := NewRelayProcessor(
 		ctx,
-		crossValidationParams,
+		nil,
 		consistency,
 		mockMetrics,
 		mockMetrics,
@@ -1741,8 +1734,8 @@ func TestBothErrorTypesRecoveryMetricsWithCrossValidation(t *testing.T) {
 		require.Equal(t, 1, len(protocolErrorCalls), "Protocol error recovery metric should be called when protocol errors present")
 	}
 
-	// Verify we had successful responses (cross-validation)
-	require.GreaterOrEqual(t, resultsCount, 3, "Should have at least 3 successes for cross-validation")
+	// Verify we had successful responses
+	require.GreaterOrEqual(t, resultsCount, 1, "Should have at least 1 successful response")
 }
 
 // Test: CrossValidation not met - no metrics
@@ -1766,10 +1759,9 @@ func TestNoRecoveryMetricsWhenCrossValidationNotMet(t *testing.T) {
 	mockMetrics := NewMockMetricsTracker()
 	consistency := NewConsistency(specId)
 
-	crossValidationParams := common.CrossValidationParams{
-		Min:  3,
-		Max:  5,
-		Rate: 0.6,
+	crossValidationParams := &common.CrossValidationParams{
+		AgreementThreshold: 3, // Need 3 matching responses
+		MaxParticipants:    5,
 	}
 
 	relayProcessor := NewRelayProcessor(
@@ -1779,7 +1771,7 @@ func TestNoRecoveryMetricsWhenCrossValidationNotMet(t *testing.T) {
 		mockMetrics,
 		mockMetrics,
 		RelayRetriesManagerInstance,
-		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
+		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, CrossValidation),
 	)
 
 	// Add providers
@@ -1826,97 +1818,56 @@ func TestNoRecoveryMetricsWhenCrossValidationNotMet(t *testing.T) {
 	require.Equal(t, 0, len(protocolErrorCalls), "Protocol error recovery metric should NOT be called")
 }
 
-// TestGetRequiredCrossValidationSize tests the getRequiredCrossValidationSize function behavior
-// with cross-validation enabled and disabled
-func TestGetRequiredCrossValidationSize(t *testing.T) {
+// TestGetAgreementThreshold tests the getAgreementThreshold function behavior
+func TestGetAgreementThreshold(t *testing.T) {
 	tests := []struct {
 		name                  string
-		crossValidationParams common.CrossValidationParams
-		responseCount         int
+		crossValidationParams *common.CrossValidationParams
+		selection             Selection
 		expected              int
 		description           string
 	}{
 		{
-			name:                  "CrossValidation Disabled - Returns Min",
-			crossValidationParams: common.CrossValidationParams{Rate: 1, Max: 1, Min: 1},
-			responseCount:         5,
+			name:                  "Stateless - Returns 1 (no cross-validation params)",
+			crossValidationParams: nil,
+			selection:             Stateless,
 			expected:              1,
-			description:           "When cross-validation is disabled, should always return Min regardless of response count",
+			description:           "When selection is Stateless with nil params, should return 1",
 		},
 		{
-			name:                  "CrossValidation Enabled - Single Response",
-			crossValidationParams: common.CrossValidationParams{Rate: 0.66, Max: 5, Min: 2},
-			responseCount:         1,
+			name:                  "Stateful - Returns 1 (no cross-validation params)",
+			crossValidationParams: nil,
+			selection:             Stateful,
+			expected:              1,
+			description:           "When selection is Stateful with nil params, should return 1",
+		},
+		{
+			name:                  "CrossValidation - Returns AgreementThreshold",
+			crossValidationParams: &common.CrossValidationParams{AgreementThreshold: 2, MaxParticipants: 5},
+			selection:             CrossValidation,
 			expected:              2,
-			description:           "When cross-validation enabled with low response count, should return Min",
+			description:           "When selection is CrossValidation, should return AgreementThreshold",
 		},
 		{
-			name:                  "CrossValidation Enabled - Multiple Responses",
-			crossValidationParams: common.CrossValidationParams{Rate: 0.66, Max: 5, Min: 2},
-			responseCount:         3,
-			expected:              2,
-			description:           "Rate 0.66 * 3 = 1.98, ceil = 2",
-		},
-		{
-			name:                  "CrossValidation Enabled - High Response Count",
-			crossValidationParams: common.CrossValidationParams{Rate: 0.66, Max: 5, Min: 2},
-			responseCount:         5,
+			name:                  "CrossValidation - High AgreementThreshold",
+			crossValidationParams: &common.CrossValidationParams{AgreementThreshold: 4, MaxParticipants: 5},
+			selection:             CrossValidation,
 			expected:              4,
-			description:           "Rate 0.66 * 5 = 3.3, ceil = 4",
-		},
-		{
-			name:                  "CrossValidation Disabled - Zero Responses",
-			crossValidationParams: common.CrossValidationParams{Rate: 1, Max: 1, Min: 1},
-			responseCount:         0,
-			expected:              1,
-			description:           "Even with 0 responses, should return Min when disabled",
+			description:           "When selection is CrossValidation with high threshold, should return AgreementThreshold",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Test the function directly by creating a minimal RelayProcessor
 			rp := &RelayProcessor{
 				crossValidationParams: tt.crossValidationParams,
+				selection:             tt.selection,
 			}
 
-			result := rp.getRequiredCrossValidationSize(tt.responseCount)
+			result := rp.getAgreementThreshold()
 			require.Equal(t, tt.expected, result, tt.description)
 		})
 	}
-}
-
-// TestCrossValidationDisabledScenario tests the core bug fix:
-// With cross-validation disabled and 2 responses, should only require 1 match (Min)
-func TestCrossValidationDisabledScenario(t *testing.T) {
-	// This test validates the fix for the bug where:
-	// - CrossValidation was disabled {Rate: 1, Max: 1, Min: 1}
-	// - 2 node error responses were received
-	// - Old behavior: required 2 matches (calculated from response count)
-	// - New behavior: requires 1 match (from Min)
-
-	crossValidationDisabled := common.CrossValidationParams{Rate: 1, Max: 1, Min: 1}
-	rp := &RelayProcessor{crossValidationParams: crossValidationDisabled}
-
-	// With 2 responses and cross-validation disabled, should require only Min (1)
-	result := rp.getRequiredCrossValidationSize(2)
-	require.Equal(t, 1, result, "CrossValidation disabled with 2 responses should require Min (1), not 2")
-
-	// With 5 responses and cross-validation disabled, should still require only Min (1)
-	result = rp.getRequiredCrossValidationSize(5)
-	require.Equal(t, 1, result, "CrossValidation disabled with 5 responses should require Min (1), not 5")
-
-	// Now test with cross-validation enabled
-	crossValidationEnabled := common.CrossValidationParams{Rate: 0.66, Max: 5, Min: 2}
-	rp.crossValidationParams = crossValidationEnabled
-
-	// With 2 responses and cross-validation enabled, should calculate: ceil(0.66 * 2) = 2
-	result = rp.getRequiredCrossValidationSize(2)
-	require.Equal(t, 2, result, "CrossValidation enabled with 2 responses: ceil(0.66 * 2) = 2")
-
-	// With 3 responses and cross-validation enabled, should calculate: ceil(0.66 * 3) = 2
-	result = rp.getRequiredCrossValidationSize(3)
-	require.Equal(t, 2, result, "CrossValidation enabled with 3 responses: ceil(0.66 * 3) = 2")
 }
 
 // NEW TEST: Test HasUnsupportedMethodErrors function with the IsUnsupportedMethod flag
@@ -1985,4 +1936,341 @@ func TestHasUnsupportedMethodErrors(t *testing.T) {
 			require.False(t, isUnsupported, "Smart contract message '%s' should NOT be detected as unsupported", msg)
 		}
 	})
+}
+
+// TestCrossValidationEmptyArrayResponse tests that empty arrays [] are valid for cross-validation
+func TestCrossValidationEmptyArrayResponse(t *testing.T) {
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	specId := "LAV1"
+	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+
+	chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
+
+	usedProviders := lavasession.NewUsedProviders(nil)
+
+	cvParams := &common.CrossValidationParams{
+		AgreementThreshold: 2,
+		MaxParticipants:    3,
+	}
+
+	relayProcessor := NewRelayProcessor(
+		ctx,
+		cvParams,
+		nil,
+		RelayProcessorMetrics,
+		RelayProcessorMetrics,
+		RelayRetriesManagerInstance,
+		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, CrossValidation),
+	)
+
+	// Set the batch size so WaitForResults knows how many responses to expect
+	usedProviders.AddUsed(lavasession.ConsumerSessionsMap{
+		"provider1": &lavasession.SessionInfo{},
+		"provider2": &lavasession.SessionInfo{},
+		"provider3": &lavasession.SessionInfo{},
+	}, nil)
+
+	// All providers return empty array [] (e.g., eth_getLogs with no matching logs)
+	emptyArrayData := []byte(`[]`)
+	relayProcessor.SetResponse(createMockRelayResponseWithData("provider1", emptyArrayData, nil))
+	relayProcessor.SetResponse(createMockRelayResponseWithData("provider2", emptyArrayData, nil))
+	relayProcessor.SetResponse(createMockRelayResponseWithData("provider3", emptyArrayData, nil))
+
+	// Wait for responses to be processed
+	waitCtx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+	defer cancel()
+	relayProcessor.WaitForResults(waitCtx)
+
+	// Should reach consensus on empty array
+	result, err := relayProcessor.ProcessingResult()
+	require.NoError(t, err, "Cross-validation should succeed with matching empty arrays")
+	require.NotNil(t, result)
+	require.Equal(t, emptyArrayData, result.Reply.Data)
+	require.GreaterOrEqual(t, result.CrossValidation, 2, "CrossValidation count should meet threshold")
+}
+
+// TestCrossValidationEmptyObjectResponse tests that empty objects {} are valid for cross-validation
+func TestCrossValidationEmptyObjectResponse(t *testing.T) {
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	specId := "LAV1"
+	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+
+	chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
+
+	usedProviders := lavasession.NewUsedProviders(nil)
+
+	cvParams := &common.CrossValidationParams{
+		AgreementThreshold: 2,
+		MaxParticipants:    2,
+	}
+
+	relayProcessor := NewRelayProcessor(
+		ctx,
+		cvParams,
+		nil,
+		RelayProcessorMetrics,
+		RelayProcessorMetrics,
+		RelayRetriesManagerInstance,
+		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, CrossValidation),
+	)
+
+	// Set the batch size so WaitForResults knows how many responses to expect
+	usedProviders.AddUsed(lavasession.ConsumerSessionsMap{
+		"provider1": &lavasession.SessionInfo{},
+		"provider2": &lavasession.SessionInfo{},
+	}, nil)
+
+	// Both providers return empty object {}
+	emptyObjectData := []byte(`{}`)
+	relayProcessor.SetResponse(createMockRelayResponseWithData("provider1", emptyObjectData, nil))
+	relayProcessor.SetResponse(createMockRelayResponseWithData("provider2", emptyObjectData, nil))
+
+	// Wait for responses to be processed
+	waitCtx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+	defer cancel()
+	relayProcessor.WaitForResults(waitCtx)
+
+	result, err := relayProcessor.ProcessingResult()
+	require.NoError(t, err, "Cross-validation should succeed with matching empty objects")
+	require.NotNil(t, result)
+	require.Equal(t, emptyObjectData, result.Reply.Data)
+	require.GreaterOrEqual(t, result.CrossValidation, 2, "CrossValidation count should meet threshold")
+}
+
+// TestCrossValidationUniformBehaviorDeterministicAndNonDeterministic tests that both
+// deterministic and non-deterministic APIs behave the same for cross-validation:
+// quorum met = success, quorum not met = failure
+func TestCrossValidationUniformBehaviorDeterministicAndNonDeterministic(t *testing.T) {
+	ctx := context.Background()
+
+	// Test both deterministic and non-deterministic categories
+	testCases := []struct {
+		name          string
+		deterministic bool
+	}{
+		{"deterministic API", true},
+		{"non-deterministic API", false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name+" - quorum met succeeds", func(t *testing.T) {
+			serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			})
+			specId := "LAV1"
+			chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+			if closeServer != nil {
+				defer closeServer()
+			}
+			require.NoError(t, err)
+
+			chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			require.NoError(t, err)
+
+			// Override deterministic flag for testing
+			if api := chainMsg.GetApi(); api != nil {
+				api.Category.Deterministic = tc.deterministic
+			}
+
+			protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
+
+			usedProviders := lavasession.NewUsedProviders(nil)
+
+			cvParams := &common.CrossValidationParams{
+				AgreementThreshold: 2,
+				MaxParticipants:    3,
+			}
+
+			relayProcessor := NewRelayProcessor(
+				ctx,
+				cvParams,
+				nil,
+				RelayProcessorMetrics,
+				RelayProcessorMetrics,
+				RelayRetriesManagerInstance,
+				newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, CrossValidation),
+			)
+
+			// Set the batch size so WaitForResults knows how many responses to expect
+			usedProviders.AddUsed(lavasession.ConsumerSessionsMap{
+				"provider1": &lavasession.SessionInfo{},
+				"provider2": &lavasession.SessionInfo{},
+				"provider3": &lavasession.SessionInfo{},
+			}, nil)
+
+			// 2 providers return same data (meets threshold of 2)
+			sameData := []byte(`{"result": "same"}`)
+			differentData := []byte(`{"result": "different"}`)
+			relayProcessor.SetResponse(createMockRelayResponseWithData("provider1", sameData, nil))
+			relayProcessor.SetResponse(createMockRelayResponseWithData("provider2", sameData, nil))
+			relayProcessor.SetResponse(createMockRelayResponseWithData("provider3", differentData, nil))
+
+			// Wait for responses to be processed
+			waitCtx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+			defer cancel()
+			relayProcessor.WaitForResults(waitCtx)
+
+			result, err := relayProcessor.ProcessingResult()
+			require.NoError(t, err, "Cross-validation should succeed when quorum is met for %s", tc.name)
+			require.NotNil(t, result)
+			require.Equal(t, sameData, result.Reply.Data)
+			require.GreaterOrEqual(t, result.CrossValidation, 2)
+		})
+
+		t.Run(tc.name+" - quorum not met fails", func(t *testing.T) {
+			serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			})
+			specId := "LAV1"
+			chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+			if closeServer != nil {
+				defer closeServer()
+			}
+			require.NoError(t, err)
+
+			chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			require.NoError(t, err)
+
+			// Override deterministic flag for testing
+			if api := chainMsg.GetApi(); api != nil {
+				api.Category.Deterministic = tc.deterministic
+			}
+
+			protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
+
+			usedProviders := lavasession.NewUsedProviders(nil)
+
+			cvParams := &common.CrossValidationParams{
+				AgreementThreshold: 2,
+				MaxParticipants:    3,
+			}
+
+			relayProcessor := NewRelayProcessor(
+				ctx,
+				cvParams,
+				nil,
+				RelayProcessorMetrics,
+				RelayProcessorMetrics,
+				RelayRetriesManagerInstance,
+				newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, CrossValidation),
+			)
+
+			// Set the batch size so WaitForResults knows how many responses to expect
+			usedProviders.AddUsed(lavasession.ConsumerSessionsMap{
+				"provider1": &lavasession.SessionInfo{},
+				"provider2": &lavasession.SessionInfo{},
+				"provider3": &lavasession.SessionInfo{},
+			}, nil)
+
+			// All providers return different data (none meet threshold)
+			relayProcessor.SetResponse(createMockRelayResponseWithData("provider1", []byte(`{"result": "a"}`), nil))
+			relayProcessor.SetResponse(createMockRelayResponseWithData("provider2", []byte(`{"result": "b"}`), nil))
+			relayProcessor.SetResponse(createMockRelayResponseWithData("provider3", []byte(`{"result": "c"}`), nil))
+
+			// Wait for responses to be processed
+			waitCtx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+			defer cancel()
+			relayProcessor.WaitForResults(waitCtx)
+
+			result, err := relayProcessor.ProcessingResult()
+			require.Error(t, err, "Cross-validation should fail when quorum is not met for %s", tc.name)
+			// When cross-validation fails, ProcessingResult returns an error placeholder result (not nil)
+			// with StatusCode 500, so we check the error message instead
+			require.Contains(t, err.Error(), "cross-validation failed")
+			if result != nil {
+				require.Equal(t, 500, result.StatusCode, "Failed cross-validation should have error status code")
+			}
+		})
+	}
+}
+
+// TestCrossValidationMaxParticipantsLimit tests that MaxParticipants cannot exceed MaxCallsPerRelay
+func TestCrossValidationMaxParticipantsLimit(t *testing.T) {
+	// This test verifies the constant value and that valid params work
+	require.Equal(t, 50, MaxCallsPerRelay, "MaxCallsPerRelay should be 50")
+
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	specId := "LAV1"
+	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+
+	chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
+
+	usedProviders := lavasession.NewUsedProviders(nil)
+
+	// Valid case: MaxParticipants <= MaxCallsPerRelay
+	cvParams := &common.CrossValidationParams{
+		AgreementThreshold: 2,
+		MaxParticipants:    MaxCallsPerRelay, // Max allowed
+	}
+
+	// This should not panic
+	relayProcessor := NewRelayProcessor(
+		ctx,
+		cvParams,
+		nil,
+		RelayProcessorMetrics,
+		RelayProcessorMetrics,
+		RelayRetriesManagerInstance,
+		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, CrossValidation),
+	)
+	require.NotNil(t, relayProcessor)
+}
+
+// TestCrossValidationRequiresNonNilParams tests that Stateless mode works with nil params
+func TestCrossValidationRequiresNonNilParams(t *testing.T) {
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	specId := "LAV1"
+	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+
+	chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
+
+	usedProviders := lavasession.NewUsedProviders(nil)
+
+	// Stateless mode with nil params should work
+	statelessProcessor := NewRelayProcessor(
+		ctx,
+		nil,
+		nil,
+		RelayProcessorMetrics,
+		RelayProcessorMetrics,
+		RelayRetriesManagerInstance,
+		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
+	)
+	require.NotNil(t, statelessProcessor)
 }

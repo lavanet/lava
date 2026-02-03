@@ -1,18 +1,15 @@
 package common
 
 // CrossValidationParams holds the cross-validation configuration parameters
+// Note: Whether cross-validation is enabled is determined by the Selection type (CrossValidation),
+// not by these parameters. These parameters only store the values when cross-validation is active.
 type CrossValidationParams struct {
-	Rate float64
-	Max  int
-	Min  int
+	MaxParticipants    int // Maximum number of providers to query
+	AgreementThreshold int // Number of matching responses needed for consensus
 }
 
+// DefaultCrossValidationParams are used when cross-validation is not enabled (Selection != CrossValidation)
 var DefaultCrossValidationParams = CrossValidationParams{
-	Rate: 1,
-	Max:  1,
-	Min:  1,
-}
-
-func (cvp CrossValidationParams) Enabled() bool {
-	return !(cvp.Rate == DefaultCrossValidationParams.Rate && cvp.Max == DefaultCrossValidationParams.Max && cvp.Min == DefaultCrossValidationParams.Min)
+	MaxParticipants:    1,
+	AgreementThreshold: 1,
 }

@@ -8,6 +8,7 @@ import (
 	"math"
 	"net/http"
 	"runtime/debug"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -260,17 +261,20 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 	var err error
 	usedProviders := lavasession.NewUsedProviders(nil)
 
-	// Get cross-validation parameters from protocol message
-	crossValidationParams, err := protocolMessage.GetCrossValidationParameters()
+	// Create state machine first - it determines Selection type based on cross-validation headers
+	stateMachine, err := NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, nil, rpccs.debugRelays, rpccs.rpcConsumerLogs)
 	if err != nil {
 		return false, err
 	}
 
-	// Validate that cross-validation min doesn't exceed available providers
-	if crossValidationParams.Enabled() && crossValidationParams.Min > rpccs.consumerSessionManager.GetNumberOfValidProviders() {
-		return false, utils.LavaFormatError("requested cross-validation min exceeds available providers",
+	// Get cross-validation parameters from the state machine (nil for Stateless/Stateful)
+	crossValidationParams := stateMachine.GetCrossValidationParams()
+
+	// Validate that maxParticipants doesn't exceed available providers when CrossValidation is enabled
+	if stateMachine.GetSelection() == relaycore.CrossValidation && crossValidationParams != nil && crossValidationParams.MaxParticipants > rpccs.consumerSessionManager.GetNumberOfValidProviders() {
+		return false, utils.LavaFormatError("requested cross-validation maxParticipants exceeds available providers",
 			lavasession.PairingListEmptyError,
-			utils.LogAttr("crossValidationMin", crossValidationParams.Min),
+			utils.LogAttr("maxParticipants", crossValidationParams.MaxParticipants),
 			utils.LogAttr("availableProviders", rpccs.consumerSessionManager.GetNumberOfValidProviders()),
 			utils.LogAttr("GUID", ctx))
 	}
@@ -282,7 +286,7 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 		rpccs.rpcConsumerLogs,
 		rpccs,
 		rpccs.relayRetriesManager,
-		NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, nil, rpccs.debugRelays, rpccs.rpcConsumerLogs),
+		stateMachine,
 	)
 	usedProvidersResets := 1
 	for i := 0; i < retries; i++ {
@@ -494,16 +498,20 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 	defer cancel()
 	usedProviders := lavasession.NewUsedProviders(protocolMessage)
 
-	crossValidationParams, err := protocolMessage.GetCrossValidationParameters()
+	// Create state machine first - it determines Selection type based on cross-validation headers
+	stateMachine, err := NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, analytics, rpccs.debugRelays, rpccs.rpcConsumerLogs)
 	if err != nil {
 		return nil, err
 	}
 
-	// Validate that cross-validation min doesn't exceed available providers
-	if crossValidationParams.Enabled() && crossValidationParams.Min > rpccs.consumerSessionManager.GetNumberOfValidProviders() {
-		return nil, utils.LavaFormatError("requested cross-validation min exceeds available providers",
+	// Get cross-validation parameters from the state machine (nil for Stateless/Stateful)
+	crossValidationParams := stateMachine.GetCrossValidationParams()
+
+	// Validate that maxParticipants doesn't exceed available providers when CrossValidation is enabled
+	if stateMachine.GetSelection() == relaycore.CrossValidation && crossValidationParams != nil && crossValidationParams.MaxParticipants > rpccs.consumerSessionManager.GetNumberOfValidProviders() {
+		return nil, utils.LavaFormatError("requested cross-validation maxParticipants exceeds available providers",
 			lavasession.PairingListEmptyError,
-			utils.LogAttr("crossValidationMin", crossValidationParams.Min),
+			utils.LogAttr("maxParticipants", crossValidationParams.MaxParticipants),
 			utils.LogAttr("availableProviders", rpccs.consumerSessionManager.GetNumberOfValidProviders()),
 			utils.LogAttr("GUID", ctx))
 	}
@@ -515,7 +523,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 		rpccs.rpcConsumerLogs,
 		rpccs,
 		rpccs.relayRetriesManager,
-		NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, analytics, rpccs.debugRelays, rpccs.rpcConsumerLogs),
+		stateMachine,
 	)
 
 	relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
@@ -799,25 +807,26 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	earliestBlockHashRequested := spectypes.NOT_APPLICABLE
 	latestBlockHashRequested := spectypes.NOT_APPLICABLE
 	var cacheError error
+	selection := relayProcessor.GetSelection()
 	crossValidationParams := relayProcessor.GetCrossValidationParams()
-	if rpccs.cache.CacheActive() && !crossValidationParams.Enabled() { // use cache only if its defined and cross-validation is disabled.
+	if rpccs.cache.CacheActive() && selection != relaycore.CrossValidation { // use cache only if its defined and cross-validation is disabled.
 		utils.LavaFormatDebug("Cache lookup attempt",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("cacheActive", true),
 			utils.LogAttr("reqBlock", reqBlock),
 			utils.LogAttr("forceCacheRefresh", protocolMessage.GetForceCacheRefresh()),
-			utils.LogAttr("crossValidationEnabled", false),
+			utils.LogAttr("selection", selection),
 		)
-	} else if rpccs.cache.CacheActive() && crossValidationParams.Enabled() {
+	} else if rpccs.cache.CacheActive() && selection == relaycore.CrossValidation && crossValidationParams != nil {
 		utils.LavaFormatDebug("Cache bypassed due to cross-validation requirements",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("cacheActive", true),
-			utils.LogAttr("crossValidationEnabled", true),
-			utils.LogAttr("crossValidationMin", crossValidationParams.Min),
+			utils.LogAttr("selection", selection),
+			utils.LogAttr("agreementThreshold", crossValidationParams.AgreementThreshold),
 			utils.LogAttr("reason", "cross-validation requires fresh provider validation, cache would defeat consensus verification"),
 		)
 	}
-	if rpccs.cache.CacheActive() && !crossValidationParams.Enabled() { // use cache only if its defined and cross-validation is disabled.
+	if rpccs.cache.CacheActive() && selection != relaycore.CrossValidation { // use cache only if its defined and cross-validation is disabled.
 		if !protocolMessage.GetForceCacheRefresh() { // don't use cache if user specified
 			// Skip cache for NOT_APPLICABLE requests as they are never cached on the write side
 			// (see line ~1180 where NOT_APPLICABLE requests skip caching)
@@ -1011,6 +1020,27 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			statefulRelayTargets = append(statefulRelayTargets, providerPublicAddress)
 		}
 		relayProcessor.SetStatefulRelayTargets(statefulRelayTargets)
+	}
+
+	// For cross-validation, capture all providers that were queried
+	// This must be done immediately after GetSessions, before any responses come back
+	// so we track all queried providers even if their response doesn't arrive (early exit when threshold met)
+	if selection == relaycore.CrossValidation {
+		queriedProviders := make([]string, 0, len(sessions))
+		for providerPublicAddress := range sessions {
+			queriedProviders = append(queriedProviders, providerPublicAddress)
+		}
+		relayProcessor.SetCrossValidationQueriedProviders(queriedProviders)
+
+		// Verify we have enough sessions to meet the agreement threshold
+		// If not, fail early with a clear error rather than proceeding knowing consensus is impossible
+		if crossValidationParams != nil && len(sessions) < crossValidationParams.AgreementThreshold {
+			return utils.LavaFormatError("insufficient sessions for cross-validation consensus",
+				lavasession.PairingListEmptyError,
+				utils.LogAttr("agreementThreshold", crossValidationParams.AgreementThreshold),
+				utils.LogAttr("sessionsAcquired", len(sessions)),
+				utils.LogAttr("GUID", ctx))
+		}
 	}
 
 	// making sure next get sessions wont use regular providers
@@ -1277,13 +1307,13 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						utils.LogAttr("GUID", ctx),
 						utils.LogAttr("method", protocolMessage.GetApi().Name),
 					)
-				} else if !crossValidationParams.Enabled() {
+				} else if selection != relaycore.CrossValidation {
 					shouldCache = !localRelayResult.IsNodeError // Cache successful responses only when cross-validation is disabled
 				} else {
 					// Cross-validation is enabled and this is not an unsupported method error
 					utils.LavaFormatDebug("Skipping cache for successful response due to cross-validation",
 						utils.LogAttr("GUID", ctx),
-						utils.LogAttr("crossValidationEnabled", true),
+						utils.LogAttr("selection", selection),
 						utils.LogAttr("isNodeError", localRelayResult.IsNodeError),
 						utils.LogAttr("reason", "cross-validation requires fresh provider validation on each request"),
 					)
@@ -1798,7 +1828,8 @@ func (rpccs *RPCConsumerServer) getMetadataFromRelayTrailer(metadataHeaders []st
 
 // RelayProcessorForHeaders interface for methods used by appendHeadersToRelayResult
 type RelayProcessorForHeaders interface {
-	GetCrossValidationParams() common.CrossValidationParams
+	GetCrossValidationParams() *common.CrossValidationParams // nil for Stateless/Stateful
+	GetSelection() relaycore.Selection
 	GetResultsData() ([]common.RelayResult, []common.RelayResult, []relaycore.RelayError)
 	GetStatefulRelayTargets() []string
 	GetUsedProviders() *lavasession.UsedProviders
@@ -1806,19 +1837,17 @@ type RelayProcessorForHeaders interface {
 }
 
 func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, relayResult *common.RelayResult, protocolErrors uint64, relayProcessor RelayProcessorForHeaders, protocolMessage chainlib.ProtocolMessage, apiName string) {
-	if relayResult == nil {
-		return
-	}
-
 	metadataReply := []pairingtypes.Metadata{}
 
-	// Check if cross-validation feature is enabled
-	crossValidationParams := relayProcessor.GetCrossValidationParams()
+	// Check if cross-validation is enabled via Selection type
+	selection := relayProcessor.GetSelection()
 
-	if crossValidationParams.Enabled() {
-		// For cross-validation mode: show all participating providers instead of single provider
-		successResults, nodeErrors, _ := relayProcessor.GetResultsData()
+	if selection == relaycore.CrossValidation {
+		// For cross-validation mode: show all participating providers and status
+		successResults, nodeErrors, protocolErrorResults := relayProcessor.GetResultsData()
+		cvParams := relayProcessor.GetCrossValidationParams()
 
+		// Collect all providers we sent requests to
 		allProvidersMap := make(map[string]bool)
 
 		// Add successful providers
@@ -1835,20 +1864,76 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 			}
 		}
 
-		// Convert to slice
+		// Add providers from protocol errors (they also participated)
+		for _, result := range protocolErrorResults {
+			if result.ProviderInfo.ProviderAddress != "" {
+				allProvidersMap[result.ProviderInfo.ProviderAddress] = true
+			}
+		}
+
+		// Convert to slice and sort for consistent ordering
 		allProvidersList := make([]string, 0, len(allProvidersMap))
 		for provider := range allProvidersMap {
 			allProvidersList = append(allProvidersList, provider)
 		}
+		sort.Strings(allProvidersList)
 
-		if len(allProvidersList) > 0 {
-			allProvidersString := fmt.Sprintf("%v", allProvidersList)
+		// Determine cross-validation status and agreeing providers
+		var cvStatus string
+		var agreeingProvidersList []string
+
+		// Check if we have a successful result with enough agreements
+		if relayResult != nil && cvParams != nil && relayResult.CrossValidation >= cvParams.AgreementThreshold {
+			cvStatus = "success"
+			// Find providers whose responses matched the winning consensus
+			winningHash := relayResult.ResponseHash
+			agreeingProvidersMap := make(map[string]bool)
+			for _, result := range successResults {
+				if result.ResponseHash == winningHash && result.ProviderInfo.ProviderAddress != "" {
+					agreeingProvidersMap[result.ProviderInfo.ProviderAddress] = true
+				}
+			}
+			agreeingProvidersList = make([]string, 0, len(agreeingProvidersMap))
+			for provider := range agreeingProvidersMap {
+				agreeingProvidersList = append(agreeingProvidersList, provider)
+			}
+			sort.Strings(agreeingProvidersList)
+		} else {
+			cvStatus = "failed"
+			agreeingProvidersList = []string{} // Empty on failure - no consensus reached
+		}
+
+		// Emit cross-validation metric (even on failure)
+		if cvParams != nil && rpccs.listenEndpoint != nil && rpccs.rpcConsumerLogs != nil {
+			chainId, apiInterface := rpccs.listenEndpoint.ChainID, rpccs.listenEndpoint.ApiInterface
+			go rpccs.rpcConsumerLogs.SetCrossValidationMetric(
+				chainId, apiInterface, apiName, cvStatus,
+				cvParams.MaxParticipants, cvParams.AgreementThreshold,
+				allProvidersList, agreeingProvidersList,
+			)
+		}
+
+		// Only add headers if we have a relay result to attach them to
+		if relayResult != nil {
+			// Add cross-validation status header
+			metadataReply = append(metadataReply, pairingtypes.Metadata{
+				Name:  common.CROSS_VALIDATION_STATUS_HEADER_NAME,
+				Value: cvStatus,
+			})
+
+			// Add all providers header (comma-separated for easy parsing)
 			metadataReply = append(metadataReply, pairingtypes.Metadata{
 				Name:  common.CROSS_VALIDATION_ALL_PROVIDERS_HEADER_NAME,
-				Value: allProvidersString,
+				Value: strings.Join(allProvidersList, ","),
+			})
+
+			// Add agreeing providers header (comma-separated for easy parsing)
+			metadataReply = append(metadataReply, pairingtypes.Metadata{
+				Name:  common.CROSS_VALIDATION_AGREEING_PROVIDERS_HEADER,
+				Value: strings.Join(agreeingProvidersList, ","),
 			})
 		}
-	} else {
+	} else if relayResult != nil {
 		// For non-cross-validation mode: keep existing single provider behavior
 		providerAddress := relayResult.GetProvider()
 		if providerAddress == "" {
@@ -1915,6 +2000,13 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 			}
 		}
 	}
+
+	// Return early if relayResult is nil (e.g., cross-validation failure)
+	// Metrics have already been emitted above
+	if relayResult == nil {
+		return
+	}
+
 	if relayResult.Reply == nil {
 		relayResult.Reply = &pairingtypes.RelayReply{}
 	}
