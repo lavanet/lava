@@ -57,6 +57,29 @@ func NewUnsupportedMethodError(originalError error, methodName string) *Unsuppor
 	}
 }
 
+// SolanaNonRetryableError represents a Solana error that should not be retried.
+// Currently covers error code -32009 ("missing in long-term storage") which indicates
+// the slot data is permanently unavailable.
+// Note: -32007 (ledger jump) IS retryable as another provider may have the data.
+type SolanaNonRetryableError struct {
+	originalError error
+}
+
+func (e *SolanaNonRetryableError) Error() string {
+	return fmt.Sprintf("solana non-retryable error: %v", e.originalError)
+}
+
+func (e *SolanaNonRetryableError) Unwrap() error {
+	return e.originalError
+}
+
+// NewSolanaNonRetryableError creates a new SolanaNonRetryableError
+func NewSolanaNonRetryableError(originalError error) *SolanaNonRetryableError {
+	return &SolanaNonRetryableError{
+		originalError: originalError,
+	}
+}
+
 // IsUnsupportedMethodError checks if an error indicates an unsupported method
 // This is the comprehensive check that handles:
 // - Error message pattern matching (via common.IsUnsupportedMethodMessage)
@@ -114,8 +137,52 @@ func IsUnsupportedMethodErrorType(err error) bool {
 	return errors.As(err, &unsupportedMethodError)
 }
 
+// IsSolanaNonRetryableError checks if an error indicates a Solana error that should not be retried.
+// This checks:
+// - JSON-RPC error codes: -32602 (invalid params), -32009 (missing in long-term storage)
+// - Error message pattern matching (via common.IsSolanaNonRetryableError)
+// Note: -32007 (ledger jump) IS retryable as another provider may have the data.
+func IsSolanaNonRetryableError(nodeError error) bool {
+	if nodeError == nil {
+		return false
+	}
+
+	// First check the error message patterns
+	if common.IsSolanaNonRetryableError(nodeError.Error()) {
+		return true
+	}
+
+	// Try to recover JSON-RPC error from HTTP error
+	if jsonMsg := TryRecoverNodeErrorFromClientError(nodeError); jsonMsg != nil && jsonMsg.Error != nil {
+		// Check for non-retryable JSON-RPC error codes
+		// -32602: Invalid params (e.g., invalid slot number)
+		// -32009: Missing in long-term storage (slot permanently unavailable)
+		if jsonMsg.Error.Code == common.JSONRPCInvalidParamsCode ||
+			jsonMsg.Error.Code == common.SolanaMissingInLongTermStorageCode {
+			return true
+		}
+		// Check error message patterns in JSON-RPC error
+		if jsonMsg.Error.Message != "" {
+			return common.IsSolanaNonRetryableError(jsonMsg.Error.Message)
+		}
+	}
+
+	return false
+}
+
+// IsSolanaNonRetryableErrorType checks if an error is specifically a SolanaNonRetryableError type
+func IsSolanaNonRetryableErrorType(err error) bool {
+	if err == nil {
+		return false
+	}
+	var solanaNonRetryableError *SolanaNonRetryableError
+	return errors.As(err, &solanaNonRetryableError)
+}
+
 // ShouldRetryError determines if an error should trigger retry attempts
-// Returns false for unsupported method errors to prevent unnecessary retries
+// Returns false for:
+// - Unsupported method errors
+// - Solana non-retryable errors (e.g., -32009 "missing in long-term storage")
 func ShouldRetryError(err error) bool {
 	if err == nil {
 		return false
@@ -128,6 +195,16 @@ func ShouldRetryError(err error) bool {
 
 	// Never retry if the error message indicates an unsupported method
 	if IsUnsupportedMethodError(err) {
+		return false
+	}
+
+	// Never retry Solana non-retryable errors (wrapped type)
+	if IsSolanaNonRetryableErrorType(err) {
+		return false
+	}
+
+	// Never retry if the error message indicates a Solana non-retryable error
+	if IsSolanaNonRetryableError(err) {
 		return false
 	}
 
@@ -271,6 +348,10 @@ func (rne *RestErrorHandler) HandleNodeError(ctx context.Context, nodeError erro
 		return &UnsupportedMethodError{originalError: nodeError}
 	}
 
+	if IsSolanaNonRetryableError(nodeError) {
+		return &SolanaNonRetryableError{originalError: nodeError}
+	}
+
 	return rne.handleGenericErrors(ctx, nodeError)
 }
 
@@ -279,6 +360,10 @@ type JsonRPCErrorHandler struct{ genericErrorHandler }
 func (jeh *JsonRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError error) error {
 	if IsUnsupportedMethodError(nodeError) {
 		return &UnsupportedMethodError{originalError: nodeError}
+	}
+
+	if IsSolanaNonRetryableError(nodeError) {
+		return &SolanaNonRetryableError{originalError: nodeError}
 	}
 
 	return jeh.handleGenericErrors(ctx, nodeError)
@@ -291,6 +376,10 @@ func (tendermintErrorHandler *TendermintRPCErrorHandler) HandleNodeError(ctx con
 		return &UnsupportedMethodError{originalError: nodeError}
 	}
 
+	if IsSolanaNonRetryableError(nodeError) {
+		return &SolanaNonRetryableError{originalError: nodeError}
+	}
+
 	return tendermintErrorHandler.handleGenericErrors(ctx, nodeError)
 }
 
@@ -299,6 +388,10 @@ type GRPCErrorHandler struct{ genericErrorHandler }
 func (geh *GRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError error) error {
 	if IsUnsupportedMethodError(nodeError) {
 		return &UnsupportedMethodError{originalError: nodeError}
+	}
+
+	if IsSolanaNonRetryableError(nodeError) {
+		return &SolanaNonRetryableError{originalError: nodeError}
 	}
 
 	st, ok := status.FromError(nodeError)

@@ -296,3 +296,117 @@ func TestIsUnsupportedMethodErrorMessageBytes_LengthOptimization(t *testing.T) {
 	longMsg := []byte("this is a very long error message that contains method not found")
 	require.True(t, IsUnsupportedMethodErrorMessageBytes(longMsg))
 }
+
+// ==================== Solana Non-Retryable Error Tests ====================
+
+func TestIsSolanaNonRetryableError_Pattern(t *testing.T) {
+	// Test the non-retryable pattern is detected (-32009)
+	tests := []struct {
+		name    string
+		message string
+		want    bool
+	}{
+		{"missing in long-term storage", "missing in long-term storage", true},
+		{"real error -32009", "Slot 397535724 was skipped, or missing in long-term storage", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := IsSolanaNonRetryableError(tt.message)
+			require.Equal(t, tt.want, got, "Pattern '%s' should be detected", tt.message)
+		})
+	}
+}
+
+func TestIsSolanaNonRetryableError_CaseInsensitive(t *testing.T) {
+	tests := []string{
+		"MISSING IN LONG-TERM STORAGE",
+		"Missing In Long-Term Storage",
+		"missing in long-term storage",
+	}
+
+	for _, msg := range tests {
+		t.Run(msg, func(t *testing.T) {
+			require.True(t, IsSolanaNonRetryableError(msg), "Should be case insensitive")
+		})
+	}
+}
+
+func TestIsSolanaNonRetryableError_RetryableCases(t *testing.T) {
+	// These are RETRYABLE errors - should NOT match
+	// -32007 (ledger jump) is retryable because another provider may have the data
+	tests := []string{
+		"Slot 397535724 was skipped, or missing due to ledger jump to recent snapshot", // -32007
+		"Slot was skipped",           // Generic, may be retryable
+		"missing due to ledger jump", // -32007 pattern
+		"slot skipped",               // Generic
+	}
+
+	for _, msg := range tests {
+		t.Run(msg, func(t *testing.T) {
+			require.False(t, IsSolanaNonRetryableError(msg), "Message '%s' should be RETRYABLE (not match non-retryable)", msg)
+		})
+	}
+}
+
+func TestIsSolanaNonRetryableError_NegativeCases(t *testing.T) {
+	// These should NOT match Solana non-retryable patterns
+	tests := []string{
+		"",
+		"normal error",
+		"internal server error",
+		"timeout",
+		"connection refused",
+		"method not found",
+		"execution reverted",
+		"insufficient funds",
+	}
+
+	for _, msg := range tests {
+		t.Run(msg, func(t *testing.T) {
+			require.False(t, IsSolanaNonRetryableError(msg), "Message '%s' should NOT match Solana non-retryable", msg)
+		})
+	}
+}
+
+func TestIsSolanaNonRetryableErrorBytes(t *testing.T) {
+	t.Run("matches pattern", func(t *testing.T) {
+		require.True(t, IsSolanaNonRetryableErrorBytes([]byte("missing in long-term storage")))
+	})
+
+	t.Run("nil slice", func(t *testing.T) {
+		require.False(t, IsSolanaNonRetryableErrorBytes(nil))
+	})
+
+	t.Run("empty slice", func(t *testing.T) {
+		require.False(t, IsSolanaNonRetryableErrorBytes([]byte{}))
+	})
+
+	t.Run("retryable error should not match", func(t *testing.T) {
+		require.False(t, IsSolanaNonRetryableErrorBytes([]byte("missing due to ledger jump")))
+	})
+}
+
+func TestSolanaNonRetryableEquivalence_StringVsBytes(t *testing.T) {
+	testCases := []string{
+		// Non-retryable (should match)
+		"missing in long-term storage",
+		"Slot 397535724 was skipped, or missing in long-term storage",
+
+		// Retryable or unrelated (should NOT match)
+		"",
+		"normal error",
+		"slot was skipped",
+		"missing due to ledger jump to recent snapshot",
+	}
+
+	for _, msg := range testCases {
+		t.Run(msg, func(t *testing.T) {
+			stringResult := IsSolanaNonRetryableError(msg)
+			bytesResult := IsSolanaNonRetryableErrorBytes([]byte(msg))
+
+			require.Equal(t, stringResult, bytesResult,
+				"String and bytes versions should produce identical results for message: %q", msg)
+		})
+	}
+}

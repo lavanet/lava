@@ -47,6 +47,17 @@ const (
 
 	// JSON-RPC error code for method not found
 	JSONRPCMethodNotFoundCode = -32601
+
+	// JSON-RPC error code for invalid params
+	JSONRPCInvalidParamsCode = -32602
+
+	// Solana non-retryable error codes
+	// - Error code -32009: Slot was skipped or missing in long-term storage (permanent)
+	// Note: -32007 (ledger jump to snapshot) IS retryable as another provider may have the data
+	SolanaMissingInLongTermStorageCode = -32009
+
+	// Solana non-retryable error patterns (message-based)
+	SolanaMissingInLongTermStorage = "missing in long-term storage"
 )
 
 // Pre-computed byte patterns for efficient matching (initialized once at package load)
@@ -73,6 +84,14 @@ var unsupportedMethodPatternBytes = [][]byte{
 	[]byte(GenericNotSupported), // "not supported"
 }
 
+// Pre-computed byte patterns for Solana non-retryable errors
+// These indicate permanent states that should not trigger retries:
+// - Error code -32009: "missing in long-term storage" (slot permanently unavailable)
+// Note: -32007 (ledger jump) is NOT included as another provider may have the data
+var solanaNonRetryablePatternBytes = [][]byte{
+	[]byte(SolanaMissingInLongTermStorage), // "missing in long-term storage" (code -32009)
+}
+
 // IsUnsupportedMethodMessage checks if an error message indicates an unsupported method.
 // This is a convenience wrapper that delegates to IsUnsupportedMethodErrorMessageBytes
 // for efficient pattern matching using pre-computed byte patterns.
@@ -95,6 +114,35 @@ func IsUnsupportedMethodErrorMessageBytes(errorMessage []byte) bool {
 
 	// Check all patterns with early exit on first match
 	for _, pattern := range unsupportedMethodPatternBytes {
+		if len(pattern) <= msgLen && bytes.Contains(errorMsgLower, pattern) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// IsSolanaNonRetryableError checks if an error message indicates a Solana error that should not be retried.
+// Currently this covers:
+// - Error code -32009: "missing in long-term storage" (slot permanently unavailable)
+//
+// Note: Error code -32007 (ledger jump to snapshot) IS retryable as another provider may have the data.
+//
+// Returns true if the error message contains any known Solana non-retryable pattern.
+func IsSolanaNonRetryableError(errorMessage string) bool {
+	return IsSolanaNonRetryableErrorBytes([]byte(errorMessage))
+}
+
+// IsSolanaNonRetryableErrorBytes checks if an error message (as bytes) indicates a Solana non-retryable error.
+// This is more efficient than IsSolanaNonRetryableError when working with []byte data
+// as it avoids string conversions and uses pre-computed byte patterns with a single-pass lowercase conversion.
+func IsSolanaNonRetryableErrorBytes(errorMessage []byte) bool {
+	// Convert to lowercase once (single O(n) pass)
+	errorMsgLower := bytes.ToLower(errorMessage)
+	msgLen := len(errorMsgLower)
+
+	// Check all patterns with early exit on first match
+	for _, pattern := range solanaNonRetryablePatternBytes {
 		if len(pattern) <= msgLen && bytes.Contains(errorMsgLower, pattern) {
 			return true
 		}
