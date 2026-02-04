@@ -47,6 +47,7 @@ type SmartRouterRelayStateMachine struct {
 	resultsChecker           ResultsCheckerInf
 	analytics                *metrics.RelayMetrics // first relay metrics
 	selection                relaycore.Selection
+	crossValidationParams    *common.CrossValidationParams // nil for Stateless/Stateful, non-nil for CrossValidation
 	debugRelays              bool
 	tickerMetricSetter       tickerMetricSetterInf
 	batchUpdate              chan error
@@ -66,24 +67,45 @@ func NewSmartRouterRelayStateMachine(
 	analytics *metrics.RelayMetrics,
 	debugRelays bool,
 	tickerMetricSetter tickerMetricSetterInf,
-) RelayStateMachine {
-	selection := relaycore.Stateless // retries enabled, seeks majority consensus
-	if chainlib.GetStateful(protocolMessage) == common.CONSISTENCY_SELECT_ALL_PROVIDERS {
+) (RelayStateMachine, error) {
+	// Check cross-validation headers FIRST (highest priority)
+	// This is the SINGLE SOURCE OF TRUTH for determining if cross-validation is enabled
+	crossValidationParams, headersPresent, err := protocolMessage.GetCrossValidationParameters()
+
+	var selection relaycore.Selection
+	var cvParams *common.CrossValidationParams // nil unless CrossValidation mode
+
+	if headersPresent && err != nil {
+		// Cross-validation headers are present but invalid - return error to user
+		return nil, utils.LavaFormatError("invalid cross-validation headers", err, utils.LogAttr("GUID", ctx))
+	} else if headersPresent {
+		selection = relaycore.CrossValidation // maxParticipants providers at once, no retries, agreementThreshold consensus
+		cvParams = &crossValidationParams     // only store params for CrossValidation mode
+		utils.LavaFormatDebug("[StateMachine] CrossValidation mode enabled",
+			utils.LogAttr("maxParticipants", crossValidationParams.MaxParticipants),
+			utils.LogAttr("agreementThreshold", crossValidationParams.AgreementThreshold),
+			utils.LogAttr("GUID", ctx))
+	} else if chainlib.GetStateful(protocolMessage) == common.CONSISTENCY_SELECT_ALL_PROVIDERS {
 		selection = relaycore.Stateful // all top providers at once, waits for best result
+		// cvParams remains nil - not applicable for Stateful mode
+	} else {
+		selection = relaycore.Stateless // retries enabled, seeks majority consensus
+		// cvParams remains nil - not applicable for Stateless mode
 	}
 
 	return &SmartRouterRelayStateMachine{
-		ctx:                ctx,
-		usedProviders:      usedProviders,
-		relaySender:        relaySender,
-		protocolMessage:    protocolMessage,
-		analytics:          analytics,
-		selection:          selection,
-		debugRelays:        debugRelays,
-		tickerMetricSetter: tickerMetricSetter,
-		batchUpdate:        make(chan error, MaximumNumberOfTickerRelayRetries),
-		relayState:         make([]*relaycore.RelayState, 0),
-	}
+		ctx:                   ctx,
+		usedProviders:         usedProviders,
+		relaySender:           relaySender,
+		protocolMessage:       protocolMessage,
+		analytics:             analytics,
+		selection:             selection,
+		crossValidationParams: cvParams,
+		debugRelays:           debugRelays,
+		tickerMetricSetter:    tickerMetricSetter,
+		batchUpdate:           make(chan error, MaximumNumberOfTickerRelayRetries),
+		relayState:            make([]*relaycore.RelayState, 0),
+	}, nil
 }
 
 func (srsm *SmartRouterRelayStateMachine) Initialized() bool {
@@ -104,6 +126,10 @@ func (srsm *SmartRouterRelayStateMachine) GetUsedProviders() *lavasession.UsedPr
 
 func (srsm *SmartRouterRelayStateMachine) GetSelection() relaycore.Selection {
 	return srsm.selection
+}
+
+func (srsm *SmartRouterRelayStateMachine) GetCrossValidationParams() *common.CrossValidationParams {
+	return srsm.crossValidationParams
 }
 
 func (srsm *SmartRouterRelayStateMachine) appendRelayState(nextState *relaycore.RelayState) {
@@ -178,25 +204,39 @@ func (srsm *SmartRouterRelayStateMachine) hasUnsupportedMethodErrorsInStateMachi
 func (srsm *SmartRouterRelayStateMachine) retryCondition(numberOfRetriesLaunched int) bool {
 	utils.LavaFormatTrace("[StateMachine] retryCondition", utils.LogAttr("numberOfRetriesLaunched", numberOfRetriesLaunched), utils.LogAttr("GUID", srsm.ctx), utils.LogAttr("batchNumber", srsm.usedProviders.BatchNumber()), utils.LogAttr("selection", srsm.selection))
 
-	// Never retry if we detect unsupported method errors at state machine level
-	if srsm.hasUnsupportedMethodErrorsInStateMachine() {
-		utils.LavaFormatTrace("[StateMachine] retryCondition: unsupported method detected, no retry", utils.LogAttr("GUID", srsm.ctx))
+	switch srsm.selection {
+	case relaycore.CrossValidation:
+		// No retries - each provider gets exactly one chance
+		utils.LavaFormatTrace("[StateMachine] retryCondition: CrossValidation mode, no retry", utils.LogAttr("GUID", srsm.ctx))
 		return false
-	}
 
-	// Check if batch request retries are disabled and this is a batch request
-	if relaycore.DisableBatchRequestRetry && srsm.protocolMessage.IsBatch() {
-		utils.LavaFormatTrace("[StateMachine] retryCondition: batch request retry disabled, no retry", utils.LogAttr("GUID", srsm.ctx))
+	case relaycore.Stateful:
+		// No retries - sends to top providers, returns first result
+		utils.LavaFormatTrace("[StateMachine] retryCondition: Stateful mode, no retry", utils.LogAttr("GUID", srsm.ctx))
 		return false
-	}
 
-	if srsm.resultsChecker.GetCrossValidationParams().Enabled() && numberOfRetriesLaunched > srsm.resultsChecker.GetCrossValidationParams().Max {
-		return false
-	} else if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
+	case relaycore.Stateless:
+		// Check if batch request retries are disabled and this is a batch request
+		if relaycore.DisableBatchRequestRetry && srsm.protocolMessage.IsBatch() {
+			utils.LavaFormatTrace("[StateMachine] retryCondition: batch request retry disabled, no retry", utils.LogAttr("GUID", srsm.ctx))
+			return false
+		}
+		// Retry unless: unsupported method or max retries reached
+		if srsm.hasUnsupportedMethodErrorsInStateMachine() {
+			utils.LavaFormatTrace("[StateMachine] retryCondition: unsupported method detected, no retry", utils.LogAttr("GUID", srsm.ctx))
+			return false
+		}
+		if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
+			utils.LavaFormatTrace("[StateMachine] retryCondition: max retries reached, no retry", utils.LogAttr("GUID", srsm.ctx), utils.LogAttr("numberOfRetriesLaunched", numberOfRetriesLaunched))
+			return false
+		}
+		utils.LavaFormatTrace("[StateMachine] retryCondition: Stateless mode, will retry", utils.LogAttr("GUID", srsm.ctx))
+		return true
+
+	default:
+		utils.LavaFormatTrace("[StateMachine] retryCondition: unknown selection, no retry", utils.LogAttr("GUID", srsm.ctx), utils.LogAttr("selection", srsm.selection))
 		return false
 	}
-	// Stateful sends to top providers anyway (no retries).
-	return srsm.selection != relaycore.Stateful
 }
 
 func (srsm *SmartRouterRelayStateMachine) GetDebugState() bool {
@@ -284,11 +324,20 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 
 		// initialize relay state
 		srsm.stateTransition(nil, 0)
+
+		// Determine number of providers for initial batch
+		var numProviders int
+		if srsm.selection == relaycore.CrossValidation && srsm.crossValidationParams != nil {
+			numProviders = srsm.crossValidationParams.MaxParticipants
+		} else {
+			numProviders = 1
+		}
+
 		// Send First Message, with analytics and without waiting for batch update.
 		relayTaskChannel <- RelayStateSendInstructions{
 			Analytics:      srsm.analytics,
 			RelayState:     srsm.getLatestState(),
-			NumOfProviders: srsm.resultsChecker.GetCrossValidationParams().Min,
+			NumOfProviders: numProviders,
 		}
 
 		// Initialize parameters

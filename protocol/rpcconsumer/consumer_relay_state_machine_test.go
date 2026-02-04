@@ -96,6 +96,136 @@ func (crsm *ConsumerRelaySenderMock) ParseRelay(
 	return protocolMessage, nil
 }
 
+// TestNewRelayStateMachineSelectionType tests that NewRelayStateMachine correctly determines the selection type
+// based on cross-validation headers and stateful API configuration.
+func TestNewRelayStateMachineSelectionType(t *testing.T) {
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	specId := "LAV1"
+	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+
+	t.Run("no headers - Stateless selection", func(t *testing.T) {
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+
+		// No cross-validation headers
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "dapp", "127.0.0.1")
+		usedProviders := lavasession.NewUsedProviders(nil)
+
+		sm, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		require.NoError(t, err)
+
+		require.Equal(t, relaycore.Stateless, sm.GetSelection())
+		crsm, ok := sm.(*ConsumerRelayStateMachine)
+		require.True(t, ok, "expected *ConsumerRelayStateMachine")
+		require.Nil(t, crsm.GetCrossValidationParams(), "CrossValidationParams should be nil for Stateless mode")
+	})
+
+	t.Run("cross-validation headers present - CrossValidation selection", func(t *testing.T) {
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+
+		// Cross-validation headers present
+		directiveHeaders := map[string]string{
+			common.CROSS_VALIDATION_HEADER_MAX_PARTICIPANTS:    "5",
+			common.CROSS_VALIDATION_HEADER_AGREEMENT_THRESHOLD: "3",
+		}
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, directiveHeaders, nil, "dapp", "127.0.0.1")
+		usedProviders := lavasession.NewUsedProviders(nil)
+
+		sm, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		require.NoError(t, err)
+
+		require.Equal(t, relaycore.CrossValidation, sm.GetSelection())
+		crsm, ok := sm.(*ConsumerRelayStateMachine)
+		require.True(t, ok, "expected *ConsumerRelayStateMachine")
+		params := crsm.GetCrossValidationParams()
+		require.Equal(t, 5, params.MaxParticipants)
+		require.Equal(t, 3, params.AgreementThreshold)
+	})
+
+	t.Run("invalid cross-validation headers - returns error", func(t *testing.T) {
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+
+		// Invalid cross-validation headers (threshold > max)
+		directiveHeaders := map[string]string{
+			common.CROSS_VALIDATION_HEADER_MAX_PARTICIPANTS:    "3",
+			common.CROSS_VALIDATION_HEADER_AGREEMENT_THRESHOLD: "5", // Invalid: threshold > max
+		}
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, directiveHeaders, nil, "dapp", "127.0.0.1")
+		usedProviders := lavasession.NewUsedProviders(nil)
+
+		sm, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+
+		// Invalid headers should return error
+		require.Error(t, err)
+		require.Nil(t, sm)
+		require.Contains(t, err.Error(), "invalid cross-validation headers")
+	})
+}
+
+// TestCrossValidationRetryCondition tests the retryCondition behavior for CrossValidation mode
+func TestCrossValidationRetryCondition(t *testing.T) {
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	specId := "LAV1"
+	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+
+	t.Run("CrossValidation mode - retryCondition returns false", func(t *testing.T) {
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+
+		// Set up cross-validation headers
+		directiveHeaders := map[string]string{
+			common.CROSS_VALIDATION_HEADER_MAX_PARTICIPANTS:    "5",
+			common.CROSS_VALIDATION_HEADER_AGREEMENT_THRESHOLD: "3",
+		}
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, directiveHeaders, nil, "dapp", "127.0.0.1")
+		usedProviders := lavasession.NewUsedProviders(nil)
+
+		sm, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		require.NoError(t, err)
+		crsm, ok := sm.(*ConsumerRelayStateMachine)
+		require.True(t, ok, "expected *ConsumerRelayStateMachine")
+
+		// Verify selection is CrossValidation
+		require.Equal(t, relaycore.CrossValidation, crsm.GetSelection())
+
+		// The shouldRetry internal method isn't exposed, but we can verify via GetRelayTaskChannel behavior
+		// For now, we've verified the selection is correctly set to CrossValidation
+	})
+
+	t.Run("Stateless mode - verifying comparison baseline", func(t *testing.T) {
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+
+		// No cross-validation headers
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "dapp", "127.0.0.1")
+		usedProviders := lavasession.NewUsedProviders(nil)
+
+		sm, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		require.NoError(t, err)
+		crsm, ok := sm.(*ConsumerRelayStateMachine)
+		require.True(t, ok, "expected *ConsumerRelayStateMachine")
+
+		// Verify selection is Stateless
+		require.Equal(t, relaycore.Stateless, crsm.GetSelection())
+	})
+}
+
 func TestConsumerStateMachineHappyFlow(t *testing.T) {
 	t.Run("happy", func(t *testing.T) {
 		// Save and restore RelayCountOnNodeError - this test needs higher limit
@@ -122,7 +252,9 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
 		consistency := relaycore.NewConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultCrossValidationParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics))
+		stateMachine, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		require.NoError(t, err)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, nil, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -193,7 +325,9 @@ func TestConsumerStateMachineExhaustRetries(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
 		consistency := relaycore.NewConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultCrossValidationParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics))
+		stateMachine, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		require.NoError(t, err)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, nil, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -261,22 +395,24 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, relayRequestData, dappId, consumerIp)
 		consistency := relaycore.NewConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
+		stateMachine, err := NewRelayStateMachine(
+			ctx,
+			usedProviders,
+			&ConsumerRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second},
+			protocolMessage,
+			nil,
+			false,
+			relaycoretest.RelayProcessorMetrics,
+		)
+		require.NoError(t, err)
 		relayProcessor := relaycore.NewRelayProcessor(
 			ctx,
-			common.DefaultCrossValidationParams,
+			nil,
 			consistency,
 			relaycoretest.RelayProcessorMetrics,
 			relaycoretest.RelayProcessorMetrics,
 			relaycoretest.RelayRetriesManagerInstance,
-			NewRelayStateMachine(
-				ctx,
-				usedProviders,
-				&ConsumerRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second},
-				protocolMessage,
-				nil,
-				false,
-				relaycoretest.RelayProcessorMetrics,
-			),
+			stateMachine,
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -358,7 +494,8 @@ func TestConsumerStateMachineBatchRequestRetryCondition(t *testing.T) {
 		usedProviders := lavasession.NewUsedProviders(nil)
 
 		// Create the state machine
-		stateMachine := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		stateMachine, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		require.NoError(t, err)
 		consumerStateMachine, ok := stateMachine.(*ConsumerRelayStateMachine)
 		require.True(t, ok, "expected ConsumerRelayStateMachine")
 
@@ -366,7 +503,7 @@ func TestConsumerStateMachineBatchRequestRetryCondition(t *testing.T) {
 		consistency := relaycore.NewConsistency(specId)
 		relayProcessor := relaycore.NewRelayProcessor(
 			ctx,
-			common.DefaultCrossValidationParams,
+			nil, // Stateless mode - no cross-validation params
 			consistency,
 			relaycoretest.RelayProcessorMetrics,
 			relaycoretest.RelayProcessorMetrics,

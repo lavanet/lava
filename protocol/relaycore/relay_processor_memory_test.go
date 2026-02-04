@@ -7,7 +7,6 @@ import (
 
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/common"
-	"github.com/lavanet/lava/v5/protocol/lavasession"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -97,18 +96,6 @@ func TestCrossValidationMapHashCollisions(t *testing.T) {
 
 // BenchmarkRelayProcessorCrossValidationMemory benchmarks memory usage of RelayProcessor cross-validation functionality
 func BenchmarkRelayProcessorCrossValidationMemory(b *testing.B) {
-	// Create relay processor with mock dependencies
-	chainMsg := &mockChainMessage{
-		api: &spectypes.Api{
-			Name:     "getBlock",
-			Category: spectypes.SpecCategory{Deterministic: true},
-		},
-	}
-
-	protocolMsg := chainlib.NewProtocolMessage(chainMsg, nil, nil, "dapp", "127.0.0.1")
-	usedProviders := lavasession.NewUsedProviders(nil)
-	relayStateMachine := newMockRelayStateMachine(protocolMsg, usedProviders)
-
 	// Simulate processing 100 identical large responses
 	largeResponse := createLargeSolanaBatchResponse(50)
 	responseData, _ := json.Marshal(largeResponse)
@@ -118,11 +105,10 @@ func BenchmarkRelayProcessorCrossValidationMemory(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		rp := &RelayProcessor{
-			RelayStateMachine:  relayStateMachine,
 			crossValidationMap: make(map[[32]byte]int),
 		}
 
-		for j := 0; j < 100; j++ {
+		for range 100 {
 			response := &RelayResponse{
 				RelayResult: common.RelayResult{
 					Reply: &pairingtypes.RelayReply{
@@ -137,7 +123,7 @@ func BenchmarkRelayProcessorCrossValidationMemory(b *testing.B) {
 			}
 
 			// Only hash successful responses
-			if response != nil && response.Err == nil {
+			if response.Err == nil {
 				hash := sha256.Sum256(response.RelayResult.GetReply().GetData())
 				rp.crossValidationMap[hash]++
 				if rp.crossValidationMap[hash] > rp.currentCrossValidationEqualResults {
@@ -224,7 +210,7 @@ func BenchmarkHashVsCanonicalForm(b *testing.B) {
 func createLargeSolanaBatchResponse(numItems int) map[string]interface{} {
 	results := make([]map[string]interface{}, numItems)
 
-	for i := 0; i < numItems; i++ {
+	for i := range numItems {
 		results[i] = map[string]interface{}{
 			"lamports":   999999999,
 			"owner":      "11111111111111111111111111111111",

@@ -890,7 +890,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 		for k, v := range ignoredProvidersList {
 			ignoredProvidersListCopy[k] = v
 		}
-		for i := 0; i < wantedProviders; i++ {
+		for range wantedProviders {
 			provider, _ := csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersListCopy, cu, requestedBlock)
 			if len(provider) == 0 {
 				break
