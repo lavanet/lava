@@ -1411,11 +1411,9 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 			common.LAVA_LB_UNIQUE_ID_HEADER:   singleConsumerSession.EndpointConnection.GetLbUniqueId(),
 		})
 
-		// Add custom header to indicate compression support if flag is enabled
-		compressionEnabled := lavasession.AllowGRPCCompressionForConsumerProviderCommunication
-		if compressionEnabled {
-			metadataAdd.Set(common.LavaCompressionSupportHeader, "true")
-		}
+		// Note: gRPC compression is handled automatically by the gRPC layer
+		// when AllowGRPCCompressionForConsumerProviderCommunication is enabled
+		// via grpc.UseCompressor(gzip.Name) in ConnectGRPCClient
 
 		utils.LavaFormatTrace("Sending relay to provider",
 			utils.LogAttr("GUID", ctx),
@@ -1441,23 +1439,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		reply, err = endpointClient.Relay(connectCtx, relayRequest, grpc.Header(&responseHeader), grpc.Trailer(&relayResult.ProviderTrailer))
 		relayLatency = time.Since(relaySentTime)
 
-		// Check if response is compressed and decompress if needed
-		appLevelCompressed := false
-		if lavaCompressionValues := responseHeader.Get(common.LavaCompressionHeader); len(lavaCompressionValues) > 0 {
-			appLevelCompressed = lavaCompressionValues[0] == common.LavaCompressionGzip
-		}
-
-		if reply != nil && reply.Data != nil && appLevelCompressed {
-			decompressedData, decompressErr := common.DecompressData(reply.Data)
-			if decompressErr != nil {
-				utils.LavaFormatError("Failed to decompress response", decompressErr,
-					utils.LogAttr("GUID", ctx),
-					utils.LogAttr("providerName", providerPublicAddress),
-				)
-				return nil, 0, decompressErr, false
-			}
-			reply.Data = decompressedData
-		}
+		// Note: gRPC decompression is handled automatically by the gRPC layer
 
 		providerUniqueId := relayResult.ProviderTrailer.Get(chainlib.RpcProviderUniqueIdHeader)
 		if len(providerUniqueId) > 0 {
