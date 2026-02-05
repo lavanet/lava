@@ -3,6 +3,8 @@ package common
 import (
 	"bytes"
 	"compress/gzip"
+	"encoding/binary"
+	"fmt"
 	"io"
 
 	"github.com/lavanet/lava/v5/utils"
@@ -78,4 +80,17 @@ func DecompressData(compressedData []byte) ([]byte, error) {
 	}
 
 	return decompressedData, nil
+}
+
+// GetUncompressedSizeFromGzip reads the ISIZE field from gzip footer
+// Returns uncompressed size (accurate for files < 4GB due to modulo 2^32)
+// The ISIZE field is located in the last 4 bytes of the gzip file (little-endian)
+func GetUncompressedSizeFromGzip(compressedData []byte) (uint32, error) {
+	if len(compressedData) < 4 {
+		return 0, fmt.Errorf("gzip data too short to contain ISIZE field (need at least 4 bytes, got %d)", len(compressedData))
+	}
+
+	// ISIZE is in the last 4 bytes (little-endian)
+	isize := binary.LittleEndian.Uint32(compressedData[len(compressedData)-4:])
+	return isize, nil
 }

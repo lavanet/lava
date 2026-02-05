@@ -1384,15 +1384,64 @@ func (rpcss *RPCSmartRouterServer) relayInner(ctx context.Context, singleConsume
 		reply, err = endpointClient.Relay(connectCtx, relayRequest, grpc.Header(&responseHeader), grpc.Trailer(&relayResult.ProviderTrailer))
 		relayLatency = time.Since(relaySentTime)
 
-		// Decompress response if compressed
+		// Decompress response if compressed (skip for passthrough methods to save memory)
 		if reply != nil && reply.Data != nil {
 			if lavaCompressionValues := responseHeader.Get(common.LavaCompressionHeader); len(lavaCompressionValues) > 0 && lavaCompressionValues[0] == common.LavaCompressionGzip {
-				decompressedData, decompressErr := common.DecompressData(reply.Data)
-				if decompressErr != nil {
-					utils.LavaFormatError("Failed to decompress response", decompressErr, utils.LogAttr("GUID", ctx))
-					return nil, 0, decompressErr, false
+				// Check if this is a passthrough method - if so, verify payload size before skipping decompression
+				methodName := chainMessage.GetApi().Name
+				if chainlib.IsPassthroughMethod(methodName) {
+					// Verify payload is actually large using ISIZE field from gzip footer
+					uncompressedSize, err := common.GetUncompressedSizeFromGzip(reply.Data)
+					if err == nil && uncompressedSize >= uint32(common.CompressionThreshold) {
+						// Large payload confirmed - use passthrough mode
+						// Passthrough mode: keep compressed data to avoid memory allocation from decompression
+						// Add Content-Encoding header so HTTP client knows to decompress the response
+						reply.Metadata = append(reply.Metadata, pairingtypes.Metadata{
+							Name:  "Content-Encoding",
+							Value: "gzip",
+						})
+						utils.LavaFormatDebug("Passthrough mode: skipping decompression for large response method",
+							utils.LogAttr("GUID", ctx),
+							utils.LogAttr("method", methodName),
+							utils.LogAttr("compressed_size_bytes", len(reply.Data)),
+							utils.LogAttr("uncompressed_size_bytes", uncompressedSize),
+						)
+					} else {
+						// Small payload or error reading ISIZE - decompress normally to detect errors
+						// This handles edge cases like small error responses that got compressed
+						if err != nil {
+							utils.LavaFormatWarning("Failed to read ISIZE from gzip, falling back to normal decompression",
+								err,
+								utils.LogAttr("GUID", ctx),
+								utils.LogAttr("method", methodName),
+								utils.LogAttr("compressed_size_bytes", len(reply.Data)),
+							)
+						} else {
+							utils.LavaFormatDebug("Passthrough method but payload too small, using normal decompression",
+								utils.LogAttr("GUID", ctx),
+								utils.LogAttr("method", methodName),
+								utils.LogAttr("compressed_size_bytes", len(reply.Data)),
+								utils.LogAttr("uncompressed_size_bytes", uncompressedSize),
+								utils.LogAttr("threshold_bytes", common.CompressionThreshold),
+							)
+						}
+						// Normal mode: decompress the response
+						decompressedData, decompressErr := common.DecompressData(reply.Data)
+						if decompressErr != nil {
+							utils.LavaFormatError("Failed to decompress response", decompressErr, utils.LogAttr("GUID", ctx))
+							return nil, 0, decompressErr, false
+						}
+						reply.Data = decompressedData
+					}
+				} else {
+					// Normal mode: decompress the response
+					decompressedData, decompressErr := common.DecompressData(reply.Data)
+					if decompressErr != nil {
+						utils.LavaFormatError("Failed to decompress response", decompressErr, utils.LogAttr("GUID", ctx))
+						return nil, 0, decompressErr, false
+					}
+					reply.Data = decompressedData
 				}
-				reply.Data = decompressedData
 			}
 		}
 

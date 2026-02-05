@@ -185,6 +185,47 @@ func addHeadersAndSendString(c *fiber.Ctx, metaData []pairingtypes.Metadata, dat
 	return c.SendString(data)
 }
 
+// addHeadersAndSendBytes sends response bytes directly without string conversion.
+// This is more memory-efficient for large responses as it avoids []byte to string allocation.
+func addHeadersAndSendBytes(c *fiber.Ctx, metaData []pairingtypes.Metadata, data []byte) error {
+	for _, value := range metaData {
+		c.Set(value.Name, value.Value)
+	}
+
+	return c.Send(data)
+}
+
+// jsonRPCMethodRequest is a minimal struct to extract only the method field from JSON-RPC request
+type jsonRPCMethodRequest struct {
+	Method string `json:"method"`
+}
+
+// extractJSONRPCMethodFromRequest extracts the method name from a JSON-RPC request body.
+// Returns empty string if parsing fails (non-JSON-RPC request or invalid JSON).
+func extractJSONRPCMethodFromRequest(requestBody []byte) string {
+	var req jsonRPCMethodRequest
+	if err := json.Unmarshal(requestBody, &req); err != nil {
+		return ""
+	}
+	return req.Method
+}
+
+// isPassthroughMethod returns true if the given method should use passthrough mode.
+// Passthrough mode skips response body logging and uses direct byte sending
+// to reduce memory allocations for large responses.
+func isPassthroughMethod(method string) bool {
+	return IsPassthroughMethod(method)
+}
+
+// IsPassthroughMethod returns true if the given method should use passthrough mode.
+// Passthrough mode skips expensive operations like decompression, response body logging,
+// and string conversions to reduce memory allocations for large responses.
+// This is exported so it can be used by other packages like rpcsmartrouter.
+func IsPassthroughMethod(method string) bool {
+	// Currently only debug_traceTransaction is in passthrough mode
+	return method == "debug_traceTransaction"
+}
+
 func convertToJsonError(errorMsg string) string {
 	jsonResponse, err := json.Marshal(fiber.Map{
 		"error": errorMsg,
