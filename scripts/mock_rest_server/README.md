@@ -2,6 +2,8 @@
 
 A simple HTTP server that returns configurable JSON responses for testing Cosmos REST endpoints.
 
+**Key Feature:** The server automatically returns proper responses for validation endpoints (like `/cosmos/base/tendermint/v1beta1/blocks/latest`) so the smart router can start up successfully, while returning configurable responses (default: node error) for other endpoints like `/cosmos/tx/v1beta1/txs`.
+
 ## Usage
 
 ### Start the server
@@ -13,6 +15,16 @@ go run ./scripts/mock_rest_server/main.go
 # Or specify a custom port
 go run ./scripts/mock_rest_server/main.go -port 8888
 ```
+
+### Automatic validation responses
+
+The following endpoints return proper mock responses automatically (for startup validation):
+- `/cosmos/base/tendermint/v1beta1/blocks/latest` - Returns mock block
+- `/cosmos/base/tendermint/v1beta1/blocks/{height}` - Returns mock block for any height
+- `/cosmos/base/tendermint/v1beta1/node_info` - Returns mock node info
+- `/cosmos/base/tendermint/v1beta1/syncing` - Returns `syncing: false`
+
+All other endpoints (like `/cosmos/tx/v1beta1/txs`) return the configured response (default: node error).
 
 ### Configure responses via control endpoint
 

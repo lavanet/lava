@@ -38,6 +38,26 @@ curl -s "http://127.0.0.1:19999/control?status=500"
 curl -s "http://127.0.0.1:19999/control?delay=5"
 ```
 
+### Block consistency (first request X, second request X−200)
+
+Use `block=N` to set the `eth_blockNumber` result (decimal). Smart Router consistency only ever **increases** the seen block; if the second response returns an older block, it is **not** applied.
+
+```bash
+# 1) Next response returns block 5000 (0x1388)
+curl -s "http://127.0.0.1:19999/control?block=5000"
+
+# 2) Send eth_blockNumber through router → response 5000; consistency becomes 5000
+curl -s -X POST -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' http://127.0.0.1:3360
+
+# 3) Next response returns block 4800 (5000−200)
+curl -s "http://127.0.0.1:19999/control?block=4800"
+
+# 4) Send eth_blockNumber again → response 4800; consistency stays 5000 (no update for older block)
+curl -s -X POST -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' http://127.0.0.1:3360
+```
+
+In logs: first request `requestedBlockForCache=0` then `seenBlock=5000`; second request `requestedBlockForCache=5000` and `seenBlock=5000` (unchanged after 4800 response). No consistency “error” is raised; the older value is simply not written.
+
 ## Per-request headers (when calling mock directly)
 
 | Header          | Values                  | Effect                                   |

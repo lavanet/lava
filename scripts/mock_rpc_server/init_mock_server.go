@@ -16,6 +16,14 @@
 //	curl "http://127.0.0.1:19999/control?wait=5"   # next response sleeps 5s (or use delay=5)
 //	curl "http://127.0.0.1:19999/control?wait=10&sticky=1"  # all responses wait 10s until reset
 //
+// Block consistency: use block=N to set eth_blockNumber result (decimal). First request returns X,
+// second returns X-200, to test that consistency does not go backwards (seen block stays X):
+//
+//	curl "http://127.0.0.1:19999/control?block=5000"       # next response result 0x1388 (5000)
+//	curl -d '{"jsonrpc":"2.0","method":"eth_blockNumber",...}' http://127.0.0.1:3360  # -> 5000
+//	curl "http://127.0.0.1:19999/control?block=4800"       # next response result 0x12c0 (4800)
+//	curl -d '...' http://127.0.0.1:3360  # -> 4800; consistency stays 5000 (no update for older block)
+//
 // Then send the RPC through the router; all parallel requests to the mock will get 500.
 package main
 
@@ -32,12 +40,13 @@ import (
 const defaultPort = 19999
 
 // Valid JSON-RPC response for eth_blockNumber (hex block number)
-const okBody = `{"jsonrpc":"2.0","id":1,"result":"method does not exist"}` + "\n"
+const okBody = `{"jsonrpc":"2.0","id":1,"result":"0x1234"}` + "\n"
 
 var (
 	nextStatus = 200
 	nextDelay  = 0
-	sticky     = false // when true, status/delay stay until you set status=200
+	nextBlock  = 0 // 0 = default 0x1234; when set, eth_blockNumber-style result uses this (decimal)
+	sticky     = false
 	mu         sync.Mutex
 )
 
@@ -49,6 +58,7 @@ func main() {
 	log.Printf("[MockRPC] listening on %s", addr)
 	log.Printf("[MockRPC] control: GET /control?status=200|400|429|500 ; add &sticky=1 so ALL requests get that status until status=200")
 	log.Printf("[MockRPC] control: GET /control?wait=N (or delay=N) to sleep N seconds before response (test timeout handling)")
+	log.Printf("[MockRPC] control: GET /control?block=N to set next eth_blockNumber result (decimal, for consistency tests)")
 	log.Printf("[MockRPC] default: 200 + eth_blockNumber-style JSON")
 
 	http.HandleFunc("/control", control)
@@ -71,7 +81,8 @@ func control(w http.ResponseWriter, r *http.Request) {
 			nextDelay = 0
 			if n == 200 {
 				sticky = false
-				log.Printf("[MockRPC] control: status=200 (reset, sticky cleared)")
+				nextBlock = 0
+				log.Printf("[MockRPC] control: status=200 (reset, sticky and block cleared)")
 			} else {
 				sticky = r.URL.Query().Get("sticky") == "1" || r.URL.Query().Get("sticky") == "true"
 				if sticky {
@@ -97,19 +108,36 @@ func control(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	// block (decimal) for eth_blockNumber result — consistency / reorg tests
+	for _, key := range []string{"block"} {
+		if b := r.URL.Query().Get(key); b != "" {
+			if n, err := strconv.Atoi(b); err == nil && n >= 0 && n <= 0x7fffffff {
+				nextBlock = n
+				if r.URL.Query().Get("sticky") == "1" || r.URL.Query().Get("sticky") == "true" {
+					sticky = true
+					log.Printf("[MockRPC] control: STICKY block=%d (all eth_blockNumber results until status=200)", n)
+				} else {
+					log.Printf("[MockRPC] control: next response block=%d (0x%x)", n, n)
+				}
+				break
+			}
+		}
+	}
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(200)
-	fmt.Fprintf(w, "ok status=%d wait=%ds sticky=%v\n", nextStatus, nextDelay, sticky)
+	fmt.Fprintf(w, "ok status=%d wait=%ds block=%d sticky=%v\n", nextStatus, nextDelay, nextBlock, sticky)
 }
 
 func handle(w http.ResponseWriter, r *http.Request) {
 	mu.Lock()
 	status := nextStatus
 	delaySec := nextDelay
-	if !sticky && (nextStatus != 200 || nextDelay > 0) {
+	blockForResponse := nextBlock
+	if !sticky && (nextStatus != 200 || nextDelay > 0 || nextBlock != 0) {
 		nextStatus = 200
 		nextDelay = 0
+		nextBlock = 0
 	}
 	mu.Unlock()
 
@@ -139,7 +167,13 @@ func handle(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(status)
 	switch status {
 	case 200:
-		w.Write([]byte(okBody))
+		if blockForResponse > 0 {
+			// eth_blockNumber-style result for consistency tests (block in hex)
+			body := fmt.Sprintf(`{"jsonrpc":"2.0","id":1,"result":"0x%x"}`+"\n", blockForResponse)
+			w.Write([]byte(body))
+		} else {
+			w.Write([]byte(okBody))
+		}
 	case 400:
 		w.Write([]byte(`{"jsonrpc":"2.0","id":1,"error":{"code":-32600,"message":"invalid request"}}` + "\n"))
 	case 429:
