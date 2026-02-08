@@ -117,7 +117,7 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
 		consistency := relaycore.NewConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, nil, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics), qos.NewQoSManager())
+		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics), qos.NewQoSManager())
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -188,7 +188,7 @@ func TestConsumerStateMachineExhaustRetries(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
 		consistency := relaycore.NewConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, nil, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil, tickerValue: 100 * time.Second}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics), qos.NewQoSManager())
+		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil, tickerValue: 100 * time.Second}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics), qos.NewQoSManager())
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -260,7 +260,6 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 			ctx,
 			common.DefaultQuorumParams,
 			consistency,
-			nil, // consistencyConfig
 			relaycoretest.RelayProcessorMetrics,
 			relaycoretest.RelayProcessorMetrics,
 			relaycoretest.RelayRetriesManagerInstance,
