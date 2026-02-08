@@ -278,6 +278,7 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 		ctx,
 		quorumParams,
 		rpccs.consumerConsistency,
+		nil, // consistencyConfig - not used in consumer (consumer uses provider-relay flow)
 		rpccs.rpcConsumerLogs,
 		rpccs,
 		rpccs.relayRetriesManager,
@@ -597,6 +598,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 		ctx,
 		quorumParams,
 		rpccs.consumerConsistency,
+		nil, // consistencyConfig - not used in consumer (consumer uses provider-relay flow)
 		rpccs.rpcConsumerLogs,
 		rpccs,
 		rpccs.relayRetriesManager,
