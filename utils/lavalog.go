@@ -66,11 +66,11 @@ func LogAttr(key string, value interface{}) Attribute {
 }
 
 func init() {
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnixNano
 	if JsonFormat {
 		zerologlog.Logger = zerologlog.Output(os.Stderr).Level(defaultGlobalLogLevel)
 	} else {
-		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.Stamp}).Level(defaultGlobalLogLevel)
+		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.StampNano}).Level(defaultGlobalLogLevel)
 	}
 }
 
