@@ -746,12 +746,12 @@ func (ws *WeightedSelector) CalculateProviderScores(
 	qosReports := make(map[string]*metrics.OptimizerQoSReport)
 	scoreDetails := make([]ProviderScoreDetails, 0, len(allAddresses))
 
-	// Calculate total stake
+	// Calculate total stake from FULL pairing list for consistent normalization
+	// This ensures stake scores remain constant regardless of which providers
+	// are temporarily ignored (e.g., already selected in this batch)
 	totalStake := int64(0)
 	for _, addr := range allAddresses {
-		if _, ignored := ignoredProviders[addr]; ignored {
-			continue
-		}
+		// Don't skip ignored providers when calculating total - we want consistent normalization
 		totalStake += stakeGetter(addr)
 	}
 
