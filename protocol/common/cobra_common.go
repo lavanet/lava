@@ -62,6 +62,7 @@ const (
 	// specification default flags
 	PeriodicProbeProvidersFlagName         = "enable-periodic-probe-providers"
 	PeriodicProbeProvidersIntervalFlagName = "periodic-probe-providers-interval"
+	ProbeUpdateWeightFlagName              = "probe-update-weight"
 
 	// batch request size limit
 	MaxBatchRequestSizeFlag        = "max-batch-request-size"

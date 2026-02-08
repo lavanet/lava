@@ -2,6 +2,7 @@ package score
 
 import (
 	"fmt"
+	"math"
 	"time"
 )
 
@@ -30,8 +31,12 @@ const (
 	MaxHalfTime         = 3 * time.Hour
 
 	DefaultWeight     float64 = 1
-	ProbeUpdateWeight float64 = 0.25
 	RelayUpdateWeight float64 = 1
+
+	// DefaultProbeUpdateWeight controls the relative impact of probe samples (liveness/latency)
+	// compared to relay samples in the provider optimizer.
+	// It can be overridden at process start via CLI flag (see rpcconsumer/rpcsmartrouter).
+	DefaultProbeUpdateWeight float64 = 0.25
 
 	// TODO: find actual numbers from info of latencies of high/mid/low CU from "stats.lavanet.xyz".
 	// Do a distribution and find average factor to multiply the failure cost by.
@@ -73,6 +78,18 @@ const (
 	// Rescaling [MIN_ACCEPTABLE, 1.0] → [0.0, 1.0] achieves 100% range utilization
 	MinAcceptableAvailability float64 = 0.80 // Below 80% availability = score of 0 (reasonable minimum)
 )
+
+// ProbeUpdateWeight is a process-level knob used by the provider optimizer when recording probe samples.
+// It must be strictly positive and finite (ScoreStore config validates weight > 0).
+var ProbeUpdateWeight = DefaultProbeUpdateWeight
+
+func SetProbeUpdateWeight(weight float64) error {
+	if weight <= 0 || math.IsNaN(weight) || math.IsInf(weight, 0) {
+		return fmt.Errorf("invalid probe update weight: %v (must be finite and > 0)", weight)
+	}
+	ProbeUpdateWeight = weight
+	return nil
+}
 
 type Config struct {
 	Weight          float64
