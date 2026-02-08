@@ -621,7 +621,9 @@ func (m *MockResultsManager) NodeErrors() (ret []common.RelayResult) {
 
 // MockProtocolMessage implements the ProtocolMessage interface for testing
 type MockProtocolMessage struct {
-	api *spectypes.Api
+	api            *spectypes.Api
+	requestedBlock int64 // configurable requested block, defaults to 0
+	userData       common.UserData
 }
 
 func (m *MockProtocolMessage) GetApi() *spectypes.Api {
@@ -637,7 +639,7 @@ func (m *MockProtocolMessage) GetParseDirective() *spectypes.ParseDirective {
 }
 
 func (m *MockProtocolMessage) GetUserData() common.UserData {
-	return common.UserData{}
+	return m.userData
 }
 
 func (m *MockProtocolMessage) GetRelayData() *pairingtypes.RelayPrivateData {
@@ -670,7 +672,7 @@ func (m *MockProtocolMessage) SubscriptionIdExtractor(reply *rpcclient.JsonrpcMe
 }
 
 func (m *MockProtocolMessage) RequestedBlock() (latest int64, earliest int64) {
-	return 0, 0
+	return m.requestedBlock, 0
 }
 
 func (m *MockProtocolMessage) UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modified bool) {
@@ -1274,4 +1276,431 @@ func TestSmartRouterSessionLeakPrevention_SingleProvider(t *testing.T) {
 		final := atomic.LoadInt32(&activeSessions)
 		require.Equal(t, int32(0), final, "All sessions should be released at the end")
 	})
+}
+
+// ============================================================================
+// Tests for Epoch Cleanup Integration - EndpointChainTrackerManager Lifecycle
+// These tests validate that the EndpointChainTrackerManager properly cleans up
+// when trackers are removed (supporting epoch-based cleanup in RPCSmartRouter)
+// ============================================================================
+
+// TestEndpointChainTrackerManager_RemoveTrackerCallsCancel tests that RemoveTracker
+// properly invokes the cancel function for per-tracker context cancellation
+func TestEndpointChainTrackerManager_RemoveTrackerCallsCancel(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	t.Run("RemoveTracker invokes cancel function", func(t *testing.T) {
+		trackerManager := NewEndpointChainTrackerManager(ctx, EndpointChainTrackerConfig{
+			ChainID:          "ETH",
+			ApiInterface:     "jsonrpc",
+			AverageBlockTime: 12 * time.Second,
+			BlocksToSave:     10,
+		})
+		require.NotNil(t, trackerManager)
+		defer trackerManager.Stop()
+
+		// Manually add a cancel function to simulate a tracker
+		endpoint := "http://test:8545"
+		cancelCalled := false
+		trackerManager.cancelFuncs[endpoint] = func() { cancelCalled = true }
+
+		// Remove the tracker - should call cancel function
+		trackerManager.RemoveTracker(endpoint)
+
+		require.True(t, cancelCalled, "RemoveTracker should call the cancel function")
+		require.Empty(t, trackerManager.cancelFuncs)
+	})
+
+	t.Run("Stop invokes all cancel functions", func(t *testing.T) {
+		trackerManager := NewEndpointChainTrackerManager(ctx, EndpointChainTrackerConfig{
+			ChainID:          "ETH",
+			ApiInterface:     "jsonrpc",
+			AverageBlockTime: 12 * time.Second,
+			BlocksToSave:     10,
+		})
+		require.NotNil(t, trackerManager)
+
+		// Add multiple cancel functions
+		cancelledEndpoints := make(map[string]bool)
+		endpoints := []string{"http://ep1:8545", "http://ep2:8545", "http://ep3:8545"}
+
+		for _, ep := range endpoints {
+			ep := ep // capture
+			trackerManager.cancelFuncs[ep] = func() { cancelledEndpoints[ep] = true }
+		}
+
+		// Stop should cancel all
+		trackerManager.Stop()
+
+		for _, ep := range endpoints {
+			require.True(t, cancelledEndpoints[ep], "Stop should cancel %s", ep)
+		}
+		require.Empty(t, trackerManager.cancelFuncs)
+	})
+
+	t.Run("concurrent RemoveTracker and Stop are thread-safe", func(t *testing.T) {
+		defer goleak.VerifyNone(t, goleak.IgnoreCurrent())
+
+		trackerManager := NewEndpointChainTrackerManager(ctx, EndpointChainTrackerConfig{
+			ChainID:          "ETH",
+			ApiInterface:     "jsonrpc",
+			AverageBlockTime: 12 * time.Second,
+			BlocksToSave:     10,
+		})
+		require.NotNil(t, trackerManager)
+
+		var wg sync.WaitGroup
+		const numGoroutines = 50
+
+		// Add many cancel functions
+		for i := 0; i < numGoroutines; i++ {
+			endpoint := fmt.Sprintf("http://endpoint%d:8545", i)
+			trackerManager.cancelFuncs[endpoint] = func() {}
+		}
+
+		// Simulate concurrent removal operations
+		for i := 0; i < numGoroutines; i++ {
+			wg.Add(1)
+			go func(id int) {
+				defer wg.Done()
+				endpoint := fmt.Sprintf("http://endpoint%d:8545", id)
+				trackerManager.RemoveTracker(endpoint)
+			}(i)
+		}
+
+		wg.Wait()
+
+		// Cleanup
+		trackerManager.Stop()
+		// If we reach here without race detector error or panic, the test passes
+	})
+}
+
+// ============================================================================
+// Mock Consistency for filterEndpointsByConsistency tests
+// ============================================================================
+
+type mockConsistency struct {
+	seenBlocks map[string]int64
+}
+
+func newMockConsistency() *mockConsistency {
+	return &mockConsistency{seenBlocks: make(map[string]int64)}
+}
+
+func (mc *mockConsistency) SetSeenBlock(blockSeen int64, userData common.UserData) {
+	key := mc.Key(userData)
+	mc.seenBlocks[key] = blockSeen
+}
+
+func (mc *mockConsistency) GetSeenBlock(userData common.UserData) (int64, bool) {
+	key := mc.Key(userData)
+	block, found := mc.seenBlocks[key]
+	return block, found
+}
+
+func (mc *mockConsistency) SetSeenBlockFromKey(blockSeen int64, key string) {
+	mc.seenBlocks[key] = blockSeen
+}
+
+func (mc *mockConsistency) Key(userData common.UserData) string {
+	return userData.DappId + "|" + userData.ConsumerIp
+}
+
+// ============================================================================
+// Tests for Phase 3.1: Consistency Pre-Validation Retry with Different Providers
+// ============================================================================
+
+// TestFilterEndpointsByConsistency_ReturnsFailedSessions tests that the modified
+// filterEndpointsByConsistency returns failed sessions separately from valid ones.
+func TestFilterEndpointsByConsistency_ReturnsFailedSessions(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("all sessions valid - no failed sessions", func(t *testing.T) {
+		consistency := newMockConsistency()
+		userData := common.UserData{DappId: "test", ConsumerIp: "1.2.3.4"}
+		consistency.SetSeenBlock(100, userData)
+
+		config := relaycore.DefaultConsistencyValidationConfig()
+
+		// Create endpoint at block 100 (synced)
+		endpoint := &lavasession.Endpoint{NetworkAddress: "http://ep1:8545"}
+		endpoint.LatestBlock.Store(100)
+
+		sessions := lavasession.ConsumerSessionsMap{
+			"http://ep1:8545": &lavasession.SessionInfo{
+				Session: &lavasession.SingleConsumerSession{
+					Connection: &lavasession.DirectRPCSessionConnection{
+						Endpoint: endpoint,
+					},
+				},
+			},
+		}
+
+		rpcss := &RPCSmartRouterServer{
+			consistencyConfig:      config,
+			smartRouterConsistency: consistency,
+		}
+
+		protocolMsg := &MockProtocolMessage{
+			api:            &spectypes.Api{Name: "eth_getBalance"},
+			requestedBlock: spectypes.LATEST_BLOCK,
+			userData:       userData,
+		}
+
+		valid, failed, err := rpcss.filterEndpointsByConsistency(ctx, sessions, protocolMsg)
+		require.NoError(t, err)
+		require.Len(t, valid, 1)
+		require.Len(t, failed, 0)
+	})
+
+	t.Run("some sessions fail - split into valid and failed", func(t *testing.T) {
+		consistency := newMockConsistency()
+		userData := common.UserData{DappId: "test", ConsumerIp: "1.2.3.4"}
+		consistency.SetSeenBlock(200, userData)
+
+		// EndpointLagThreshold defaults to 10
+		config := relaycore.DefaultConsistencyValidationConfig()
+
+		// Create synced endpoint at block 195 (within threshold)
+		syncedEndpoint := &lavasession.Endpoint{NetworkAddress: "http://synced:8545"}
+		syncedEndpoint.LatestBlock.Store(195)
+
+		// Create stale endpoint at block 100 (way behind, lag=100 > threshold=10)
+		staleEndpoint := &lavasession.Endpoint{NetworkAddress: "http://stale:8545"}
+		staleEndpoint.LatestBlock.Store(100)
+
+		sessions := lavasession.ConsumerSessionsMap{
+			"http://synced:8545": &lavasession.SessionInfo{
+				Session: &lavasession.SingleConsumerSession{
+					Connection: &lavasession.DirectRPCSessionConnection{
+						Endpoint: syncedEndpoint,
+					},
+				},
+			},
+			"http://stale:8545": &lavasession.SessionInfo{
+				Session: &lavasession.SingleConsumerSession{
+					Connection: &lavasession.DirectRPCSessionConnection{
+						Endpoint: staleEndpoint,
+					},
+				},
+			},
+		}
+
+		rpcss := &RPCSmartRouterServer{
+			consistencyConfig:      config,
+			smartRouterConsistency: consistency,
+		}
+
+		protocolMsg := &MockProtocolMessage{
+			api:            &spectypes.Api{Name: "eth_getBalance"},
+			requestedBlock: spectypes.LATEST_BLOCK,
+			userData:       userData,
+		}
+
+		valid, failed, err := rpcss.filterEndpointsByConsistency(ctx, sessions, protocolMsg)
+		require.NoError(t, err)
+		require.Len(t, valid, 1)
+		require.Len(t, failed, 1)
+		require.Contains(t, valid, "http://synced:8545")
+		require.Contains(t, failed, "http://stale:8545")
+	})
+
+	t.Run("all sessions fail - returns error and all failed", func(t *testing.T) {
+		consistency := newMockConsistency()
+		userData := common.UserData{DappId: "test", ConsumerIp: "1.2.3.4"}
+		consistency.SetSeenBlock(200, userData)
+
+		config := relaycore.DefaultConsistencyValidationConfig()
+
+		// Both endpoints are stale
+		staleEndpoint1 := &lavasession.Endpoint{NetworkAddress: "http://stale1:8545"}
+		staleEndpoint1.LatestBlock.Store(100)
+
+		staleEndpoint2 := &lavasession.Endpoint{NetworkAddress: "http://stale2:8545"}
+		staleEndpoint2.LatestBlock.Store(50)
+
+		sessions := lavasession.ConsumerSessionsMap{
+			"http://stale1:8545": &lavasession.SessionInfo{
+				Session: &lavasession.SingleConsumerSession{
+					Connection: &lavasession.DirectRPCSessionConnection{
+						Endpoint: staleEndpoint1,
+					},
+				},
+			},
+			"http://stale2:8545": &lavasession.SessionInfo{
+				Session: &lavasession.SingleConsumerSession{
+					Connection: &lavasession.DirectRPCSessionConnection{
+						Endpoint: staleEndpoint2,
+					},
+				},
+			},
+		}
+
+		rpcss := &RPCSmartRouterServer{
+			consistencyConfig:      config,
+			smartRouterConsistency: consistency,
+		}
+
+		protocolMsg := &MockProtocolMessage{
+			api:            &spectypes.Api{Name: "eth_getBalance"},
+			requestedBlock: spectypes.LATEST_BLOCK,
+			userData:       userData,
+		}
+
+		valid, failed, err := rpcss.filterEndpointsByConsistency(ctx, sessions, protocolMsg)
+		require.Error(t, err)
+		require.True(t, lavasession.ConsistencyPreValidationError.Is(err))
+		require.Nil(t, valid)
+		require.Len(t, failed, 2)
+	})
+
+	t.Run("no seen block - skip validation, return all as valid", func(t *testing.T) {
+		consistency := newMockConsistency()
+		// No seenBlock set for this user
+
+		config := relaycore.DefaultConsistencyValidationConfig()
+
+		endpoint := &lavasession.Endpoint{NetworkAddress: "http://ep1:8545"}
+		endpoint.LatestBlock.Store(100)
+
+		sessions := lavasession.ConsumerSessionsMap{
+			"http://ep1:8545": &lavasession.SessionInfo{
+				Session: &lavasession.SingleConsumerSession{
+					Connection: &lavasession.DirectRPCSessionConnection{
+						Endpoint: endpoint,
+					},
+				},
+			},
+		}
+
+		rpcss := &RPCSmartRouterServer{
+			consistencyConfig:      config,
+			smartRouterConsistency: consistency,
+		}
+
+		protocolMsg := &MockProtocolMessage{
+			api:            &spectypes.Api{Name: "eth_getBalance"},
+			requestedBlock: spectypes.LATEST_BLOCK,
+			userData:       common.UserData{DappId: "new-user", ConsumerIp: "5.6.7.8"},
+		}
+
+		valid, failed, err := rpcss.filterEndpointsByConsistency(ctx, sessions, protocolMsg)
+		require.NoError(t, err)
+		require.Len(t, valid, 1)
+		require.Nil(t, failed)
+	})
+
+	t.Run("no config - skip validation, return all as valid", func(t *testing.T) {
+		sessions := lavasession.ConsumerSessionsMap{
+			"http://ep1:8545": &lavasession.SessionInfo{
+				Session: &lavasession.SingleConsumerSession{},
+			},
+		}
+
+		rpcss := &RPCSmartRouterServer{
+			consistencyConfig:      nil,
+			smartRouterConsistency: nil,
+		}
+
+		protocolMsg := &MockProtocolMessage{
+			api:            &spectypes.Api{Name: "eth_getBalance"},
+			requestedBlock: spectypes.LATEST_BLOCK,
+		}
+
+		valid, failed, err := rpcss.filterEndpointsByConsistency(ctx, sessions, protocolMsg)
+		require.NoError(t, err)
+		require.Len(t, valid, 1)
+		require.Nil(t, failed)
+	})
+
+	t.Run("endpoint with no block data - allowed through (first relay)", func(t *testing.T) {
+		consistency := newMockConsistency()
+		userData := common.UserData{DappId: "test", ConsumerIp: "1.2.3.4"}
+		consistency.SetSeenBlock(200, userData)
+
+		config := relaycore.DefaultConsistencyValidationConfig()
+
+		// Endpoint has no block data yet (LatestBlock == 0)
+		newEndpoint := &lavasession.Endpoint{NetworkAddress: "http://new:8545"}
+
+		sessions := lavasession.ConsumerSessionsMap{
+			"http://new:8545": &lavasession.SessionInfo{
+				Session: &lavasession.SingleConsumerSession{
+					Connection: &lavasession.DirectRPCSessionConnection{
+						Endpoint: newEndpoint,
+					},
+				},
+			},
+		}
+
+		rpcss := &RPCSmartRouterServer{
+			consistencyConfig:      config,
+			smartRouterConsistency: consistency,
+		}
+
+		protocolMsg := &MockProtocolMessage{
+			api:            &spectypes.Api{Name: "eth_getBalance"},
+			requestedBlock: spectypes.LATEST_BLOCK,
+			userData:       userData,
+		}
+
+		valid, failed, err := rpcss.filterEndpointsByConsistency(ctx, sessions, protocolMsg)
+		require.NoError(t, err)
+		require.Len(t, valid, 1)
+		require.Contains(t, valid, "http://new:8545")
+		require.Len(t, failed, 0)
+	})
+
+	t.Run("historical block request - skip validation", func(t *testing.T) {
+		consistency := newMockConsistency()
+		userData := common.UserData{DappId: "test", ConsumerIp: "1.2.3.4"}
+		consistency.SetSeenBlock(200, userData)
+
+		config := relaycore.DefaultConsistencyValidationConfig()
+
+		staleEndpoint := &lavasession.Endpoint{NetworkAddress: "http://stale:8545"}
+		staleEndpoint.LatestBlock.Store(50) // very stale
+
+		sessions := lavasession.ConsumerSessionsMap{
+			"http://stale:8545": &lavasession.SessionInfo{
+				Session: &lavasession.SingleConsumerSession{
+					Connection: &lavasession.DirectRPCSessionConnection{
+						Endpoint: staleEndpoint,
+					},
+				},
+			},
+		}
+
+		rpcss := &RPCSmartRouterServer{
+			consistencyConfig:      config,
+			smartRouterConsistency: consistency,
+		}
+
+		// Historical block request (block 42) - should skip validation
+		protocolMsg := &MockProtocolMessage{
+			api:            &spectypes.Api{Name: "eth_getBlockByNumber"},
+			requestedBlock: 42,
+			userData:       userData,
+		}
+
+		valid, failed, err := rpcss.filterEndpointsByConsistency(ctx, sessions, protocolMsg)
+		require.NoError(t, err)
+		require.Len(t, valid, 1)
+		require.Nil(t, failed)
+	})
+}
+
+// TestConsistencyPreValidationError_NotRetryable verifies that ConsistencyPreValidationError
+// is NOT treated as a retryable sync loss error (unlike SessionOutOfSyncError).
+// This ensures immediate blocking via unwantedProviders rather than "allow one retry".
+func TestConsistencyPreValidationError_NotRetryable(t *testing.T) {
+	// ConsistencyPreValidationError should NOT be a session sync loss
+	require.False(t, lavasession.IsSessionSyncLoss(lavasession.ConsistencyPreValidationError),
+		"ConsistencyPreValidationError should NOT be treated as session sync loss")
+
+	// SessionOutOfSyncError IS a session sync loss (for comparison)
+	require.True(t, lavasession.IsSessionSyncLoss(lavasession.SessionOutOfSyncError),
+		"SessionOutOfSyncError should be treated as session sync loss")
 }
