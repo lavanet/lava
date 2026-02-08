@@ -51,16 +51,9 @@ func NewConsistencyValidationConfig(
 	blockDistanceToFinalization uint32,
 	averageBlockTime time.Duration,
 ) *ConsistencyValidationConfig {
-	// Calculate endpoint lag threshold: more lenient for pre-request
-	// Use double the QoS sync lag, but at least the finalization distance
+	// Calculate endpoint lag threshold: more lenient for pre-request filtering
+	// Use double the QoS sync lag to allow for minor network delays
 	endpointLagThreshold := blockLagForQosSync * 2
-	if endpointLagThreshold < int64(blockDistanceToFinalization) {
-		endpointLagThreshold = int64(blockDistanceToFinalization)
-	}
-	// Ensure minimum of 10 blocks
-	if endpointLagThreshold < 10 {
-		endpointLagThreshold = 10
-	}
 
 	// Calculate max wait time: up to 2 average block times
 	maxWaitTime := averageBlockTime * 2
