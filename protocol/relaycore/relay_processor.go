@@ -384,7 +384,18 @@ func (rp *RelayProcessor) handleResponse(response *RelayResponse) {
 		if rp.consistency != nil && response.RelayResult.Reply.LatestBlock > 0 {
 			// set consistency when possible
 			blockSeen := response.RelayResult.Reply.LatestBlock
-			rp.consistency.SetSeenBlock(blockSeen, rp.RelayStateMachine.GetProtocolMessage().GetUserData())
+			userData := rp.RelayStateMachine.GetProtocolMessage().GetUserData()
+			utils.LavaFormatDebug("updating consistency seenBlock",
+				utils.LogAttr("blockSeen", blockSeen),
+				utils.LogAttr("dappID", userData.DappId),
+				utils.LogAttr("consumerIP", userData.ConsumerIp),
+			)
+			rp.consistency.SetSeenBlock(blockSeen, userData)
+		} else {
+			utils.LavaFormatTrace("consistency update skipped",
+				utils.LogAttr("consistency_nil", rp.consistency == nil),
+				utils.LogAttr("latestBlock", response.RelayResult.Reply.LatestBlock),
+			)
 		}
 	}
 }

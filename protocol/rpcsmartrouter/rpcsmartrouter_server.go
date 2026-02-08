@@ -949,10 +949,17 @@ func (rpcss *RPCSmartRouterServer) filterEndpointsByConsistency(
 
 		// Get endpoint's latest block from ChainTracker (if available), fallback to reactive value
 		endpointLatest := int64(0)
+		endpointURL := ""
+
+		// Extract the actual endpoint URL (ChainTrackers are stored by URL, not provider name)
+		if drsc, ok := sessionInfo.Session.Connection.(*lavasession.DirectRPCSessionConnection); ok && drsc.Endpoint != nil {
+			endpointURL = drsc.Endpoint.NetworkAddress
+		}
 
 		// First, try to get from ChainTracker manager (continuously polled, fresh data)
-		if rpcss.endpointChainTrackerManager != nil {
-			endpointLatest = rpcss.endpointChainTrackerManager.GetLatestBlockNum(endpointAddress)
+		// ChainTrackers are keyed by URL, so multiple providers pointing to same URL share one tracker
+		if rpcss.endpointChainTrackerManager != nil && endpointURL != "" {
+			endpointLatest = rpcss.endpointChainTrackerManager.GetLatestBlockNum(endpointURL)
 		}
 
 		// Fallback: if ChainTracker has no data yet, use the endpoint's reactive LatestBlock
