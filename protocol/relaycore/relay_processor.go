@@ -379,7 +379,8 @@ func (rp *RelayProcessor) handleResponse(response *RelayResponse) {
 		}
 	}
 
-	if response != nil && response.RelayResult.Reply != nil {
+	// Update consistency cache only for successful responses (not stale/error responses)
+	if response != nil && response.Err == nil && response.RelayResult.Reply != nil {
 		if rp.consistency != nil && response.RelayResult.Reply.LatestBlock > 0 {
 			// set consistency when possible
 			blockSeen := response.RelayResult.Reply.LatestBlock
@@ -529,14 +530,14 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 	var maxCount int
 	var mostCommonResult common.RelayResult
 	var consensusHash [32]byte
-	
+
 	// Log all response groups
 	utils.LavaFormatInfo("🔍 [Quorum] Response groups summary",
 		utils.LogAttr("GUID", rp.guid),
 		utils.LogAttr("uniqueResponseGroups", len(countMap)),
 		utils.LogAttr("nilReplies", nilReplies),
 	)
-	
+
 	for hash, count := range countMap {
 		utils.LavaFormatDebug("🔍 [Quorum] Response group details",
 			utils.LogAttr("GUID", rp.guid),
@@ -544,7 +545,7 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 			utils.LogAttr("matchingProviders", count.count),
 			utils.LogAttr("provider", count.result.ProviderInfo.ProviderAddress),
 		)
-		
+
 		if count.count > maxCount {
 			maxCount = count.count
 			mostCommonResult = count.result
@@ -593,7 +594,7 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 	}
 
 	mostCommonResult.Quorum = maxCount
-	
+
 	// Log successful quorum consensus
 	utils.LavaFormatInfo("✅ [Quorum] CONSENSUS REACHED",
 		utils.LogAttr("GUID", rp.guid),
@@ -605,7 +606,7 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 		utils.LogAttr("uniqueResponseGroups", len(countMap)),
 		utils.LogAttr("latestBlock", mostCommonResult.Reply.LatestBlock),
 	)
-	
+
 	return &mostCommonResult, nil
 }
 
