@@ -72,15 +72,15 @@ done
 # Generate smart router config (3 upstream REST + 3 gRPC + 3 Tendermint RPC endpoints -> local node)
 CONFIG_FILE="$PROJECT_ROOT/smartrouter_lava.yml"
 echo ""
-echo "Generating smart router config: $CONFIG_FILE"
-echo "Upstream REST (LCD):     $LAVA_REST_LOCAL"
-echo "Upstream gRPC:           $LAVA_GRPC_LOCAL"
-echo "Upstream Tendermint RPC: $LAVA_TENDERMINTRPC_LOCAL"
-echo "Upstream Tendermint WS:  $LAVA_TENDERMINTRPC_WS_LOCAL"
-echo ""
-
-# Clean up any old generated config in project root
-rm -f "$CONFIG_FILE" 2>/dev/null || true
+if [ -f "$CONFIG_FILE" ]; then
+	echo "Preserving existing smart router config: $CONFIG_FILE (not overwriting)"
+else
+	echo "Generating smart router config: $CONFIG_FILE"
+	echo "Upstream REST (LCD):     $LAVA_REST_LOCAL"
+	echo "Upstream gRPC:           $LAVA_GRPC_LOCAL"
+	echo "Upstream Tendermint RPC: $LAVA_TENDERMINTRPC_LOCAL"
+	echo "Upstream Tendermint WS:  $LAVA_TENDERMINTRPC_WS_LOCAL"
+	echo ""
 
 cat > "$CONFIG_FILE" <<EOF
 # Smart Router Direct RPC Configuration (Lava local node)
@@ -109,6 +109,7 @@ static-providers:
     api-interface: "rest"
     node-urls:
       - url: "$LAVA_REST_LOCAL"
+        timeout: 10s
         skip-verifications:
           - chain-id
           - pruning
@@ -118,6 +119,7 @@ static-providers:
     api-interface: "rest"
     node-urls:
       - url: "$LAVA_REST_LOCAL"
+        timeout: 10s
         skip-verifications:
           - chain-id
           - pruning
@@ -127,6 +129,7 @@ static-providers:
     api-interface: "rest"
     node-urls:
       - url: "$LAVA_REST_LOCAL"
+        timeout: 10s
         skip-verifications:
           - chain-id
           - pruning
@@ -173,6 +176,7 @@ static-providers:
     api-interface: "tendermintrpc"
     node-urls:
       - url: "$LAVA_TENDERMINTRPC_LOCAL"
+        timeout: 10s
         skip-verifications:
           - chain-id
           - pruning
@@ -186,6 +190,7 @@ static-providers:
     api-interface: "tendermintrpc"
     node-urls:
       - url: "$LAVA_TENDERMINTRPC_LOCAL"
+        timeout: 10s
         skip-verifications:
           - chain-id
           - pruning
@@ -199,6 +204,7 @@ static-providers:
     api-interface: "tendermintrpc"
     node-urls:
       - url: "$LAVA_TENDERMINTRPC_LOCAL"
+        timeout: 10s
         skip-verifications:
           - chain-id
           - pruning
@@ -207,6 +213,7 @@ static-providers:
           - chain-id
           - pruning
 EOF
+fi
 
 # Verify config file was created
 echo "Verifying generated config file..."

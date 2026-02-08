@@ -11,6 +11,13 @@ rm $LOGS_DIR/*.log 2>/dev/null || true
 
 # Save project root for later use
 PROJECT_ROOT=$(cd ${__dir}/../.. && pwd)
+CONFIG_FILE="$PROJECT_ROOT/smartrouter_eth.yml"
+
+# Only remove config when explicitly regenerating (keeps manual edits for e.g. timeout testing)
+if [[ "$REGENERATE_CONFIG" == "1" ]]; then
+    echo "REGENERATE_CONFIG=1: removing existing smart router config..."
+    rm -f "$CONFIG_FILE" 2>/dev/null || true
+fi
 
 # Kill all lavap and lavad processes
 killall lavap lavad 2>/dev/null || true
@@ -21,10 +28,6 @@ killall screen 2>/dev/null || true
 sleep 1
 screen -wipe
 sleep 1  # Give processes time to fully shut down before starting new ones
-
-# Clean up any old generated configs in project root
-echo "Cleaning up old smart router configs..."
-rm -f $PROJECT_ROOT/smartrouter_eth.yml 2>/dev/null || true
 
 echo "============================================"
 echo "Smart Router Direct RPC Test Setup"
@@ -37,12 +40,29 @@ echo ""
 echo "[Test Setup] installing all binaries"
 make install-all
 
-# Start cache services (optional for smart router)
+# Start cache services (required for cache testing)
 echo "[Test Setup] starting smart router cache service"
 screen -d -m -S cache bash -c "source ~/.bashrc; lavap cache \
 127.0.0.1:20100 --metrics_address 0.0.0.0:20200 --log_level debug 2>&1 | tee $LOGS_DIR/CACHE.log" && sleep 0.25
 
 sleep 2
+
+# Verify cache service started
+echo "Verifying cache service..."
+if screen -list | grep -q "cache"; then
+    echo "  Cache screen session: RUNNING"
+    # Check if cache is listening (give it a moment)
+    sleep 1
+    if nc -z 127.0.0.1 20100 2>/dev/null; then
+        echo "  Cache port 20100: LISTENING"
+    else
+        echo "  WARNING: Cache port 20100 not yet listening (may still be starting)"
+    fi
+else
+    echo "  ERROR: Cache screen failed to start!"
+    echo "  Check $LOGS_DIR/CACHE.log for errors"
+fi
+echo ""
 
 # Use absolute path for specs
 SPECS_DIR="$PROJECT_ROOT/specs/mainnet-1/specs/ethereum.json"
@@ -60,14 +80,14 @@ echo "Using static specs: $SPECS_DIR"
 #   export ETH_WS_URL_2="wss://eth-mainnet.g.alchemy.com/v2/YOUR_ALCHEMY_KEY"
 
 # Set defaults if not already exported (placeholders will fail to connect)
-export ETH_RPC_URL_1="${ETH_RPC_URL_1:-https://mainnet.infura.io/v3/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX}"
-export ETH_RPC_URL_2="${ETH_RPC_URL_2:-https://eth-mainnet.g.alchemy.com/v2/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX}"
+export ETH_RPC_URL_1="${ETH_RPC_URL_1:-https://eth.llamarpc.com}"
+export ETH_RPC_URL_2="${ETH_RPC_URL_2:-https://json-rpc.8zfcse2amst1lajmh299uq4jn.blockchainnodeengine.com/?key=AIzaSyDyUtm6b-e-xKDQgVWzlroHdVTytiXEDik}"
 
 # WebSocket endpoints (required for subscriptions)
 #   export ETH_WS_URL_1="wss://mainnet.infura.io/ws/v3/YOUR_INFURA_KEY"
 #   export ETH_WS_URL_2="wss://eth-mainnet.g.alchemy.com/v2/YOUR_ALCHEMY_KEY"
-export ETH_WS_URL_1="${ETH_WS_URL_1:-wss://mainnet.infura.io/ws/v3/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX}"
-export ETH_WS_URL_2="${ETH_WS_URL_2:-wss://eth-mainnet.g.alchemy.com/v2/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX}"
+export ETH_WS_URL_1="${ETH_WS_URL_1:-wss://g.w.lavanet.xyz:443/gateway/eth/rpc/4926f3fd246058892909cdda0c88f8c7}"
+export ETH_WS_URL_2="${ETH_WS_URL_2:-wss://g.w.lavanet.xyz:443/gateway/eth/rpc/4926f3fd246058892909cdda0c88f8c7}"
 
 # Validate that real HTTP URLs are set (not placeholders)
 if [[ "$ETH_RPC_URL_1" == *"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"* ]]; then
@@ -120,8 +140,13 @@ if [[ "$ETH_WS_URL_2" == *"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"* ]]; then
     exit 1
 fi
 
+# Generate smart router config only if missing or REGENERATE_CONFIG=1 (keeps manual edits otherwise)
+if [[ -f "$CONFIG_FILE" && "$REGENERATE_CONFIG" != "1" ]]; then
+    echo "Using existing config: $CONFIG_FILE"
+    echo "  (Set REGENERATE_CONFIG=1 to regenerate from env vars)"
+    echo ""
+else
 # Generate smart router config with DIRECT RPC (no providers!)
-CONFIG_FILE="$PROJECT_ROOT/smartrouter_eth.yml"
 echo "Generating smart router config: $CONFIG_FILE"
 echo ""
 echo "Direct RPC Configuration:"
@@ -170,20 +195,7 @@ cat >> $CONFIG_FILE <<EOF
           - archive
 EOF
 
-# Add second HTTP endpoint
-cat >> $CONFIG_FILE <<EOF
 
-  # Endpoint 2: Second endpoint (parallel relay / backup)
-  - name: "eth-endpoint-2"
-    chain-id: "ETH1"
-    api-interface: "jsonrpc"
-    node-urls:
-      - url: "$ETH_RPC_URL_2"
-        addons:
-          - archive
-          - debug
-          - trace
-EOF
 
 # Add WebSocket URL for second endpoint
 cat >> $CONFIG_FILE <<EOF
@@ -210,6 +222,7 @@ else
     exit 1
 fi
 echo ""
+fi  # end: regenerate config or use existing
 
 # Determine which phases are active
 PHASE_STATUS="Phases 1-3 (HTTP/HTTPS)"
@@ -245,7 +258,7 @@ echo ""
 screen -d -m -S smartrouter bash -c "cd $PROJECT_ROOT && source ~/.bashrc; lavap rpcsmartrouter \
 smartrouter_eth.yml \
 --geolocation 1 \
---log_level trace \
+--log_level debug \
 --cache-be \"127.0.0.1:20100\" \
 --use-static-spec $SPECS_DIR \
 --skip-websocket-verification \
@@ -338,8 +351,38 @@ if [[ "$WS_ENABLED" == "true" ]]; then
     echo ""
 fi
 
+echo "============================================"
+echo "CACHE TESTING (use these to verify cache)"
+echo "============================================"
+echo ""
+echo "Step 1: Send first request (expect CACHE MISS, then WRITE SUCCESS):"
+echo '  curl -s -X POST http://127.0.0.1:3360 \'
+echo '    -H "Content-Type: application/json" \'
+echo '    -d '\''{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'\'''
+echo ""
+echo "Step 2: Send SAME request again (expect CACHE HIT):"
+echo '  curl -s -X POST http://127.0.0.1:3360 \'
+echo '    -H "Content-Type: application/json" \'
+echo '    -d '\''{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'\'''
+echo ""
+echo "Step 3: Force cache bypass (expect CACHE MISS even with cached data):"
+echo '  curl -s -X POST http://127.0.0.1:3360 \'
+echo '    -H "Content-Type: application/json" \'
+echo '    -H "lava-force-cache-refresh: true" \'
+echo '    -d '\''{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'\'''
+echo ""
+echo "Monitor CACHE logs (look for HIT/MISS/WRITE):"
+echo "  tail -f $LOGS_DIR/SMARTROUTER.log | grep -i 'CACHE'"
+echo ""
+echo "Expected log patterns:"
+echo "  [CACHE] ✗ MISS - will relay to endpoint    <- First request"
+echo "  [CACHE] ✓ WRITE SUCCESS - response cached  <- After relay"
+echo "  [CACHE] ✓ HIT - returning cached response  <- Second request"
+echo ""
+echo "============================================"
+echo ""
 echo "Monitor Logs:"
-echo "  tail -f $LOGS_DIR/SMARTROUTER.log | grep -i 'direct\\|endpoint\\|relay\\|subscription'"
+echo "  tail -f $LOGS_DIR/SMARTROUTER.log | grep -i 'direct\\|endpoint\\|relay\\|subscription\\|CACHE'"
 echo ""
 echo "Metrics:"
 echo "  Smart Router: http://localhost:7779/metrics"

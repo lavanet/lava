@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 )
 
@@ -20,20 +21,53 @@ var config = &Config{
 	response: `{"tx_response":{"height":"0","txhash":"B303F5540A6CDDD8CEECD3F7CEF1F3913440E9047E0403EE5614C15B177687F6","codespace":"sdk","code":32,"data":"","raw_log":"account sequence mismatch, expected 8, got 4: incorrect account sequence","logs":[],"info":"","gas_wanted":"0","gas_used":"0","tx":null,"timestamp":"","events":[]}}`,
 }
 
+// Predefined responses for validation endpoints (allows startup to succeed)
+var validationResponses = map[string]string{
+	// Latest block - used for startup validation and block tracking
+	"/cosmos/base/tendermint/v1beta1/blocks/latest": `{"block_id":{"hash":"MOCK_HASH","part_set_header":{"total":1,"hash":"MOCK_PARTS"}},"block":{"header":{"chain_id":"lava-testnet-2","height":"1000000","time":"2024-01-01T00:00:00Z"}}}`,
+	// Node info - used for chain-id verification
+	"/cosmos/base/tendermint/v1beta1/node_info": `{"default_node_info":{"network":"lava-testnet-2"},"application_version":{"name":"lava","version":"1.0.0"}}`,
+	// Syncing status
+	"/cosmos/base/tendermint/v1beta1/syncing": `{"syncing":false}`,
+}
+
 // Handler for all requests
 func requestHandler(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Path
+	
+	// Check if this is a validation endpoint that needs a proper response
+	if validationResponse, isValidation := validationResponses[path]; isValidation {
+		log.Printf("📋 Validation Request: %s %s from %s -> returning mock validation response", r.Method, path, r.RemoteAddr)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(200)
+		w.Write([]byte(validationResponse))
+		return
+	}
+
+	// Also handle block-by-height requests for validation
+	if strings.HasPrefix(path, "/cosmos/base/tendermint/v1beta1/blocks/") {
+		blockNum := strings.TrimPrefix(path, "/cosmos/base/tendermint/v1beta1/blocks/")
+		log.Printf("📋 Block Request: %s %s (block=%s) from %s -> returning mock block", r.Method, path, blockNum, r.RemoteAddr)
+		response := fmt.Sprintf(`{"block_id":{"hash":"MOCK_HASH_%s"},"block":{"header":{"chain_id":"lava-testnet-2","height":"%s","time":"2024-01-01T00:00:00Z"}}}`, blockNum, blockNum)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(200)
+		w.Write([]byte(response))
+		return
+	}
+
+	// For all other requests (like /cosmos/tx/v1beta1/txs), use configured response
 	config.mu.RLock()
 	status := config.status
 	response := config.response
 	config.mu.RUnlock()
 
-	log.Printf("Request: %s %s from %s", r.Method, r.URL.Path, r.RemoteAddr)
+	log.Printf("⚠️  API Request: %s %s from %s -> returning configured response (node error)", r.Method, path, r.RemoteAddr)
 	
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	w.Write([]byte(response))
 	
-	log.Printf("Response: status=%d body=%s", status, response)
+	log.Printf("Response: status=%d", status)
 }
 
 // Control endpoint to change response
