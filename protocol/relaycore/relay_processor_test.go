@@ -1933,3 +1933,4 @@ func TestQuorumDisabledScenario(t *testing.T) {
 	result = rp.getRequiredQuorumSize(3)
 	require.Equal(t, 2, result, "Quorum enabled with 3 responses: ceil(0.66 * 3) = 2")
 }
+

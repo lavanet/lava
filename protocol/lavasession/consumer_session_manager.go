@@ -223,6 +223,39 @@ func (csm *ConsumerSessionManager) Initialized() bool {
 	return len(csm.pairingAddresses) != 0
 }
 
+// EndpointWithDirectConnection holds an endpoint and its direct RPC connection.
+// Used by smart router for pre-warming ChainTrackers.
+type EndpointWithDirectConnection struct {
+	Endpoint         *Endpoint
+	DirectConnection DirectRPCConnection
+	ProviderAddress  string
+}
+
+// GetAllDirectRPCEndpoints returns all endpoints with direct RPC connections.
+// This is used by the smart router for initializing ChainTrackers on startup.
+// Returns empty slice if no direct RPC endpoints are configured.
+func (csm *ConsumerSessionManager) GetAllDirectRPCEndpoints() []*EndpointWithDirectConnection {
+	csm.lock.RLock()
+	defer csm.lock.RUnlock()
+
+	var results []*EndpointWithDirectConnection
+
+	// Collect from primary pairing
+	for providerAddr, cswp := range csm.pairing {
+		for _, endpoint := range cswp.Endpoints {
+			if endpoint.IsDirectRPC() && len(endpoint.DirectConnections) > 0 {
+				results = append(results, &EndpointWithDirectConnection{
+					Endpoint:         endpoint,
+					DirectConnection: endpoint.DirectConnections[0],
+					ProviderAddress:  providerAddr,
+				})
+			}
+		}
+	}
+
+	return results
+}
+
 func (csm *ConsumerSessionManager) RemoveAddonAddresses(addon string, extensions []string) {
 	if addon == "" && len(extensions) == 0 {
 		// purge all
