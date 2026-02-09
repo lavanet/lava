@@ -53,7 +53,8 @@ type RPCSmartRouterServer struct {
 	rpcSmartRouterLogs     *metrics.RPCConsumerLogs
 	cache                  *performance.Cache
 	smartRouterConsistency relaycore.Consistency
-	sharedState            bool // using the cache backend to sync the latest seen block
+	consistencyConfig      *relaycore.ConsistencyValidationConfig // Configuration for consistency validation
+	sharedState            bool                                   // using the cache backend to sync the latest seen block
 	relaysMonitor          *metrics.RelaysMonitor
 	debugRelays            bool
 	chainListener          chainlib.ChainListener
@@ -61,6 +62,9 @@ type RPCSmartRouterServer struct {
 	initialized            atomic.Bool
 	latestBlockHeight      atomic.Uint64
 	latestBlockEstimator   *relaycore.LatestBlockEstimator
+
+	// Per-endpoint ChainTracker manager for continuous block polling
+	endpointChainTrackerManager *EndpointChainTrackerManager
 
 	// gRPC streaming subscription manager (nil if not configured)
 	grpcSubscriptionManager *DirectGRPCSubscriptionManager
@@ -91,6 +95,37 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 	rpcss.debugRelays = cmdFlags.DebugRelays
 	rpcss.relayRetriesManager = lavaprotocol.NewRelayRetriesManager()
 	rpcss.latestBlockEstimator = relaycore.NewLatestBlockEstimator()
+
+	// Initialize consistency validation config from chain spec values
+	blockLagForQosSync, averageBlockTime, blockDistanceForFinalizedData, _ := chainParser.ChainBlockStats()
+	rpcss.consistencyConfig = relaycore.NewConsistencyValidationConfig(
+		blockLagForQosSync,
+		blockDistanceForFinalizedData,
+		averageBlockTime,
+	)
+
+	// Initialize per-endpoint ChainTracker manager for continuous block polling
+	rpcss.endpointChainTrackerManager = NewEndpointChainTrackerManager(ctx, EndpointChainTrackerConfig{
+		ChainParser:      chainParser,
+		ChainID:          listenEndpoint.ChainID,
+		ApiInterface:     listenEndpoint.ApiInterface,
+		AverageBlockTime: averageBlockTime,
+		BlocksToSave:     DefaultBlocksToSave,
+		OnNewBlock: func(endpointURL string, fromBlock, toBlock int64) {
+			utils.LavaFormatTrace("endpoint ChainTracker detected new block",
+				utils.LogAttr("endpoint", endpointURL),
+				utils.LogAttr("fromBlock", fromBlock),
+				utils.LogAttr("toBlock", toBlock),
+			)
+		},
+		OnFork: func(endpointURL string, blockNum int64) {
+			utils.LavaFormatWarning("endpoint ChainTracker detected fork", nil,
+				utils.LogAttr("endpoint", endpointURL),
+				utils.LogAttr("blockNum", blockNum),
+			)
+		},
+	})
+
 	// NewChainListener now accepts WSSubscriptionManager interface, which is implemented
 	// by both ConsumerWSSubscriptionManager (provider-relay mode) and
 	// DirectWSSubscriptionManager (direct RPC mode for smart router).
@@ -117,6 +152,11 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 	} else {
 		rpcss.sendCraftedRelaysWrapper(ctx, true)
 	}
+
+	// Initialize ChainTrackers for all direct RPC endpoints in the background
+	// This ensures fresh block data is available from startup, avoiding stale data issues
+	go rpcss.initializeChainTrackers(ctx)
+
 	return nil
 }
 
@@ -679,6 +719,31 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 		utils.LogAttr("GUID", ctx),
 	)
 
+	// Pre-request consistency validation: filter out endpoints that are too far behind
+	validSessions, failedSessions, filterErr := rpcss.filterEndpointsByConsistency(ctx, sessions, protocolMessage)
+
+	// Release failed sessions via OnSessionFailure:
+	// - Provides QoS punishment (AppendRelayFailure)
+	// - Properly unlocks the session
+	// - Adds provider to unwantedProviders for retry exclusion
+	for endpointAddress, sessionInfo := range failedSessions {
+		if sessionInfo != nil && sessionInfo.Session != nil {
+			utils.LavaFormatDebug("releasing stale session via OnSessionFailure",
+				utils.LogAttr("endpoint", endpointAddress),
+				utils.LogAttr("error", lavasession.ConsistencyPreValidationError),
+				utils.LogAttr("GUID", ctx),
+			)
+			rpcss.sessionManager.OnSessionFailure(sessionInfo.Session, lavasession.ConsistencyPreValidationError)
+		}
+	}
+
+	// If ALL sessions failed consistency validation, return error to trigger retry with different providers
+	if filterErr != nil {
+		return filterErr
+	}
+
+	sessions = validSessions
+
 	// Launch goroutines for each direct RPC endpoint (parallel relay pattern)
 	for endpointAddress, sessionInfo := range sessions {
 		go func(endpointAddress string, sessionInfo *lavasession.SessionInfo) {
@@ -752,8 +817,15 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 				// Success or client error (4xx except 429) - update session as success
 				// Get endpoint reference for per-endpoint tracking
 				var targetEndpoint *lavasession.Endpoint
+				var directConn lavasession.DirectRPCConnection
 				if drsc, ok := singleConsumerSession.Connection.(*lavasession.DirectRPCSessionConnection); ok {
-					targetEndpoint = drsc.Endpoint // Use stored reference (robust)
+					targetEndpoint = drsc.Endpoint     // Use stored reference (robust)
+					directConn = drsc.DirectConnection // Get direct connection for ChainTracker
+				}
+
+				// Ensure ChainTracker exists for this endpoint (lazily initialized)
+				if targetEndpoint != nil && directConn != nil {
+					rpcss.ensureEndpointChainTracker(goroutineCtx, targetEndpoint, directConn)
 				}
 
 				// Get latest block: prefer response extraction, fallback to ChainTracker
@@ -851,6 +923,229 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 	)
 
 	return nil
+}
+
+// filterEndpointsByConsistency filters out endpoints that are too far behind the user's seen block.
+// This is pre-request validation to avoid wasting requests on endpoints that are likely stale.
+// Returns: validSessions (pass validation), failedSessions (too far behind), and error (if ALL failed).
+// Uses per-endpoint ChainTracker for accurate, continuously-polled block data.
+func (rpcss *RPCSmartRouterServer) filterEndpointsByConsistency(
+	ctx context.Context,
+	sessions lavasession.ConsumerSessionsMap,
+	protocolMessage chainlib.ProtocolMessage,
+) (validSessions lavasession.ConsumerSessionsMap, failedSessions lavasession.ConsumerSessionsMap, filterErr error) {
+	// Skip if consistency config is not set
+	if rpcss.consistencyConfig == nil || rpcss.smartRouterConsistency == nil {
+		return sessions, nil, nil
+	}
+
+	// Get requested block and check if we should validate
+	reqBlock, _ := protocolMessage.RequestedBlock()
+	if relaycore.ShouldSkipConsistencyValidation(reqBlock) {
+		return sessions, nil, nil
+	}
+
+	// Get user's seen block
+	userData := protocolMessage.GetUserData()
+	seenBlock, found := rpcss.smartRouterConsistency.GetSeenBlock(userData)
+	if !found || seenBlock <= 0 {
+		// No prior seen block - skip validation
+		return sessions, nil, nil
+	}
+
+	// Validate each endpoint
+	validSessions = make(lavasession.ConsumerSessionsMap, len(sessions))
+	failedSessions = make(lavasession.ConsumerSessionsMap)
+
+	for endpointAddress, sessionInfo := range sessions {
+		if sessionInfo == nil || sessionInfo.Session == nil {
+			continue
+		}
+
+		// Get endpoint's latest block from ChainTracker (if available), fallback to reactive value
+		endpointLatest := int64(0)
+		endpointURL := ""
+
+		// Extract the actual endpoint URL (ChainTrackers are stored by URL, not provider name)
+		if drsc, ok := sessionInfo.Session.Connection.(*lavasession.DirectRPCSessionConnection); ok && drsc.Endpoint != nil {
+			endpointURL = drsc.Endpoint.NetworkAddress
+		}
+
+		// First, try to get from ChainTracker manager (continuously polled, fresh data)
+		// ChainTrackers are keyed by URL, so multiple providers pointing to same URL share one tracker
+		if rpcss.endpointChainTrackerManager != nil && endpointURL != "" {
+			endpointLatest = rpcss.endpointChainTrackerManager.GetLatestBlockNum(endpointURL)
+		}
+
+		// Fallback: if ChainTracker has no data yet, use the endpoint's reactive LatestBlock
+		if endpointLatest == 0 {
+			if drsc, ok := sessionInfo.Session.Connection.(*lavasession.DirectRPCSessionConnection); ok && drsc.Endpoint != nil {
+				endpointLatest = drsc.Endpoint.LatestBlock.Load()
+			}
+		}
+
+		// If we still have no block data, skip validation for this endpoint (allow first relay)
+		if endpointLatest == 0 {
+			validSessions[endpointAddress] = sessionInfo
+			continue
+		}
+
+		// Validate endpoint capability
+		err := relaycore.ValidateEndpointCapability(
+			endpointLatest,
+			seenBlock,
+			reqBlock,
+			rpcss.consistencyConfig,
+		)
+		if err != nil {
+			// Endpoint is too far behind - add to failed sessions
+			utils.LavaFormatDebug("skipping endpoint due to consistency check",
+				utils.LogAttr("endpoint", endpointAddress),
+				utils.LogAttr("endpointLatest", endpointLatest),
+				utils.LogAttr("seenBlock", seenBlock),
+				utils.LogAttr("source", func() string {
+					if rpcss.endpointChainTrackerManager != nil && rpcss.endpointChainTrackerManager.GetLatestBlockNum(endpointAddress) > 0 {
+						return "ChainTracker"
+					}
+					return "reactive"
+				}()),
+				utils.LogAttr("GUID", ctx),
+			)
+			failedSessions[endpointAddress] = sessionInfo
+			continue
+		}
+
+		validSessions[endpointAddress] = sessionInfo
+	}
+
+	skippedCount := len(failedSessions)
+
+	// If ALL endpoints failed validation, return error to trigger retry
+	if len(validSessions) == 0 && skippedCount > 0 {
+		utils.LavaFormatDebug("all endpoints failed consistency pre-validation, triggering retry",
+			utils.LogAttr("totalEndpoints", len(sessions)),
+			utils.LogAttr("skippedCount", skippedCount),
+			utils.LogAttr("seenBlock", seenBlock),
+			utils.LogAttr("GUID", ctx),
+		)
+		return nil, failedSessions, utils.LavaFormatError("all endpoints failed consistency pre-validation",
+			lavasession.ConsistencyPreValidationError,
+			utils.LogAttr("totalEndpoints", len(sessions)),
+			utils.LogAttr("seenBlock", seenBlock),
+		)
+	}
+
+	if skippedCount > 0 {
+		utils.LavaFormatDebug("filtered endpoints by consistency",
+			utils.LogAttr("totalEndpoints", len(sessions)),
+			utils.LogAttr("validEndpoints", len(validSessions)),
+			utils.LogAttr("skippedCount", skippedCount),
+			utils.LogAttr("seenBlock", seenBlock),
+			utils.LogAttr("GUID", ctx),
+		)
+	}
+
+	return validSessions, failedSessions, nil
+}
+
+// ensureEndpointChainTracker ensures that a ChainTracker exists for the given endpoint.
+// If not, it creates one lazily. This enables continuous block polling for accurate
+// consistency pre-validation.
+// This is called the first time we successfully communicate with an endpoint.
+func (rpcss *RPCSmartRouterServer) ensureEndpointChainTracker(
+	ctx context.Context,
+	endpoint *lavasession.Endpoint,
+	directConnection lavasession.DirectRPCConnection,
+) {
+	if rpcss.endpointChainTrackerManager == nil || endpoint == nil || directConnection == nil {
+		return
+	}
+
+	// Check if ChainTracker already exists
+	endpointURL := endpoint.NetworkAddress
+	if _, exists := rpcss.endpointChainTrackerManager.GetTracker(endpointURL); exists {
+		return
+	}
+
+	// Create ChainTracker lazily (in a goroutine to avoid blocking relay)
+	go func() {
+		_, err := rpcss.endpointChainTrackerManager.GetOrCreateTracker(endpoint, directConnection)
+		if err != nil {
+			utils.LavaFormatWarning("failed to create ChainTracker for endpoint", err,
+				utils.LogAttr("endpoint", endpointURL),
+			)
+		}
+	}()
+}
+
+// initializeChainTrackers creates ChainTrackers for all direct RPC endpoints on startup.
+// This runs in the background and ensures fresh block data is available from the start,
+// avoiding issues where endpoints have stale or no block data for consistency validation.
+// If initialization fails for an endpoint, lazy initialization (ensureEndpointChainTracker) serves as fallback.
+func (rpcss *RPCSmartRouterServer) initializeChainTrackers(ctx context.Context) {
+	// Small delay to let startup complete and connections stabilize
+	select {
+	case <-ctx.Done():
+		return
+	case <-time.After(100 * time.Millisecond):
+	}
+
+	if rpcss.endpointChainTrackerManager == nil || rpcss.sessionManager == nil {
+		return
+	}
+
+	endpoints := rpcss.sessionManager.GetAllDirectRPCEndpoints()
+	if len(endpoints) == 0 {
+		utils.LavaFormatDebug("no direct RPC endpoints to initialize ChainTrackers")
+		return
+	}
+
+	utils.LavaFormatInfo("initializing ChainTrackers for direct RPC endpoints",
+		utils.LogAttr("count", len(endpoints)),
+		utils.LogAttr("chainID", rpcss.listenEndpoint.ChainID),
+	)
+
+	successCount := 0
+	failCount := 0
+
+	// Initialize ChainTrackers with staggered delays to avoid thundering herd
+	for i, ep := range endpoints {
+		select {
+		case <-ctx.Done():
+			utils.LavaFormatDebug("ChainTracker initialization cancelled",
+				utils.LogAttr("completed", i),
+				utils.LogAttr("total", len(endpoints)),
+			)
+			return
+		default:
+		}
+
+		// Stagger by 50ms between endpoints to avoid rate limiting
+		if i > 0 {
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(50 * time.Millisecond):
+			}
+		}
+
+		_, err := rpcss.endpointChainTrackerManager.GetOrCreateTracker(ep.Endpoint, ep.DirectConnection)
+		if err != nil {
+			utils.LavaFormatWarning("failed to initialize ChainTracker", err,
+				utils.LogAttr("endpoint", ep.Endpoint.NetworkAddress),
+				utils.LogAttr("provider", ep.ProviderAddress),
+			)
+			failCount++
+		} else {
+			successCount++
+		}
+	}
+
+	utils.LavaFormatInfo("ChainTracker initialization complete",
+		utils.LogAttr("success", successCount),
+		utils.LogAttr("failed", failCount),
+		utils.LogAttr("chainID", rpcss.listenEndpoint.ChainID),
+	)
 }
 
 // tryCacheWrite attempts to write a successful relay response to the cache.

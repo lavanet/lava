@@ -163,6 +163,9 @@ type RPCSmartRouter struct {
 	sessionManagers        map[string]*lavasession.ConsumerSessionManager                  // key: chainID-apiInterface
 	providerSessions       map[string]map[uint64]*lavasession.ConsumerSessionsWithProvider // key: chainID-apiInterface
 	backupProviderSessions map[string]map[uint64]*lavasession.ConsumerSessionsWithProvider // key: chainID-apiInterface
+
+	// Server references for per-endpoint ChainTracker cleanup on epoch updates
+	rpcServers map[string]*RPCSmartRouterServer // key: chainID-apiInterface
 }
 
 type rpcSmartRouterStartOptions struct {
@@ -189,6 +192,7 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 	rpsr.sessionManagers = make(map[string]*lavasession.ConsumerSessionManager)
 	rpsr.providerSessions = make(map[string]map[uint64]*lavasession.ConsumerSessionsWithProvider)
 	rpsr.backupProviderSessions = make(map[string]map[uint64]*lavasession.ConsumerSessionsWithProvider)
+	rpsr.rpcServers = make(map[string]*RPCSmartRouterServer)
 
 	// RPCSmartRouter always runs in standalone mode with time-based epochs
 	epochDuration := options.cmdFlags.EpochDuration
@@ -885,6 +889,10 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 		errCh <- err
 		return err
 	}
+
+	// Store server reference for per-endpoint ChainTracker cleanup on epoch updates
+	rpsr.rpcServers[sessionManagerKey] = rpcSmartRouterServer
+
 	return nil
 }
 
@@ -1359,6 +1367,60 @@ func (rpsr *RPCSmartRouter) updateEpoch(epoch uint64) {
 				utils.LogAttr("chainKey", chainKeyLog),
 			)
 		}
+
+		// Cleanup stale ChainTrackers for endpoints no longer in the provider sessions
+		// This must happen AFTER UpdateAllProviders so connections are closed first
+		if server, exists := rpsr.rpcServers[chainKey]; exists && server != nil {
+			rpsr.cleanupStaleTrackers(chainKey, server, freshProviderSessions, freshBackupSessions)
+		}
+	}
+}
+
+// cleanupStaleTrackers removes ChainTrackers for endpoints that are no longer in the current provider sessions.
+// This prevents resource leaks from trackers polling endpoints that have been removed during epoch updates.
+func (rpsr *RPCSmartRouter) cleanupStaleTrackers(
+	chainKey string,
+	server *RPCSmartRouterServer,
+	providerSessions map[uint64]*lavasession.ConsumerSessionsWithProvider,
+	backupSessions map[uint64]*lavasession.ConsumerSessionsWithProvider,
+) {
+	if server.endpointChainTrackerManager == nil {
+		return
+	}
+
+	// Build set of current endpoint URLs from both primary and backup providers
+	currentEndpoints := make(map[string]bool)
+	for _, provider := range providerSessions {
+		for _, endpoint := range provider.Endpoints {
+			currentEndpoints[endpoint.NetworkAddress] = true
+		}
+	}
+	for _, provider := range backupSessions {
+		for _, endpoint := range provider.Endpoints {
+			currentEndpoints[endpoint.NetworkAddress] = true
+		}
+	}
+
+	// Get all tracked endpoints and remove stale ones
+	trackedEndpoints := server.endpointChainTrackerManager.GetAllEndpoints()
+	removedCount := 0
+	for _, trackedURL := range trackedEndpoints {
+		if !currentEndpoints[trackedURL] {
+			utils.LavaFormatInfo("removing stale ChainTracker on epoch update",
+				utils.LogAttr("endpoint", trackedURL),
+				utils.LogAttr("chainKey", chainKey),
+			)
+			server.endpointChainTrackerManager.RemoveTracker(trackedURL)
+			removedCount++
+		}
+	}
+
+	if removedCount > 0 {
+		utils.LavaFormatInfo("epoch update: cleaned up stale ChainTrackers",
+			utils.LogAttr("chainKey", chainKey),
+			utils.LogAttr("removed", removedCount),
+			utils.LogAttr("remaining", server.endpointChainTrackerManager.GetEndpointCount()),
+		)
 	}
 }
 
