@@ -1,6 +1,7 @@
 package provideroptimizer
 
 import (
+	"context"
 	"fmt"
 	"math"
 	stdrand "math/rand"
@@ -620,15 +621,17 @@ func (ws *WeightedSelector) applyStrategyAdjustments(latency, sync float64) (flo
 // SelectProvider selects a provider using weighted random selection
 // Providers with higher composite scores have higher probability of selection
 func (ws *WeightedSelector) SelectProvider(
+	ctx context.Context,
 	providerScores []ProviderScore,
 ) string {
-	selected, _ := ws.SelectProviderWithStats(providerScores, nil)
+	selected, _ := ws.SelectProviderWithStats(ctx, providerScores, nil)
 	return selected
 }
 
 // SelectProviderWithStats selects a provider using weighted random selection
 // and returns detailed selection statistics if scoreDetails is provided
 func (ws *WeightedSelector) SelectProviderWithStats(
+	ctx context.Context,
 	providerScores []ProviderScore,
 	scoreDetails []ProviderScoreDetails,
 ) (string, *SelectionStats) {
@@ -678,15 +681,16 @@ func (ws *WeightedSelector) SelectProviderWithStats(
 				selectionProbabilities[p.Address] = (p.SelectionWeight / totalScore) * 100.0
 			}
 
-			// Log comprehensive selection summary
-			logAttrs := []utils.Attribute{
-				utils.LogAttr("selected_provider", ps.Address),
-				utils.LogAttr("selected_score", ps.SelectionWeight),
-				utils.LogAttr("selected_probability_pct", selectionProbabilities[ps.Address]),
-				utils.LogAttr("total_score", totalScore),
-				utils.LogAttr("random_value", randomValue),
-				utils.LogAttr("num_candidates", len(providerScores)),
-			}
+		// Log comprehensive selection summary
+		logAttrs := []utils.Attribute{
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("selected_provider", ps.Address),
+			utils.LogAttr("selected_score", ps.SelectionWeight),
+			utils.LogAttr("selected_probability_pct", selectionProbabilities[ps.Address]),
+			utils.LogAttr("total_score", totalScore),
+			utils.LogAttr("random_value", randomValue),
+			utils.LogAttr("num_candidates", len(providerScores)),
+		}
 
 			// Add all candidates' scores and probabilities with parameter breakdown
 			for i, p := range providerScores {

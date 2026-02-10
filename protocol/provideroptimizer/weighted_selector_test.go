@@ -1,6 +1,7 @@
 package provideroptimizer
 
 import (
+	"context"
 	stdmath "math"
 	"sync"
 	"sync/atomic"
@@ -303,7 +304,7 @@ func TestSelectProviderSingleProvider(t *testing.T) {
 		{Address: "provider1", CompositeScore: 0.8, SelectionWeight: 0.8},
 	}
 
-	selected := ws.SelectProvider(providers)
+	selected := ws.SelectProvider(context.Background(), providers)
 	require.Equal(t, "provider1", selected)
 }
 
@@ -314,7 +315,7 @@ func TestSelectProviderEmptyList(t *testing.T) {
 
 	providers := []ProviderScore{}
 
-	selected := ws.SelectProvider(providers)
+	selected := ws.SelectProvider(context.Background(), providers)
 	require.Equal(t, "", selected)
 }
 
@@ -336,7 +337,7 @@ func TestSelectProviderDistribution(t *testing.T) {
 	iterations := 10000
 
 	for i := 0; i < iterations; i++ {
-		selected := ws.SelectProvider(providers)
+		selected := ws.SelectProvider(context.Background(), providers)
 		selections[selected]++
 	}
 
@@ -380,7 +381,7 @@ func TestMinSelectionChanceIsAWeightFloorNotAProbabilityGuarantee(t *testing.T) 
 	const iterations = 100000
 	countMin := 0
 	for i := 0; i < iterations; i++ {
-		if ws.SelectProvider(providers) == "min_floor" {
+		if ws.SelectProvider(context.Background(), providers) == "min_floor" {
 			countMin++
 		}
 	}
@@ -431,7 +432,7 @@ func TestSelectProviderConcurrentDoesNotPanicAndReturnsValidProvider(t *testing.
 		go func() {
 			defer wg.Done()
 			for i := 0; i < perG; i++ {
-				selected := ws.SelectProvider(providers)
+				selected := ws.SelectProvider(context.Background(), providers)
 				total.Add(1)
 				switch selected {
 				case "p1", "p2", "p3":
@@ -464,7 +465,7 @@ func TestSelectProviderEqualScores(t *testing.T) {
 	iterations := 3000
 
 	for i := 0; i < iterations; i++ {
-		selected := ws.SelectProvider(providers)
+		selected := ws.SelectProvider(context.Background(), providers)
 		selections[selected]++
 	}
 
@@ -488,7 +489,7 @@ func TestSelectProviderZeroScores(t *testing.T) {
 	}
 
 	// Should still select a provider (uniform random)
-	selected := ws.SelectProvider(providers)
+	selected := ws.SelectProvider(context.Background(), providers)
 	require.NotEmpty(t, selected)
 	require.Contains(t, []string{"provider1", "provider2", "provider3"}, selected)
 }
@@ -680,7 +681,7 @@ func BenchmarkSelectProvider(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ws.SelectProvider(providers)
+		ws.SelectProvider(context.Background(), providers)
 	}
 }
 

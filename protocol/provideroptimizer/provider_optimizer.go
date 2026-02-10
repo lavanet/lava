@@ -1,6 +1,7 @@
 package provideroptimizer
 
 import (
+	"context"
 	"math"
 	"strings"
 	"sync"
@@ -313,13 +314,13 @@ func (po *ProviderOptimizer) CalculateQoSScoresForMetrics(allAddresses []string,
 }
 
 // ChooseProvider returns a subset of selected providers using weighted random selection based on QoS scores
-func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string) {
-	addresses, _ = po.ChooseProviderWithStats(allAddresses, ignoredProviders, cu, requestedBlock)
+func (po *ProviderOptimizer) ChooseProvider(ctx context.Context, allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string) {
+	addresses, _ = po.ChooseProviderWithStats(ctx, allAddresses, ignoredProviders, cu, requestedBlock)
 	return addresses
 }
 
 // ChooseProviderWithStats returns a subset of selected providers and detailed selection statistics
-func (po *ProviderOptimizer) ChooseProviderWithStats(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, stats *SelectionStats) {
+func (po *ProviderOptimizer) ChooseProviderWithStats(ctx context.Context, allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, stats *SelectionStats) {
 	// Get provider data for weighted selection
 	providerDataGetter := func(addr string) (*pairingtypes.QualityOfServiceReport, time.Time, bool) {
 		qos, lastUpdate := po.GetReputationReportForProvider(addr)
@@ -349,7 +350,7 @@ func (po *ProviderOptimizer) ChooseProviderWithStats(allAddresses []string, igno
 	}
 
 	// Select provider using weighted random selection with stats
-	selectedProvider, selectionStats := po.weightedSelector.SelectProviderWithStats(providerScores, scoreDetails)
+	selectedProvider, selectionStats := po.weightedSelector.SelectProviderWithStats(ctx, providerScores, scoreDetails)
 	returnedProviders := []string{selectedProvider}
 
 	// Add exploration candidate if should explore
@@ -406,13 +407,13 @@ func getProviderCompositeScore(address string, scores []ProviderScore) float64 {
 
 // ChooseBestProvider selects a single high-quality provider using weighted selection
 // This is used for sticky sessions and other scenarios requiring consistent provider selection
-func (po *ProviderOptimizer) ChooseBestProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string) {
-	addresses, _ = po.ChooseBestProviderWithStats(allAddresses, ignoredProviders, cu, requestedBlock)
+func (po *ProviderOptimizer) ChooseBestProvider(ctx context.Context, allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string) {
+	addresses, _ = po.ChooseBestProviderWithStats(ctx, allAddresses, ignoredProviders, cu, requestedBlock)
 	return addresses
 }
 
 // ChooseBestProviderWithStats selects a single high-quality provider and returns detailed selection statistics
-func (po *ProviderOptimizer) ChooseBestProviderWithStats(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, stats *SelectionStats) {
+func (po *ProviderOptimizer) ChooseBestProviderWithStats(ctx context.Context, allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, stats *SelectionStats) {
 	// Get provider data for weighted selection
 	providerDataGetter := func(addr string) (*pairingtypes.QualityOfServiceReport, time.Time, bool) {
 		qos, lastUpdate := po.GetReputationReportForProvider(addr)
@@ -441,7 +442,7 @@ func (po *ProviderOptimizer) ChooseBestProviderWithStats(allAddresses []string, 
 
 	// Select the single best provider using weighted random selection
 	// This gives higher probability to better providers while still allowing variety
-	selectedProvider, selectionStats := po.weightedSelector.SelectProviderWithStats(providerScores, scoreDetails)
+	selectedProvider, selectionStats := po.weightedSelector.SelectProviderWithStats(ctx, providerScores, scoreDetails)
 
 	utils.LavaFormatTrace("[Optimizer] returned provider",
 		utils.LogAttr("provider", selectedProvider),

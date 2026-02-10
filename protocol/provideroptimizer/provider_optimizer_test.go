@@ -1,6 +1,7 @@
 package provideroptimizer
 
 import (
+	"context"
 	stdmath "math"
 	"strconv"
 	"testing"
@@ -107,7 +108,7 @@ func TestProviderOptimizerBasicProbeData(t *testing.T) {
 func runChooseManyTimesAndReturnResults(t *testing.T, providerOptimizer *ProviderOptimizer, providers []string, ignoredProviders map[string]struct{}, times int, cu uint64, requestBlock int64) map[string]int {
 	results := make(map[string]int)
 	for i := 0; i < times; i++ {
-		returnedProviders := providerOptimizer.ChooseProvider(providers, ignoredProviders, cu, requestBlock)
+		returnedProviders := providerOptimizer.ChooseProvider(context.Background(), providers, ignoredProviders, cu, requestBlock)
 		require.Equal(t, 1, len(returnedProviders))
 		results[returnedProviders[0]]++
 	}
@@ -411,7 +412,7 @@ func TestProviderOptimizerExploration(t *testing.T) {
 	testProvidersExploration := func(iterations int) float64 {
 		exploration := 0.0
 		for i := 0; i < iterations; i++ {
-			returnedProviders := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, cu, requestBlock)
+			returnedProviders := providerOptimizer.ChooseProvider(context.Background(), providersGen.providersAddresses, nil, cu, requestBlock)
 			if len(returnedProviders) > 1 {
 				exploration++
 				// check if we have a specific chosen index
@@ -602,7 +603,7 @@ func TestProviderOptimizerProvidersCount(t *testing.T) {
 	for _, play := range playbook {
 		t.Run(play.name, func(t *testing.T) {
 			for i := 0; i < 10; i++ {
-				returnedProviders := providerOptimizer.ChooseProvider(providersGen.providersAddresses[:play.providers], nil, cu, requestBlock)
+				returnedProviders := providerOptimizer.ChooseProvider(context.Background(), providersGen.providersAddresses[:play.providers], nil, cu, requestBlock)
 				require.Greater(t, len(returnedProviders), 0)
 			}
 		})
