@@ -12,7 +12,7 @@
                 "block_distance_for_finalized_data": 4,
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 5000,
-                "allowed_block_lag_for_qos_sync": 5,
+                "allowed_block_lag_for_qos_sync": 2,
                 "imports": [],
                 "shares": 1,
                 "min_stake_provider": {
@@ -30,7 +30,115 @@
                         },
                         "apis": [
                             {
-                                "name": "/transactions/{tx_hash}",
+                                "name": "/transactions",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/transactions/{transaction_hash}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/transactions/{transaction_hash}/operations",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/transactions/{transaction_hash}/effects",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/transactions/{transaction_hash}/payments",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/accounts",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/accounts/{account_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -48,7 +156,115 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/accounts/{account}",
+                                "name": "/accounts/{account_id}/transactions",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/accounts/{account_id}/operations",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/accounts/{account_id}/payments",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/accounts/{account_id}/effects",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/accounts/{account_id}/offers",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/accounts/{account_id}/trades",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/accounts/{account_id}/data/{key}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -105,15 +321,11 @@
                                 "name": "/ledgers",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "0",
-                                        "_embedded",
-                                        "records",
-                                        "0",
-                                        "sequence"
+                                        "latest"
                                     ],
-                                    "parser_func": "PARSE_CANONICAL"
+                                    "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -131,7 +343,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -142,18 +354,15 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ledgers/{ledger_id}",
+                                "name": "/ledgers/{sequence}",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "0",
-                                        "_embedded",
-                                        "records",
                                         "0",
                                         "sequence"
                                     ],
                                     "parser_func": "PARSE_CANONICAL"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -161,37 +370,7 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0,
-                                "parsers": [
-                                    {
-                                        "parse_path": ".params.ledger_id",
-                                        "parse_type": "BLOCK_LATEST"
-                                    }
-                                ]
-                            },
-                            {
-                                "name": "/ledgers/{ledger_id}/{info_type}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "0"
-                                    ],
-                                    "parser_func": "PARSE_CANONICAL"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0,
-                                "parsers": [
-                                    {
-                                        "parse_path": ".params.ledger_id",
-                                        "parse_type": "BLOCK_LATEST"
-                                    }
-                                ]
+                                "extra_compute_units": 0
                             },
                             {
                                 "name": "/",
@@ -225,7 +404,7 @@
                                     ],
                                     "parser_func": "PARSE_CANONICAL"
                                 },
-                                "api_name": "/ledgers/{ledger_id}"
+                                "api_name": "/ledgers/{sequence}"
                             },
                             {
                                 "function_tag": "GET_BLOCKNUM",
@@ -275,6 +454,24 @@
                         "apis": [
                             {
                                 "name": "/transactions",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/transactions_async",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -349,11 +546,13 @@
                                 "name": "getLedgers",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "latest"
+                                        "0",
+                                        "startLedger"
                                     ],
-                                    "parser_func": "DEFAULT"
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value": "latest"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -371,7 +570,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -385,11 +584,12 @@
                                 "name": "getEvents",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "latest"
+                                        "0",
+                                        "startLedger"
                                     ],
-                                    "parser_func": "DEFAULT"
+                                    "parser_func": "PARSE_CANONICAL"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 80,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -397,17 +597,25 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0
+                                "extra_compute_units": 0,
+                                "parsers": [
+                                    {
+                                        "parse_path": ".params.endLedger",
+                                        "parse_type": "BLOCK_LATEST"
+                                    }
+                                ]
                             },
                             {
                                 "name": "getTransactions",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "latest"
+                                        "0",
+                                        "startLedger"
                                     ],
-                                    "parser_func": "DEFAULT"
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value": "latest"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -421,11 +629,11 @@
                                 "name": "getTransaction",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "latest"
+                                        ""
                                     ],
-                                    "parser_func": "DEFAULT"
+                                    "parser_func": "EMPTY"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -461,11 +669,11 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 5,
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
-                                    "local": false,
+                                    "deterministic": false,
+                                    "local": true,
                                     "subscription": false,
                                     "stateful": 0
                                 },
@@ -479,11 +687,11 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 5,
+                                "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
+                                    "local": true,
                                     "subscription": false,
                                     "stateful": 0
                                 },
@@ -517,7 +725,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 100,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -594,7 +802,7 @@
                 "block_distance_for_finalized_data": 4,
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 5000,
-                "allowed_block_lag_for_qos_sync": 5,
+                "allowed_block_lag_for_qos_sync": 2,
                 "imports": [
                     "XLM"
                 ],
