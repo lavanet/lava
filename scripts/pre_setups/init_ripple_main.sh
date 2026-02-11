@@ -34,7 +34,7 @@ GASPRICE="0.00002ulava"
 echo "[Test Setup] Adding Stellar spec (with JSON-RPC support)..."
 # Use only essential specs to avoid validation issues with uncommitted code changes
 # Including: Lava chain spec + Cosmos base specs + Stellar
-specs="specs/mainnet-1/specs/ibc.json,specs/mainnet-1/specs/cosmoswasm.json,specs/mainnet-1/specs/tendermint.json,specs/mainnet-1/specs/cosmossdk.json,specs/testnet-2/specs/lava.json,specs/mainnet-1/specs/stellar.json"
+specs="specs/mainnet-1/specs/ibc.json,specs/mainnet-1/specs/cosmoswasm.json,specs/mainnet-1/specs/tendermint.json,specs/mainnet-1/specs/cosmossdk.json,specs/testnet-2/specs/lava.json,specs/mainnet-1/specs/stellar.json,specs/mainnet-1/specs/ripple.json"
 echo "[Test Setup] Submitting spec-add proposal (Lava + Stellar specs)..."
 lavad tx gov submit-legacy-proposal spec-add $specs --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 if [ $? -ne 0 ]; then
@@ -78,39 +78,38 @@ echo "[Test Setup] Setting up subscription and provider stake..."
 lavad tx subscription buy DefaultPlan $(lavad keys show user1 -a) -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
 
-lavad tx pairing stake-provider "XLM" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1,jsonrpc,rest" 1 $(operator_address) -y --from servicer1 --provider-moniker "Stellar-JSON-RPC-Provider" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "XRP" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1,jsonrpc" 1 $(operator_address) -y --from servicer1 --provider-moniker "Ripple-JSON-RPC-Provider" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 sleep_until_next_epoch
 wait_next_block
 
-echo "[Test Setup] Starting Stellar JSON-RPC Provider..."
-echo "  Using public Stellar JSON-RPC endpoint: https://stellar-mainnet.gateway.tatum.io/"
+echo "[Test Setup] Starting Ripple JSON-RPC Provider..."
+echo "  Using public Ripple JSON-RPC endpoint: https://ripple.drpc.org"
 echo "  Testing JSON-RPC interface (exercises the parameters fix)"
 screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
-$PROVIDER1_LISTENER XLM jsonrpc 'https://soroban-rpc.mainnet.stellar.gateway.fm' \
-$PROVIDER1_LISTENER XLM rest 'https://stellar-mainnet.gateway.tatum.io/' \
-$EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/PROVIDER1_STELLAR_JSONRPC.log" && sleep 2
+$PROVIDER1_LISTENER XRP jsonrpc 'https://s2.ripple.com:51234/,wss://s1.ripple.com/' \
+$EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/PROVIDER1_RIPPLE_JSONRPC.log" && sleep 2
 
 wait_next_block
 
-echo "[Test Setup] Starting Stellar Consumer..."
+echo "[Test Setup] Starting Ripple Consumer..."
 screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcconsumer \
-127.0.0.1:3360 XLM jsonrpc 127.0.0.1:3361 XLM rest \
-$EXTRA_PORTAL_FLAGS --geolocation 1 --log_level trace --from user1 --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/CONSUMERS_STELLAR.log" && sleep 0.25
+127.0.0.1:3360 XRP jsonrpc \
+$EXTRA_PORTAL_FLAGS --geolocation 1 --log_level trace --from user1 --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/CONSUMERS_RIPPLE.log" && sleep 0.25
 
 echo ""
 echo "==================================================================="
-echo "✅ Setup complete - Stellar JSON-RPC Test Environment Ready"
+echo "✅ Setup complete - Ripple JSON-RPC Test Environment Ready"
 echo "==================================================================="
 echo ""
 echo "Active screens:"
 screen -ls
 echo ""
 echo "Provider logs:"
-echo "  tail -f $LOGS_DIR/PROVIDER1_STELLAR_JSONRPC.log"
+echo "  tail -f $LOGS_DIR/PROVIDER1_RIPPLE_JSONRPC.log"
 echo ""
 echo "Consumer logs:"
-echo "  tail -f $LOGS_DIR/CONSUMERS_STELLAR.log"
+echo "  tail -f $LOGS_DIR/CONSUMERS_RIPPLE.log"
 echo ""
 echo "Testing the JSON-RPC parameters fix:"
 echo "======================================"
@@ -118,7 +117,7 @@ echo ""
 echo "The fix is in the JSON-RPC layer (client.go:301):"
 echo "  - Converts nil params → passes nil (not [])"
 echo "  - omitempty tag omits 'params' field from JSON"
-echo "  - Stellar-RPC accepts requests without 'params' field"
+echo "  - Ripple-RPC accepts requests without 'params' field"
 echo ""
 echo "Example test request (no parameters):"
 echo "  curl -X POST http://127.0.0.1:3360 \\"
@@ -128,7 +127,7 @@ echo ""
 echo "Success indicators:"
 echo "  ✅ Request succeeds (no 'params' related errors)"
 echo "  ✅ Provider shows successful relay"
-echo "  ✅ Stellar-RPC accepts the request"
+echo "  ✅ Ripple-RPC accepts the request"
 echo "  ✅ Logs show JSON-RPC requests handled correctly"
 echo ""
 echo "To monitor parameter handling:"
