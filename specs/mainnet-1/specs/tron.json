@@ -12,7 +12,7 @@
                 "block_distance_for_finalized_data": 4,
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 3000,
-                "allowed_block_lag_for_qos_sync": 5,
+                "allowed_block_lag_for_qos_sync": 4,
                 "imports": [],
                 "shares": 1,
                 "min_stake_provider": {
@@ -37,7 +37,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -69,11 +69,209 @@
                                 "name": "/wallet/getnodeinfo",
                                 "block_parsing": {
                                     "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getassetissuelist",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/gettransactionlistfrompending",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getpendingsize",
+                                "block_parsing": {
+                                    "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/listwitnesses",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getbandwidthprices",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getburntrx",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getnextmaintenancetime",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/listnodes",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getpaginatednowwitnesslist",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/listproposals",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getpaginatedassetissuelist",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -103,6 +301,97 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/createaccount",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getaccountresource",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getaccountnet",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getaccountbalance",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "block_identifier"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/validateaddress",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
@@ -114,7 +403,386 @@
                                 "extra_compute_units": 0
                             },
                             {
+                                "name": "/wallet/freezebalance",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/unfreezebalance",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/freezebalancev2",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/unfreezebalancev2",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/withdrawexpireunfreeze",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/delegateresource",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/undelegateresource",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getdelegatedresource",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getdelegatedresourcev2",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
                                 "name": "/wallet/triggerconstantcontract",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 100,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/deploycontract",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/triggersmartcontract",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getcontract",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getcontractinfo",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/estimateenergy",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 100,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getassetissuebyaccount",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getassetissuebyid",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getassetissuebyname",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest",
+                                        "startNum"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getassetissuelistbyname",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/gettransactionfrompending",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getReward",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/withdrawbalance",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -139,25 +807,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/wallet/getaccountresource",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -186,7 +836,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/wallet/getnowblock",
+                                "name": "/wallet/broadcasttransaction",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -194,6 +844,42 @@
                                     "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/createtransaction",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getnowblock",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -212,7 +898,7 @@
                                     ],
                                     "parser_func": "PARSE_CANONICAL"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 80,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -231,13 +917,574 @@
                                     ],
                                     "parser_func": "PARSE_CANONICAL"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getblock",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "id_or_num"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getblockbyid",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getblockbylatestnum",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getblockbylimitnext",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "startNum"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/gettransactionbyid",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getblockbalance",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "num"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/updateaccount",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/accountpermissionupdate",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/cancelallunfreezev2",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getdelegatedresourceaccountindex",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getdelegatedresourceaccountindexv2",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getcandelegatedmaxsize",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getcanwithdrawunfreezeamount",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getavailableunfreezecount",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getapprovedlist",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getproposalbyid",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/proposalapprove",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/proposaldelete",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/createwitness",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/updatewitness",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/votewitnessaccount",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/getBrokerage",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/updateBrokerage",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/createassetissue",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/updateasset",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/participateassetissue",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/transferasset",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/unfreezeasset",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/clearabii",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/updateenergylimit",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/wallet/updatesetting",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
                                 },
                                 "extra_compute_units": 0
                             }
@@ -270,6 +1517,20 @@
                                     "parser_func": "PARSE_CANONICAL"
                                 },
                                 "api_name": "/wallet/getnowblock"
+                            },
+                            {
+                                "function_tag": "GET_EARLIEST_BLOCK",
+                                "function_template": "{\"num\":1}",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "block_header",
+                                        "raw_data",
+                                        "number"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
+                                },
+                                "api_name": "/wallet/getblockbynum"
                             }
                         ],
                         "verifications": [
@@ -292,10 +1553,32 @@
                                         "expected_value": "00000000000000001ebf88508a03865c71d452e25f4d51194196a1d22b6653dc"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "parse_directive": {
+                                    "function_tag": "GET_EARLIEST_BLOCK"
+                                },
+                                "values": [
+                                    {
+                                        "latest_distance": 128
+                                    },
+                                    {
+                                        "extension": "archive",
+                                        "expected_value": "1"
+                                    }
+                                ]
                             }
-
                         ],
-                        "extensions": []
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 127
+                                }
+                            }
+                        ]
                     }
                 ]
             },
@@ -308,7 +1591,7 @@
                 "block_distance_for_finalized_data": 4,
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 3000,
-                "allowed_block_lag_for_qos_sync": 5,
+                "allowed_block_lag_for_qos_sync": 4,
                 "imports": [
                     "TRX"
                 ],

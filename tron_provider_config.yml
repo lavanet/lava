@@ -1,0 +1,10 @@
+endpoints:
+  - api-interface: rest
+    chain-id: TRX
+    network-address:
+      address: 127.0.0.1:2220
+    node-urls:
+      - url: https://api.trongrid.io
+        auth-config:
+          auth-headers:
+            TRON-PRO-API-KEY: "XXXXX"
