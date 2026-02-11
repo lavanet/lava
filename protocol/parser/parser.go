@@ -49,6 +49,9 @@ func ParseDefaultBlockParameter(block string) (int64, error) {
 		return spectypes.SAFE_BLOCK, nil
 	case "finalized":
 		return spectypes.FINALIZED_BLOCK, nil
+	case "validated":
+		// Ripple uses "validated" for validated ledgers (similar to finalized)
+		return spectypes.FINALIZED_BLOCK, nil
 	default:
 		// try to parse a number
 	}
