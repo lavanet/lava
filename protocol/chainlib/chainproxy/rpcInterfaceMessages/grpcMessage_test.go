@@ -33,6 +33,11 @@ func TestGRPCParseBlock(t *testing.T) {
 			input:    "0x26D",
 			expected: 621,
 		},
+		{
+			name:     "Ripple validated block param",
+			input:    "validated",
+			expected: -6,
+		},
 	}
 
 	for _, testCase := range testTable {
