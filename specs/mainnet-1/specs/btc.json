@@ -9,7 +9,7 @@
                 "enabled": true,
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
-                "block_distance_for_finalized_data": 1,
+                "block_distance_for_finalized_data": 6,
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 600000,
                 "allowed_block_lag_for_qos_sync": 1,
@@ -34,8 +34,7 @@
                                     "parser_arg": [
                                         "0"
                                     ],
-                                    "parser_func": "PARSE_BY_ARG",
-                                    "default_value": "latest"
+                                    "parser_func": "PARSE_BY_ARG"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -57,11 +56,11 @@
                                 "name": "getblock",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "latest"
+                                        "0"
                                     ],
-                                    "parser_func": "DEFAULT"
+                                    "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -179,7 +178,7 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
+                                    "local": true,
                                     "subscription": false,
                                     "stateful": 0
                                 },
@@ -189,11 +188,11 @@
                                 "name": "getblockheader",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "latest"
+                                        "0"
                                     ],
-                                    "parser_func": "DEFAULT"
+                                    "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -213,11 +212,11 @@
                                 "name": "getblockstats",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "latest"
+                                        "0"
                                     ],
-                                    "parser_func": "DEFAULT"
+                                    "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -259,9 +258,9 @@
                                 "name": "getchaintxstats",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "latest"
+                                        "1"
                                     ],
-                                    "parser_func": "DEFAULT"
+                                    "parser_func": "PARSE_BY_ARG"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -285,7 +284,7 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
+                                    "local": true,
                                     "subscription": false,
                                     "stateful": 0
                                 },
@@ -321,7 +320,7 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
+                                    "local": true,
                                     "subscription": false,
                                     "stateful": 0
                                 },
@@ -339,7 +338,7 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
+                                    "local": true,
                                     "subscription": false,
                                     "stateful": 0
                                 },
@@ -353,11 +352,11 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
-                                    "local": false,
+                                    "deterministic": false,
+                                    "local": true,
                                     "subscription": false,
                                     "stateful": 0
                                 },
@@ -371,11 +370,11 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
-                                    "local": false,
+                                    "deterministic": false,
+                                    "local": true,
                                     "subscription": false,
                                     "stateful": 0
                                 },
@@ -392,8 +391,8 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
-                                    "local": false,
+                                    "deterministic": false,
+                                    "local": true,
                                     "subscription": false,
                                     "stateful": 0
                                 },
@@ -407,11 +406,11 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
-                                    "local": false,
+                                    "deterministic": false,
+                                    "local": true,
                                     "subscription": false,
                                     "stateful": 0
                                 },
@@ -421,9 +420,9 @@
                                 "name": "getrawtransaction",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "latest"
+                                        "2"
                                     ],
-                                    "parser_func": "DEFAULT"
+                                    "parser_func": "PARSE_BY_ARG"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -461,7 +460,8 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 500,
+                                "timeout_ms": 180000,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -500,10 +500,11 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -518,10 +519,11 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -536,8 +538,8 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
-                                    "local": false,
+                                    "deterministic": false,
+                                    "local": true,
                                     "subscription": false,
                                     "stateful": 0
                                 },
@@ -641,10 +643,10 @@
                 ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
-                "block_distance_for_finalized_data": 7,
+                "block_distance_for_finalized_data": 6,
                 "blocks_in_finalization_proof": 3,
-                "average_block_time": 13000,
-                "allowed_block_lag_for_qos_sync": 2,
+                "average_block_time": 600000,
+                "allowed_block_lag_for_qos_sync": 1,
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
