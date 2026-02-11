@@ -14,8 +14,8 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": 1500,
-                "allowed_block_lag_for_qos_sync": 7,
+                "average_block_time": 1000,
+                "allowed_block_lag_for_qos_sync": 10,
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
@@ -32,7 +32,7 @@
                         },
                         "apis": [
                             {
-                                "name": "ftm_accounts",
+                                "name": "ftm_currentEpoch",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -40,763 +40,6 @@
                                     "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_chainId",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 1,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_blockNumber",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_coinbase",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_syncing",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_subscribe",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_unsubscribe",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 19,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": true,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_feeHistory",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "1"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
-                                "compute_units": 19,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_maxPriorityFeePerGas",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 21,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_newBlockFilter",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 20,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_newFilter",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 20,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_newPendingTransactionFilter",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 20,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_uninstallFilter",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_createAccessList",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "0"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
-                                "compute_units": 16,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_getTransactionReceipt",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 20,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_getTransactionByBlockHashAndIndex",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "0"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
-                                "compute_units": 20,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_getTransactionByBlockNumberAndIndex",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "1"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
-                                "compute_units": 19,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_getBlockByNumber",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 75,
-                                "enabled": false,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_getBlockReceipts",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "0"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
-                                "compute_units": 20,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_getStorageAt",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "0",
-                                        "toBlock"
-                                    ],
-                                    "parser_func": "PARSE_CANONICAL"
-                                },
-                                "compute_units": 75,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_getTransactionByHash",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 21,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_gasPrice",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "2"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
-                                "compute_units": 17,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_getBalance",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 15,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_getCode",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "0"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
-                                "compute_units": 15,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_getFilterChanges",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "1"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
-                                "compute_units": 20,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_getFilterLogs",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 60,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_getLogs",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 60,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_getUncleByBlockHashAndIndex",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 15,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_getUncleByBlockNumberAndIndex",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 15,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_getUncleCountByBlockHash",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 15,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_getUncleCountByBlockNumber",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 15,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_sign",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 17,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_signTransaction",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "1"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
-                                "compute_units": 26,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_sendTransaction",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 15,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_getBlockTransactionCountByHash",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 20,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_getBlockTransactionCountByNumber",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 250,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_getProof",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_getBlockByHash",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_getTransactionCount",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_call",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_hashrate",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_estimateGas",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 87,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ftm_sendRawTransaction",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "1"
-                                    ],
-                                    "parser_func": "PARSE_BY_ARG"
-                                },
-                                "compute_units": 26,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -809,105 +52,100 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parse_directives": [],
-                        "verifications": [
+                        "parse_directives": [
                             {
-                                "name": "chain-id",
-                                "values": [
-                                    {
-                                        "expected_value": "0xfa"
-                                    }
-                                ]
-                            }
-                        ],
-                        "extensions": []
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "jsonrpc",
-                            "internal_path": "",
-                            "type": "POST",
-                            "add_on": "trace"
-                        },
-                        "apis": [
-                            {
-                                "name": "trace_block",
-                                "block_parsing": {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}",
+                                "function_tag": "GET_BLOCKNUM",
+                                "result_parsing": {
                                     "parser_arg": [
                                         "0"
                                     ],
                                     "parser_func": "PARSE_BY_ARG"
                                 },
-                                "compute_units": 200,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": true,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                "api_name": "eth_blockNumber"
                             },
                             {
-                                "name": "trace_filter",
-                                "block_parsing": {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBlockByNumber\",\"params\":[\"0x%x\", false],\"id\":1}",
+                                "function_tag": "GET_BLOCK_BY_NUM",
+                                "result_parsing": {
                                     "parser_arg": [
-                                        "latest"
+                                        "0",
+                                        "hash"
                                     ],
-                                    "parser_func": "DEFAULT"
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "encoding": "hex"
                                 },
-                                "compute_units": 200,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": true,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                "api_name": "eth_getBlockByNumber"
                             },
                             {
-                                "name": "trace_transaction",
-                                "block_parsing": {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBlockByNumber\",\"params\":[\"earliest\", false],\"id\":1}",
+                                "function_tag": "GET_EARLIEST_BLOCK",
+                                "result_parsing": {
                                     "parser_arg": [
-                                        "latest"
+                                        "0",
+                                        "number"
                                     ],
-                                    "parser_func": "DEFAULT"
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "encoding": "hex"
                                 },
-                                "compute_units": 200,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": true,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
+                                "api_name": "eth_getBlockByNumber"
+                            },
+                            {
+                                "function_tag": "SUBSCRIBE",
+                                "api_name": "eth_subscribe"
+                            },
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_unsubscribe\",\"params\":[\"%s\"],\"id\":1}",
+                                "function_tag": "UNSUBSCRIBE",
+                                "api_name": "eth_unsubscribe"
                             }
                         ],
                         "verifications": [
                             {
-                                "name": "trace",
+                                "name": "chain-id",
                                 "parse_directive": {
-                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"trace_block\",\"params\":[\"latest\"],\"id\":1}",
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\",\"params\":[],\"id\":1}",
                                     "function_tag": "VERIFICATION",
                                     "result_parsing": {
                                         "parser_arg": [
                                             "0"
                                         ],
-                                        "parser_func": "PARSE_BY_ARG"
+                                        "parser_func": "PARSE_BY_ARG",
+                                        "encoding": "hex"
                                     },
-                                    "api_name": "trace_block"
+                                    "api_name": "eth_chainId"
                                 },
                                 "values": [
                                     {
-                                        "expected_value": "*"
+                                        "expected_value": "0xfa"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "pruning",
+                                "parse_directive": {
+                                    "function_tag": "GET_EARLIEST_BLOCK"
+                                },
+                                "values": [
+                                    {
+                                        "latest_distance": 128
+                                    },
+                                    {
+                                        "extension": "archive",
+                                        "expected_value": "0x0"
                                     }
                                 ]
                             }
                         ],
-                        "extensions": []
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 127
+                                }
+                            }
+                        ]
                     }
                 ]
             },
@@ -922,8 +160,8 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": 1500,
-                "allowed_block_lag_for_qos_sync": 7,
+                "average_block_time": 1000,
+                "allowed_block_lag_for_qos_sync": 10,
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
