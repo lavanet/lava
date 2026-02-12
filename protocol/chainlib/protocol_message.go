@@ -110,63 +110,56 @@ func NewProtocolMessage(chainMessage ChainMessage, directiveHeaders map[string]s
 	}
 }
 
-const (
-	DEFAULT_QUORUM_RATE = 0.66
-	DEFAULT_QUORUM_MAX  = 5
-	DEFAULT_QUORUM_MIN  = 2
-)
-
-func (bpm *BaseProtocolMessage) GetQuorumParameters() (common.QuorumParams, error) {
+// GetCrossValidationParameters parses cross-validation headers from the request.
+// Returns (params, headersPresent, error).
+// - headersPresent is true if any cross-validation header was found (used by state machine to set Selection)
+// - error is returned if headers are present but invalid
+func (bpm *BaseProtocolMessage) GetCrossValidationParameters() (common.CrossValidationParams, bool, error) {
+	var maxParticipants, agreementThreshold int
 	var err error
-	enabled := false
-	var quorumRate float64
-	var quorumMax int
-	var quorumMin int
 
-	quorumRateString, ok := bpm.directiveHeaders[common.QUORUM_HEADER_RATE]
-	enabled = enabled || ok
-	if !ok {
-		quorumRate = DEFAULT_QUORUM_RATE
-	} else {
-		quorumRate, err = strconv.ParseFloat(quorumRateString, 64)
-		if err != nil || quorumRate < 0 || quorumRate > 1 {
-			return common.QuorumParams{}, errors.New("invalid quorum rate")
+	// Check if max-participants header is present
+	maxParticipantsStr, maxPresent := bpm.directiveHeaders[common.CROSS_VALIDATION_HEADER_MAX_PARTICIPANTS]
+	// Check if agreement-threshold header is present
+	agreementThresholdStr, thresholdPresent := bpm.directiveHeaders[common.CROSS_VALIDATION_HEADER_AGREEMENT_THRESHOLD]
+
+	// If no cross-validation headers are present, return defaults with headersPresent=false
+	if !maxPresent && !thresholdPresent {
+		return common.DefaultCrossValidationParams, false, nil
+	}
+
+	// At least one header is present - parse and validate both
+	if maxPresent {
+		maxParticipants, err = strconv.Atoi(maxParticipantsStr)
+		if err != nil || maxParticipants < 1 {
+			return common.CrossValidationParams{}, true, errors.New("invalid cross-validation max-participants: must be a positive integer")
 		}
+	} else {
+		return common.CrossValidationParams{}, true, errors.New("cross-validation max-participants header is required when using cross-validation")
 	}
 
-	quorumMaxRateString, ok := bpm.directiveHeaders[common.QUORUM_HEADER_MAX]
-	enabled = enabled || ok
-	if !ok {
-		quorumMax = DEFAULT_QUORUM_MAX
-	} else {
-		quorumMax, err = strconv.Atoi(quorumMaxRateString)
-		if err != nil || quorumMax < 0 {
-			return common.QuorumParams{}, errors.New("invalid quorum max")
+	if thresholdPresent {
+		agreementThreshold, err = strconv.Atoi(agreementThresholdStr)
+		if err != nil || agreementThreshold < 1 {
+			return common.CrossValidationParams{}, true, errors.New("invalid cross-validation agreement-threshold: must be a positive integer")
 		}
-	}
-
-	quorumMinRateString, ok := bpm.directiveHeaders[common.QUORUM_HEADER_MIN]
-	enabled = enabled || ok
-	if !ok {
-		quorumMin = DEFAULT_QUORUM_MIN
 	} else {
-		quorumMin, err = strconv.Atoi(quorumMinRateString)
-		if err != nil || quorumMin < 0 {
-			return common.QuorumParams{}, errors.New("invalid quorum min")
-		}
+		return common.CrossValidationParams{}, true, errors.New("cross-validation agreement-threshold header is required when using cross-validation")
 	}
 
-	if quorumMin > quorumMax {
-		return common.QuorumParams{}, errors.New("quorum min is greater than quorum max")
+	// Validate that agreementThreshold <= maxParticipants
+	if agreementThreshold > maxParticipants {
+		return common.CrossValidationParams{}, true, errors.New("cross-validation agreement-threshold cannot be greater than max-participants")
 	}
 
-	if enabled {
-		utils.LavaFormatInfo("Quorum parameters", utils.LogAttr("quorumRate", quorumRate), utils.LogAttr("quorumMax", quorumMax), utils.LogAttr("quorumMin", quorumMin))
-		return common.QuorumParams{Rate: quorumRate, Max: quorumMax, Min: quorumMin}, nil
-	} else {
-		utils.LavaFormatInfo("Quorum parameters not enabled")
-		return common.QuorumParams{Rate: 1, Max: 1, Min: 1}, nil
-	}
+	utils.LavaFormatInfo("CrossValidation parameters parsed",
+		utils.LogAttr("maxParticipants", maxParticipants),
+		utils.LogAttr("agreementThreshold", agreementThreshold))
+
+	return common.CrossValidationParams{
+		MaxParticipants:    maxParticipants,
+		AgreementThreshold: agreementThreshold,
+	}, true, nil
 }
 
 type ProtocolMessage interface {
@@ -178,5 +171,7 @@ type ProtocolMessage interface {
 	GetUserData() common.UserData
 	IsDefaultApi() bool
 	UpdateEarliestAndValidateExtensionRules(extensionParser *extensionslib.ExtensionParser, earliestBlockHashRequested int64, addon string, seenBlock int64) bool
-	GetQuorumParameters() (common.QuorumParams, error)
+	// GetCrossValidationParameters returns (params, headersPresent, error)
+	// headersPresent indicates if cross-validation headers were found (used to set Selection type)
+	GetCrossValidationParameters() (common.CrossValidationParams, bool, error)
 }

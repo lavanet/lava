@@ -39,7 +39,7 @@ func TestUpdateEpoch_FreshSessions(t *testing.T) {
 
 	initialSession := lavasession.NewConsumerSessionWithProvider(
 		providerAddr,
-		[]*lavasession.Endpoint{{NetworkAddress: "http://provider:8080"}},
+		[]*lavasession.Endpoint{{NetworkAddress: "http://provider:8080", Enabled: true}},
 		100,
 		initialEpoch,
 		sdk.NewCoin("ulava", sdk.NewInt(1)),

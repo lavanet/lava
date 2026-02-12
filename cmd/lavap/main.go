@@ -13,8 +13,6 @@ import (
 	"github.com/lavanet/lava/v5/cmd/lavad/cmd"
 	"github.com/lavanet/lava/v5/ecosystem/cache"
 	"github.com/lavanet/lava/v5/ecosystem/cache_populator"
-	"github.com/lavanet/lava/v5/protocol/badgegenerator"
-	"github.com/lavanet/lava/v5/protocol/badgeserver"
 	"github.com/lavanet/lava/v5/protocol/loadtest"
 	"github.com/lavanet/lava/v5/protocol/monitoring"
 	"github.com/lavanet/lava/v5/protocol/performance/connection"
@@ -43,10 +41,6 @@ func main() {
 	cmdRPCSmartRouter := rpcsmartrouter.CreateRPCSmartRouterCobraCommand()
 	// rpc provider cobra command
 	cmdRPCProvider := rpcprovider.CreateRPCProviderCobraCommand()
-	// badge generator cobra command
-	badgeGenerator := badgegenerator.CreateBadgeGeneratorCobraCommand()
-	// badge generator cobra command
-	badgeServer := badgeserver.CreateBadgeServerCobraCommand()
 
 	validatorsCmd := validators.CreateValidatorsPerformanceCommand()
 
@@ -58,10 +52,6 @@ func main() {
 	rootCmd.AddCommand(cmdRPCSmartRouter)
 	// Add RPC Provider Command
 	rootCmd.AddCommand(cmdRPCProvider)
-	// Add Badge Generator Command
-	rootCmd.AddCommand(badgeGenerator)
-	// Add Badge Generator Command
-	rootCmd.AddCommand(badgeServer)
 
 	// add command to test validators
 	rootCmd.AddCommand(validatorsCmd)

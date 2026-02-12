@@ -15,6 +15,11 @@ import (
 
 var ErrFailedToConvertMessage = sdkerrors.New("RPC error", 1000, "failed to convert a message")
 
+// BatchNodeErrorOnAny controls batch request error detection:
+// - false (default): batch is an error only if ALL sub-requests failed
+// - true: batch is an error if ANY sub-request failed (strict mode)
+var BatchNodeErrorOnAny = false
+
 type JsonrpcMessage struct {
 	Version                string               `json:"jsonrpc,omitempty"`
 	ID                     json.RawMessage      `json:"id,omitempty"`
@@ -228,28 +233,48 @@ func NewBatchMessage(msgs []JsonrpcMessage) (JsonrpcBatchMessage, error) {
 }
 
 // returns if error exists and
+// Behavior controlled by BatchNodeErrorOnAny flag:
+// - false (default): batch is an error only if ALL sub-requests failed
+// - true: batch is an error if ANY sub-request failed (strict mode)
 func CheckResponseErrorForJsonRpcBatch(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
-	// Use a temporary struct that omits the Result field to avoid allocating memory for large results
+	// Use a temporary struct that checks for both error and result presence
 	var result []struct {
-		Error *rpcclient.JsonError `json:"error,omitempty"`
+		Error  *rpcclient.JsonError `json:"error,omitempty"`
+		Result json.RawMessage      `json:"result,omitempty"`
 	}
 	err := json.Unmarshal(data, &result)
 	if err != nil {
 		utils.LavaFormatWarning("Failed unmarshalling CheckError", err, utils.LogAttr("data", string(data)))
 		return false, ""
 	}
-	aggregatedResults := ""
-	numberOfBatchElements := len(result)
-	for idx, batchResult := range result {
-		if batchResult.Error == nil {
-			continue
+
+	hasAnySuccess := false
+	hasAnyError := false
+	aggregatedErrors := ""
+
+	for _, batchResult := range result {
+		if batchResult.Error == nil && len(batchResult.Result) > 0 {
+			hasAnySuccess = true
 		}
-		if batchResult.Error.Message != "" {
-			aggregatedResults += batchResult.Error.Message
-			if idx < numberOfBatchElements-1 {
-				aggregatedResults += ",-," // add a unique comma separator between results
+		if batchResult.Error != nil && batchResult.Error.Message != "" {
+			hasAnyError = true
+			if aggregatedErrors != "" {
+				aggregatedErrors += ",-," // add a unique comma separator between results
 			}
+			aggregatedErrors += batchResult.Error.Message
 		}
 	}
-	return aggregatedResults != "", aggregatedResults
+
+	// BatchNodeErrorOnAny=true (strict): error if ANY sub-request failed
+	// BatchNodeErrorOnAny=false (default): error only if ALL sub-requests failed
+	if BatchNodeErrorOnAny {
+		// Strict mode: any error means batch failed
+		return hasAnyError, aggregatedErrors
+	}
+
+	// Default mode: only error if no successes at all
+	if hasAnySuccess {
+		return false, ""
+	}
+	return aggregatedErrors != "", aggregatedErrors
 }

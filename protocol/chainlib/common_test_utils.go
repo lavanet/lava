@@ -217,11 +217,18 @@ func CreateChainLibMocks(
 			cancelConnector()
 		}
 		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: mockHttpServer.URL, Addons: addons})
+		// Only add WebSocket URLs for API interfaces that support WebSocket (JsonRPC and TendermintRPC)
+		// REST API only supports HTTP/HTTPS, not WebSocket
+		supportsWebSocket := apiInterface == spectypes.APIInterfaceJsonRPC || apiInterface == spectypes.APIInterfaceTendermintRPC
 		if len(extensions) > 0 {
 			endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: mockHttpServer.URL, Addons: extensions})
-			endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: wsUrl, Addons: extensions})
+			if supportsWebSocket {
+				endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: wsUrl, Addons: extensions})
+			}
 		}
-		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: wsUrl, Addons: nil})
+		if supportsWebSocket {
+			endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: wsUrl, Addons: nil})
+		}
 		chainRouter, err = GetChainRouter(connectorCtx, 1, endpoint, chainParser)
 		if err != nil {
 			mockHttpServer.Close()

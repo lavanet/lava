@@ -20,23 +20,24 @@ const (
 const (
 	ProcessStartLogText = "Process Started"
 	// cors related flags
-	CorsHeadersFlag                 = "cors-headers"           // comma separated list of headers, or * for all, default simple cors specification headers
-	CorsCredentialsFlag             = "cors-credentials"       // comma separated list of headers, or * for all, default simple cors specification headers
-	CorsOriginFlag                  = "cors-origin"            // comma separated list of origins, or * for all, default enabled completely
-	CorsMethodsFlag                 = "cors-methods"           // comma separated list of methods, default "GET,POST,PUT,DELETE,OPTIONS"
-	CDNCacheDurationFlag            = "cdn-cache-duration"     // how long to cache the preflight response default 24 hours (in seconds) "86400"
-	RelaysHealthEnableFlag          = "relays-health-enable"   // enable relays health check, default true
-	RelayHealthIntervalFlag         = "relays-health-interval" // interval between each relay health check, default 5m
-	SharedStateFlag                 = "shared-state"
-	DisableConflictTransactionsFlag = "disable-conflict-transactions" // disable conflict transactions, this will hard the network's data reliability and therefore will harm the service.
+	CorsHeadersFlag         = "cors-headers"           // comma separated list of headers, or * for all, default simple cors specification headers
+	CorsCredentialsFlag     = "cors-credentials"       // comma separated list of headers, or * for all, default simple cors specification headers
+	CorsOriginFlag          = "cors-origin"            // comma separated list of origins, or * for all, default enabled completely
+	CorsMethodsFlag         = "cors-methods"           // comma separated list of methods, default "GET,POST,PUT,DELETE,OPTIONS"
+	CDNCacheDurationFlag    = "cdn-cache-duration"     // how long to cache the preflight response default 24 hours (in seconds) "86400"
+	RelaysHealthEnableFlag  = "relays-health-enable"   // enable relays health check, default true
+	RelayHealthIntervalFlag = "relays-health-interval" // interval between each relay health check, default 5m
+	SharedStateFlag         = "shared-state"
 	// Disable relay retries when we get node errors.
 	// This feature is suppose to help with successful relays in some chains that return node errors on rare race conditions on the serviced chains.
 	SetRelayCountOnNodeErrorFlag = "set-retry-count-on-node-error"
-	UseStaticSpecFlag            = "use-static-spec" // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
-	GitHubTokenFlag              = "github-token"    // GitHub personal access token for accessing private repositories and higher API rate limits
-	EpochDurationFlag            = "epoch-duration"  // duration of each epoch for time-based epoch system (standalone mode)
-	DefaultEpochDuration         = 30 * time.Minute  // default epoch duration for regular mode (if using time-based epochs)
-	StandaloneEpochDuration      = 15 * time.Minute  // default epoch duration for standalone/static provider mode
+	// BatchNodeErrorOnAny controls batch request error detection for JSON-RPC batch requests
+	BatchNodeErrorOnAnyFlag = "batch-node-error-on-any"
+	UseStaticSpecFlag       = "use-static-spec" // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
+	GitHubTokenFlag         = "github-token"    // GitHub personal access token for accessing private repositories and higher API rate limits
+	EpochDurationFlag       = "epoch-duration"  // duration of each epoch for time-based epoch system (standalone mode)
+	DefaultEpochDuration    = 30 * time.Minute  // default epoch duration for regular mode (if using time-based epochs)
+	StandaloneEpochDuration = 15 * time.Minute  // default epoch duration for standalone/static provider mode
 
 	// optimizer flags
 	SetProviderOptimizerBestTierPickChance       = "set-provider-optimizer-best-tier-pick-chance"
@@ -60,14 +61,23 @@ const (
 	RateLimitRequestPerSecondFlag                = "rate-limit-requests-per-second"
 	SkipPolicyVerificationFlag                   = "skip-policy-verification"
 	SkipWebsocketVerificationFlag                = "skip-websocket-verification"
+	SkipRelaySigningFlag                         = "skip-relay-signing" // skip signing relay requests/responses (for static providers to save CPU/memory)
 	// specification default flags
 	PeriodicProbeProvidersFlagName         = "enable-periodic-probe-providers"
 	PeriodicProbeProvidersIntervalFlagName = "periodic-probe-providers-interval"
 
+	// batch request size limit
+	MaxBatchRequestSizeFlag        = "max-batch-request-size"
+	DefaultMaxBatchRequestSize int = 0 // 0 means unlimited
+
+	// DisableBatchRequestRetryFlag prevents batch requests from being retried on consumer/smartrouter side
+	DisableBatchRequestRetryFlag = "disable-batch-request-retry"
+
 	ShowProviderEndpointInMetricsFlagName = "show-provider-address-in-metrics"
-	EnableMemoryLogsFlag                  = "enable-memory-logs"         // enable memory tracking logs
-	MemoryGCThresholdGBFlagName           = "memory-gc-threshold-gb"     // Memory GC threshold in GB (0 = disabled)
-	DefaultProcessingTimeoutFlagName      = "default-processing-timeout" // default timeout for relay processing
+
+	MemoryGCThresholdGBFlagName      = "memory-gc-threshold-gb"     // Memory GC threshold in GB (0 = disabled)
+	MaxSessionsPerProviderFlagName   = "max-sessions-per-provider"  // Max number of sessions allowed per provider
+	DefaultProcessingTimeoutFlagName = "default-processing-timeout" // default timeout for relay processing
 )
 
 const (
@@ -92,7 +102,6 @@ type ConsumerCmdFlags struct {
 	StaticSpecPath           string        // path to the spec file, works only when bootstrapping a single chain.
 	GitHubToken              string        // GitHub personal access token for accessing private repositories
 	EpochDuration            time.Duration // duration of each epoch for time-based epoch system (standalone mode)
-	EnableMemoryLogs         bool          // enables memory tracking logs
 }
 
 // default rolling logs behavior (if enabled) will store 3 files each 100MB for up to 1 day every time.

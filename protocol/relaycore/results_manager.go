@@ -7,6 +7,7 @@ import (
 
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	common "github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/parser"
 	"github.com/lavanet/lava/v5/utils"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
@@ -94,7 +95,7 @@ func (rp *ResultsManagerInst) setValidResponse(response *RelayResponse, protocol
 			utils.LogAttr("ProviderInfo", response.RelayResult.ProviderInfo),
 			utils.LogAttr("StatusCode", response.RelayResult.StatusCode),
 			utils.LogAttr("Finalized", response.RelayResult.Finalized),
-			utils.LogAttr("Quorum", response.RelayResult.Quorum),
+			utils.LogAttr("CrossValidation", response.RelayResult.CrossValidation),
 		)
 		return nil
 	}
@@ -134,9 +135,9 @@ func (rp *ResultsManagerInst) setValidResponse(response *RelayResponse, protocol
 			utils.LogAttr("statusCode", response.RelayResult.StatusCode),
 			utils.LogAttr("api", protocolMessage.GetApi().Name),
 			utils.LogAttr("requestUrl", requestUrl),
-			utils.LogAttr("payload", string(response.RelayResult.Reply.Data)),
+			utils.LogAttr("payload", parser.CapStringLen(string(response.RelayResult.Reply.Data))),
 			utils.LogAttr("headers", response.RelayResult.Reply.Metadata),
-			utils.LogAttr("requestPayload", reqPayload),
+			utils.LogAttr("requestPayload", parser.CapStringLen(reqPayload)),
 			utils.LogAttr("requestHeaders", reqHeaders),
 		)
 		rp.nodeResponseErrors.AddError(RelayError{Err: err, ProviderInfo: response.RelayResult.ProviderInfo, Response: response})
@@ -202,7 +203,7 @@ func (rp *ResultsManagerInst) RequiredResults(requiredSuccesses int, selection S
 		utils.LavaFormatDebug("Reached RequiredResults", utils.LogAttr("resultsCount", resultsCount), utils.LogAttr("requiredSuccesses", requiredSuccesses), utils.LogAttr("GUID", rp.guid))
 		return true
 	}
-	// Only count successful results for quorum validation
+	// Only count successful results for cross-validation
 	return false
 }
 

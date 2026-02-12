@@ -35,32 +35,32 @@ const (
 	LAVAP_VERSION_HEADER_NAME                       = "Lavap-Version"
 	LAVA_CONSUMER_PROCESS_GUID                      = "lava-consumer-process-guid"
 	// these headers need to be lowercase
-	BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME = "lava-providers-block"
-	RELAY_TIMEOUT_HEADER_NAME             = "lava-relay-timeout"
-	EXTENSION_OVERRIDE_HEADER_NAME        = "lava-extension"
-	FORCE_CACHE_REFRESH_HEADER_NAME       = "lava-force-cache-refresh"
-	LAVA_DEBUG_RELAY                      = "lava-debug-relay"
-	LAVA_LB_UNIQUE_ID_HEADER              = "lava-lb-unique-id"
-	STICKINESS_HEADER_NAME                = "lava-stickiness"
-	QUORUM_HEADER_RATE                    = "lava-quorum-rate"
-	QUORUM_HEADER_MAX                     = "lava-quorum-max"
-	QUORUM_HEADER_MIN                     = "lava-quorum-min"
-	QUORUM_ALL_PROVIDERS_HEADER_NAME      = "lava-quorum-all-providers"
+	BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME       = "lava-providers-block"
+	RELAY_TIMEOUT_HEADER_NAME                   = "lava-relay-timeout"
+	EXTENSION_OVERRIDE_HEADER_NAME              = "lava-extension"
+	FORCE_CACHE_REFRESH_HEADER_NAME             = "lava-force-cache-refresh"
+	LAVA_DEBUG_RELAY                            = "lava-debug-relay"
+	LAVA_LB_UNIQUE_ID_HEADER                    = "lava-lb-unique-id"
+	STICKINESS_HEADER_NAME                      = "lava-stickiness"
+	CROSS_VALIDATION_HEADER_MAX_PARTICIPANTS    = "lava-cross-validation-max-participants"
+	CROSS_VALIDATION_HEADER_AGREEMENT_THRESHOLD = "lava-cross-validation-agreement-threshold"
+	CROSS_VALIDATION_ALL_PROVIDERS_HEADER_NAME  = "lava-cross-validation-all-providers"
+	CROSS_VALIDATION_STATUS_HEADER_NAME         = "lava-cross-validation-status"
+	CROSS_VALIDATION_AGREEING_PROVIDERS_HEADER  = "lava-cross-validation-agreeing-providers"
 	// send http request to /lava/health to see if the process is up - (ret code 200)
 	DEFAULT_HEALTH_PATH                                       = "/lava/health"
 	MAXIMUM_ALLOWED_TIMEOUT_EXTEND_MULTIPLIER_BY_THE_CONSUMER = 4
 )
 
 var SPECIAL_LAVA_DIRECTIVE_HEADERS = map[string]struct{}{
-	BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME: {},
-	RELAY_TIMEOUT_HEADER_NAME:             {},
-	EXTENSION_OVERRIDE_HEADER_NAME:        {},
-	FORCE_CACHE_REFRESH_HEADER_NAME:       {},
-	LAVA_DEBUG_RELAY:                      {},
-	STICKINESS_HEADER_NAME:                {},
-	QUORUM_HEADER_RATE:                    {},
-	QUORUM_HEADER_MAX:                     {},
-	QUORUM_HEADER_MIN:                     {},
+	BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME:       {},
+	RELAY_TIMEOUT_HEADER_NAME:                   {},
+	EXTENSION_OVERRIDE_HEADER_NAME:              {},
+	FORCE_CACHE_REFRESH_HEADER_NAME:             {},
+	LAVA_DEBUG_RELAY:                            {},
+	STICKINESS_HEADER_NAME:                      {},
+	CROSS_VALIDATION_HEADER_MAX_PARTICIPANTS:    {},
+	CROSS_VALIDATION_HEADER_AGREEMENT_THRESHOLD: {},
 }
 
 type UserData struct {
@@ -267,16 +267,18 @@ type ProviderInfo struct {
 }
 
 type RelayResult struct {
-	Request         *pairingtypes.RelayRequest
-	Reply           *pairingtypes.RelayReply
-	ProviderInfo    ProviderInfo
-	ReplyServer     pairingtypes.Relayer_RelaySubscribeClient
-	Finalized       bool
-	ConflictHandler ConflictHandlerInterface
-	StatusCode      int
-	Quorum          int
-	ProviderTrailer metadata.MD // the provider trailer attached to the request. used to transfer useful information (which is not signed so shouldn't be trusted completely).
-	IsNodeError     bool
+	Request             *pairingtypes.RelayRequest
+	Reply               *pairingtypes.RelayReply
+	ProviderInfo        ProviderInfo
+	ReplyServer         pairingtypes.Relayer_RelaySubscribeClient
+	Finalized           bool
+	ConflictHandler     ConflictHandlerInterface
+	StatusCode          int
+	CrossValidation     int
+	ProviderTrailer     metadata.MD // the provider trailer attached to the request. used to transfer useful information (which is not signed so shouldn't be trusted completely).
+	IsNodeError         bool
+	ResponseHash        [32]byte // cached SHA256 hash of Reply.Data for cross-validation comparison, zero-value if not computed
+	IsUnsupportedMethod bool     // Indicates this node error is an unsupported method
 }
 
 func (rr *RelayResult) GetReplyServer() pairingtypes.Relayer_RelaySubscribeClient {

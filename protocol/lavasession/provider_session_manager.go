@@ -6,8 +6,6 @@ import (
 	"sync/atomic"
 
 	"github.com/lavanet/lava/v5/utils"
-	"github.com/lavanet/lava/v5/utils/lavaslices"
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
 
 type ProviderSessionManager struct {
@@ -64,7 +62,7 @@ func (psm *ProviderSessionManager) getSingleSessionFromProviderSessionWithConsum
 	return singleProviderSession, nil
 }
 
-func (psm *ProviderSessionManager) GetSession(ctx context.Context, consumerAddress string, epoch, sessionId, relayNumber uint64, badge *pairingtypes.Badge) (*SingleProviderSession, error) {
+func (psm *ProviderSessionManager) GetSession(ctx context.Context, consumerAddress string, epoch, sessionId, relayNumber uint64) (*SingleProviderSession, error) {
 	if !psm.IsValidEpoch(epoch) { // fast checking to see if epoch is even relevant
 		utils.LavaFormatError("GetSession", InvalidEpochError, utils.Attribute{Key: "RequestedEpoch", Value: epoch}, utils.Attribute{Key: "blockedEpochHeight", Value: psm.blockedEpochHeight}, utils.Attribute{Key: "blockDistanceForEpochValidity", Value: psm.blockDistanceForEpochValidity})
 		return nil, InvalidEpochError
@@ -80,37 +78,7 @@ func (psm *ProviderSessionManager) GetSession(ctx context.Context, consumerAddre
 		return nil, err
 	}
 
-	badgeUserEpochData := getOrCreateBadgeUserEpochData(badge, providerSessionsWithConsumer)
-	singleProviderSession, err := psm.getSingleSessionFromProviderSessionWithConsumer(ctx, providerSessionsWithConsumer, sessionId, epoch, relayNumber)
-	if badgeUserEpochData != nil && err == nil {
-		singleProviderSession.BadgeUserData = badgeUserEpochData
-	}
-	return singleProviderSession, err
-}
-
-func getOrCreateBadgeUserEpochData(badge *pairingtypes.Badge, providerSessionsWithConsumer *ProviderSessionsWithConsumerProject) (badgeUserEpochData *ProviderSessionsEpochData) {
-	if badge == nil {
-		return nil
-	}
-	badgeUserEpochData, exists := getBadgeEpochDataFromProviderSessionWithConsumer(badge.Address, providerSessionsWithConsumer)
-	if !exists { // badgeUserEpochData not found, needs to be registered
-		badgeUserEpochData = registerBadgeEpochDataToProviderSessionWithConsumer(badge.Address, badge.CuAllocation, providerSessionsWithConsumer)
-	}
-	return badgeUserEpochData
-}
-
-func getBadgeEpochDataFromProviderSessionWithConsumer(badgeUser string, providerSessionsWithConsumer *ProviderSessionsWithConsumerProject) (*ProviderSessionsEpochData, bool) {
-	providerSessionsWithConsumer.Lock.RLock()
-	defer providerSessionsWithConsumer.Lock.RUnlock()
-	badgeUserEpochData, exists := providerSessionsWithConsumer.badgeEpochData[badgeUser]
-	return badgeUserEpochData, exists
-}
-
-func registerBadgeEpochDataToProviderSessionWithConsumer(badgeUser string, badgeCuAllocation uint64, providerSessionsWithConsumer *ProviderSessionsWithConsumerProject) *ProviderSessionsEpochData {
-	providerSessionsWithConsumer.Lock.Lock()
-	defer providerSessionsWithConsumer.Lock.Unlock()
-	providerSessionsWithConsumer.badgeEpochData[badgeUser] = &ProviderSessionsEpochData{MaxComputeUnits: lavaslices.Min([]uint64{providerSessionsWithConsumer.epochData.MaxComputeUnits, badgeCuAllocation})}
-	return providerSessionsWithConsumer.badgeEpochData[badgeUser]
+	return psm.getSingleSessionFromProviderSessionWithConsumer(ctx, providerSessionsWithConsumer, sessionId, epoch, relayNumber)
 }
 
 func (psm *ProviderSessionManager) registerNewConsumer(consumerAddr string, projectId string, epoch, maxCuForConsumer uint64, pairedProviders int64) (*ProviderSessionsWithConsumerProject, error) {
@@ -130,7 +98,7 @@ func (psm *ProviderSessionManager) registerNewConsumer(consumerAddr string, proj
 	providerSessionWithConsumer, foundAddressInMap := mapOfProviderSessionsWithConsumer.sessionMap[projectId]
 	if !foundAddressInMap {
 		epochData := &ProviderSessionsEpochData{MaxComputeUnits: maxCuForConsumer}
-		providerSessionWithConsumer = NewProviderSessionsWithConsumer(projectId, epochData, notDataReliabilityPSWC, pairedProviders)
+		providerSessionWithConsumer = NewProviderSessionsWithConsumer(projectId, epochData, pairedProviders)
 		mapOfProviderSessionsWithConsumer.sessionMap[projectId] = providerSessionWithConsumer
 	}
 
@@ -168,7 +136,7 @@ func (psm *ProviderSessionManager) writeConsumerToPairedWithProjectMap(consumerA
 	psm.consumerPairedWithProjectMap[epoch].consumerToProjectMap[consumerAddress] = projectId
 }
 
-func (psm *ProviderSessionManager) RegisterProviderSessionWithConsumer(ctx context.Context, consumerAddress string, epoch, sessionId, relayNumber, maxCuForConsumer uint64, pairedProviders int64, projectId string, badge *pairingtypes.Badge) (*SingleProviderSession, error) {
+func (psm *ProviderSessionManager) RegisterProviderSessionWithConsumer(ctx context.Context, consumerAddress string, epoch, sessionId, relayNumber, maxCuForConsumer uint64, pairedProviders int64, projectId string) (*SingleProviderSession, error) {
 	_, err := psm.IsActiveProject(epoch, projectId)
 	if err != nil {
 		if ConsumerNotRegisteredYet.Is(err) {
@@ -185,7 +153,7 @@ func (psm *ProviderSessionManager) RegisterProviderSessionWithConsumer(ctx conte
 		// this flow happens only if the project ID was registered with another consumer.
 		psm.writeConsumerToPairedWithProjectMap(consumerAddress, projectId, epoch)
 	}
-	return psm.GetSession(ctx, consumerAddress, epoch, sessionId, relayNumber, badge)
+	return psm.GetSession(ctx, consumerAddress, epoch, sessionId, relayNumber)
 }
 
 func (psm *ProviderSessionManager) getActiveProject(epoch uint64, projectId string) (providerSessionWithConsumer *ProviderSessionsWithConsumerProject, err error) {
@@ -250,15 +218,11 @@ func (psm *ProviderSessionManager) RPCProviderEndpoint() *RPCProviderEndpoint {
 func (psm *ProviderSessionManager) UpdateEpoch(epoch uint64) {
 	psm.lock.Lock()
 	defer psm.lock.Unlock()
-	if epoch < psm.blockedEpochHeight || epoch < psm.currentEpoch {
+	if epoch < psm.blockedEpochHeight || epoch <= psm.currentEpoch {
 		// Reject truly old epochs (going backwards in time)
 		return
 	}
-	// Allow same-epoch updates (idempotent) - this can happen when multiple callbacks trigger
-	if epoch == psm.currentEpoch {
-		// Already on this epoch, nothing to update
-		return
-	}
+
 	if epoch > psm.blockDistanceForEpochValidity {
 		psm.blockedEpochHeight = epoch - psm.blockDistanceForEpochValidity
 	} else {

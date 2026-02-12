@@ -137,6 +137,21 @@ func (rpccl *RPCConsumerLogs) SetNodeErrorRecoveredSuccessfullyMetric(chainId st
 	rpccl.consumerMetricsManager.SetNodeErrorRecoveredSuccessfullyMetric(chainId, apiInterface, attempt)
 }
 
+func (rpccl *RPCConsumerLogs) SetCrossValidationMetric(
+	chainId, apiInterface, method, status string,
+	maxParticipants, agreementThreshold int,
+	allProviders, agreeingProviders []string,
+) {
+	if rpccl == nil {
+		return
+	}
+	rpccl.consumerMetricsManager.SetCrossValidationMetric(
+		chainId, apiInterface, method, status,
+		maxParticipants, agreementThreshold,
+		allProviders, agreeingProviders,
+	)
+}
+
 func (rpccl *RPCConsumerLogs) SetProtocolErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string) {
 	rpccl.consumerMetricsManager.SetProtocolErrorRecoveredSuccessfullyMetric(chainId, apiInterface, attempt)
 }
@@ -176,7 +191,7 @@ func (rpccl *RPCConsumerLogs) AnalyzeWebSocketErrorAndGetFormattedMessage(webSoc
 	if err != nil {
 		errMessage := err.Error()
 		if strings.Contains(errMessage, webSocketCloseMessage) {
-			utils.LavaFormatDebug("Websocket connection closed by the user, " + errMessage)
+			utils.LavaFormatDebug("Websocket connection closed by the user", utils.LogAttr("error", errMessage))
 			return nil
 		}
 		rpccl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", webSocketAddr, string(msg), "", msgSeed, timeTaken, err)

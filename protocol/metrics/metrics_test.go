@@ -171,50 +171,6 @@ func Test_StoreAggregatedData_OnMetricService(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	// Scenario 6 (another chain id)
-	t.Run("SuccessRelay_WithNewSource_EmptyMap", func(t *testing.T) {
-		metricData.Success = true
-		metricData.Source = SdkSource
-		expectedMetricData = RelayAnalyticsDTO{
-			ProjectHash:  "2",
-			ChainID:      "testChain2",
-			APIType:      "testApiType2",
-			SuccessCount: 1,
-			Latency:      50,
-			RelayCounts:  1,
-			Source:       SdkSource,
-			Origin:       "origin",
-		}
-		// arrange
-		metricService.storeAggregatedData(metricData)
-		// assertion
-		err := checkThatMetricDtoInAggregatedMetricMap(*metricService.AggregatedMetricMap, expectedMetricData)
-		if err != nil {
-			t.Error(err)
-		}
-	})
-	// Scenario 6 (another chain id)
-	t.Run("SuccessRelay_WithNewSource_NonEmptyMap", func(t *testing.T) {
-		metricData.Success = true
-		metricData.Source = SdkSource
-		expectedMetricData = RelayAnalyticsDTO{
-			ProjectHash:  "2",
-			ChainID:      "testChain2",
-			APIType:      "testApiType2",
-			SuccessCount: 2,
-			Latency:      100,
-			RelayCounts:  2,
-			Source:       SdkSource,
-			Origin:       "origin",
-		}
-		// arrange
-		metricService.storeAggregatedData(metricData)
-		// assertion
-		err := checkThatMetricDtoInAggregatedMetricMap(*metricService.AggregatedMetricMap, expectedMetricData)
-		if err != nil {
-			t.Error(err)
-		}
-	})
 }
 
 func Test_PrepareArrayForProject_OnMetricService(t *testing.T) {

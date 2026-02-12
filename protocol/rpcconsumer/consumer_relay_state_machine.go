@@ -42,19 +42,20 @@ type tickerMetricSetterInf interface {
 }
 
 type ConsumerRelayStateMachine struct {
-	ctx                 context.Context // same context as user context.
-	relaySender         ConsumerRelaySender
-	resultsChecker      ResultsCheckerInf
-	analytics           *metrics.RelayMetrics // first relay metrics
-	selection           relaycore.Selection
-	debugRelays         bool
-	tickerMetricSetter  tickerMetricSetterInf
-	batchUpdate         chan error
-	usedProviders       *lavasession.UsedProviders
-	relayRetriesManager *lavaprotocol.RelayRetriesManager
-	relayState          []*relaycore.RelayState
-	protocolMessage     chainlib.ProtocolMessage
-	relayStateLock      sync.RWMutex
+	ctx                   context.Context // same context as user context.
+	relaySender           ConsumerRelaySender
+	resultsChecker        ResultsCheckerInf
+	analytics             *metrics.RelayMetrics // first relay metrics
+	selection             relaycore.Selection
+	crossValidationParams *common.CrossValidationParams // nil for Stateless/Stateful, non-nil for CrossValidation
+	debugRelays           bool
+	tickerMetricSetter    tickerMetricSetterInf
+	batchUpdate           chan error
+	usedProviders         *lavasession.UsedProviders
+	relayRetriesManager   *lavaprotocol.RelayRetriesManager
+	relayState            []*relaycore.RelayState
+	protocolMessage       chainlib.ProtocolMessage
+	relayStateLock        sync.RWMutex
 }
 
 func NewRelayStateMachine(
@@ -65,24 +66,45 @@ func NewRelayStateMachine(
 	analytics *metrics.RelayMetrics,
 	debugRelays bool,
 	tickerMetricSetter tickerMetricSetterInf,
-) RelayStateMachine {
-	selection := relaycore.Quorum // select the majority of node responses
-	if chainlib.GetStateful(protocolMessage) == common.CONSISTENCY_SELECT_ALL_PROVIDERS {
-		selection = relaycore.BestResult // select the majority of node successes
+) (RelayStateMachine, error) {
+	// Check cross-validation headers FIRST (highest priority)
+	// This is the SINGLE SOURCE OF TRUTH for determining if cross-validation is enabled
+	crossValidationParams, headersPresent, err := protocolMessage.GetCrossValidationParameters()
+
+	var selection relaycore.Selection
+	var cvParams *common.CrossValidationParams // nil unless CrossValidation mode
+
+	if headersPresent && err != nil {
+		// Cross-validation headers are present but invalid - return error to user
+		return nil, utils.LavaFormatError("invalid cross-validation headers", err, utils.LogAttr("GUID", ctx))
+	} else if headersPresent {
+		selection = relaycore.CrossValidation // maxParticipants providers at once, no retries, agreementThreshold consensus
+		cvParams = &crossValidationParams     // only store params for CrossValidation mode
+		utils.LavaFormatDebug("[StateMachine] CrossValidation mode enabled",
+			utils.LogAttr("maxParticipants", crossValidationParams.MaxParticipants),
+			utils.LogAttr("agreementThreshold", crossValidationParams.AgreementThreshold),
+			utils.LogAttr("GUID", ctx))
+	} else if chainlib.GetStateful(protocolMessage) == common.CONSISTENCY_SELECT_ALL_PROVIDERS {
+		selection = relaycore.Stateful // all top providers at once, waits for best result
+		// cvParams remains nil - not applicable for Stateful mode
+	} else {
+		selection = relaycore.Stateless // retries enabled, seeks majority consensus
+		// cvParams remains nil - not applicable for Stateless mode
 	}
 
 	return &ConsumerRelayStateMachine{
-		ctx:                ctx,
-		usedProviders:      usedProviders,
-		relaySender:        relaySender,
-		protocolMessage:    protocolMessage,
-		analytics:          analytics,
-		selection:          selection,
-		debugRelays:        debugRelays,
-		tickerMetricSetter: tickerMetricSetter,
-		batchUpdate:        make(chan error, MaximumNumberOfTickerRelayRetries),
-		relayState:         make([]*relaycore.RelayState, 0),
-	}
+		ctx:                   ctx,
+		usedProviders:         usedProviders,
+		relaySender:           relaySender,
+		protocolMessage:       protocolMessage,
+		analytics:             analytics,
+		selection:             selection,
+		crossValidationParams: cvParams,
+		debugRelays:           debugRelays,
+		tickerMetricSetter:    tickerMetricSetter,
+		batchUpdate:           make(chan error, MaximumNumberOfTickerRelayRetries),
+		relayState:            make([]*relaycore.RelayState, 0),
+	}, nil
 }
 
 func (crsm *ConsumerRelayStateMachine) Initialized() bool {
@@ -103,6 +125,10 @@ func (crsm *ConsumerRelayStateMachine) GetUsedProviders() *lavasession.UsedProvi
 
 func (crsm *ConsumerRelayStateMachine) GetSelection() relaycore.Selection {
 	return crsm.selection
+}
+
+func (crsm *ConsumerRelayStateMachine) GetCrossValidationParams() *common.CrossValidationParams {
+	return crsm.crossValidationParams
 }
 
 func (crsm *ConsumerRelayStateMachine) appendRelayState(nextState *relaycore.RelayState) {
@@ -177,19 +203,39 @@ func (crsm *ConsumerRelayStateMachine) hasUnsupportedMethodErrorsInStateMachine(
 func (crsm *ConsumerRelayStateMachine) retryCondition(numberOfRetriesLaunched int) bool {
 	utils.LavaFormatTrace("[StateMachine] retryCondition", utils.LogAttr("numberOfRetriesLaunched", numberOfRetriesLaunched), utils.LogAttr("GUID", crsm.ctx), utils.LogAttr("batchNumber", crsm.usedProviders.BatchNumber()), utils.LogAttr("selection", crsm.selection))
 
-	// Never retry if we detect unsupported method errors at state machine level
-	if crsm.hasUnsupportedMethodErrorsInStateMachine() {
-		utils.LavaFormatTrace("[StateMachine] retryCondition: unsupported method detected, no retry", utils.LogAttr("GUID", crsm.ctx))
+	switch crsm.selection {
+	case relaycore.CrossValidation:
+		// No retries - each provider gets exactly one chance
+		utils.LavaFormatTrace("[StateMachine] retryCondition: CrossValidation mode, no retry", utils.LogAttr("GUID", crsm.ctx))
 		return false
-	}
 
-	if crsm.resultsChecker.GetQuorumParams().Enabled() && numberOfRetriesLaunched > crsm.resultsChecker.GetQuorumParams().Max {
+	case relaycore.Stateful:
+		// No retries - sends to top providers, returns first result
+		utils.LavaFormatTrace("[StateMachine] retryCondition: Stateful mode, no retry", utils.LogAttr("GUID", crsm.ctx))
 		return false
-	} else if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
+
+	case relaycore.Stateless:
+		// Check if batch request retries are disabled and this is a batch request
+		if relaycore.DisableBatchRequestRetry && crsm.protocolMessage.IsBatch() {
+			utils.LavaFormatTrace("[StateMachine] retryCondition: batch request retry disabled, no retry", utils.LogAttr("GUID", crsm.ctx))
+			return false
+		}
+		// Retry unless: unsupported method or max retries reached
+		if crsm.hasUnsupportedMethodErrorsInStateMachine() {
+			utils.LavaFormatTrace("[StateMachine] retryCondition: unsupported method detected, no retry", utils.LogAttr("GUID", crsm.ctx))
+			return false
+		}
+		if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
+			utils.LavaFormatTrace("[StateMachine] retryCondition: max retries reached, no retry", utils.LogAttr("GUID", crsm.ctx), utils.LogAttr("numberOfRetriesLaunched", numberOfRetriesLaunched))
+			return false
+		}
+		utils.LavaFormatTrace("[StateMachine] retryCondition: Stateless mode, will retry", utils.LogAttr("GUID", crsm.ctx))
+		return true
+
+	default:
+		utils.LavaFormatTrace("[StateMachine] retryCondition: unknown selection, no retry", utils.LogAttr("GUID", crsm.ctx), utils.LogAttr("selection", crsm.selection))
 		return false
 	}
-	// best result sends to top 10 providers anyway.
-	return crsm.selection != relaycore.BestResult
 }
 
 func (crsm *ConsumerRelayStateMachine) GetDebugState() bool {
@@ -248,11 +294,20 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 
 		// initialize relay state
 		crsm.stateTransition(nil, 0)
+
+		// Determine number of providers for initial batch
+		var numProviders int
+		if crsm.selection == relaycore.CrossValidation && crsm.crossValidationParams != nil {
+			numProviders = crsm.crossValidationParams.MaxParticipants
+		} else {
+			numProviders = 1
+		}
+
 		// Send First Message, with analytics and without waiting for batch update.
 		relayTaskChannel <- RelayStateSendInstructions{
 			Analytics:      crsm.analytics,
 			RelayState:     crsm.getLatestState(),
-			NumOfProviders: crsm.resultsChecker.GetQuorumParams().Min,
+			NumOfProviders: numProviders,
 		}
 
 		// Initialize parameters
@@ -301,7 +356,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 				}
 				go readResultsFromProcessor()
 			case <-startNewBatchTicker.C:
-				// Only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
+				// Only trigger another batch for non Stateful relays or if we didn't pass the retry limit.
 				if crsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
 					utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", crsm.ctx))
 					relayTaskChannel <- RelayStateSendInstructions{RelayState: crsm.getLatestState(), NumOfProviders: 1}

@@ -1,19 +1,16 @@
 package relaycore
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"math"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
@@ -24,12 +21,11 @@ import (
 type RelayProcessor struct {
 	usedProviders                *lavasession.UsedProviders
 	responses                    chan *RelayResponse
-	quorumParams                 common.QuorumParams
+	crossValidationParams        *common.CrossValidationParams // nil for Stateless/Stateful, non-nil for CrossValidation
 	lock                         sync.RWMutex
 	guid                         uint64
 	selection                    Selection
 	consistency                  Consistency
-	skipDataReliability          bool
 	debugRelay                   bool
 	allowSessionDegradation      uint32 // used in the scenario where extension was previously used.
 	metricsInf                   MetricsInterface
@@ -37,50 +33,85 @@ type RelayProcessor struct {
 	relayRetriesManager          *lavaprotocol.RelayRetriesManager
 	ResultsManager
 	RelayStateMachine
-	availabilityDegrader      QoSAvailabilityDegrader
-	quorumMap                 map[[32]byte]int
-	currentQourumEqualResults int
-	statefulRelayTargets      []string // stores all providers that received a stateful relay
+	crossValidationMap                 map[[32]byte]int
+	currentCrossValidationEqualResults int
+	statefulRelayTargets               []string // stores all providers that received a stateful relay
+	crossValidationQueriedProviders    []string // stores all providers that were queried for cross-validation (even if response not received)
 }
 
 func NewRelayProcessor(
 	ctx context.Context,
-	quorumParams common.QuorumParams,
+	crossValidationParams *common.CrossValidationParams, // nil for Stateless/Stateful
 	consistency Consistency,
 	metricsInf MetricsInterface,
 	chainIdAndApiInterfaceGetter ChainIdAndApiInterfaceGetter,
 	relayRetriesManager *lavaprotocol.RelayRetriesManager,
 	relayStateMachine RelayStateMachine,
-	availabilityDegrader QoSAvailabilityDegrader,
 ) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
-	if quorumParams.Min <= 0 {
-		utils.LavaFormatFatal("invalid requirement, successes count must be greater than 0", nil, utils.LogAttr("requiredSuccesses", quorumParams.Min))
+	selection := relayStateMachine.GetSelection()
+
+	// Defensive validation - these should never fail in production as params
+	// are validated at parse time, but guards against programming errors
+	if selection == CrossValidation && crossValidationParams == nil {
+		utils.LavaFormatFatal("CrossValidation selection requires non-nil crossValidationParams", nil)
 	}
+	if crossValidationParams != nil {
+		if crossValidationParams.AgreementThreshold < 1 {
+			utils.LavaFormatFatal("invalid cross-validation AgreementThreshold", nil,
+				utils.LogAttr("AgreementThreshold", crossValidationParams.AgreementThreshold))
+		}
+		if crossValidationParams.MaxParticipants < 1 {
+			utils.LavaFormatFatal("invalid cross-validation MaxParticipants", nil,
+				utils.LogAttr("MaxParticipants", crossValidationParams.MaxParticipants))
+		}
+		if crossValidationParams.MaxParticipants > MaxCallsPerRelay {
+			utils.LavaFormatFatal("cross-validation MaxParticipants exceeds maximum allowed",
+				nil,
+				utils.LogAttr("MaxParticipants", crossValidationParams.MaxParticipants),
+				utils.LogAttr("MaxCallsPerRelay", MaxCallsPerRelay))
+		}
+	}
+
 	relayProcessor := &RelayProcessor{
-		quorumParams:                 quorumParams,
-		responses:                    make(chan *RelayResponse, MaxCallsPerRelay), // we set it as buffered so it is not blocking
-		ResultsManager:               NewResultsManager(guid),
-		guid:                         guid,
-		consistency:                  consistency,
-		debugRelay:                   relayStateMachine.GetDebugState(),
-		metricsInf:                   metricsInf,
-		chainIdAndApiInterfaceGetter: chainIdAndApiInterfaceGetter,
-		relayRetriesManager:          relayRetriesManager,
-		RelayStateMachine:            relayStateMachine,
-		selection:                    relayStateMachine.GetSelection(),
-		usedProviders:                relayStateMachine.GetUsedProviders(),
-		availabilityDegrader:         availabilityDegrader,
-		quorumMap:                    make(map[[32]byte]int),
-		currentQourumEqualResults:    0,
+		crossValidationParams:              crossValidationParams,
+		responses:                          make(chan *RelayResponse, MaxCallsPerRelay), // buffered to prevent blocking
+		ResultsManager:                     NewResultsManager(guid),
+		guid:                               guid,
+		consistency:                        consistency,
+		debugRelay:                         relayStateMachine.GetDebugState(),
+		metricsInf:                         metricsInf,
+		chainIdAndApiInterfaceGetter:       chainIdAndApiInterfaceGetter,
+		relayRetriesManager:                relayRetriesManager,
+		RelayStateMachine:                  relayStateMachine,
+		selection:                          selection,
+		usedProviders:                      relayStateMachine.GetUsedProviders(),
+		crossValidationMap:                 make(map[[32]byte]int),
+		currentCrossValidationEqualResults: 0,
 	}
 	relayProcessor.RelayStateMachine.SetResultsChecker(relayProcessor)
 	relayProcessor.RelayStateMachine.SetRelayRetriesManager(relayRetriesManager)
 	return relayProcessor
 }
 
-func (rp *RelayProcessor) GetQuorumParams() common.QuorumParams {
-	return rp.quorumParams
+func (rp *RelayProcessor) GetCrossValidationParams() *common.CrossValidationParams {
+	return rp.crossValidationParams
+}
+
+// getAgreementThreshold returns the agreement threshold or 1 if not in CrossValidation mode
+func (rp *RelayProcessor) getAgreementThreshold() int {
+	if rp.crossValidationParams != nil {
+		return rp.crossValidationParams.AgreementThreshold
+	}
+	return 1
+}
+
+// getMaxParticipants returns the max participants or 1 if not in CrossValidation mode
+func (rp *RelayProcessor) getMaxParticipants() int {
+	if rp.crossValidationParams != nil {
+		return rp.crossValidationParams.MaxParticipants
+	}
+	return 1
 }
 
 // true if we never got an extension. (default value)
@@ -91,18 +122,6 @@ func (rp *RelayProcessor) GetAllowSessionDegradation() bool {
 // in case we had an extension and managed to get a session successfully, we prevent session degradation.
 func (rp *RelayProcessor) SetDisallowDegradation() {
 	atomic.StoreUint32(&rp.allowSessionDegradation, 1)
-}
-
-func (rp *RelayProcessor) SetSkipDataReliability(val bool) {
-	rp.lock.Lock()
-	defer rp.lock.Unlock()
-	rp.skipDataReliability = val
-}
-
-func (rp *RelayProcessor) GetSkipDataReliability() bool {
-	rp.lock.RLock()
-	defer rp.lock.RUnlock()
-	return rp.skipDataReliability
 }
 
 // SetStatefulRelayTargets stores the list of providers that received a stateful relay
@@ -117,6 +136,21 @@ func (rp *RelayProcessor) GetStatefulRelayTargets() []string {
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
 	return rp.statefulRelayTargets
+}
+
+// SetCrossValidationQueriedProviders stores the list of all providers that were queried for cross-validation
+// This includes providers whose responses may not have been received (due to early exit when threshold met)
+func (rp *RelayProcessor) SetCrossValidationQueriedProviders(providers []string) {
+	rp.lock.Lock()
+	defer rp.lock.Unlock()
+	rp.crossValidationQueriedProviders = providers
+}
+
+// GetCrossValidationQueriedProviders returns the list of all providers that were queried for cross-validation
+func (rp *RelayProcessor) GetCrossValidationQueriedProviders() []string {
+	rp.lock.RLock()
+	defer rp.lock.RUnlock()
+	return rp.crossValidationQueriedProviders
 }
 
 func (rp *RelayProcessor) String() string {
@@ -164,17 +198,38 @@ func (rp *RelayProcessor) SetResponse(response *RelayResponse) {
 func (rp *RelayProcessor) checkEndProcessing(responsesCount int) bool {
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
-	if rp.ResultsManager.RequiredResults(rp.quorumParams.Min, rp.selection) {
-		utils.LavaFormatDebug("[RelayProcessor] checkEndProcessing - RequiredResults", utils.LogAttr("GUID", rp.guid), utils.LogAttr("requiredSuccesses", rp.quorumParams.Min), utils.LogAttr("selection", rp.selection))
-		return true
-	}
-	// check if we got all of the responses
+
+	// Common exit condition: all responses received from all providers in the batch
 	if responsesCount >= rp.usedProviders.SessionsLatestBatch() {
-		utils.LavaFormatDebug("[RelayProcessor] checkEndProcessing - SessionsLatestBatch", utils.LogAttr("GUID", rp.guid), utils.LogAttr("responsesCount", responsesCount), utils.LogAttr("SessionsLatestBatch", rp.usedProviders.SessionsLatestBatch()))
-		// no active sessions, and we read all the responses, we can return
+		utils.LavaFormatDebug("[RelayProcessor] checkEndProcessing - all responses received",
+			utils.LogAttr("GUID", rp.guid),
+			utils.LogAttr("selection", rp.selection),
+			utils.LogAttr("responsesCount", responsesCount),
+			utils.LogAttr("SessionsLatestBatch", rp.usedProviders.SessionsLatestBatch()))
 		return true
 	}
-	utils.LavaFormatDebug("[RelayProcessor] checkEndProcessing - false", utils.LogAttr("GUID", rp.guid), utils.LogAttr("responsesCount", responsesCount), utils.LogAttr("SessionsLatestBatch", rp.usedProviders.SessionsLatestBatch()))
+
+	// Mode-specific early exit conditions
+	switch rp.selection {
+	case CrossValidation:
+		// Early exit if we've reached the agreement threshold
+		if rp.currentCrossValidationEqualResults >= rp.getAgreementThreshold() {
+			utils.LavaFormatDebug("[RelayProcessor] checkEndProcessing - CrossValidation threshold met",
+				utils.LogAttr("GUID", rp.guid),
+				utils.LogAttr("agreementThreshold", rp.getAgreementThreshold()),
+				utils.LogAttr("currentEqualResults", rp.currentCrossValidationEqualResults))
+			return true
+		}
+	case Stateless, Stateful:
+		// Early exit if we have a successful result
+		if rp.ResultsManager.RequiredResults(1, rp.selection) {
+			utils.LavaFormatDebug("[RelayProcessor] checkEndProcessing - RequiredResults met",
+				utils.LogAttr("GUID", rp.guid),
+				utils.LogAttr("selection", rp.selection))
+			return true
+		}
+	}
+
 	return false
 }
 
@@ -187,37 +242,39 @@ func (rp *RelayProcessor) getInputMsgInfoHashString() (string, error) {
 	return hashString, err
 }
 
-// HasUnsupportedMethodErrors checks if any of the current errors are unsupported method errors
+// isBatchRequest returns true if the current request is a batch request (e.g., JSON-RPC batch).
+func (rp *RelayProcessor) isBatchRequest() bool {
+	return rp.RelayStateMachine.GetProtocolMessage().IsBatch()
+}
+
+// HasUnsupportedMethodErrors checks if any of the current errors are unsupported method errors.
+// Note: We only check nodeErrors and protocolErrors, not successResults, because:
+// - The IsUnsupportedMethod flag is only set when isNodeError=true (in consumer/smartrouter)
+// - If it's a node error, it goes to nodeErrors, never to successResults
 func (rp *RelayProcessor) HasUnsupportedMethodErrors() bool {
 	if rp == nil {
 		return false
 	}
 
-	// Get actual error data to check for unsupported method errors
 	_, nodeErrorResults, protocolErrors := rp.GetResultsData()
 
-	// Check node errors
+	// Check node errors for IsUnsupportedMethod flag
 	for _, nodeErrorResult := range nodeErrorResults {
-		if nodeErrorResult.Reply != nil && nodeErrorResult.Reply.Data != nil {
-			// Check if this is an unsupported method error based on the reply
-			if chainlib.IsUnsupportedMethodErrorMessage(string(nodeErrorResult.Reply.Data)) {
-				return true
-			}
+		if nodeErrorResult.IsUnsupportedMethod {
+			return true
 		}
 	}
 
-	// Check protocol errors
+	// Check protocol errors (for backward compatibility with old providers that may return gRPC errors)
 	for _, protocolError := range protocolErrors {
-		// Check if this is an unsupported method error
 		if chainlib.IsUnsupportedMethodError(protocolError.GetError()) {
 			return true
 		}
-		// Check for epoch mismatch errors that should be retried
+		// Epoch mismatch errors should be retried, not treated as unsupported
 		if lavasession.EpochMismatchError.Is(protocolError.GetError()) {
-			// Epoch mismatch errors should be retried, not treated as unsupported
 			continue
 		}
-		// Also check if we shouldn't retry this error
+		// Check if this is a non-retryable error (indicates unsupported or permanent failure)
 		if !chainlib.ShouldRetryError(protocolError.GetError()) {
 			return true
 		}
@@ -232,6 +289,11 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 
 	// Never retry if we detect unsupported method errors
 	if rp.HasUnsupportedMethodErrors() {
+		return false
+	}
+
+	// Never retry batch requests if DisableBatchRequestRetry is enabled
+	if DisableBatchRequestRetry && rp.isBatchRequest() {
 		return false
 	}
 
@@ -273,15 +335,47 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 	resultsCount, nodeErrors, specialNodeErrors, protocolErrors := rp.GetResults()
 
 	hash, hashErr := rp.getInputMsgInfoHashString()
-	neededForQuorum := rp.getRequiredQuorumSize(resultsCount)
-	if rp.quorumParams.Enabled() && neededForQuorum <= rp.currentQourumEqualResults ||
-		!rp.quorumParams.Enabled() && resultsCount >= neededForQuorum {
+
+	// CrossValidation mode: check if agreementThreshold is met
+	if rp.selection == CrossValidation {
+		if rp.currentCrossValidationEqualResults >= rp.getAgreementThreshold() {
+			if hashErr == nil {
+				go rp.relayRetriesManager.RemoveHashFromCache(hash)
+			}
+			if rp.debugRelay {
+				utils.LavaFormatDebug("HasRequiredNodeResults CrossValidation threshold met",
+					utils.LogAttr("GUID", rp.guid),
+					utils.LogAttr("tries", tries),
+					utils.LogAttr("agreementThreshold", rp.getAgreementThreshold()),
+					utils.LogAttr("currentCrossValidationEqualResults", rp.currentCrossValidationEqualResults),
+					utils.LogAttr("resultsCount", resultsCount),
+				)
+			}
+			return true, nodeErrors
+		}
+		// CrossValidation doesn't retry - return true only when all expected responses received
+		// (The state machine handles no-retry logic)
+		if rp.debugRelay {
+			utils.LavaFormatDebug("HasRequiredNodeResults CrossValidation threshold not met",
+				utils.LogAttr("GUID", rp.guid),
+				utils.LogAttr("tries", tries),
+				utils.LogAttr("agreementThreshold", rp.getAgreementThreshold()),
+				utils.LogAttr("currentCrossValidationEqualResults", rp.currentCrossValidationEqualResults),
+				utils.LogAttr("resultsCount", resultsCount),
+			)
+		}
+		return false, nodeErrors
+	}
+
+	// Original logic for Stateless and Stateful modes
+	// For Stateless/Stateful, we need at least 1 successful response
+	if resultsCount >= 1 {
 		if hashErr == nil { // Incase we had a successful relay we can remove the hash from our relay retries map
 			// Use a routine to run it in parallel
 			go rp.relayRetriesManager.RemoveHashFromCache(hash)
 		}
 		// Check if we need to add node errors retry metrics
-		if rp.selection == Quorum {
+		if rp.selection == Stateless {
 			// If nodeErrors length is larger than 0, our retry mechanism was activated. we add our metrics now.
 			if nodeErrors > 0 {
 				chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
@@ -295,47 +389,22 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 			}
 		}
 		if rp.debugRelay {
-			utils.LavaFormatDebug("HasRequiredNodeResults quorum met",
+			utils.LavaFormatDebug("HasRequiredNodeResults requirements met",
 				utils.LogAttr("GUID", rp.guid),
 				utils.LogAttr("tries", tries),
-				utils.LogAttr("neededForQuorum", neededForQuorum),
-				utils.LogAttr("quorumParams.Min", rp.quorumParams.Min),
 				utils.LogAttr("resultsCount", resultsCount),
 				utils.LogAttr("nodeErrors", nodeErrors),
 				utils.LogAttr("specialNodeErrors", specialNodeErrors),
-				utils.LogAttr("currentQourumEqualResults", rp.currentQourumEqualResults),
 			)
 		}
 		return true, nodeErrors
 	}
-	if rp.selection == Quorum {
-		// We need a quorum of all node results
 
-		// Define retryOnNodeErrorFlow based on quorum feature status
-		var retryForQuorumNeeded bool
+	if rp.selection == Stateless {
+		// Check if we have enough results (need at least 1)
+		needsMoreRetries := resultsCount < 1
 
-		if rp.quorumParams.Enabled() {
-			// Quorum feature enabled: check if quorum is still mathematically possible and quorum is not yet reached
-			// Only count successful results for quorum calculation
-			maxRemainingProviders := rp.quorumParams.Max - resultsCount
-			// The following line checks if, after accounting for the maximum possible additional successful responses (maxRemainingProviders)
-			// and the current highest number of matching responses (rp.currentQourumEqualResults), it is still mathematically possible
-			// to reach the required quorum threshold (calculated as quorum rate * max providers).
-			// If not, then retrying is not needed because quorum cannot be achieved anymore.
-			retryForQuorumNeeded = maxRemainingProviders+rp.currentQourumEqualResults >= int(math.Ceil(rp.quorumParams.Rate*float64(rp.quorumParams.Max)))
-			if rp.debugRelay {
-				utils.LavaFormatDebug("HasRequiredNodeResults retryForQuorumNeeded calculation", utils.LogAttr("GUID", rp.guid),
-					utils.LogAttr("maxRemainingProviders", maxRemainingProviders),
-					utils.LogAttr("rp.currentQourumEqualResults", rp.currentQourumEqualResults),
-					utils.LogAttr("retryForQuorumNeeded", retryForQuorumNeeded),
-				)
-			}
-		} else {
-			// Quorum feature disabled: check if we have enough results for quorum
-			retryForQuorumNeeded = !(resultsCount >= neededForQuorum)
-		}
-
-		if !retryForQuorumNeeded {
+		if !needsMoreRetries {
 			// Retry on node error flow:
 			shouldRetry := rp.shouldRetryRelay(resultsCount, hashErr, nodeErrors, specialNodeErrors)
 			if rp.debugRelay {
@@ -343,28 +412,22 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 					utils.LogAttr("GUID", rp.guid),
 					utils.LogAttr("shouldRetry", shouldRetry),
 					utils.LogAttr("tries", tries),
-					utils.LogAttr("neededForQuorum", neededForQuorum),
-					utils.LogAttr("quorumParams.Min", rp.quorumParams.Min),
 					utils.LogAttr("resultsCount", resultsCount),
 					utils.LogAttr("nodeErrors", nodeErrors),
 					utils.LogAttr("specialNodeErrors", specialNodeErrors),
-					utils.LogAttr("currentQourumEqualResults", rp.currentQourumEqualResults),
 				)
 			}
 			return !shouldRetry, nodeErrors
 		}
 	}
-	// on BestResult we want to retry if there is no success
+	// on Stateful we want to retry if there is no success
 	if rp.debugRelay {
 		utils.LavaFormatDebug("HasRequiredNodeResults returning false",
 			utils.LogAttr("GUID", rp.guid),
 			utils.LogAttr("tries", tries),
-			utils.LogAttr("neededForQuorum", neededForQuorum),
-			utils.LogAttr("quorumParams.Min", rp.quorumParams.Min),
 			utils.LogAttr("resultsCount", resultsCount),
 			utils.LogAttr("nodeErrors", nodeErrors),
 			utils.LogAttr("specialNodeErrors", specialNodeErrors),
-			utils.LogAttr("currentQourumEqualResults", rp.currentQourumEqualResults),
 		)
 	}
 	return false, nodeErrors
@@ -374,20 +437,21 @@ func (rp *RelayProcessor) handleResponse(response *RelayResponse) {
 	nodeError := rp.ResultsManager.SetResponse(response, rp.RelayStateMachine.GetProtocolMessage())
 
 	// send relay error metrics only on non stateful queries, as stateful queries always return X-1/X errors.
-	if nodeError != nil && rp.selection != BestResult {
+	if nodeError != nil && rp.selection != Stateful {
 		chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
 		go rp.metricsInf.SetRelayNodeErrorMetric(response.RelayResult.ProviderInfo.ProviderAddress, chainId, apiInterface)
-		utils.LavaFormatInfo("Relay received a node error", utils.LogAttr("Error", nodeError), utils.LogAttr("provider", response.RelayResult.ProviderInfo), utils.LogAttr("Request", rp.RelayStateMachine.GetProtocolMessage().GetApi().Name))
+		utils.LavaFormatInfo("Relay received a node error", utils.LogAttr("GUID", rp.guid), utils.LogAttr("Error", nodeError), utils.LogAttr("provider", response.RelayResult.ProviderInfo), utils.LogAttr("Request", rp.RelayStateMachine.GetProtocolMessage().GetApi().Name))
 	}
 
-	// Only hash successful responses (not errors) for quorum tracking
-	// This prevents error responses from being counted toward quorum
+	// Only hash successful responses (not errors) for cross-validation tracking
+	// This prevents error responses from being counted toward cross-validation
 	if response != nil && nodeError == nil && response.Err == nil {
-		// Hash the response data instead of creating canonical form - much more efficient
+		// Hash the response data once and cache it in the RelayResult
 		hash := sha256.Sum256(response.RelayResult.GetReply().GetData())
-		rp.quorumMap[hash]++
-		if rp.quorumMap[hash] > rp.currentQourumEqualResults {
-			rp.currentQourumEqualResults = rp.quorumMap[hash]
+		response.RelayResult.ResponseHash = hash // Cache the hash for later reuse
+		rp.crossValidationMap[hash]++
+		if rp.crossValidationMap[hash] > rp.currentCrossValidationEqualResults {
+			rp.currentCrossValidationEqualResults = rp.crossValidationMap[hash]
 		}
 	}
 
@@ -434,20 +498,9 @@ func (rp *RelayProcessor) WaitForResults(ctx context.Context) error {
 	}
 }
 
-// getRequiredQuorumSize calculates the required number of matching responses.
-// When quorum feature is enabled: applies the quorum rate formula to the response count
-// When quorum feature is disabled: returns the configured minimum (typically 1)
-// This ensures consistent quorum calculation across all scenarios.
-func (rp *RelayProcessor) getRequiredQuorumSize(responseCount int) int {
-	if rp.quorumParams.Enabled() {
-		return int(math.Ceil(rp.quorumParams.Rate * float64(utils.Max(rp.quorumParams.Min, responseCount))))
-	}
-	return rp.quorumParams.Min
-}
-
-func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSize int) (returnedResult *common.RelayResult, processingError error) {
-	if quorumSize <= 0 {
-		return nil, errors.New("quorumSize must be greater than zero")
+func (rp *RelayProcessor) responsesCrossValidation(results []common.RelayResult, crossValidationSize int) (returnedResult *common.RelayResult, processingError error) {
+	if crossValidationSize <= 0 {
+		return nil, errors.New("crossValidationSize must be greater than zero")
 	}
 
 	type resultCount struct {
@@ -456,30 +509,23 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 	}
 
 	countMap := make(map[[32]byte]*resultCount)
-	deterministic := rp.RelayStateMachine.GetProtocolMessage().GetApi().Category.Deterministic
-	var bestQosResult common.RelayResult
-	bestQos := sdktypes.ZeroDec()
 	nilReplies := 0
 	nilReplyIdx := -1
 
-	// Helper function to check if response data is valid and meaningful
+	// Helper function to check if response data is valid
 	isValidResponse := func(data []byte) bool {
-		if len(data) == 0 {
-			return false
-		}
-		// Check for empty JSON objects/arrays that are technically valid but meaningless
-		trimmed := bytes.TrimSpace(data)
-		if bytes.Equal(trimmed, []byte("{}")) || bytes.Equal(trimmed, []byte("[]")) {
-			return false
-		}
-		return true
+		return len(data) > 0
 	}
 
 	for idx, result := range results {
 		if result.Reply != nil && result.Reply.Data != nil && isValidResponse(result.Reply.Data) {
-			// Hash the response data for comparison - much faster and more memory efficient
-			// than creating canonical forms. SHA256 ensures reliable comparison for quorum.
-			hash := sha256.Sum256(result.Reply.Data)
+			// Use cached hash if available (set in handleResponse), otherwise compute it
+			// This eliminates redundant SHA256 computation for responses already hashed
+			hash := result.ResponseHash
+			if hash == [32]byte{} {
+				// Fallback: hash not cached (e.g., for old code paths or error cases)
+				hash = sha256.Sum256(result.Reply.Data)
+			}
 
 			if count, exists := countMap[hash]; exists {
 				count.count++
@@ -487,17 +533,6 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 				countMap[hash] = &resultCount{
 					count:  1,
 					result: result,
-				}
-			}
-
-			if !deterministic {
-				if result.ProviderInfo.ProviderReputationSummary.IsNil() || result.ProviderInfo.ProviderStake.Amount.IsNil() {
-					continue
-				}
-				currentResult := result.ProviderInfo.ProviderReputationSummary.MulInt(result.ProviderInfo.ProviderStake.Amount)
-				if currentResult.GTE(bestQos) {
-					bestQos.Set(currentResult)
-					bestQosResult = result
 				}
 			}
 		} else {
@@ -515,36 +550,32 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 		}
 	}
 
-	if nilReplies >= quorumSize && maxCount < quorumSize {
+	if nilReplies >= crossValidationSize && maxCount < crossValidationSize {
 		maxCount = nilReplies
 		mostCommonResult = results[nilReplyIdx]
 	}
 
-	if maxCount < quorumSize {
-		if !deterministic {
-			bestQosResult.Quorum = 1
-			return &bestQosResult, nil
-		}
-		// Only apply quorum logic when quorum feature is enabled
-		if rp.quorumParams.Enabled() {
-			return nil, utils.LavaFormatInfo("equal results count is less than requiredQuorumSize",
+	if maxCount < crossValidationSize {
+		// Cross-validation failed: agreement threshold not reached
+		// Same behavior for both deterministic and non-deterministic APIs
+		if rp.selection == CrossValidation {
+			return nil, utils.LavaFormatInfo("cross-validation failed: agreement threshold not reached",
 				utils.LogAttr("nilReplies", nilReplies),
 				utils.LogAttr("results", len(results)),
-				utils.LogAttr("quorumEqualResults", maxCount),
-				utils.LogAttr("requiredQuorumSize", quorumSize),
-				utils.LogAttr("succeededReplies", len(results)),
-				utils.LogAttr("quorumRate", rp.quorumParams.Rate))
+				utils.LogAttr("maxMatchingResults", maxCount),
+				utils.LogAttr("agreementThreshold", crossValidationSize),
+				utils.LogAttr("maxParticipants", rp.getMaxParticipants()))
 		} else {
-			// Quorum feature disabled - return original error message
-			return nil, utils.LavaFormatInfo("majority count is less than quorumSize",
+			// Stateless/Stateful modes - return original error message
+			return nil, utils.LavaFormatInfo("majority count is less than crossValidationSize",
 				utils.LogAttr("nilReplies", nilReplies),
 				utils.LogAttr("results", len(results)),
 				utils.LogAttr("maxCount", maxCount),
-				utils.LogAttr("quorumSize", quorumSize))
+				utils.LogAttr("crossValidationSize", crossValidationSize))
 		}
 	}
 
-	mostCommonResult.Quorum = maxCount
+	mostCommonResult.CrossValidation = maxCount
 	return &mostCommonResult, nil
 }
 
@@ -552,7 +583,7 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 // results were stored in WaitForResults and now there's logic to select which results are returned to the user
 // will return an error if we did not meet quota of replies, if we did we follow the strategies:
 // if return strategy == get_first: return the first success, if none: get best node error
-// if strategy == quorum get majority of node responses
+// if strategy == stateless get majority of node responses
 // on error: we will return a placeholder relayResult, with a provider address and a status code
 func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult, processingError error) {
 	if rp == nil {
@@ -561,154 +592,155 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 
 	// this must be here before the lock because this function locks
 	allProvidersAddresses := rp.GetUsedProviders().AllUnwantedAddresses()
-	shouldDegradeAvailability := false
 
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
 
-	isSpecialApi := rp.GetProtocolMessage().IsDefaultApi() || rp.GetProtocolMessage().GetApi().Category.Stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS
 	successResults, nodeErrors, protocolErrors := rp.GetResultsData()
 	successResultsCount, nodeErrorCount, protocolErrorCount := len(successResults), len(nodeErrors), len(protocolErrors)
 
-	defer func() {
-		if shouldDegradeAvailability {
-			if rp.availabilityDegrader == nil {
-				utils.LavaFormatWarning("Availability degrader is nil, skipping availability degradation", nil)
-				return
-			}
-			for _, result := range nodeErrors {
-				session := result.Request.RelaySession
-				utils.LavaFormatDebug("Degrading availability for provider",
-					utils.LogAttr("provider", result.ProviderInfo.ProviderAddress),
-					utils.LogAttr("epoch", session.Epoch),
-					utils.LogAttr("sessionId", session.SessionId),
-				)
-				rp.availabilityDegrader.DegradeAvailability(uint64(session.Epoch), int64(session.SessionId))
-			}
-		}
-	}()
-
-	// Calculate the required quorum size using the unified function
-	requiredQuorumSize := rp.getRequiredQuorumSize(successResultsCount)
-
 	if rp.debugRelay {
 		// adding as much debug info as possible. all successful relays, all node errors and all protocol errors
-		utils.LavaFormatDebug("[Processing Result] Debug Relay", utils.LogAttr("rp.quorumParams.Min", rp.quorumParams.Min))
-		utils.LavaFormatDebug("[Processing Debug] number of node results", utils.LogAttr("successResultsCount", successResultsCount), utils.LogAttr("nodeErrorCount", nodeErrorCount), utils.LogAttr("protocolErrorCount", protocolErrorCount))
+		utils.LavaFormatDebug("[Processing Result] Debug Relay",
+			utils.LogAttr("GUID", rp.guid),
+			utils.LogAttr("selection", rp.selection),
+			utils.LogAttr("agreementThreshold", rp.getAgreementThreshold()),
+			utils.LogAttr("maxParticipants", rp.getMaxParticipants()))
+		utils.LavaFormatDebug("[Processing Debug] number of node results", utils.LogAttr("GUID", rp.guid), utils.LogAttr("successResultsCount", successResultsCount), utils.LogAttr("nodeErrorCount", nodeErrorCount), utils.LogAttr("protocolErrorCount", protocolErrorCount))
 		for idx, result := range successResults {
-			utils.LavaFormatDebug("[Processing Debug] success result", utils.LogAttr("idx", idx), utils.LogAttr("result", result))
+			utils.LavaFormatDebug("[Processing Debug] success result", utils.LogAttr("GUID", rp.guid), utils.LogAttr("idx", idx), utils.LogAttr("result", result))
 		}
 		for idx, result := range nodeErrors {
-			utils.LavaFormatDebug("[Processing Debug] node result", utils.LogAttr("idx", idx), utils.LogAttr("result", result))
+			utils.LavaFormatDebug("[Processing Debug] node result", utils.LogAttr("GUID", rp.guid), utils.LogAttr("idx", idx), utils.LogAttr("result", result))
 		}
 		for idx, result := range protocolErrors {
-			utils.LavaFormatDebug("[Processing Debug] protocol error", utils.LogAttr("idx", idx), utils.LogAttr("result", result))
+			utils.LavaFormatDebug("[Processing Debug] protocol error", utils.LogAttr("GUID", rp.guid), utils.LogAttr("idx", idx), utils.LogAttr("result", result))
 		}
-		utils.LavaFormatDebug("[ProcessingResult]:", utils.LogAttr("GUID", rp.guid), utils.LogAttr("successResultsCount", successResultsCount), utils.LogAttr("quorumParams.Min", rp.quorumParams.Min), utils.LogAttr("requiredQuorumSize", requiredQuorumSize))
+		utils.LavaFormatDebug("[ProcessingResult]:", utils.LogAttr("GUID", rp.guid), utils.LogAttr("successResultsCount", successResultsCount))
 	}
 
-	// there are enough successes
-	if successResultsCount >= requiredQuorumSize {
-		// Try to form a quorum with successes first
-		result, err := rp.responsesQuorum(successResults, requiredQuorumSize)
+	// Process results based on selection mode
+	switch rp.selection {
+	case CrossValidation:
+		return rp.processCrossValidationResult(successResults, successResultsCount, nodeErrorCount, rp.getAgreementThreshold())
+
+	case Stateful:
+		return rp.processStatefulResult(successResults, nodeErrors, successResultsCount, nodeErrorCount, allProvidersAddresses)
+
+	case Stateless:
+		return rp.processStatelessResult(successResults, nodeErrors, successResultsCount, nodeErrorCount, protocolErrorCount, allProvidersAddresses)
+
+	default:
+		return nil, utils.LavaFormatError("unknown selection mode", nil, utils.LogAttr("selection", rp.selection))
+	}
+}
+
+// processCrossValidationResult handles result processing for CrossValidation mode.
+// Only successful responses count towards consensus - node errors are ignored.
+func (rp *RelayProcessor) processCrossValidationResult(
+	successResults []common.RelayResult,
+	successResultsCount, nodeErrorCount, requiredCrossValidationSize int,
+) (*common.RelayResult, error) {
+	// Check if we have enough successful responses
+	if successResultsCount >= requiredCrossValidationSize {
+		result, err := rp.responsesCrossValidation(successResults, requiredCrossValidationSize)
 		if err == nil {
-			// Successes formed a quorum
-			if len(nodeErrors) > 0 && !isSpecialApi { // if we have node errors and it's not a default api, we should degrade availability
-				shouldDegradeAvailability = true
-			}
 			return result, nil
 		}
-
-		// Successes couldn't form a quorum (they don't match), try node errors if available
-		requiredNodeErrorsQuorumSize := rp.getRequiredQuorumSize(nodeErrorCount)
-		if nodeErrorCount >= requiredNodeErrorsQuorumSize {
-			utils.LavaFormatInfo("Success responses didn't match, attempting node error quorum as fallback",
-				utils.LogAttr("GUID", rp.guid),
-				utils.LogAttr("successCount", successResultsCount),
-				utils.LogAttr("nodeErrorCount", nodeErrorCount),
-				utils.LogAttr("requiredNodeErrorsQuorumSize", requiredNodeErrorsQuorumSize),
-				utils.LogAttr("quorumEnabled", rp.quorumParams.Enabled()),
-			)
-			nodeErrorResult, nodeErrorErr := rp.responsesQuorum(nodeErrors, requiredNodeErrorsQuorumSize)
-			if nodeErrorErr == nil {
-				// Node errors formed a quorum, use them as fallback
-				utils.LavaFormatInfo("Using node error quorum as fallback (success responses didn't match)",
-					utils.LogAttr("GUID", rp.guid),
-					utils.LogAttr("successCount", successResultsCount),
-					utils.LogAttr("nodeErrorCount", nodeErrorCount),
-					utils.LogAttr("nodeErrorQuorum", nodeErrorResult.Quorum),
-				)
-				return nodeErrorResult, nil
-			}
-			utils.LavaFormatDebug("Node errors also failed to form quorum",
-				utils.LogAttr("GUID", rp.guid),
-				utils.LogAttr("nodeErrorCount", nodeErrorCount),
-				utils.LogAttr("requiredQuorumSize", requiredNodeErrorsQuorumSize),
-				utils.LogAttr("error", nodeErrorErr),
-			)
-		}
-		// Neither successes nor node errors could form a quorum, return the error from successes
-		return result, err
+		// Successful responses exist but don't agree
+		// Return a minimal result so headers can be attached
+		return &common.RelayResult{StatusCode: http.StatusInternalServerError}, utils.LavaFormatError("cross-validation failed: successful responses did not reach agreement",
+			err,
+			utils.LogAttr("GUID", rp.guid),
+			utils.LogAttr("successCount", successResultsCount),
+			utils.LogAttr("agreementThreshold", requiredCrossValidationSize),
+			utils.LogAttr("nodeErrorCount", nodeErrorCount),
+		)
 	}
 
-	// there are not enough successes, let's check if there are enough node errors and protocol errors
-	// Protocol errors (like consistency violations) should count as attempted responses
-	totalResponses := successResultsCount + nodeErrorCount + protocolErrorCount
-	if totalResponses >= rp.quorumParams.Min && rp.selection == Quorum {
-		// Check if we have enough node errors to form a quorum
-		// Recalculate required quorum size based on node error count
-		requiredQuorumSize = rp.getRequiredQuorumSize(nodeErrorCount)
-		if successResultsCount == 0 && nodeErrorCount >= requiredQuorumSize {
-			// Try to form a quorum with node errors first (no successes available)
-			utils.LavaFormatInfo("No success responses, attempting quorum with node errors only",
-				utils.LogAttr("GUID", rp.guid),
-				utils.LogAttr("nodeErrorCount", nodeErrorCount),
-				utils.LogAttr("requiredQuorumSize", requiredQuorumSize),
-				utils.LogAttr("protocolErrorCount", protocolErrorCount),
-				utils.LogAttr("quorumEnabled", rp.quorumParams.Enabled()),
-			)
-			return rp.responsesQuorum(nodeErrors, requiredQuorumSize)
-		}
+	// Not enough successful responses
+	// Return a minimal result so headers can be attached
+	return &common.RelayResult{StatusCode: http.StatusInternalServerError}, utils.LavaFormatError("cross-validation failed: insufficient successful responses",
+		nil,
+		utils.LogAttr("GUID", rp.guid),
+		utils.LogAttr("successCount", successResultsCount),
+		utils.LogAttr("agreementThreshold", requiredCrossValidationSize),
+		utils.LogAttr("nodeErrorCount", nodeErrorCount),
+		utils.LogAttr("maxParticipants", rp.getMaxParticipants()),
+	)
+}
 
-		// If we couldn't form a quorum with node errors, try combining with successes
-		if nodeErrorCount+successResultsCount >= requiredQuorumSize {
-			utils.LavaFormatInfo("Attempting quorum with combined node errors and successes",
-				utils.LogAttr("GUID", rp.guid),
-				utils.LogAttr("successCount", successResultsCount),
-				utils.LogAttr("nodeErrorCount", nodeErrorCount),
-				utils.LogAttr("combinedCount", nodeErrorCount+successResultsCount),
-				utils.LogAttr("requiredQuorumSize", requiredQuorumSize),
-				utils.LogAttr("quorumEnabled", rp.quorumParams.Enabled()),
-			)
-			nodeResults := make([]common.RelayResult, 0, len(successResults)+len(nodeErrors))
-			nodeResults = append(nodeResults, successResults...)
-			nodeResults = append(nodeResults, nodeErrors...)
-			return rp.responsesQuorum(nodeResults, requiredQuorumSize)
-		}
+// processStatefulResult handles result processing for Stateful mode.
+// Returns first success, or first node error if no successes.
+// No cross-validation/consensus - just return the first available result.
+func (rp *RelayProcessor) processStatefulResult(
+	successResults, nodeErrors []common.RelayResult,
+	successResultsCount, nodeErrorCount int,
+	allProvidersAddresses []string,
+) (*common.RelayResult, error) {
+	// Return first success if available
+	if successResultsCount > 0 {
+		result := successResults[0]
+		return &result, nil
 	}
 
-	if rp.selection == BestResult && nodeErrorCount > 0 {
-		return rp.responsesQuorum(nodeErrors, rp.quorumParams.Min)
+	// No successes, return first node error if available
+	if nodeErrorCount > 0 {
+		result := nodeErrors[0]
+		return &result, nil
 	}
 
-	// Not enough successful results - continue waiting for more responses
-	// if we got here we trigger a protocol error
-	returnedResult = &common.RelayResult{StatusCode: http.StatusInternalServerError}
-	if nodeErrorCount > 0 { // if we have node errors, we prefer returning them over protocol errors, even if it's just the one
+	// No results at all
+	return rp.buildFailureResult(nodeErrorCount, 0, allProvidersAddresses)
+}
+
+// processStatelessResult handles result processing for Stateless mode.
+// Returns first success, or first node error if no successes.
+// No cross-validation/consensus - retries handle getting a valid response.
+func (rp *RelayProcessor) processStatelessResult(
+	successResults, nodeErrors []common.RelayResult,
+	successResultsCount, nodeErrorCount, protocolErrorCount int,
+	allProvidersAddresses []string,
+) (*common.RelayResult, error) {
+	// Return first success if available
+	if successResultsCount > 0 {
+		result := successResults[0]
+		return &result, nil
+	}
+
+	// No successes, return first node error if available
+	if nodeErrorCount > 0 {
+		result := nodeErrors[0]
+		return &result, nil
+	}
+
+	// No results at all - return failure
+	return rp.buildFailureResult(nodeErrorCount, protocolErrorCount, allProvidersAddresses)
+}
+
+// buildFailureResult constructs an error result when no consensus can be reached.
+func (rp *RelayProcessor) buildFailureResult(
+	nodeErrorCount, protocolErrorCount int,
+	allProvidersAddresses []string,
+) (*common.RelayResult, error) {
+	returnedResult := &common.RelayResult{StatusCode: http.StatusInternalServerError}
+	var processingError error
+
+	if nodeErrorCount > 0 {
+		// Prefer node errors over protocol errors
 		nodeErr := rp.GetBestNodeErrorMessageForUser()
 		processingError = nodeErr.Err
-		errorResponse := nodeErr.Response
-		if errorResponse != nil {
-			returnedResult = &errorResponse.RelayResult
+		if nodeErr.Response != nil {
+			returnedResult = &nodeErr.Response.RelayResult
 		}
 	} else if protocolErrorCount > 0 {
 		protocolErr := rp.GetBestProtocolErrorMessageForUser()
 		processingError = protocolErr.Err
-		errorResponse := protocolErr.Response
-		if errorResponse != nil {
-			returnedResult = &errorResponse.RelayResult
+		if protocolErr.Response != nil {
+			returnedResult = &protocolErr.Response.RelayResult
 		}
 	}
+
 	returnedResult.ProviderInfo.ProviderAddress = strings.Join(allProvidersAddresses, ",")
-	return returnedResult, utils.LavaFormatError("failed relay, insufficient results", processingError)
+	return returnedResult, utils.LavaFormatError("failed relay, insufficient results", processingError, utils.LogAttr("GUID", rp.guid))
 }

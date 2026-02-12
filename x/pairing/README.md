@@ -359,7 +359,7 @@ The pairing module supports the following queries:
 | `provider-reputation-details`     | provider (string), chain-id (string), cluster (string)  | developer query to show the provider's reputation score raw data                |
 | `providers`     | chain-id (string)  | show all the providers staked on a specific chain                  |
 | `providers-epoch-cu`     |   | developer query to list the amount of CU serviced by all the providers every epoch               |
-| `sdk-pairing`     | none  | query used by Lava-SDK to get all the required pairing info                  |
+| `sdk-pairing`     | chain-id (string), client (string)  | query to get all the required pairing info for a client                  |
 | `show-epoch-payments`     | index (string)  | show an epochPayment object by index                  |
 | `show-provider-payment-storage`     | index (string)  | show a providerPaymentStorage object by index                  |
 | `show-unique-payment-storage-client-provider`     | index (string)  | show an uniquePaymentStorageClientProvider object by index                  |

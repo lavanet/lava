@@ -991,7 +991,7 @@
                             },
                             {
                                 "function_tag": "GET_BLOCK_BY_NUM",
-                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"getBlock\",\"params\":[%d,{\"transactionDetails\":\"none\",\"rewards\":false}],\"id\":1}",
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"getBlock\",\"params\":[%d,{\"transactionDetails\":\"none\",\"rewards\":false,\"maxSupportedTransactionVersion\":0}],\"id\":1}",
                                 "result_parsing": {
                                     "parser_arg": [
                                         "0",

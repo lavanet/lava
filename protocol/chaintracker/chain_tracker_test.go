@@ -299,11 +299,18 @@ func TestChainTrackerCallbacks(t *testing.T) {
 	// used to identify if the newLatest callback was called
 	callbackCalledNewLatest := false
 	callbackCalledTimes := 0
+	callbackBlocksProcessed := int64(0) // Track actual blocks processed
 	newBlockCallback := func(blockFrom int64, blockTo int64, hash string) {
 		callbackCalledNewLatest = true
-		for block := blockFrom + 1; block <= blockTo; block++ {
-			callbackCalledTimes++
-		}
+		blocksInRange := blockTo - blockFrom
+		callbackCalledTimes++
+		callbackBlocksProcessed += blocksInRange
+		utils.LavaFormatDebug("newBlockCallback called",
+			utils.LogAttr("blockFrom", blockFrom),
+			utils.LogAttr("blockTo", blockTo),
+			utils.LogAttr("blocksInRange", blocksInRange),
+			utils.LogAttr("totalProcessed", callbackBlocksProcessed),
+		)
 	}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(mockBlocks), ForkCallback: forkCallback, NewLatestCallback: newBlockCallback, ParseDirectiveEnabled: true}
 	chainTracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
@@ -347,7 +354,10 @@ func TestChainTrackerCallbacks(t *testing.T) {
 			} else {
 				require.False(t, callbackCalledFork)
 			}
-			require.Equal(t, totalAdvancement, callbackCalledTimes)
+			// Fixed: Check that total blocks processed equals total advancement
+			// ChainTracker may batch blocks, so we check blocks processed, not callback count
+			require.Equal(t, int64(totalAdvancement), callbackBlocksProcessed,
+				"total blocks processed should equal total advancement (callbacks may be batched)")
 			if tt.advancement > 0 {
 				require.True(t, callbackCalledNewLatest)
 			} else {

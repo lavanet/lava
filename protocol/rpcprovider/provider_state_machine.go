@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/v5/protocol/chainlib"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
@@ -40,17 +41,22 @@ func NewProviderStateMachine(chainId string, relayRetriesManager lavaprotocol.Re
 }
 
 func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg chainlib.ChainMessage, request *pairingtypes.RelayRequest) (*chainlib.RelayReplyWrapper, time.Duration, error) {
-	hash, err := chainMsg.GetRawRequestHash()
+	hash, hashErr := chainMsg.GetRawRequestHash()
 	requestHashString := ""
-	if err != nil {
-		utils.LavaFormatWarning("Failed converting message to hash", err, utils.LogAttr("url", request.RelayData.ApiUrl), utils.LogAttr("data", string(request.RelayData.Data)))
-	} else {
+	// Batch requests intentionally return WontCalculateBatchHash - this is expected, not a warning.
+	// Only log warning for unexpected hash failures on single requests.
+	isBatchRequest := errors.Is(hashErr, rpcInterfaceMessages.WontCalculateBatchHash)
+	if hashErr != nil && !isBatchRequest {
+		utils.LavaFormatWarning("Failed converting message to hash", hashErr, utils.LogAttr("url", request.RelayData.ApiUrl), utils.LogAttr("data", string(request.RelayData.Data)))
+	} else if hashErr == nil {
 		requestHashString = string(hash)
 	}
 
 	var replyWrapper *chainlib.RelayReplyWrapper
 	var isNodeError bool
 	var errorMessage string
+	var err error
+	var finalLatency time.Duration
 	emptyTime := 0 * time.Millisecond
 	for retryAttempt := 0; retryAttempt <= psm.numberOfRetries; retryAttempt++ {
 		sendTime := time.Now()
@@ -65,6 +71,7 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 			replyWrapper, _, _, _, _, err = psm.relaySender.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
 		}
 		latency := time.Since(sendTime)
+		finalLatency = latency // Track latency outside loop to preserve it when breaking early
 		if err != nil {
 			return nil, emptyTime, utils.LavaFormatError("Sending chainMsg failed", err, utils.LogAttr("attempt", retryAttempt), utils.LogAttr("GUID", ctx), utils.LogAttr("specID", psm.chainId))
 		}
@@ -80,7 +87,13 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 		// Check for node errors
 		isNodeError, errorMessage = chainMsg.CheckResponseError(replyWrapper.RelayReply.Data, replyWrapper.StatusCode)
 
-		// Failed fetching hash return the reply.
+		// Batch requests cannot be hashed (intentionally), so return immediately with latency.
+		// No retries are possible for batch requests since we can't cache the hash.
+		if isBatchRequest {
+			return replyWrapper, latency, nil
+		}
+
+		// For single requests that failed to hash unexpectedly, we can't perform retries.
 		if requestHashString == "" {
 			utils.LavaFormatWarning("Failed to hash request, shouldn't happen", nil, utils.LogAttr("url", request.RelayData.ApiUrl), utils.LogAttr("data", string(request.RelayData.Data)))
 			break // We can't perform the retries as we failed fetching the request hash.
@@ -92,7 +105,7 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 		}
 
 		// Check if this is an unsupported method error based on known patterns/status codes
-		isUnsupported := chainlib.IsUnsupportedMethodErrorMessage(errorMessage)
+		isUnsupported := common.IsUnsupportedMethodMessage(errorMessage)
 		if !isUnsupported && chainMsg != nil && chainMsg.GetApiCollection() != nil {
 			if strings.EqualFold(chainMsg.GetApiCollection().CollectionData.ApiInterface, "rest") {
 				if replyWrapper.StatusCode == http.StatusNotFound || replyWrapper.StatusCode == http.StatusMethodNotAllowed {
@@ -113,7 +126,7 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 			}
 
 			// Comprehensive structured logging
-			logMessage := "unsupported method error detected - returning error to consumer"
+			logMessage := "unsupported method error detected - returning node error to consumer"
 			utils.LavaFormatInfo(logMessage,
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("error", errorMessage),
@@ -134,9 +147,9 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 				utils.LogAttr("status_code", replyWrapper.StatusCode),
 			)
 
-			// Return an UnsupportedMethodError to the consumer so they don't increment their CU counter
-			unsupportedError := chainlib.NewUnsupportedMethodError(errors.New(errorMessage), methodName)
-			return nil, emptyTime, unsupportedError
+			// Break out of retry loop - no point retrying unsupported methods
+			// The response will be returned after the loop with the actual node error
+			break
 		}
 
 		// On the first retry, check if this hash has already failed previously
@@ -151,7 +164,7 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 		utils.LavaFormatTrace("failed all relay retries for message", utils.LogAttr("hash", requestHashString))
 		go psm.relayRetriesManager.AddHashToCache(requestHashString)
 	}
-	return replyWrapper, emptyTime, nil
+	return replyWrapper, finalLatency, nil
 }
 
 // generateTestResponse generates a test response based on the configured probabilities
@@ -242,7 +255,7 @@ func (psm *ProviderStateMachine) generateUnsupportedMethodResponse(chainMsg chai
 	switch apiInterface {
 	case "jsonrpc", "tendermintrpc":
 		// Generate JSON-RPC method not found error (code -32601)
-		// This matches the pattern that chainlib.IsUnsupportedMethodErrorMessage() detects
+		// This matches the pattern that common.IsUnsupportedMethodMessage() detects
 		return fmt.Sprintf(`{"jsonrpc":"2.0","id":1,"error":{"code":-32601,"message":"Method not found: %s"}}`, apiMethod), 200
 
 	case "rest":

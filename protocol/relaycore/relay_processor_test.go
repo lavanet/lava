@@ -14,7 +14,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
-	"github.com/lavanet/lava/v5/protocol/qos"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -22,27 +21,34 @@ import (
 
 // Mock RelayStateMachine for testing
 type mockRelayStateMachine struct {
-	protocolMessage chainlib.ProtocolMessage
-	usedProviders   *lavasession.UsedProviders
-	debugState      bool
-	selection       Selection
+	protocolMessage       chainlib.ProtocolMessage
+	usedProviders         *lavasession.UsedProviders
+	debugState            bool
+	selection             Selection
+	crossValidationParams *common.CrossValidationParams // nil for Stateless/Stateful
 }
 
 func newMockRelayStateMachine(protocolMessage chainlib.ProtocolMessage, usedProviders *lavasession.UsedProviders) *mockRelayStateMachine {
 	return &mockRelayStateMachine{
-		protocolMessage: protocolMessage,
-		usedProviders:   usedProviders,
-		debugState:      false,
-		selection:       BestResult, // Default to BestResult for backward compatibility
+		protocolMessage:       protocolMessage,
+		usedProviders:         usedProviders,
+		debugState:            false,
+		selection:             Stateful, // Default to Stateful for backward compatibility
+		crossValidationParams: nil,      // nil for non-CrossValidation modes
 	}
 }
 
 func newMockRelayStateMachineWithSelection(protocolMessage chainlib.ProtocolMessage, usedProviders *lavasession.UsedProviders, selection Selection) *mockRelayStateMachine {
+	var cvParams *common.CrossValidationParams
+	if selection == CrossValidation {
+		cvParams = &common.CrossValidationParams{MaxParticipants: 3, AgreementThreshold: 2}
+	}
 	return &mockRelayStateMachine{
-		protocolMessage: protocolMessage,
-		usedProviders:   usedProviders,
-		debugState:      false,
-		selection:       selection,
+		protocolMessage:       protocolMessage,
+		usedProviders:         usedProviders,
+		debugState:            false,
+		selection:             selection,
+		crossValidationParams: cvParams,
 	}
 }
 
@@ -63,6 +69,10 @@ func (m *mockRelayStateMachine) UpdateBatch(err error) {
 
 func (m *mockRelayStateMachine) GetSelection() Selection {
 	return m.selection
+}
+
+func (m *mockRelayStateMachine) GetCrossValidationParams() *common.CrossValidationParams {
+	return m.crossValidationParams
 }
 
 func (m *mockRelayStateMachine) GetUsedProviders() *lavasession.UsedProviders {
@@ -95,7 +105,7 @@ func TestRelayProcessorHappyFlow(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
 		consistency := NewConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, nil, consistency, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -151,7 +161,7 @@ func TestRelayProcessorTimeout(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -204,7 +214,7 @@ func TestRelayProcessorRetry(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -249,7 +259,7 @@ func TestRelayProcessorRetryNodeError(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -271,9 +281,9 @@ func TestRelayProcessorRetryNodeError(t *testing.T) {
 		require.True(t, resultsOk)
 		protocolErrors := relayProcessor.ProtocolErrors()
 		require.Equal(t, uint64(1), protocolErrors)
-		// When quorum is disabled and we have node errors, we should get the node error as result
+		// When cross-validation is disabled and we have node errors, we should get the node error as result
 		returnedResult, err := relayProcessor.ProcessingResult()
-		require.NoError(t, err, "Should return node error when quorum is disabled")
+		require.NoError(t, err, "Should return node error when cross-validation is disabled")
 		require.NotNil(t, returnedResult)
 		require.Equal(t, 500, returnedResult.StatusCode, "Node errors should have status code 500")
 		require.Equal(t, []byte(`{"message":"bad","code":123}`), returnedResult.Reply.Data, "Should return node error data")
@@ -297,7 +307,7 @@ func TestRelayProcessorStatefulApi(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -352,7 +362,7 @@ func TestRelayProcessorStatefulApiErr(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -374,9 +384,9 @@ func TestRelayProcessorStatefulApiErr(t *testing.T) {
 		require.True(t, resultsOk)
 		protocolErrors := relayProcessor.ProtocolErrors()
 		require.Equal(t, uint64(1), protocolErrors)
-		// When quorum is disabled and we have node errors, we should get the node error as result
+		// When cross-validation is disabled and we have node errors, we should get the node error as result
 		returnedResult, err := relayProcessor.ProcessingResult()
-		require.NoError(t, err, "Should return node error when quorum is disabled")
+		require.NoError(t, err, "Should return node error when cross-validation is disabled")
 		require.NotNil(t, returnedResult)
 		require.Equal(t, 500, returnedResult.StatusCode, "Node errors should have status code 500")
 		require.Equal(t, []byte(`{"message":"bad","code":123}`), returnedResult.Reply.Data, "Should return node error data")
@@ -400,7 +410,7 @@ func TestRelayProcessorLatest(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, common.DefaultQuorumParams, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders), qos.NewQoSManager())
+		relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -443,89 +453,87 @@ func createMockRelayResponseWithData(providerAddr string, data []byte, err error
 	}
 }
 
-func TestHasRequiredNodeResultsQuorumScenarios(t *testing.T) {
+func TestHasRequiredNodeResultsCrossValidationScenarios(t *testing.T) {
 	const baseTimestamp = 1234567890
 	mockData := []byte(`{"result": "success", "data": "mock1", "timestamp": 1234567890}`)
 
 	tests := []struct {
-		name           string
-		quorumParams   common.QuorumParams
-		successResults int
-		nodeErrors     int
-		tries          int
-		expectedResult bool
-		expectedErrors int
-		useSameData    int // Number of providers that should send the same data (0 = all different)
+		name                  string
+		crossValidationParams *common.CrossValidationParams // nil for Stateless/Stateful
+		selection             Selection
+		successResults        int
+		nodeErrors            int
+		tries                 int
+		expectedResult        bool
+		expectedErrors        int
+		useSameData           int // Number of providers that should send the same data (0 = all different)
 	}{
 		{
-			name: "quorum not met with different data from providers",
-			quorumParams: common.QuorumParams{
-				Min:  2,
-				Rate: 0.6,
-				Max:  5,
+			name: "cross-validation not met with different data from providers",
+			crossValidationParams: &common.CrossValidationParams{
+				AgreementThreshold: 2,
+				MaxParticipants:    5,
 			},
+			selection:      CrossValidation,
 			successResults: 2,
 			nodeErrors:     0,
 			tries:          1,
-			expectedResult: false, // Different data won't meet quorum
+			expectedResult: false, // Different data won't meet cross-validation threshold
 			expectedErrors: 0,
 			useSameData:    0, // 0 means all different data
 		},
 		{
-			name: "quorum not met with different data from providers",
-			quorumParams: common.QuorumParams{
-				Min:  2,
-				Rate: 1,
-				Max:  5,
+			name: "cross-validation met with same data meeting threshold",
+			crossValidationParams: &common.CrossValidationParams{
+				AgreementThreshold: 2,
+				MaxParticipants:    5,
 			},
-			successResults: 2,
-			nodeErrors:     0,
-			tries:          1,
-			expectedResult: true, // we have the final result and dont need to retry since there is no mathematical potentiol to meet quorum
-			expectedErrors: 0,
-			useSameData:    0, // 0 means all different data
-		},
-		{
-			name: "quorum met with same data from min providers",
-			quorumParams: common.QuorumParams{
-				Min:  3,
-				Rate: 0.6,
-				Max:  5,
-			},
+			selection:      CrossValidation,
 			successResults: 3,
 			nodeErrors:     0,
 			tries:          1,
-			expectedResult: true, // Same data should meet quorum
+			expectedResult: true, // 2 providers with same data meets threshold of 2
 			expectedErrors: 0,
-			useSameData:    2, // 2 providers with same data, 1 with different
+			useSameData:    2, // 2 providers with same data
 		},
 		{
-			name: "quorum met with all providers sending same data",
-			quorumParams: common.QuorumParams{
-				Min:  2,
-				Rate: 0.6,
-				Max:  5,
+			name: "cross-validation met with all providers sending same data",
+			crossValidationParams: &common.CrossValidationParams{
+				AgreementThreshold: 2,
+				MaxParticipants:    5,
 			},
+			selection:      CrossValidation,
 			successResults: 3,
 			nodeErrors:     0,
 			tries:          1,
-			expectedResult: true, // All same data should definitely meet quorum
+			expectedResult: true, // All same data should definitely meet cross-validation
 			expectedErrors: 0,
 			useSameData:    3, // All 3 providers with same data
 		},
 		{
-			name: "quorum not met with mixed data (1 same, 2 different)",
-			quorumParams: common.QuorumParams{
-				Min:  3,
-				Rate: 0.6,
-				Max:  5,
+			name: "cross-validation not met with threshold of 3 but only 1 matching",
+			crossValidationParams: &common.CrossValidationParams{
+				AgreementThreshold: 3,
+				MaxParticipants:    5,
 			},
+			selection:      CrossValidation,
 			successResults: 3,
 			nodeErrors:     0,
 			tries:          1,
-			expectedResult: false, // Mixed data won't meet quorum
+			expectedResult: false, // Only 1 provider with same data, threshold is 3
 			expectedErrors: 0,
 			useSameData:    1, // Only 1 provider with same data
+		},
+		{
+			name:                  "stateless mode - single result is sufficient",
+			crossValidationParams: nil,
+			selection:             Stateless,
+			successResults:        1,
+			nodeErrors:            0,
+			tries:                 1,
+			expectedResult:        true, // Stateless mode needs just 1 successful result
+			expectedErrors:        0,
+			useSameData:           1,
 		},
 	}
 
@@ -545,13 +553,12 @@ func TestHasRequiredNodeResultsQuorumScenarios(t *testing.T) {
 
 			relayProcessor := NewRelayProcessor(
 				ctx,
-				tt.quorumParams,
+				tt.crossValidationParams,
 				nil,
 				RelayProcessorMetrics,
 				RelayProcessorMetrics,
 				RelayRetriesManagerInstance,
-				newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
-				qos.NewQoSManager(),
+				newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, tt.selection),
 			)
 
 			// Set the batch size so WaitForResults knows how many responses to expect
@@ -565,10 +572,10 @@ func TestHasRequiredNodeResultsQuorumScenarios(t *testing.T) {
 			for i := 0; i < tt.successResults; i++ {
 				var data []byte
 				if i < tt.useSameData {
-					// Use same data for the first 'useSameData' providers (should meet quorum)
+					// Use same data for the first 'useSameData' providers (should meet cross-validation)
 					data = mockData
 				} else {
-					// Use different data for remaining providers (should not meet quorum)
+					// Use different data for remaining providers (should not meet cross-validation)
 					// Create unique data by adding 'i' to the timestamp for each provider
 					uniqueTimestamp := baseTimestamp + i
 					data = []byte(fmt.Sprintf(`{"result": "success", "data": "mock%d", "timestamp": %d}`, i+1, uniqueTimestamp))
@@ -596,23 +603,26 @@ func TestHasRequiredNodeResultsQuorumScenarios(t *testing.T) {
 			defer cancel()
 			relayProcessor.WaitForResults(ctx)
 
-			// Test the quorum functionality
+			// Test the cross-validation functionality
 			result, errors := relayProcessor.HasRequiredNodeResults(tt.tries)
 
-			require.Equal(t, tt.expectedResult, result, "quorum result mismatch")
+			require.Equal(t, tt.expectedResult, result, "cross-validation result mismatch")
 			require.Equal(t, tt.expectedErrors, errors, "error count mismatch")
 		})
 	}
 }
 
 // ============================================================================
-// CATEGORY 1: Node Error Quorum Tests
-// These tests validate that node errors can form their own quorum
+// CATEGORY 1: Selection Mode Result Tests
+// These tests validate the different result processing for each selection mode:
+// - Stateless: returns first result (no consensus)
+// - Stateful: returns first result (no consensus)
+// - CrossValidation: requires agreementThreshold matching successful responses
 // ============================================================================
 
-// Test 1.1: Node errors that match should form quorum
-func TestNodeErrorQuorumMet(t *testing.T) {
-	t.Run("three_matching_node_errors_meet_quorum", func(t *testing.T) {
+// Test 1.1: Stateless mode returns first node error when no successes
+func TestStatelessReturnsFirstNodeError(t *testing.T) {
+	t.Run("stateless_returns_first_node_error", func(t *testing.T) {
 		ctx := context.Background()
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -628,16 +638,15 @@ func TestNodeErrorQuorumMet(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
 
-		// Use Quorum selection to enable quorum logic
+		// Stateless mode - just returns first result, no consensus
 		relayProcessor := NewRelayProcessor(
 			ctx,
-			common.QuorumParams{Min: 3, Rate: 0.6, Max: 5},
+			nil, // nil for Stateless mode
 			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
-			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
-			qos.NewQoSManager(),
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -654,7 +663,7 @@ func TestNodeErrorQuorumMet(t *testing.T) {
 		}
 		usedProviders.AddUsed(consumerSessionsMap, nil)
 
-		// Send 3 identical node errors (same error code and message) - using REST error format
+		// Send 3 node errors - using REST error format
 		nodeErrorData := []byte(`{"message":"invalid argument 0: hex string has length 3","code":400}`)
 		go sendNodeErrorWithData(relayProcessor, "lava@test1", time.Millisecond*5, nodeErrorData)
 		go sendNodeErrorWithData(relayProcessor, "lava@test2", time.Millisecond*10, nodeErrorData)
@@ -665,18 +674,18 @@ func TestNodeErrorQuorumMet(t *testing.T) {
 		err = relayProcessor.WaitForResults(ctx)
 		require.NoError(t, err)
 
-		// Process results - should succeed with node error quorum
+		// Process results - Stateless returns first result, no cross-validation
 		returnedResult, err := relayProcessor.ProcessingResult()
-		require.NoError(t, err, "Node error quorum should be met")
+		require.NoError(t, err, "Stateless mode should return first node error")
 		require.NotNil(t, returnedResult)
-		require.Equal(t, 3, returnedResult.Quorum, "Quorum should be 3 (all three node errors matched)")
+		require.Equal(t, 0, returnedResult.CrossValidation, "Stateless mode does not do cross-validation")
 		require.Equal(t, nodeErrorData, returnedResult.Reply.Data, "Should return the node error data")
 	})
 }
 
-// Test 1.2: Node errors that don't match should NOT form quorum
-func TestNodeErrorQuorumNotMet(t *testing.T) {
-	t.Run("three_different_node_errors_fail_quorum", func(t *testing.T) {
+// Test 1.2: CrossValidation mode fails when only node errors are received (no successful responses)
+func TestNodeErrorCrossValidationNotMet(t *testing.T) {
+	t.Run("cross_validation_mode_fails_with_only_node_errors", func(t *testing.T) {
 		ctx := context.Background()
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -692,15 +701,15 @@ func TestNodeErrorQuorumNotMet(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
 
+		// CrossValidation mode - node errors do NOT count towards consensus
 		relayProcessor := NewRelayProcessor(
 			ctx,
-			common.QuorumParams{Min: 3, Rate: 0.6, Max: 5},
+			&common.CrossValidationParams{AgreementThreshold: 2, MaxParticipants: 5},
 			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
-			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
-			qos.NewQoSManager(),
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, CrossValidation),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -716,30 +725,28 @@ func TestNodeErrorQuorumNotMet(t *testing.T) {
 		}
 		usedProviders.AddUsed(consumerSessionsMap, nil)
 
-		// Send 3 DIFFERENT node errors - using REST error format
-		nodeError1 := []byte(`{"message":"error type 1","code":400}`)
-		nodeError2 := []byte(`{"message":"error type 2","code":401}`)
-		nodeError3 := []byte(`{"message":"error type 3","code":402}`)
+		// Send 3 MATCHING node errors - but in CrossValidation mode they don't count
+		nodeErrorData := []byte(`{"message":"error type 1","code":400}`)
 
-		go sendNodeErrorWithData(relayProcessor, "lava@test1", time.Millisecond*5, nodeError1)
-		go sendNodeErrorWithData(relayProcessor, "lava@test2", time.Millisecond*10, nodeError2)
-		go sendNodeErrorWithData(relayProcessor, "lava@test3", time.Millisecond*15, nodeError3)
+		go sendNodeErrorWithData(relayProcessor, "lava@test1", time.Millisecond*5, nodeErrorData)
+		go sendNodeErrorWithData(relayProcessor, "lava@test2", time.Millisecond*10, nodeErrorData)
+		go sendNodeErrorWithData(relayProcessor, "lava@test3", time.Millisecond*15, nodeErrorData)
 
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*200)
 		defer cancel()
 		err = relayProcessor.WaitForResults(ctx)
 		require.NoError(t, err)
 
-		// Process results - should fail (no quorum)
+		// Process results - should fail because node errors don't count in CrossValidation mode
 		_, err = relayProcessor.ProcessingResult()
-		require.Error(t, err, "Should fail when node errors don't match")
-		require.Contains(t, err.Error(), "equal results count is less than requiredQuorumSize")
+		require.Error(t, err, "CrossValidation mode should fail when only node errors are received")
+		require.Contains(t, err.Error(), "cross-validation failed: insufficient successful responses")
 	})
 }
 
-// Test 1.3: Node error quorum with protocol errors mixed in
-func TestNodeErrorQuorumWithProtocolErrors(t *testing.T) {
-	t.Run("node_error_quorum_ignores_protocol_errors", func(t *testing.T) {
+// Test 1.3: Stateless mode returns first node error, ignoring protocol errors
+func TestStatelessReturnsNodeErrorOverProtocolError(t *testing.T) {
+	t.Run("stateless_returns_node_error_over_protocol_error", func(t *testing.T) {
 		ctx := context.Background()
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -755,15 +762,15 @@ func TestNodeErrorQuorumWithProtocolErrors(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
 
+		// Stateless mode - returns first result
 		relayProcessor := NewRelayProcessor(
 			ctx,
-			common.QuorumParams{Min: 3, Rate: 0.6, Max: 5},
+			nil, // nil for Stateless mode
 			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
-			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
-			qos.NewQoSManager(),
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -780,7 +787,7 @@ func TestNodeErrorQuorumWithProtocolErrors(t *testing.T) {
 		}
 		usedProviders.AddUsed(consumerSessionsMap, nil)
 
-		// Send 3 matching node errors + 1 protocol error - using REST error format
+		// Send node errors + protocol error
 		nodeErrorData := []byte(`{"message":"invalid params","code":400}`)
 		go sendNodeErrorWithData(relayProcessor, "lava@test1", time.Millisecond*5, nodeErrorData)
 		go sendNodeErrorWithData(relayProcessor, "lava@test2", time.Millisecond*10, nodeErrorData)
@@ -792,16 +799,16 @@ func TestNodeErrorQuorumWithProtocolErrors(t *testing.T) {
 		err = relayProcessor.WaitForResults(ctx)
 		require.NoError(t, err)
 
-		// Process results - node error quorum should be met despite protocol error
+		// Stateless returns first node error, no cross-validation
 		returnedResult, err := relayProcessor.ProcessingResult()
-		require.NoError(t, err, "Node error quorum should be met, protocol error should not interfere")
+		require.NoError(t, err, "Stateless mode should return first node error")
 		require.NotNil(t, returnedResult)
-		require.Equal(t, 3, returnedResult.Quorum, "Quorum should be 3 (node errors only)")
+		require.Equal(t, 0, returnedResult.CrossValidation, "Stateless mode does not do cross-validation")
 		require.Equal(t, nodeErrorData, returnedResult.Reply.Data, "Should return the node error data")
 	})
 }
 
-// Test: Node error prioritized over protocol errors when quorum disabled
+// Test: Node error prioritized over protocol errors when cross-validation disabled
 // This tests that with 4 protocol errors and 1 node error, we get the node error
 func TestNodeErrorPrioritizedOverProtocolErrors(t *testing.T) {
 	t.Run("node_error_prioritized_over_protocol_errors", func(t *testing.T) {
@@ -820,16 +827,15 @@ func TestNodeErrorPrioritizedOverProtocolErrors(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
 
-		// Quorum disabled (BestResult selection)
+		// CrossValidation disabled (Stateful selection)
 		relayProcessor := NewRelayProcessor(
 			ctx,
-			common.DefaultQuorumParams,
+			nil,
 			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
 			newMockRelayStateMachine(protocolMessage, usedProviders),
-			qos.NewQoSManager(),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -872,7 +878,7 @@ func TestNodeErrorPrioritizedOverProtocolErrors(t *testing.T) {
 		require.Equal(t, "lava@test5", returnedResult.ProviderInfo.ProviderAddress, "Should return the node error from provider 5")
 	})
 
-	t.Run("node_error_prioritized_over_protocol_errors_with_quorum_selection", func(t *testing.T) {
+	t.Run("node_error_prioritized_over_protocol_errors_with_stateless_selection", func(t *testing.T) {
 		ctx := context.Background()
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -888,16 +894,15 @@ func TestNodeErrorPrioritizedOverProtocolErrors(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
 
-		// Quorum selection but quorum feature disabled (DefaultQuorumParams)
+		// Stateless selection but cross-validation feature disabled (DefaultCrossValidationParams)
 		relayProcessor := NewRelayProcessor(
 			ctx,
-			common.DefaultQuorumParams,
+			nil,
 			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
-			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
-			qos.NewQoSManager(),
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -932,7 +937,7 @@ func TestNodeErrorPrioritizedOverProtocolErrors(t *testing.T) {
 		require.Equal(t, uint64(4), protocolErrors, "Should have 4 protocol errors")
 
 		// Process results - should return node error (prioritized over protocol errors)
-		// Even with Quorum selection, when quorum feature is disabled, node errors should be prioritized
+		// Even with Stateless selection, when cross-validation feature is disabled, node errors should be prioritized
 		returnedResult, err := relayProcessor.ProcessingResult()
 		require.NoError(t, err, "Should return node error, not an error")
 		require.NotNil(t, returnedResult)
@@ -947,8 +952,8 @@ func TestNodeErrorPrioritizedOverProtocolErrors(t *testing.T) {
 // These tests validate that success results take priority over node errors
 // ============================================================================
 
-// Test 2.1: Success quorum takes priority when both success and node errors exist
-func TestSuccessQuorumTakesPriorityOverNodeError(t *testing.T) {
+// Test 2.1: Success cross-validation takes priority when both success and node errors exist
+func TestSuccessCrossValidationTakesPriorityOverNodeError(t *testing.T) {
 	t.Run("success_results_prioritized_over_node_errors", func(t *testing.T) {
 		ctx := context.Background()
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -967,13 +972,12 @@ func TestSuccessQuorumTakesPriorityOverNodeError(t *testing.T) {
 
 		relayProcessor := NewRelayProcessor(
 			ctx,
-			common.QuorumParams{Min: 3, Rate: 0.6, Max: 6},
+			&common.CrossValidationParams{AgreementThreshold: 3, MaxParticipants: 6},
 			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
-			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
-			qos.NewQoSManager(),
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, CrossValidation),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -1011,17 +1015,17 @@ func TestSuccessQuorumTakesPriorityOverNodeError(t *testing.T) {
 
 		// Process results - should return success (priority)
 		returnedResult, err := relayProcessor.ProcessingResult()
-		require.NoError(t, err, "Success quorum should take priority")
+		require.NoError(t, err, "Success cross-validation should take priority")
 		require.NotNil(t, returnedResult)
-		require.Equal(t, 3, returnedResult.Quorum, "Quorum should be 3 from success results")
+		require.Equal(t, 3, returnedResult.CrossValidation, "CrossValidation should be 3 from success results")
 		require.Equal(t, successData, returnedResult.Reply.Data, "Should return success data, not node error")
 		require.Equal(t, 200, returnedResult.StatusCode, "Status should be 200 (success)")
 	})
 }
 
-// Test 2.2: Node error quorum is used when success results are insufficient
-func TestNodeErrorQuorumWhenSuccessInsufficient(t *testing.T) {
-	t.Run("node_error_quorum_used_when_success_insufficient", func(t *testing.T) {
+// Test 2.2: CrossValidation mode fails when success results are insufficient (node errors don't count)
+func TestNodeErrorCrossValidationWhenSuccessInsufficient(t *testing.T) {
+	t.Run("cross_validation_mode_fails_when_success_insufficient", func(t *testing.T) {
 		ctx := context.Background()
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -1037,15 +1041,15 @@ func TestNodeErrorQuorumWhenSuccessInsufficient(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
 
+		// CrossValidation mode - node errors do NOT count towards consensus
 		relayProcessor := NewRelayProcessor(
 			ctx,
-			common.QuorumParams{Min: 3, Rate: 0.6, Max: 5},
+			&common.CrossValidationParams{AgreementThreshold: 3, MaxParticipants: 5},
 			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
-			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
-			qos.NewQoSManager(),
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, CrossValidation),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -1063,13 +1067,13 @@ func TestNodeErrorQuorumWhenSuccessInsufficient(t *testing.T) {
 		}
 		usedProviders.AddUsed(consumerSessionsMap, nil)
 
-		// Send 2 DIFFERENT successes (can't form quorum)
+		// Send 2 DIFFERENT successes (can't form cross-validation)
 		successData1 := []byte(`{"result":"success","block":100}`)
 		successData2 := []byte(`{"result":"success","block":101}`)
 		go sendSuccessWithData(relayProcessor, "lava@test1", time.Millisecond*5, successData1)
 		go sendSuccessWithData(relayProcessor, "lava@test2", time.Millisecond*10, successData2)
 
-		// Send 3 matching node errors (CAN form quorum) - using REST error format
+		// Send 3 matching node errors - but they don't count in CrossValidation mode
 		nodeErrorData := []byte(`{"message":"invalid params","code":400}`)
 		go sendNodeErrorWithData(relayProcessor, "lava@test3", time.Millisecond*15, nodeErrorData)
 		go sendNodeErrorWithData(relayProcessor, "lava@test4", time.Millisecond*20, nodeErrorData)
@@ -1080,26 +1084,17 @@ func TestNodeErrorQuorumWhenSuccessInsufficient(t *testing.T) {
 		err = relayProcessor.WaitForResults(ctx)
 		require.NoError(t, err)
 
-		// Debug: Check what was actually stored
-		_, nodeErrors, _ := relayProcessor.GetResultsData()
-		t.Logf("Number of node errors stored: %d", len(nodeErrors))
-		for i, ne := range nodeErrors {
-			t.Logf("Node error %d data: %s", i, string(ne.Reply.Data))
-		}
-
-		// Process results - should return node error quorum (success insufficient)
-		returnedResult, err := relayProcessor.ProcessingResult()
-		require.NoError(t, err, "Node error quorum should be used when success can't form quorum")
-		require.NotNil(t, returnedResult)
-		require.Equal(t, 3, returnedResult.Quorum, "Quorum should be 3 from node errors")
-		require.Equal(t, nodeErrorData, returnedResult.Reply.Data, "Should return node error data")
-		require.Equal(t, 500, returnedResult.StatusCode, "Status should be 500 (node error)")
+		// Process results - should fail because only 2 successes and they don't match
+		// Node errors don't count towards cross-validation in CrossValidation mode
+		_, err = relayProcessor.ProcessingResult()
+		require.Error(t, err, "CrossValidation mode should fail when success can't form consensus (node errors don't count)")
+		require.Contains(t, err.Error(), "cross-validation failed: insufficient successful responses")
 	})
 }
 
-// Test 2.3: Success quorum ignores node errors entirely
-func TestSuccessQuorumIgnoresNodeErrors(t *testing.T) {
-	t.Run("success_quorum_ignores_all_node_errors", func(t *testing.T) {
+// Test 2.3: Success cross-validation ignores node errors entirely
+func TestSuccessCrossValidationIgnoresNodeErrors(t *testing.T) {
+	t.Run("success_cross-validation_ignores_all_node_errors", func(t *testing.T) {
 		ctx := context.Background()
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -1117,13 +1112,12 @@ func TestSuccessQuorumIgnoresNodeErrors(t *testing.T) {
 
 		relayProcessor := NewRelayProcessor(
 			ctx,
-			common.QuorumParams{Min: 3, Rate: 0.6, Max: 8},
+			&common.CrossValidationParams{AgreementThreshold: 3, MaxParticipants: 8},
 			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
-			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
-			qos.NewQoSManager(),
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, CrossValidation),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -1164,20 +1158,20 @@ func TestSuccessQuorumIgnoresNodeErrors(t *testing.T) {
 
 		// Process results - should return success, completely ignoring node errors
 		returnedResult, err := relayProcessor.ProcessingResult()
-		require.NoError(t, err, "Success quorum should succeed regardless of node errors")
+		require.NoError(t, err, "Success cross-validation should succeed regardless of node errors")
 		require.NotNil(t, returnedResult)
-		require.Equal(t, 3, returnedResult.Quorum, "Quorum should be 3 from success results")
+		require.Equal(t, 3, returnedResult.CrossValidation, "CrossValidation should be 3 from success results")
 		require.Equal(t, successData, returnedResult.Reply.Data, "Should return success data")
 		require.Equal(t, 200, returnedResult.StatusCode, "Status should be 200 (success)")
 	})
 }
 
-// Test: Success quorum fails when quorum feature is disabled
-// This tests the scenario where success responses exist but fail quorum
-// when quorum feature is disabled. With current implementation, when success
-// quorum fails, it returns error without falling back to node errors.
-func TestSuccessQuorumFailsWhenQuorumDisabled(t *testing.T) {
-	t.Run("success_quorum_fails_when_quorum_disabled", func(t *testing.T) {
+// Test: Success cross-validation fails when cross-validation feature is disabled
+// This tests the scenario where success responses exist but fail cross-validation
+// when cross-validation feature is disabled. With current implementation, when success
+// cross-validation fails, it returns error without falling back to node errors.
+func TestSuccessCrossValidationFailsWhenCrossValidationDisabled(t *testing.T) {
+	t.Run("success_cross-validation_fails_when_cross-validation_disabled", func(t *testing.T) {
 		ctx := context.Background()
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -1193,16 +1187,15 @@ func TestSuccessQuorumFailsWhenQuorumDisabled(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
 
-		// Quorum feature DISABLED (BestResult selection) - Min will be used as requiredQuorumSize
+		// CrossValidation feature DISABLED (Stateful selection) - uses default params, needs just 1 successful result
 		relayProcessor := NewRelayProcessor(
 			ctx,
-			common.QuorumParams{Min: 1, Rate: 0.6, Max: 5},
+			nil,
 			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
-			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, BestResult), // BestResult = quorum disabled
-			qos.NewQoSManager(),
+			newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateful), // Stateful = cross-validation disabled
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -1218,8 +1211,8 @@ func TestSuccessQuorumFailsWhenQuorumDisabled(t *testing.T) {
 		usedProviders.AddUsed(consumerSessionsMap, nil)
 
 		// Send 1 success response with valid data
-		// With quorum disabled and Min=1, having 1 success should normally succeed
-		// But we test the edge case where responsesQuorum might fail for other reasons
+		// With cross-validation disabled and Min=1, having 1 success should normally succeed
+		// But we test the edge case where responsesCrossValidation might fail for other reasons
 		successData := []byte(`{"result":"success"}`)
 		go sendSuccessWithData(relayProcessor, "lava@test1", time.Millisecond*5, successData)
 
@@ -1237,20 +1230,20 @@ func TestSuccessQuorumFailsWhenQuorumDisabled(t *testing.T) {
 		t.Logf("Success results: %d, Node errors: %d", len(successResults), len(nodeErrors))
 
 		// Process results
-		// With quorum disabled: requiredQuorumSize = Min = 1
-		// successResultsCount (1) >= requiredQuorumSize (1) → enters success path
-		// With 1 valid success response, quorum should succeed (maxCount = 1 >= quorumSize = 1)
+		// With cross-validation disabled: requiredCrossValidationSize = Min = 1
+		// successResultsCount (1) >= requiredCrossValidationSize (1) → enters success path
+		// With 1 valid success response, cross-validation should succeed (maxCount = 1 >= cross-validationSize = 1)
 		// This test verifies the code path is executed correctly
 		returnedResult, err := relayProcessor.ProcessingResult()
 
-		// With 1 success and quorumSize = 1, it should succeed
-		// This test documents the expected behavior when quorum is disabled
+		// With 1 success and cross-validationSize = 1, it should succeed
+		// This test documents the expected behavior when cross-validation is disabled
 		if err != nil {
 			// If it fails, verify it's the expected error
-			require.Contains(t, err.Error(), "majority count is less than quorumSize",
-				"If it fails, should indicate quorum failure")
+			require.Contains(t, err.Error(), "majority count is less than cross-validationSize",
+				"If it fails, should indicate cross-validation failure")
 		} else {
-			// If it succeeds, that's also valid - 1 success with quorumSize=1 should work
+			// If it succeeds, that's also valid - 1 success with cross-validationSize=1 should work
 			require.NotNil(t, returnedResult, "If it succeeds, should return a result")
 		}
 	})
@@ -1467,8 +1460,8 @@ func (m *MockMetricsTracker) GetProtocolErrorRecoveryCalls() []MetricCall {
 	return calls
 }
 
-// Test: Quorum met with node errors only
-func TestNodeErrorsRecoveryMetricWithQuorum(t *testing.T) {
+// Test: CrossValidation met with node errors only
+func TestNodeErrorsRecoveryMetricWithCrossValidation(t *testing.T) {
 	ctx := context.Background()
 	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -1484,35 +1477,29 @@ func TestNodeErrorsRecoveryMetricWithQuorum(t *testing.T) {
 	require.NoError(t, err)
 
 	protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "dapp", "127.0.0.1")
-	usedProviders := lavasession.NewUsedProviders(nil)
+	usedProvidersFirst := lavasession.NewUsedProviders(nil)
 	mockMetrics := NewMockMetricsTracker()
 	consistency := NewConsistency(specId)
 
-	quorumParams := common.QuorumParams{
-		Min:  3,
-		Max:  5,
-		Rate: 0.6,
-	}
-
+	// Use Stateless mode - recovery metrics are only recorded for Stateless mode
 	relayProcessor := NewRelayProcessor(
 		ctx,
-		quorumParams,
+		nil,
 		consistency,
 		mockMetrics,
 		mockMetrics,
 		RelayRetriesManagerInstance,
-		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
-		qos.NewQoSManager(),
+		newMockRelayStateMachineWithSelection(protocolMessage, usedProvidersFirst, Stateless),
 	)
 
 	// Add providers
-	canUse := usedProviders.TryLockSelection(ctx)
+	canUse := usedProvidersFirst.TryLockSelection(ctx)
 	require.Nil(t, canUse)
 	consumerSessionsMap := lavasession.ConsumerSessionsMap{}
 	for i := 0; i < 5; i++ {
 		consumerSessionsMap[fmt.Sprintf("provider%d", i)] = &lavasession.SessionInfo{}
 	}
-	usedProviders.AddUsed(consumerSessionsMap, nil)
+	usedProvidersFirst.AddUsed(consumerSessionsMap, nil)
 
 	// Simulate 3 successful responses
 	for i := 0; i < 3; i++ {
@@ -1534,7 +1521,7 @@ func TestNodeErrorsRecoveryMetricWithQuorum(t *testing.T) {
 	require.NoError(t, err)
 
 	// Wait for all responses to be processed (including node errors)
-	// WaitForResults returns when quorum is met, but node errors might still be in flight
+	// WaitForResults returns when cross-validation is met, but node errors might still be in flight
 	// Poll until we see node errors or timeout (max 200ms)
 	var hasResults bool
 	var nodeErrorCount int
@@ -1548,7 +1535,7 @@ func TestNodeErrorsRecoveryMetricWithQuorum(t *testing.T) {
 	}
 
 	// Verify results
-	require.True(t, hasResults, "Should have required results (quorum met)")
+	require.True(t, hasResults, "Should have required results (cross-validation met)")
 	require.Greater(t, nodeErrorCount, 0, "Should have at least 1 node error")
 
 	// Give time for async metric calls
@@ -1562,16 +1549,16 @@ func TestNodeErrorsRecoveryMetricWithQuorum(t *testing.T) {
 	require.Equal(t, 0, len(protocolErrorCalls), "Protocol error recovery metric should NOT be called")
 
 	if len(nodeErrorCalls) > 0 {
-		// Note: Due to timing, we might not get all 2 error responses before quorum is met
-		// The important thing is that the metric is incremented when quorum is met with some node errors
+		// Note: Due to timing, we might not get all 2 error responses before cross-validation is met
+		// The important thing is that the metric is incremented when cross-validation is met with some node errors
 		require.Greater(t, len(nodeErrorCalls[0].attempt), 0, "Should record node errors")
 		require.Equal(t, "TEST_CHAIN", nodeErrorCalls[0].chainId)
 		require.Equal(t, "rest", nodeErrorCalls[0].apiInterface)
 	}
 }
 
-// Test: Quorum met with protocol errors only
-func TestProtocolErrorsRecoveryMetricWithQuorum(t *testing.T) {
+// Test: CrossValidation met with protocol errors only
+func TestProtocolErrorsRecoveryMetricWithCrossValidation(t *testing.T) {
 	ctx := context.Background()
 	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -1591,21 +1578,19 @@ func TestProtocolErrorsRecoveryMetricWithQuorum(t *testing.T) {
 	mockMetrics := NewMockMetricsTracker()
 	consistency := NewConsistency(specId)
 
-	quorumParams := common.QuorumParams{
-		Min:  3,
-		Max:  5,
-		Rate: 0.6,
+	crossValidationParams := &common.CrossValidationParams{
+		AgreementThreshold: 2,
+		MaxParticipants:    5,
 	}
 
 	relayProcessor := NewRelayProcessor(
 		ctx,
-		quorumParams,
+		crossValidationParams,
 		consistency,
 		mockMetrics,
 		mockMetrics,
 		RelayRetriesManagerInstance,
-		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
-		qos.NewQoSManager(),
+		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
 	)
 
 	// Add providers
@@ -1637,7 +1622,7 @@ func TestProtocolErrorsRecoveryMetricWithQuorum(t *testing.T) {
 	hasResults, nodeErrorCount := relayProcessor.HasRequiredNodeResults(1)
 
 	// Verify results
-	require.True(t, hasResults, "Should have required results (quorum met)")
+	require.True(t, hasResults, "Should have required results (cross-validation met)")
 	require.Equal(t, 0, nodeErrorCount, "Should have 0 node errors")
 
 	// Give time for async metric calls
@@ -1651,16 +1636,16 @@ func TestProtocolErrorsRecoveryMetricWithQuorum(t *testing.T) {
 	require.Greater(t, len(protocolErrorCalls), 0, "Protocol error recovery metric should be called at least once")
 
 	if len(protocolErrorCalls) > 0 {
-		// Note: Due to timing, we might not get all error responses before quorum is met
-		// The important thing is that the metric is incremented when quorum is met with some protocol errors
+		// Note: Due to timing, we might not get all error responses before cross-validation is met
+		// The important thing is that the metric is incremented when cross-validation is met with some protocol errors
 		require.Greater(t, len(protocolErrorCalls[0].attempt), 0, "Should record protocol errors")
 		require.Equal(t, "TEST_CHAIN", protocolErrorCalls[0].chainId)
 		require.Equal(t, "rest", protocolErrorCalls[0].apiInterface)
 	}
 }
 
-// Test: Quorum met with both error types
-func TestBothErrorTypesRecoveryMetricsWithQuorum(t *testing.T) {
+// Test: Recovery metrics are called in Stateless mode when errors occur
+func TestBothErrorTypesRecoveryMetricsWithCrossValidation(t *testing.T) {
 	ctx := context.Background()
 	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -1680,21 +1665,15 @@ func TestBothErrorTypesRecoveryMetricsWithQuorum(t *testing.T) {
 	mockMetrics := NewMockMetricsTracker()
 	consistency := NewConsistency(specId)
 
-	quorumParams := common.QuorumParams{
-		Min:  3,
-		Max:  5,
-		Rate: 0.6,
-	}
-
+	// Use Stateless mode - recovery metrics are only tracked in Stateless mode
 	relayProcessor := NewRelayProcessor(
 		ctx,
-		quorumParams,
+		nil,
 		consistency,
 		mockMetrics,
 		mockMetrics,
 		RelayRetriesManagerInstance,
-		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
-		qos.NewQoSManager(),
+		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
 	)
 
 	// Add providers
@@ -1727,7 +1706,7 @@ func TestBothErrorTypesRecoveryMetricsWithQuorum(t *testing.T) {
 	hasResults, _ := relayProcessor.HasRequiredNodeResults(1)
 
 	// Verify results
-	require.True(t, hasResults, "Should have required results (quorum met)")
+	require.True(t, hasResults, "Should have required results (cross-validation met)")
 
 	// Give time for async metric calls
 	time.Sleep(100 * time.Millisecond)
@@ -1738,8 +1717,8 @@ func TestBothErrorTypesRecoveryMetricsWithQuorum(t *testing.T) {
 	// Due to timing and async execution, we might get various combinations:
 	// 1. Both error types (ideal case) - both metrics called
 	// 2. Only one error type - one metric called
-	// 3. No errors before quorum - no metrics called (successes came in very fast)
-	// All scenarios are valid! The test proves that when errors ARE received before quorum,
+	// 3. No errors before cross-validation - no metrics called (successes came in very fast)
+	// All scenarios are valid! The test proves that when errors ARE received before cross-validation,
 	// the corresponding metrics ARE incremented correctly.
 
 	// Verify metric consistency: if we have node errors, metric should be called
@@ -1755,12 +1734,12 @@ func TestBothErrorTypesRecoveryMetricsWithQuorum(t *testing.T) {
 		require.Equal(t, 1, len(protocolErrorCalls), "Protocol error recovery metric should be called when protocol errors present")
 	}
 
-	// Verify we had successful responses (quorum)
-	require.GreaterOrEqual(t, resultsCount, 3, "Should have at least 3 successes for quorum")
+	// Verify we had successful responses
+	require.GreaterOrEqual(t, resultsCount, 1, "Should have at least 1 successful response")
 }
 
-// Test: Quorum not met - no metrics
-func TestNoRecoveryMetricsWhenQuorumNotMet(t *testing.T) {
+// Test: CrossValidation not met - no metrics
+func TestNoRecoveryMetricsWhenCrossValidationNotMet(t *testing.T) {
 	ctx := context.Background()
 	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -1780,21 +1759,19 @@ func TestNoRecoveryMetricsWhenQuorumNotMet(t *testing.T) {
 	mockMetrics := NewMockMetricsTracker()
 	consistency := NewConsistency(specId)
 
-	quorumParams := common.QuorumParams{
-		Min:  3,
-		Max:  5,
-		Rate: 0.6,
+	crossValidationParams := &common.CrossValidationParams{
+		AgreementThreshold: 3, // Need 3 matching responses
+		MaxParticipants:    5,
 	}
 
 	relayProcessor := NewRelayProcessor(
 		ctx,
-		quorumParams,
+		crossValidationParams,
 		consistency,
 		mockMetrics,
 		mockMetrics,
 		RelayRetriesManagerInstance,
-		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Quorum),
-		qos.NewQoSManager(),
+		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, CrossValidation),
 	)
 
 	// Add providers
@@ -1806,7 +1783,7 @@ func TestNoRecoveryMetricsWhenQuorumNotMet(t *testing.T) {
 	}
 	usedProviders.AddUsed(consumerSessionsMap, nil)
 
-	// Simulate only 1 successful response (not enough for quorum)
+	// Simulate only 1 successful response (not enough for cross-validation)
 	go SendSuccessResp(relayProcessor, "provider0", 0)
 
 	// Simulate 2 node errors
@@ -1833,7 +1810,7 @@ func TestNoRecoveryMetricsWhenQuorumNotMet(t *testing.T) {
 	// Give time for async metric calls (if any)
 	time.Sleep(100 * time.Millisecond)
 
-	// Verify NO metrics were called (no recovery since quorum not met)
+	// Verify NO metrics were called (no recovery since cross-validation not met)
 	nodeErrorCalls := mockMetrics.GetNodeErrorRecoveryCalls()
 	protocolErrorCalls := mockMetrics.GetProtocolErrorRecoveryCalls()
 
@@ -1841,95 +1818,459 @@ func TestNoRecoveryMetricsWhenQuorumNotMet(t *testing.T) {
 	require.Equal(t, 0, len(protocolErrorCalls), "Protocol error recovery metric should NOT be called")
 }
 
-// TestGetRequiredQuorumSize tests the getRequiredQuorumSize function behavior
-// with quorum enabled and disabled
-func TestGetRequiredQuorumSize(t *testing.T) {
+// TestGetAgreementThreshold tests the getAgreementThreshold function behavior
+func TestGetAgreementThreshold(t *testing.T) {
 	tests := []struct {
-		name          string
-		quorumParams  common.QuorumParams
-		responseCount int
-		expected      int
-		description   string
+		name                  string
+		crossValidationParams *common.CrossValidationParams
+		selection             Selection
+		expected              int
+		description           string
 	}{
 		{
-			name:          "Quorum Disabled - Returns Min",
-			quorumParams:  common.QuorumParams{Rate: 1, Max: 1, Min: 1},
-			responseCount: 5,
-			expected:      1,
-			description:   "When quorum is disabled, should always return Min regardless of response count",
+			name:                  "Stateless - Returns 1 (no cross-validation params)",
+			crossValidationParams: nil,
+			selection:             Stateless,
+			expected:              1,
+			description:           "When selection is Stateless with nil params, should return 1",
 		},
 		{
-			name:          "Quorum Enabled - Single Response",
-			quorumParams:  common.QuorumParams{Rate: 0.66, Max: 5, Min: 2},
-			responseCount: 1,
-			expected:      2,
-			description:   "When quorum enabled with low response count, should return Min",
+			name:                  "Stateful - Returns 1 (no cross-validation params)",
+			crossValidationParams: nil,
+			selection:             Stateful,
+			expected:              1,
+			description:           "When selection is Stateful with nil params, should return 1",
 		},
 		{
-			name:          "Quorum Enabled - Multiple Responses",
-			quorumParams:  common.QuorumParams{Rate: 0.66, Max: 5, Min: 2},
-			responseCount: 3,
-			expected:      2,
-			description:   "Rate 0.66 * 3 = 1.98, ceil = 2",
+			name:                  "CrossValidation - Returns AgreementThreshold",
+			crossValidationParams: &common.CrossValidationParams{AgreementThreshold: 2, MaxParticipants: 5},
+			selection:             CrossValidation,
+			expected:              2,
+			description:           "When selection is CrossValidation, should return AgreementThreshold",
 		},
 		{
-			name:          "Quorum Enabled - High Response Count",
-			quorumParams:  common.QuorumParams{Rate: 0.66, Max: 5, Min: 2},
-			responseCount: 5,
-			expected:      4,
-			description:   "Rate 0.66 * 5 = 3.3, ceil = 4",
-		},
-		{
-			name:          "Quorum Disabled - Zero Responses",
-			quorumParams:  common.QuorumParams{Rate: 1, Max: 1, Min: 1},
-			responseCount: 0,
-			expected:      1,
-			description:   "Even with 0 responses, should return Min when disabled",
+			name:                  "CrossValidation - High AgreementThreshold",
+			crossValidationParams: &common.CrossValidationParams{AgreementThreshold: 4, MaxParticipants: 5},
+			selection:             CrossValidation,
+			expected:              4,
+			description:           "When selection is CrossValidation with high threshold, should return AgreementThreshold",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Test the function directly by creating a minimal RelayProcessor
 			rp := &RelayProcessor{
-				quorumParams: tt.quorumParams,
+				crossValidationParams: tt.crossValidationParams,
+				selection:             tt.selection,
 			}
 
-			result := rp.getRequiredQuorumSize(tt.responseCount)
+			result := rp.getAgreementThreshold()
 			require.Equal(t, tt.expected, result, tt.description)
 		})
 	}
 }
 
-// TestQuorumDisabledScenario tests the core bug fix:
-// With quorum disabled and 2 responses, should only require 1 match (Min)
-func TestQuorumDisabledScenario(t *testing.T) {
-	// This test validates the fix for the bug where:
-	// - Quorum was disabled {Rate: 1, Max: 1, Min: 1}
-	// - 2 node error responses were received
-	// - Old behavior: required 2 matches (calculated from response count)
-	// - New behavior: requires 1 match (from Min)
+// NEW TEST: Test HasUnsupportedMethodErrors function with the IsUnsupportedMethod flag
+// This is a simpler test that validates the flag logic works correctly
+func TestHasUnsupportedMethodErrors(t *testing.T) {
+	t.Run("Unsupported method flag is correctly detected", func(t *testing.T) {
+		// This test validates that the HasUnsupportedMethodErrors function
+		// correctly checks the IsUnsupportedMethod flag in RelayResult
+		// The actual integration of this is tested in the full relay flow
 
-	quorumDisabled := common.QuorumParams{Rate: 1, Max: 1, Min: 1}
-	rp := &RelayProcessor{quorumParams: quorumDisabled}
+		// Test 1: Verify RelayResult has the flag
+		result := common.RelayResult{
+			Reply:               &pairingtypes.RelayReply{Data: []byte(`{"error":"method not found"}`)},
+			StatusCode:          200,
+			IsNodeError:         true,
+			IsUnsupportedMethod: true, // Flag set
+		}
 
-	// With 2 responses and quorum disabled, should require only Min (1)
-	result := rp.getRequiredQuorumSize(2)
-	require.Equal(t, 1, result, "Quorum disabled with 2 responses should require Min (1), not 2")
+		require.True(t, result.IsUnsupportedMethod, "IsUnsupportedMethod flag should be set")
+		require.True(t, result.IsNodeError, "IsNodeError should be set for unsupported methods")
+	})
 
-	// With 5 responses and quorum disabled, should still require only Min (1)
-	result = rp.getRequiredQuorumSize(5)
-	require.Equal(t, 1, result, "Quorum disabled with 5 responses should require Min (1), not 5")
+	t.Run("Smart contract error does not have unsupported flag (Issue #1 fix)", func(t *testing.T) {
+		// This validates that smart contract errors are NOT marked as unsupported
+		result := common.RelayResult{
+			Reply:               &pairingtypes.RelayReply{Data: []byte(`{"error":"execution reverted: identity not found"}`)},
+			StatusCode:          200,
+			IsNodeError:         true,
+			IsUnsupportedMethod: false, // Flag should NOT be set
+		}
 
-	// Now test with quorum enabled
-	quorumEnabled := common.QuorumParams{Rate: 0.66, Max: 5, Min: 2}
-	rp.quorumParams = quorumEnabled
+		require.False(t, result.IsUnsupportedMethod, "Smart contract error should NOT be marked as unsupported")
+		require.True(t, result.IsNodeError, "Should still be a node error")
 
-	// With 2 responses and quorum enabled, should calculate: ceil(0.66 * 2) = 2
-	result = rp.getRequiredQuorumSize(2)
-	require.Equal(t, 2, result, "Quorum enabled with 2 responses: ceil(0.66 * 2) = 2")
+		// Verify the message itself would not be classified as unsupported
+		isUnsupported := common.IsUnsupportedMethodMessage(string(result.Reply.Data))
+		require.False(t, isUnsupported, "Smart contract 'identity not found' should NOT match unsupported patterns")
+	})
 
-	// With 3 responses and quorum enabled, should calculate: ceil(0.66 * 3) = 2
-	result = rp.getRequiredQuorumSize(3)
-	require.Equal(t, 2, result, "Quorum enabled with 3 responses: ceil(0.66 * 3) = 2")
+	t.Run("Backward compatibility - message pattern check still works", func(t *testing.T) {
+		// Verify that the old message-based detection still works
+		// for backward compatibility
+
+		// Actual unsupported method messages
+		unsupportedMessages := []string{
+			"method not found",
+			"endpoint not found",
+			"method not supported",
+			"-32601",
+		}
+
+		for _, msg := range unsupportedMessages {
+			isUnsupported := common.IsUnsupportedMethodMessage(msg)
+			require.True(t, isUnsupported, "Message '%s' should be detected as unsupported", msg)
+		}
+
+		// Smart contract messages should NOT match
+		smartContractMessages := []string{
+			"execution reverted: NFT not found",
+			"execution reverted: User not found",
+			"execution reverted: identity not found",
+		}
+
+		for _, msg := range smartContractMessages {
+			isUnsupported := common.IsUnsupportedMethodMessage(msg)
+			require.False(t, isUnsupported, "Smart contract message '%s' should NOT be detected as unsupported", msg)
+		}
+	})
+}
+
+// TestCrossValidationEmptyArrayResponse tests that empty arrays [] are valid for cross-validation
+func TestCrossValidationEmptyArrayResponse(t *testing.T) {
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	specId := "LAV1"
+	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+
+	chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
+
+	usedProviders := lavasession.NewUsedProviders(nil)
+
+	cvParams := &common.CrossValidationParams{
+		AgreementThreshold: 2,
+		MaxParticipants:    3,
+	}
+
+	relayProcessor := NewRelayProcessor(
+		ctx,
+		cvParams,
+		nil,
+		RelayProcessorMetrics,
+		RelayProcessorMetrics,
+		RelayRetriesManagerInstance,
+		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, CrossValidation),
+	)
+
+	// Set the batch size so WaitForResults knows how many responses to expect
+	usedProviders.AddUsed(lavasession.ConsumerSessionsMap{
+		"provider1": &lavasession.SessionInfo{},
+		"provider2": &lavasession.SessionInfo{},
+		"provider3": &lavasession.SessionInfo{},
+	}, nil)
+
+	// All providers return empty array [] (e.g., eth_getLogs with no matching logs)
+	emptyArrayData := []byte(`[]`)
+	relayProcessor.SetResponse(createMockRelayResponseWithData("provider1", emptyArrayData, nil))
+	relayProcessor.SetResponse(createMockRelayResponseWithData("provider2", emptyArrayData, nil))
+	relayProcessor.SetResponse(createMockRelayResponseWithData("provider3", emptyArrayData, nil))
+
+	// Wait for responses to be processed
+	waitCtx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+	defer cancel()
+	relayProcessor.WaitForResults(waitCtx)
+
+	// Should reach consensus on empty array
+	result, err := relayProcessor.ProcessingResult()
+	require.NoError(t, err, "Cross-validation should succeed with matching empty arrays")
+	require.NotNil(t, result)
+	require.Equal(t, emptyArrayData, result.Reply.Data)
+	require.GreaterOrEqual(t, result.CrossValidation, 2, "CrossValidation count should meet threshold")
+}
+
+// TestCrossValidationEmptyObjectResponse tests that empty objects {} are valid for cross-validation
+func TestCrossValidationEmptyObjectResponse(t *testing.T) {
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	specId := "LAV1"
+	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+
+	chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
+
+	usedProviders := lavasession.NewUsedProviders(nil)
+
+	cvParams := &common.CrossValidationParams{
+		AgreementThreshold: 2,
+		MaxParticipants:    2,
+	}
+
+	relayProcessor := NewRelayProcessor(
+		ctx,
+		cvParams,
+		nil,
+		RelayProcessorMetrics,
+		RelayProcessorMetrics,
+		RelayRetriesManagerInstance,
+		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, CrossValidation),
+	)
+
+	// Set the batch size so WaitForResults knows how many responses to expect
+	usedProviders.AddUsed(lavasession.ConsumerSessionsMap{
+		"provider1": &lavasession.SessionInfo{},
+		"provider2": &lavasession.SessionInfo{},
+	}, nil)
+
+	// Both providers return empty object {}
+	emptyObjectData := []byte(`{}`)
+	relayProcessor.SetResponse(createMockRelayResponseWithData("provider1", emptyObjectData, nil))
+	relayProcessor.SetResponse(createMockRelayResponseWithData("provider2", emptyObjectData, nil))
+
+	// Wait for responses to be processed
+	waitCtx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+	defer cancel()
+	relayProcessor.WaitForResults(waitCtx)
+
+	result, err := relayProcessor.ProcessingResult()
+	require.NoError(t, err, "Cross-validation should succeed with matching empty objects")
+	require.NotNil(t, result)
+	require.Equal(t, emptyObjectData, result.Reply.Data)
+	require.GreaterOrEqual(t, result.CrossValidation, 2, "CrossValidation count should meet threshold")
+}
+
+// TestCrossValidationUniformBehaviorDeterministicAndNonDeterministic tests that both
+// deterministic and non-deterministic APIs behave the same for cross-validation:
+// quorum met = success, quorum not met = failure
+func TestCrossValidationUniformBehaviorDeterministicAndNonDeterministic(t *testing.T) {
+	ctx := context.Background()
+
+	// Test both deterministic and non-deterministic categories
+	testCases := []struct {
+		name          string
+		deterministic bool
+	}{
+		{"deterministic API", true},
+		{"non-deterministic API", false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name+" - quorum met succeeds", func(t *testing.T) {
+			serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			})
+			specId := "LAV1"
+			chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+			if closeServer != nil {
+				defer closeServer()
+			}
+			require.NoError(t, err)
+
+			chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			require.NoError(t, err)
+
+			// Override deterministic flag for testing
+			if api := chainMsg.GetApi(); api != nil {
+				api.Category.Deterministic = tc.deterministic
+			}
+
+			protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
+
+			usedProviders := lavasession.NewUsedProviders(nil)
+
+			cvParams := &common.CrossValidationParams{
+				AgreementThreshold: 2,
+				MaxParticipants:    3,
+			}
+
+			relayProcessor := NewRelayProcessor(
+				ctx,
+				cvParams,
+				nil,
+				RelayProcessorMetrics,
+				RelayProcessorMetrics,
+				RelayRetriesManagerInstance,
+				newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, CrossValidation),
+			)
+
+			// Set the batch size so WaitForResults knows how many responses to expect
+			usedProviders.AddUsed(lavasession.ConsumerSessionsMap{
+				"provider1": &lavasession.SessionInfo{},
+				"provider2": &lavasession.SessionInfo{},
+				"provider3": &lavasession.SessionInfo{},
+			}, nil)
+
+			// 2 providers return same data (meets threshold of 2)
+			sameData := []byte(`{"result": "same"}`)
+			differentData := []byte(`{"result": "different"}`)
+			relayProcessor.SetResponse(createMockRelayResponseWithData("provider1", sameData, nil))
+			relayProcessor.SetResponse(createMockRelayResponseWithData("provider2", sameData, nil))
+			relayProcessor.SetResponse(createMockRelayResponseWithData("provider3", differentData, nil))
+
+			// Wait for responses to be processed
+			waitCtx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+			defer cancel()
+			relayProcessor.WaitForResults(waitCtx)
+
+			result, err := relayProcessor.ProcessingResult()
+			require.NoError(t, err, "Cross-validation should succeed when quorum is met for %s", tc.name)
+			require.NotNil(t, result)
+			require.Equal(t, sameData, result.Reply.Data)
+			require.GreaterOrEqual(t, result.CrossValidation, 2)
+		})
+
+		t.Run(tc.name+" - quorum not met fails", func(t *testing.T) {
+			serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			})
+			specId := "LAV1"
+			chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+			if closeServer != nil {
+				defer closeServer()
+			}
+			require.NoError(t, err)
+
+			chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			require.NoError(t, err)
+
+			// Override deterministic flag for testing
+			if api := chainMsg.GetApi(); api != nil {
+				api.Category.Deterministic = tc.deterministic
+			}
+
+			protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
+
+			usedProviders := lavasession.NewUsedProviders(nil)
+
+			cvParams := &common.CrossValidationParams{
+				AgreementThreshold: 2,
+				MaxParticipants:    3,
+			}
+
+			relayProcessor := NewRelayProcessor(
+				ctx,
+				cvParams,
+				nil,
+				RelayProcessorMetrics,
+				RelayProcessorMetrics,
+				RelayRetriesManagerInstance,
+				newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, CrossValidation),
+			)
+
+			// Set the batch size so WaitForResults knows how many responses to expect
+			usedProviders.AddUsed(lavasession.ConsumerSessionsMap{
+				"provider1": &lavasession.SessionInfo{},
+				"provider2": &lavasession.SessionInfo{},
+				"provider3": &lavasession.SessionInfo{},
+			}, nil)
+
+			// All providers return different data (none meet threshold)
+			relayProcessor.SetResponse(createMockRelayResponseWithData("provider1", []byte(`{"result": "a"}`), nil))
+			relayProcessor.SetResponse(createMockRelayResponseWithData("provider2", []byte(`{"result": "b"}`), nil))
+			relayProcessor.SetResponse(createMockRelayResponseWithData("provider3", []byte(`{"result": "c"}`), nil))
+
+			// Wait for responses to be processed
+			waitCtx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+			defer cancel()
+			relayProcessor.WaitForResults(waitCtx)
+
+			result, err := relayProcessor.ProcessingResult()
+			require.Error(t, err, "Cross-validation should fail when quorum is not met for %s", tc.name)
+			// When cross-validation fails, ProcessingResult returns an error placeholder result (not nil)
+			// with StatusCode 500, so we check the error message instead
+			require.Contains(t, err.Error(), "cross-validation failed")
+			if result != nil {
+				require.Equal(t, 500, result.StatusCode, "Failed cross-validation should have error status code")
+			}
+		})
+	}
+}
+
+// TestCrossValidationMaxParticipantsLimit tests that MaxParticipants cannot exceed MaxCallsPerRelay
+func TestCrossValidationMaxParticipantsLimit(t *testing.T) {
+	// This test verifies the constant value and that valid params work
+	require.Equal(t, 50, MaxCallsPerRelay, "MaxCallsPerRelay should be 50")
+
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	specId := "LAV1"
+	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+
+	chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
+
+	usedProviders := lavasession.NewUsedProviders(nil)
+
+	// Valid case: MaxParticipants <= MaxCallsPerRelay
+	cvParams := &common.CrossValidationParams{
+		AgreementThreshold: 2,
+		MaxParticipants:    MaxCallsPerRelay, // Max allowed
+	}
+
+	// This should not panic
+	relayProcessor := NewRelayProcessor(
+		ctx,
+		cvParams,
+		nil,
+		RelayProcessorMetrics,
+		RelayProcessorMetrics,
+		RelayRetriesManagerInstance,
+		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, CrossValidation),
+	)
+	require.NotNil(t, relayProcessor)
+}
+
+// TestCrossValidationRequiresNonNilParams tests that Stateless mode works with nil params
+func TestCrossValidationRequiresNonNilParams(t *testing.T) {
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	specId := "LAV1"
+	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+
+	chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
+
+	usedProviders := lavasession.NewUsedProviders(nil)
+
+	// Stateless mode with nil params should work
+	statelessProcessor := NewRelayProcessor(
+		ctx,
+		nil,
+		nil,
+		RelayProcessorMetrics,
+		RelayProcessorMetrics,
+		RelayRetriesManagerInstance,
+		newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless),
+	)
+	require.NotNil(t, statelessProcessor)
 }

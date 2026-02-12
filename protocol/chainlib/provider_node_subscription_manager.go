@@ -13,7 +13,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v5/protocol/chaintracker"
+
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/utils"
@@ -23,33 +23,6 @@ import (
 )
 
 const SubscriptionTimeoutDuration = 15 * time.Minute
-
-type relayFinalizationBlocksHandler interface {
-	GetParametersForRelayDataReliability(
-		ctx context.Context,
-		request *pairingtypes.RelayRequest,
-		chainMsg ChainMessage,
-		relayTimeout time.Duration,
-		blockLagForQosSync int64,
-		averageBlockTime time.Duration,
-		blockDistanceToFinalization,
-		blocksInFinalizationData uint32,
-	) (latestBlock int64, requestedBlockHash []byte, requestedHashes []*chaintracker.BlockStore, modifiedReqBlock int64, finalized, updatedChainMessage bool, err error)
-
-	BuildRelayFinalizedBlockHashes(
-		ctx context.Context,
-		request *pairingtypes.RelayRequest,
-		reply *pairingtypes.RelayReply,
-		latestBlock int64,
-		requestedHashes []*chaintracker.BlockStore,
-		updatedChainMessage bool,
-		relayTimeout time.Duration,
-		averageBlockTime time.Duration,
-		blockDistanceToFinalization uint32,
-		blocksInFinalizationData uint32,
-		modifiedReqBlock int64,
-	) (err error)
-}
 
 type connectedConsumerContainer struct {
 	consumerChannel    *common.SafeChannelSender[*pairingtypes.RelayReply]
@@ -69,23 +42,21 @@ type activeSubscription struct {
 }
 
 type ProviderNodeSubscriptionManager struct {
-	chainRouter                    ChainRouter
-	chainParser                    ChainParser
-	relayFinalizationBlocksHandler relayFinalizationBlocksHandler
-	activeSubscriptions            map[string]*activeSubscription                   // key is request params hash
-	currentlyPendingSubscriptions  map[string]*pendingSubscriptionsBroadcastManager // pending subscriptions waiting for node message to return.
-	privKey                        *btcec.PrivateKey
-	lock                           sync.RWMutex
+	chainRouter                   ChainRouter
+	chainParser                   ChainParser
+	activeSubscriptions           map[string]*activeSubscription                   // key is request params hash
+	currentlyPendingSubscriptions map[string]*pendingSubscriptionsBroadcastManager // pending subscriptions waiting for node message to return.
+	privKey                       *btcec.PrivateKey
+	lock                          sync.RWMutex
 }
 
-func NewProviderNodeSubscriptionManager(chainRouter ChainRouter, chainParser ChainParser, relayFinalizationBlocksHandler relayFinalizationBlocksHandler, privKey *btcec.PrivateKey) *ProviderNodeSubscriptionManager {
+func NewProviderNodeSubscriptionManager(chainRouter ChainRouter, chainParser ChainParser, privKey *btcec.PrivateKey) *ProviderNodeSubscriptionManager {
 	return &ProviderNodeSubscriptionManager{
-		chainRouter:                    chainRouter,
-		chainParser:                    chainParser,
-		relayFinalizationBlocksHandler: relayFinalizationBlocksHandler,
-		activeSubscriptions:            make(map[string]*activeSubscription),
-		currentlyPendingSubscriptions:  make(map[string]*pendingSubscriptionsBroadcastManager),
-		privKey:                        privKey,
+		chainRouter:                   chainRouter,
+		chainParser:                   chainParser,
+		activeSubscriptions:           make(map[string]*activeSubscription),
+		currentlyPendingSubscriptions: make(map[string]*pendingSubscriptionsBroadcastManager),
+		privKey:                       privKey,
 	}
 }
 
@@ -530,26 +501,12 @@ func (pnsm *ProviderNodeSubscriptionManager) convertNodeMsgToMarshalledJsonRpcRe
 
 func (pnsm *ProviderNodeSubscriptionManager) signReply(ctx context.Context, reply *pairingtypes.RelayReply, consumerAddr sdk.AccAddress, chainMessage ChainMessage, request *pairingtypes.RelayRequest) error {
 	// Send the first setup message to the consumer in a go routine because the blocking listening for this channel happens after this function
-	dataReliabilityEnabled, _ := pnsm.chainParser.DataReliabilityParams()
-	blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData := pnsm.chainParser.ChainBlockStats()
-	relayTimeout := GetRelayTimeout(chainMessage, averageBlockTime)
 
-	if dataReliabilityEnabled {
-		var err error
-		latestBlock, _, requestedHashes, modifiedReqBlock, _, updatedChainMessage, err := pnsm.relayFinalizationBlocksHandler.GetParametersForRelayDataReliability(ctx, request, chainMessage, relayTimeout, blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData)
-		if err != nil {
-			return err
-		}
-
-		err = pnsm.relayFinalizationBlocksHandler.BuildRelayFinalizedBlockHashes(ctx, request, reply, latestBlock, requestedHashes, updatedChainMessage, relayTimeout, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData, modifiedReqBlock)
-		if err != nil {
-			return err
-		}
-	}
+	// FinalizedBlocksHashes is no longer populated for subscriptions
 
 	var ignoredMetadata []pairingtypes.Metadata
 	reply.Metadata, _, ignoredMetadata = pnsm.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
-	reply, err := lavaprotocol.SignRelayResponse(consumerAddr, *request, pnsm.privKey, reply, dataReliabilityEnabled)
+	reply, err := lavaprotocol.SignRelayResponse(consumerAddr, *request, pnsm.privKey, reply)
 	if err != nil {
 		return err
 	}

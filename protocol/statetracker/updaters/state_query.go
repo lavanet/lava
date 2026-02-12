@@ -2,7 +2,6 @@ package updaters
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -12,9 +11,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
 	"github.com/dgraph-io/ristretto/v2"
-	reliabilitymanager "github.com/lavanet/lava/v5/protocol/rpcprovider/reliabilitymanager"
+
 	"github.com/lavanet/lava/v5/utils"
-	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
 	epochkeeper "github.com/lavanet/lava/v5/x/epochstorage/keeper"
 	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
 	pairingkeeper "github.com/lavanet/lava/v5/x/pairing/keeper"
@@ -246,7 +244,7 @@ func (csq *ConsumerStateQuery) GetMaxCUForUser(ctx context.Context, chainID stri
 		if cachedResp, ok := cachedInterface.(*pairingtypes.QueryUserEntryResponse); ok {
 			userEntryRes = cachedResp
 		} else {
-			utils.LavaFormatError("invalid cache entry - failed casting response", nil, utils.Attribute{Key: "castingType", Value: "*pairingtypes.QueryUserEntryResponse"}, utils.Attribute{Key: "type", Value: fmt.Sprintf("%T", cachedInterface)})
+			utils.LavaFormatError("invalid cache entry - failed casting response", nil, utils.Attribute{Key: "castingType", Value: "*pairingtypes.QueryUserEntryResponse"}, utils.Attribute{Key: "type", Value: cachedInterface})
 		}
 	}
 
@@ -304,7 +302,7 @@ func (psq *ProviderStateQuery) GetMaxCuForUser(ctx context.Context, consumerAddr
 		if cachedResp, ok := cachedInterface.(*pairingtypes.QueryUserEntryResponse); ok {
 			userEntryRes = cachedResp
 		} else {
-			utils.LavaFormatError("invalid cache entry - failed casting response", nil, utils.Attribute{Key: "castingType", Value: "*pairingtypes.QueryUserEntryResponse"}, utils.Attribute{Key: "type", Value: fmt.Sprintf("%T", cachedInterface)})
+			utils.LavaFormatError("invalid cache entry - failed casting response", nil, utils.Attribute{Key: "castingType", Value: "*pairingtypes.QueryUserEntryResponse"}, utils.Attribute{Key: "type", Value: cachedInterface})
 		}
 	}
 	if userEntryRes == nil {
@@ -322,53 +320,6 @@ func (psq *ProviderStateQuery) entryKey(consumerAddress, chainID string, epoch u
 	return consumerAddress + chainID + strconv.FormatUint(epoch, 10) + providerAddress
 }
 
-func (psq *ProviderStateQuery) VoteEvents(ctx context.Context, latestBlock int64) (votes []*reliabilitymanager.VoteParams, err error) {
-	brp := psq.StateQuery.tendermintRPC
-	blockResults, err := brp.BlockResults(ctx, &latestBlock)
-	if err != nil {
-		return nil, err
-	}
-	transactionResults := blockResults.TxsResults
-	for _, tx := range transactionResults {
-		events := tx.Events
-		for _, event := range events {
-			if event.Type == utils.EventPrefix+conflicttypes.ConflictVoteDetectionEventName {
-				vote, err := reliabilitymanager.BuildVoteParamsFromDetectionEvent(event)
-				if err != nil {
-					return nil, utils.LavaFormatError("failed conflict_vote_detection_event parsing", err, utils.Attribute{Key: "event", Value: event})
-				}
-				utils.LavaFormatDebug("conflict_vote_detection_event", utils.Attribute{Key: "voteID", Value: vote.VoteID})
-				votes = append(votes, vote)
-			}
-		}
-	}
-
-	beginBlockEvents := blockResults.BeginBlockEvents
-	for _, event := range beginBlockEvents {
-		if event.Type == utils.EventPrefix+conflicttypes.ConflictVoteRevealEventName {
-			voteID, voteDeadline, err := reliabilitymanager.BuildBaseVoteDataFromEvent(event)
-			if err != nil {
-				return nil, utils.LavaFormatError("failed conflict_vote_reveal_event parsing", err, utils.Attribute{Key: "event", Value: event})
-			}
-			vote_reveal := &reliabilitymanager.VoteParams{VoteID: voteID, VoteDeadline: voteDeadline, ParamsType: reliabilitymanager.RevealVoteType}
-			utils.LavaFormatDebug("conflict_vote_reveal_event", utils.Attribute{Key: "voteID", Value: voteID})
-			votes = append(votes, vote_reveal)
-		}
-		if event.Type == utils.EventPrefix+conflicttypes.ConflictVoteResolvedEventName {
-			voteID, _, err := reliabilitymanager.BuildBaseVoteDataFromEvent(event)
-			if err != nil {
-				if !reliabilitymanager.NoVoteDeadline.Is(err) {
-					return nil, utils.LavaFormatError("failed conflict_vote_resolved_event parsing", err, utils.Attribute{Key: "event", Value: event})
-				}
-			}
-			vote_resolved := &reliabilitymanager.VoteParams{VoteID: voteID, VoteDeadline: 0, ParamsType: reliabilitymanager.CloseVoteType, CloseVote: true}
-			votes = append(votes, vote_resolved)
-			utils.LavaFormatDebug("conflict_vote_resolved_event", utils.Attribute{Key: "voteID", Value: voteID})
-		}
-	}
-	return votes, err
-}
-
 func (psq *ProviderStateQuery) VerifyPairing(ctx context.Context, consumerAddress, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, projectId string, err error) {
 	key := psq.entryKey(consumerAddress, chainID, epoch, providerAddress)
 	extractedResultFromCache := false
@@ -379,7 +330,7 @@ func (psq *ProviderStateQuery) VerifyPairing(ctx context.Context, consumerAddres
 			verifyResponse = cachedResp
 			extractedResultFromCache = true
 		} else {
-			utils.LavaFormatError("invalid cache entry - failed casting response", nil, utils.Attribute{Key: "castingType", Value: "*pairingtypes.QueryVerifyPairingResponse"}, utils.Attribute{Key: "type", Value: fmt.Sprintf("%T", cachedInterface)})
+			utils.LavaFormatError("invalid cache entry - failed casting response", nil, utils.Attribute{Key: "castingType", Value: "*pairingtypes.QueryVerifyPairingResponse"}, utils.Attribute{Key: "type", Value: cachedInterface})
 		}
 	}
 	if verifyResponse == nil {

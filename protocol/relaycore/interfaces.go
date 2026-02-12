@@ -17,6 +17,7 @@ type RelayStateMachine interface {
 	GetRelayTaskChannel() (chan RelayStateSendInstructions, error)
 	UpdateBatch(err error)
 	GetSelection() Selection
+	GetCrossValidationParams() *common.CrossValidationParams // nil for Stateless/Stateful, non-nil for CrossValidation
 	GetUsedProviders() *lavasession.UsedProviders
 	SetResultsChecker(resultsChecker ResultsCheckerInf)
 	SetRelayRetriesManager(relayRetriesManager *lavaprotocol.RelayRetriesManager)
@@ -26,7 +27,7 @@ type RelayStateMachine interface {
 type ResultsCheckerInf interface {
 	WaitForResults(ctx context.Context) error
 	HasRequiredNodeResults(tries int) (bool, int)
-	GetQuorumParams() common.QuorumParams
+	GetCrossValidationParams() *common.CrossValidationParams // nil for Stateless/Stateful, non-nil for CrossValidation
 }
 
 // MetricsInterface for relay processor metrics
@@ -34,11 +35,6 @@ type MetricsInterface interface {
 	SetRelayNodeErrorMetric(providerAddress string, chainId string, apiInterface string)
 	SetNodeErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string)
 	SetProtocolErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string)
-}
-
-// QoSAvailabilityDegrader interface for QoS management
-type QoSAvailabilityDegrader interface {
-	DegradeAvailability(epoch uint64, sessionId int64)
 }
 
 // ChainIdAndApiInterfaceGetter interface

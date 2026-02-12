@@ -96,14 +96,14 @@ func (cf *ChainFetcher) getVerificationsKey(verification VerificationContainer, 
 
 func (cf *ChainFetcher) Validate(ctx context.Context) error {
 	for _, url := range cf.endpoint.NodeUrls {
-		utils.LavaFormatInfo(fmt.Sprintf("starting validation for url %s", url.String()))
+		utils.LavaFormatInfo("starting validation for url", utils.LogAttr("url", url.String()))
 		addons := url.Addons
 		verifications, err := cf.chainParser.GetVerifications(addons, url.InternalPath, cf.endpoint.ApiInterface)
 		if err != nil {
 			return err
 		}
 		if len(verifications) == 0 {
-			utils.LavaFormatWarning(fmt.Sprintf("no verifications for url %s", url.String()), nil)
+			utils.LavaFormatWarning("no verifications for url", nil, utils.LogAttr("url", url.String()))
 		}
 
 		var latestBlock int64
@@ -142,7 +142,7 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 			}
 			if err != nil {
 				cf.verificationsStatus.Store(cf.getVerificationsKey(verification, cf.endpoint.ApiInterface, cf.endpoint.ChainID), false)
-				utils.LavaFormatWarning(fmt.Sprintf("failed verification %s on provider startup", verification.Name), err)
+				utils.LavaFormatWarning("failed verification on provider startup", err, utils.LogAttr("verification", verification.Name))
 				if verification.Severity == spectypes.ParseValue_Fail {
 					return utils.LavaFormatError("invalid Verification on provider startup", err, utils.Attribute{Key: "Addons", Value: addons}, utils.Attribute{Key: "verification", Value: verification.Name})
 				}
@@ -157,7 +157,7 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 func (cf *ChainFetcher) populateCache(relayData *pairingtypes.RelayPrivateData, reply *pairingtypes.RelayReply, requestedBlockHash []byte, finalized bool) {
 	if cf.cache.CacheActive() && (requestedBlockHash != nil || finalized) {
 		new_ctx := context.Background()
-		new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
+		new_ctx, cancel := context.WithTimeout(new_ctx, common.CacheWriteTimeout)
 		defer cancel()
 		// provider side doesn't use SharedStateId, so we default it to empty so it wont have effect.
 
@@ -290,7 +290,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 			utils.LogAttr("chainId", chainId),
 			utils.LogAttr("nodeUrl", proxyUrl.Url),
 			utils.LogAttr("Method", parsing.GetApiName()),
-			utils.LogAttr("Response", string(reply.RelayReply.Data)),
+			utils.LogAttr("Response", parser.CapStringLen(string(reply.RelayReply.Data))),
 		)
 	}
 
@@ -301,7 +301,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 			utils.LogAttr("chainId", chainId),
 			utils.LogAttr("nodeUrl", proxyUrl.Url),
 			utils.LogAttr("Method", parsing.GetApiName()),
-			utils.LogAttr("Response", string(reply.RelayReply.Data)),
+			utils.LogAttr("Response", parser.CapStringLen(string(reply.RelayReply.Data))),
 		)
 	}
 	if verification.LatestDistance != 0 && latestBlock != 0 && verification.ParseDirective.FunctionTag != spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM {
@@ -311,7 +311,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 				utils.LogAttr("chainId", chainId),
 				utils.LogAttr("nodeUrl", proxyUrl.Url),
 				utils.LogAttr("Method", parsing.GetApiName()),
-				utils.LogAttr("Response", string(reply.RelayReply.Data)),
+				utils.LogAttr("Response", parser.CapStringLen(string(reply.RelayReply.Data))),
 				utils.LogAttr("rawParsedData", parsedInput.GetRawParsedData()),
 			)
 		}
@@ -421,7 +421,7 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 			{Key: "chainId", Value: chainId},
 			{Key: "nodeUrl", Value: proxyUrl.Url},
 			{Key: "Method", Value: parsing.ApiName},
-			{Key: "Response", Value: string(reply.RelayReply.Data)},
+			{Key: "Response", Value: parser.CapStringLen(string(reply.RelayReply.Data))},
 			{Key: "error", Value: err},
 		}...)
 	}
@@ -432,7 +432,7 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 			{Key: "chainId", Value: chainId},
 			{Key: "nodeUrl", Value: proxyUrl.Url},
 			{Key: "Method", Value: parsing.ApiName},
-			{Key: "Response", Value: string(reply.RelayReply.Data)},
+			{Key: "Response", Value: parser.CapStringLen(string(reply.RelayReply.Data))},
 			{Key: "error", Value: err},
 		}...)
 	}
@@ -485,7 +485,7 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 			{Key: "chainId", Value: chainId},
 			{Key: "nodeUrl", Value: proxyUrl.Url},
 			{Key: "Method", Value: parsing.ApiName},
-			{Key: "Response", Value: string(reply.RelayReply.Data)},
+			{Key: "Response", Value: parser.CapStringLen(string(reply.RelayReply.Data))},
 		}...)
 	}
 
@@ -496,7 +496,7 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 			{Key: "chainId", Value: chainId},
 			{Key: "nodeUrl", Value: proxyUrl.Url},
 			{Key: "Method", Value: parsing.ApiName},
-			{Key: "Response", Value: string(reply.RelayReply.Data)},
+			{Key: "Response", Value: parser.CapStringLen(string(reply.RelayReply.Data))},
 		}...)
 	}
 	_, _, blockDistanceToFinalization, _ := cf.chainParser.ChainBlockStats()

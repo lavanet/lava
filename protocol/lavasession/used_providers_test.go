@@ -112,3 +112,38 @@ func TestUsedProviderContextTimeout(t *testing.T) {
 		require.True(t, ContextDoneNoNeedToLockSelectionError.Is(canUseAgain))
 	})
 }
+
+// NEW TEST: Verify shouldRetryWithThisError logic with unsupported methods
+func TestShouldRetryWithThisError(t *testing.T) {
+	t.Run("Should NOT retry unsupported methods", func(t *testing.T) {
+		unsupportedErrors := []error{
+			fmt.Errorf("method not found"),
+			fmt.Errorf("endpoint not found"),
+			fmt.Errorf("method not supported"),
+		}
+
+		for _, err := range unsupportedErrors {
+			result := shouldRetryWithThisError(err)
+			require.False(t, result, "Should not retry unsupported method: %s", err.Error())
+		}
+	})
+
+	t.Run("Should retry session sync loss", func(t *testing.T) {
+		err := status.Error(codes.Code(SessionOutOfSyncError.ABCICode()), "session out of sync")
+		result := shouldRetryWithThisError(err)
+		require.True(t, result, "Should retry session sync loss")
+	})
+
+	t.Run("Should NOT retry normal errors", func(t *testing.T) {
+		normalErrors := []error{
+			fmt.Errorf("execution reverted: some error"),
+			fmt.Errorf("internal server error"),
+			fmt.Errorf("timeout"),
+		}
+
+		for _, err := range normalErrors {
+			result := shouldRetryWithThisError(err)
+			require.False(t, result, "Should not retry normal error: %s", err.Error())
+		}
+	})
+}

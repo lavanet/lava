@@ -1,18 +1,15 @@
 package common
 
-// QuorumParams holds the quorum configuration parameters
-type QuorumParams struct {
-	Rate float64
-	Max  int
-	Min  int
+// CrossValidationParams holds the cross-validation configuration parameters
+// Note: Whether cross-validation is enabled is determined by the Selection type (CrossValidation),
+// not by these parameters. These parameters only store the values when cross-validation is active.
+type CrossValidationParams struct {
+	MaxParticipants    int // Maximum number of providers to query
+	AgreementThreshold int // Number of matching responses needed for consensus
 }
 
-var DefaultQuorumParams = QuorumParams{
-	Rate: 1,
-	Max:  1,
-	Min:  1,
-}
-
-func (qp QuorumParams) Enabled() bool {
-	return !(qp.Rate == DefaultQuorumParams.Rate && qp.Max == DefaultQuorumParams.Max && qp.Min == DefaultQuorumParams.Min)
+// DefaultCrossValidationParams are used when cross-validation is not enabled (Selection != CrossValidation)
+var DefaultCrossValidationParams = CrossValidationParams{
+	MaxParticipants:    1,
+	AgreementThreshold: 1,
 }

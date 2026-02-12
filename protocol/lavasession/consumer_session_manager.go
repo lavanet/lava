@@ -296,6 +296,17 @@ func (csm *ConsumerSessionManager) closePurgedUnusedPairingsConnections(pairingP
 	}
 
 	for providerAddr, purgedPairing := range pairingPurge {
+		// Skip closing connections for static providers.
+		// Static providers (used by smart router) reuse the same Endpoint objects across epochs,
+		// so closing connections here would break in-flight requests using the shared endpoints.
+		// Static provider connections are managed separately and persist for the lifetime of the process.
+		if purgedPairing.StaticProvider {
+			utils.LavaFormatTrace("skipping purge for static provider, connections are shared across epochs",
+				utils.LogAttr("providerAddr", providerAddr),
+			)
+			continue
+		}
+
 		callbackPurge := func() {
 			for _, endpoint := range purgedPairing.Endpoints {
 				for _, endpointConnection := range endpoint.Connections {
@@ -879,7 +890,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 		for k, v := range ignoredProvidersList {
 			ignoredProvidersListCopy[k] = v
 		}
-		for i := 0; i < wantedProviders; i++ {
+		for range wantedProviders {
 			provider, _ := csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersListCopy, cu, requestedBlock)
 			if len(provider) == 0 {
 				break
@@ -993,7 +1004,7 @@ func (csm *ConsumerSessionManager) tryGetConsumerSessionWithProviderFromBlockedP
 	}
 
 	// if we got here we failed to fetch a valid provider meaning no pairing available.
-	return nil, utils.LavaFormatError(csm.rpcEndpoint.ChainID+" could not get a provider address from blocked provider list", PairingListEmptyError, utils.LogAttr("csm.currentlyBlockedProviderAddresses", csm.currentlyBlockedProviderAddresses), utils.LogAttr("addons", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("ignoredProviders", ignoredProviders.providers), utils.LogAttr("GUID", ctx))
+	return nil, utils.LavaFormatError("could not get a provider address from blocked provider list", PairingListEmptyError, utils.LogAttr("chainID", csm.rpcEndpoint.ChainID), utils.LogAttr("currentlyBlockedProviderAddresses", csm.currentlyBlockedProviderAddresses), utils.LogAttr("addons", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("ignoredProviders", ignoredProviders.providers), utils.LogAttr("GUID", ctx))
 }
 
 // getValidConsumerSessionsWithProviderFromBackupProviderList retrieves valid backup provider sessions for emergency fallback when no regular providers are available.
@@ -1087,7 +1098,7 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ctx cont
 	// Fetch provider addresses
 	providerAddresses, err := csm.getValidProviderAddresses(ctx, wantedProviderNumber, ignoredProviders.providers, cuNeededForSession, requestedBlock, addon, extensions, stateful, stickiness)
 	if err != nil {
-		utils.LavaFormatDebug(csm.rpcEndpoint.ChainID+" could not get a provider addresses", utils.LogAttr("error", err), utils.LogAttr("GUID", ctx))
+		utils.LavaFormatDebug("could not get provider addresses", utils.LogAttr("chainID", csm.rpcEndpoint.ChainID), utils.LogAttr("error", err), utils.LogAttr("GUID", ctx))
 		return nil, err
 	}
 
@@ -1263,7 +1274,9 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 
 	// consumer Session should be locked here. so we can just apply the session failure here.
 	if consumerSession.BlockListed {
-		// if consumer session is already blocklisted return an error.
+		// if consumer session is already blocklisted, free it and return an error.
+		// CRITICAL: Must call Free() to release the lock even when returning early
+		consumerSession.Free(errorReceived)
 		return sdkerrors.Wrapf(SessionIsAlreadyBlockListedError, "trying to report a session failure of a blocklisted consumer session")
 	}
 
@@ -1626,6 +1639,24 @@ func NewConsumerSessionManager(
 	csm.activeSubscriptionProvidersStorage = activeSubscriptionProvidersStorage
 	csm.stickySessions = NewStickySessionStore()
 	return csm
+}
+
+// IsStaticProvider returns true if the given provider address belongs to a static provider in the current session manager state.
+// If the provider is unknown, it returns false.
+func (csm *ConsumerSessionManager) IsStaticProvider(providerAddress string) bool {
+	csm.lock.RLock()
+	defer csm.lock.RUnlock()
+
+	if cswp, ok := csm.pairing[providerAddress]; ok {
+		return cswp.StaticProvider
+	}
+	if cswp, ok := csm.backupProviders[providerAddress]; ok {
+		return cswp.StaticProvider
+	}
+	if cswp, ok := csm.pairingPurge[providerAddress]; ok {
+		return cswp.StaticProvider
+	}
+	return false
 }
 
 // SetLavaBlockHeightCallback sets the callback function to get current Lava blockchain block height
