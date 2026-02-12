@@ -48,6 +48,58 @@ func (m *mockChainMessageForCache) UpdateLatestBlockInMessage(latestBlock int64,
 	return false
 }
 
+func (m *mockChainMessageForCache) TimeoutOverride(override ...time.Duration) time.Duration {
+	if len(override) > 0 {
+		return override[0]
+	}
+	return 0 // Use default timeout
+}
+
+// mockChainParserForCache provides minimal implementation for testing
+type mockChainParserForCache struct{}
+
+func (m *mockChainParserForCache) ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceToFinalization uint32, blocksInFinalizationData uint32) {
+	return 5, 6 * time.Second, 15, 20
+}
+
+// Helper to create test relay request with seenBlock
+func createTestRelayRequest(requestBlock int64, seenBlock int64) *pairingtypes.RelayRequest {
+	return &pairingtypes.RelayRequest{
+		RelayData: &pairingtypes.RelayPrivateData{
+			RequestBlock: requestBlock,
+			SeenBlock:    seenBlock,
+		},
+	}
+}
+
+// Test helper that wraps GetParametersForCache with test-friendly defaults
+func (rpcps *RPCProviderServer) getParametersForCacheTest(ctx context.Context, request *pairingtypes.RelayRequest, chainMsg chainlib.ChainMessage, blockDistanceToFinalization uint32) (latestBlock int64, requestedBlockHash []byte, finalized bool, err error) {
+	// Use test defaults for consistency check
+	blockLagForQosSync := int64(5)
+	averageBlockTime := 6 * time.Second
+	blocksInFinalizationData := uint32(20)
+	relayTimeout := chainlib.GetRelayTimeout(chainMsg, averageBlockTime)
+	
+	// First handle consistency - get the latest block after waiting if needed
+	latestBlock, _, _, err = rpcps.handleConsistency(
+		ctx,
+		relayTimeout,
+		request.RelayData.GetSeenBlock(),
+		request.RelayData.GetRequestBlock(),
+		averageBlockTime,
+		blockLagForQosSync,
+		blockDistanceToFinalization,
+		blocksInFinalizationData,
+	)
+	if err != nil {
+		return 0, nil, false, err
+	}
+	
+	// Then get cache parameters using the consistent latest block
+	requestedBlockHash, finalized, err = rpcps.GetParametersForCache(ctx, request, latestBlock, blockDistanceToFinalization)
+	return latestBlock, requestedBlockHash, finalized, err
+}
+
 // Tests for GetParametersForCache
 
 func TestGetParametersForCache_LatestBlock(t *testing.T) {
@@ -58,16 +110,12 @@ func TestGetParametersForCache_LatestBlock(t *testing.T) {
 		chainTracker: mockTracker,
 	}
 
-	request := &pairingtypes.RelayRequest{
-		RelayData: &pairingtypes.RelayPrivateData{
-			RequestBlock: spectypes.LATEST_BLOCK, // -2
-		},
-	}
-
+	request := createTestRelayRequest(spectypes.LATEST_BLOCK, 990)
 	mockChainMsg := &mockChainMessageForCache{}
 
-	latestBlock, requestedBlockHash, finalized := rpcps.GetParametersForCache(context.Background(), request, mockChainMsg, 15)
+	latestBlock, requestedBlockHash, finalized, err := rpcps.getParametersForCacheTest(context.Background(), request, mockChainMsg, 15)
 
+	require.NoError(t, err)
 	require.Equal(t, int64(1000), latestBlock, "should return latest block from chain tracker")
 	require.Nil(t, requestedBlockHash, "LATEST_BLOCK should not have a hash")
 	require.False(t, finalized, "LATEST_BLOCK (current block) is not finalized - needs to age by blockDistanceToFinalization")
@@ -82,15 +130,13 @@ func TestGetParametersForCache_SpecificBlock_WithHash(t *testing.T) {
 		chainTracker: mockTracker,
 	}
 
-	request := &pairingtypes.RelayRequest{
-		RelayData: &pairingtypes.RelayPrivateData{
-			RequestBlock: 950,
-		},
-	}
+	request := createTestRelayRequest(950, 940)
 
 	mockChainMsg := &mockChainMessageForCache{}
 
-	latestBlock, requestedBlockHash, finalized := rpcps.GetParametersForCache(context.Background(), request, mockChainMsg, 15)
+	latestBlock, requestedBlockHash, finalized, err := rpcps.getParametersForCacheTest(context.Background(), request, mockChainMsg, 15)
+
+	require.NoError(t, err)
 
 	require.Equal(t, int64(1000), latestBlock)
 	require.Equal(t, []byte("hash_950"), requestedBlockHash, "should return hash for specific block")
@@ -106,15 +152,13 @@ func TestGetParametersForCache_SpecificBlock_NoHash(t *testing.T) {
 		chainTracker: mockTracker,
 	}
 
-	request := &pairingtypes.RelayRequest{
-		RelayData: &pairingtypes.RelayPrivateData{
-			RequestBlock: 950,
-		},
-	}
+	request := createTestRelayRequest(950, 940)
 
 	mockChainMsg := &mockChainMessageForCache{}
 
-	latestBlock, requestedBlockHash, finalized := rpcps.GetParametersForCache(context.Background(), request, mockChainMsg, 15)
+	latestBlock, requestedBlockHash, finalized, err := rpcps.getParametersForCacheTest(context.Background(), request, mockChainMsg, 15)
+
+	require.NoError(t, err)
 
 	require.Equal(t, int64(1000), latestBlock)
 	require.Nil(t, requestedBlockHash, "should return nil if hash not available")
@@ -129,15 +173,13 @@ func TestGetParametersForCache_RecentBlock_NotFinalized(t *testing.T) {
 		chainTracker: mockTracker,
 	}
 
-	request := &pairingtypes.RelayRequest{
-		RelayData: &pairingtypes.RelayPrivateData{
-			RequestBlock: 995, // Within finalization distance
-		},
-	}
+	request := createTestRelayRequest(995, 990) // Within finalization distance
 
 	mockChainMsg := &mockChainMessageForCache{}
 
-	latestBlock, _, finalized := rpcps.GetParametersForCache(context.Background(), request, mockChainMsg, 15)
+	latestBlock, _, finalized, err := rpcps.getParametersForCacheTest(context.Background(), request, mockChainMsg, 15)
+
+	require.NoError(t, err)
 
 	require.Equal(t, int64(1000), latestBlock)
 	require.False(t, finalized, "block 995 should NOT be finalized (1000 - 995 = 5 < 15)")
@@ -152,15 +194,13 @@ func TestGetParametersForCache_FinalizedBlock_EdgeCase(t *testing.T) {
 	}
 
 	// Block exactly at finalization boundary
-	request := &pairingtypes.RelayRequest{
-		RelayData: &pairingtypes.RelayPrivateData{
-			RequestBlock: 985, // Exactly 15 blocks behind
-		},
-	}
+	request := createTestRelayRequest(985, 980) // Exactly 15 blocks behind
 
 	mockChainMsg := &mockChainMessageForCache{}
 
-	_, _, finalized := rpcps.GetParametersForCache(context.Background(), request, mockChainMsg, 15)
+	_, _, finalized, err := rpcps.getParametersForCacheTest(context.Background(), request, mockChainMsg, 15)
+
+	require.NoError(t, err)
 
 	require.True(t, finalized, "block at exact boundary should be finalized")
 }
@@ -173,15 +213,13 @@ func TestGetParametersForCache_SafeBlock(t *testing.T) {
 		chainTracker: mockTracker,
 	}
 
-	request := &pairingtypes.RelayRequest{
-		RelayData: &pairingtypes.RelayPrivateData{
-			RequestBlock: spectypes.SAFE_BLOCK, // -4
-		},
-	}
+	request := createTestRelayRequest(spectypes.SAFE_BLOCK, 990)
 
 	mockChainMsg := &mockChainMessageForCache{}
 
-	latestBlock, requestedBlockHash, _ := rpcps.GetParametersForCache(context.Background(), request, mockChainMsg, 15)
+	latestBlock, requestedBlockHash, _, err := rpcps.getParametersForCacheTest(context.Background(), request, mockChainMsg, 15)
+
+	require.NoError(t, err)
 
 	require.Equal(t, int64(1000), latestBlock)
 	require.Nil(t, requestedBlockHash, "special block types should not have hash")
@@ -195,15 +233,13 @@ func TestGetParametersForCache_EarliestBlock(t *testing.T) {
 		chainTracker: mockTracker,
 	}
 
-	request := &pairingtypes.RelayRequest{
-		RelayData: &pairingtypes.RelayPrivateData{
-			RequestBlock: spectypes.EARLIEST_BLOCK, // -3
-		},
-	}
+	request := createTestRelayRequest(spectypes.EARLIEST_BLOCK, 990)
 
 	mockChainMsg := &mockChainMessageForCache{}
 
-	latestBlock, requestedBlockHash, _ := rpcps.GetParametersForCache(context.Background(), request, mockChainMsg, 15)
+	latestBlock, requestedBlockHash, _, err := rpcps.getParametersForCacheTest(context.Background(), request, mockChainMsg, 15)
+
+	require.NoError(t, err)
 
 	require.Equal(t, int64(1000), latestBlock)
 	require.Nil(t, requestedBlockHash, "EARLIEST_BLOCK should not have hash")
@@ -217,15 +253,13 @@ func TestGetParametersForCache_FinalizedBlockTag(t *testing.T) {
 		chainTracker: mockTracker,
 	}
 
-	request := &pairingtypes.RelayRequest{
-		RelayData: &pairingtypes.RelayPrivateData{
-			RequestBlock: spectypes.FINALIZED_BLOCK, // -5
-		},
-	}
+	request := createTestRelayRequest(spectypes.FINALIZED_BLOCK, 990)
 
 	mockChainMsg := &mockChainMessageForCache{}
 
-	latestBlock, requestedBlockHash, _ := rpcps.GetParametersForCache(context.Background(), request, mockChainMsg, 15)
+	latestBlock, requestedBlockHash, _, err := rpcps.getParametersForCacheTest(context.Background(), request, mockChainMsg, 15)
+
+	require.NoError(t, err)
 
 	require.Equal(t, int64(1000), latestBlock)
 	require.Nil(t, requestedBlockHash, "FINALIZED_BLOCK tag should not have hash")
@@ -240,20 +274,15 @@ func TestGetParametersForCache_ChainTrackerError(t *testing.T) {
 		chainTracker: mockTracker,
 	}
 
-	request := &pairingtypes.RelayRequest{
-		RelayData: &pairingtypes.RelayPrivateData{
-			RequestBlock: 950,
-		},
-	}
+	request := createTestRelayRequest(950, 940)
 
 	mockChainMsg := &mockChainMessageForCache{}
 
-	// Should handle error gracefully
-	latestBlock, requestedBlockHash, finalized := rpcps.GetParametersForCache(context.Background(), request, mockChainMsg, 15)
+	// Should return error when chain tracker fails in handleConsistency
+	_, _, _, err := rpcps.getParametersForCacheTest(context.Background(), request, mockChainMsg, 15)
 
-	require.Equal(t, int64(1000), latestBlock, "should still get atomic latest block")
-	require.Nil(t, requestedBlockHash, "should return nil hash when GetLatestBlockData errors")
-	require.True(t, finalized, "should still calculate finalized status based on latest block")
+	require.Error(t, err, "should return error when GetLatestBlockData fails in handleConsistency")
+	require.Contains(t, err.Error(), "chain tracker unavailable", "error should indicate chain tracker unavailable")
 }
 
 func TestGetParametersForCache_MultipleHashesReturned(t *testing.T) {
@@ -271,15 +300,13 @@ func TestGetParametersForCache_MultipleHashesReturned(t *testing.T) {
 		chainTracker: customTracker,
 	}
 
-	request := &pairingtypes.RelayRequest{
-		RelayData: &pairingtypes.RelayPrivateData{
-			RequestBlock: 950,
-		},
-	}
+	request := createTestRelayRequest(950, 940)
 
 	mockChainMsg := &mockChainMessageForCache{}
 
-	_, requestedBlockHash, _ := rpcps.GetParametersForCache(context.Background(), request, mockChainMsg, 15)
+	_, requestedBlockHash, _, err := rpcps.getParametersForCacheTest(context.Background(), request, mockChainMsg, 15)
+
+	require.NoError(t, err)
 
 	// Should only use hash if exactly 1 is returned
 	require.Nil(t, requestedBlockHash, "should return nil when multiple hashes returned")
@@ -293,15 +320,13 @@ func TestGetParametersForCache_BlockZero(t *testing.T) {
 		chainTracker: mockTracker,
 	}
 
-	request := &pairingtypes.RelayRequest{
-		RelayData: &pairingtypes.RelayPrivateData{
-			RequestBlock: 0,
-		},
-	}
+	request := createTestRelayRequest(0, 0)
 
 	mockChainMsg := &mockChainMessageForCache{}
 
-	latestBlock, requestedBlockHash, finalized := rpcps.GetParametersForCache(context.Background(), request, mockChainMsg, 15)
+	latestBlock, requestedBlockHash, finalized, err := rpcps.getParametersForCacheTest(context.Background(), request, mockChainMsg, 15)
+
+	require.NoError(t, err)
 
 	require.Equal(t, int64(1000), latestBlock)
 	require.Nil(t, requestedBlockHash)
@@ -317,16 +342,14 @@ func TestGetParametersForCache_VeryLargeBlockDistanceForFinalization(t *testing.
 		chainTracker: mockTracker,
 	}
 
-	request := &pairingtypes.RelayRequest{
-		RelayData: &pairingtypes.RelayPrivateData{
-			RequestBlock: 50,
-		},
-	}
+	request := createTestRelayRequest(50, 40)
 
 	mockChainMsg := &mockChainMessageForCache{}
 
 	// Very large finalization distance
-	_, _, finalized := rpcps.GetParametersForCache(context.Background(), request, mockChainMsg, 10000)
+	_, _, finalized, err := rpcps.getParametersForCacheTest(context.Background(), request, mockChainMsg, 10000)
+
+	require.NoError(t, err)
 
 	require.False(t, finalized, "with huge finalization distance, nothing should be finalized")
 }
