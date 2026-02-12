@@ -1,0 +1,36 @@
+# Policy configuration for Sonic with debug and trace add-on support
+# 
+# Note: Debug add-on requires a dedicated/private RPC node with debug APIs enabled.
+#       Public RPC endpoints typically don't support debug APIs (too resource-intensive).
+#       The trace add-on works with most public Sonic RPC endpoints.
+#
+# selected_providers_mode:
+#    ALLOWED = 0;    // no providers restrictions
+#    MIXED = 1;      // use the selected providers mixed with randomly chosen providers
+#    EXCLUSIVE = 2;  // use only the selected providers
+#    DISABLED = 3;   // selected providers feature is disabled
+
+Policy:
+  geolocation_profile: 1  # USC
+  total_cu_limit: 9223372036854775807
+  epoch_cu_limit: 9223372036854775807
+  max_providers_to_pair: 9223372036854775807
+  selected_providers_mode: ALLOWED
+  chain_policies:
+    - chain_id: SONIC
+      requirements:
+        - collection:
+            api_interface: "jsonrpc"
+            type: "POST"
+            add_on: "debug"
+        - collection:
+            api_interface: "jsonrpc"
+            type: "POST"
+            add_on: "trace"
+        - collection:
+            api_interface: "jsonrpc"
+            type: "POST"
+          extensions:
+            - "archive"
+          mixed: true
+    - chain_id: "*" # allows all other chains without specifying
