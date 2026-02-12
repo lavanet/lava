@@ -339,16 +339,7 @@
                             }
                         ],
                         "headers": [],
-                        "inheritance_apis": [
-                            {
-                                "name": "submitpackage",
-                                "enabled": false
-                            },
-                            {
-                                "name": "estimatesmartfee",
-                                "enabled": false
-                            }
-                        ],
+                        "inheritance_apis": [],
                         "parse_directives": [],
                         "verifications": [
                             {
@@ -418,5 +409,5 @@
             }
         ]
     },
-    "deposit": "10000000ulava"
+    "deposit": "10001000ulava"
 }

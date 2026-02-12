@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: ripple",
-        "description": "Adding new specification support for relaying ripple data on Lava",
+        "description": "Updated ripple spec for better relaying of ripple data",
         "specs": [
             {
                 "index": "XRP",
@@ -524,5 +524,5 @@
             }
         ]
     },
-    "deposit": "10000000ulava"
+    "deposit": "10001000ulava"
 }

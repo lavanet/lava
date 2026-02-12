@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Fantom",
-        "description": "Adding new specification support for relaying Fantom data on Lava",
+        "description": "Updated fantom spec for better relaying of fantom data",
         "specs": [
             {
                 "index": "FTM250",
@@ -195,5 +195,5 @@
             }
         ]
     },
-    "deposit": "10000000ulava"
+    "deposit": "10001000ulava"
 }

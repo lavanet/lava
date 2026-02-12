@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: stellar",
-        "description": "Adding new specification support for relaying stellar data on Lava",
+        "description": "Updated stellar spec for better relaying of stellar data",
         "specs": [
             {
                 "index": "XLM",
@@ -790,7 +790,6 @@
                         ],
                         "extensions": []
                     }
-
                 ]
             },
             {
@@ -860,5 +859,5 @@
             }
         ]
     },
-    "deposit": "10000000ulava"
+    "deposit": "10001000ulava"
 }

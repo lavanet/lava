@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: tron",
-        "description": "Adding new specification support for relaying tron data on Lava",
+        "description": "Updated tron spec for better relaying of tron data",
         "specs": [
             {
                 "index": "TRX",
@@ -1639,5 +1639,5 @@
             }
         ]
     },
-    "deposit": "10000000ulava"
+    "deposit": "10001000ulava"
 }
