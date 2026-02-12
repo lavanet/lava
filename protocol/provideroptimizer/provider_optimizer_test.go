@@ -191,44 +191,6 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 //  0. There are 100 providers, the optimizer is configured to pick a single provider
 //  1. Append bad probe relay data for all provider but random three
 //  2. Pick providers and check they're picked most often
-func TestProviderOptimizerAvailabilityProbeData(t *testing.T) {
-	providerOptimizer := setupProviderOptimizer(1)
-	providersCount := 100
-	cu := uint64(1)
-	requestBlock := int64(1000)
-	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
-	providerOptimizer.SetDeterministicSeed(1234567) // Use fixed seed for deterministic test
-
-	// damage all the providers scores with failed probe relays but three random ones
-	skipIndex := rand.Intn(providersCount - 3)
-	for i := range providersGen.providersAddresses {
-		// give all providers a worse availability score except these 3
-		if i == skipIndex || i == skipIndex+1 || i == skipIndex+2 {
-			// skip 0
-			continue
-		}
-		providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY, false)
-	}
-
-	// pick providers, the three random ones with good availability should be picked more often
-	time.Sleep(4 * time.Millisecond)
-	results := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
-	// With weighted selection and minimum selection chance, good providers get more but not overwhelming majority
-	// Each of the 3 good providers should get more than average (1000/100 = 10 per provider average)
-	averageSelections := 1000 / len(providersGen.providersAddresses)
-	require.Greater(t, results[providersGen.providersAddresses[skipIndex]], averageSelections,
-		"good availability provider should be selected more than average")
-	require.Greater(t, results[providersGen.providersAddresses[skipIndex+1]], averageSelections,
-		"good availability provider should be selected more than average")
-	require.Greater(t, results[providersGen.providersAddresses[skipIndex+2]], averageSelections,
-		"good availability provider should be selected more than average")
-	require.InDelta(t, results[providersGen.providersAddresses[skipIndex]], results[providersGen.providersAddresses[skipIndex+1]], 50)
-
-	// pick providers again but this time ignore one of the random providers, it shouldn't be picked
-	results = runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, map[string]struct{}{providersGen.providersAddresses[skipIndex]: {}}, 1000, cu, requestBlock)
-	require.Zero(t, results[providersGen.providersAddresses[skipIndex]])
-}
-
 // TestProviderOptimizerAvailabilityProbeData tests the availability update when
 // the optimizer is updated with failed relays. Providers with bad scores should have
 // a worse chance to be picked (and vice versa).
@@ -396,75 +358,6 @@ func TestProviderOptimizerUpdatingLatency(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, newScore.LT(score), "newScore: "+newScore.String()+", score: "+score.String())
 	}
-}
-
-func TestProviderOptimizerExploration(t *testing.T) {
-	providerOptimizer := setupProviderOptimizer(2)
-	providersCount := 10
-	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
-	cu := uint64(10)
-	requestBlock := int64(1000)
-	syncBlock := uint64(requestBlock)
-
-	providerOptimizer.SetDeterministicSeed(1234567) // Use fixed seed for deterministic test
-	// start with a disabled chosen index
-	chosenIndex := -1
-	testProvidersExploration := func(iterations int) float64 {
-		exploration := 0.0
-		for i := 0; i < iterations; i++ {
-			returnedProviders := providerOptimizer.ChooseProvider(context.Background(), providersGen.providersAddresses, nil, cu, requestBlock)
-			if len(returnedProviders) > 1 {
-				exploration++
-				// check if we have a specific chosen index
-				if chosenIndex >= 0 {
-					// there's only one provider eligible for exploration it must be him
-					require.Equal(t, providersGen.providersAddresses[chosenIndex], returnedProviders[1])
-				}
-			}
-		}
-		return exploration
-	}
-
-	// make sure exploration works when providers are defaulted (no data at all)
-	exploration := testProvidersExploration(1000)
-	require.Greater(t, exploration, float64(10))
-
-	chosenIndex = rand.Intn(providersCount - 2)
-	// set chosen index with a value in the past so it can be selected for exploration
-	now := time.Now()
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[chosenIndex], TEST_BASE_WORLD_LATENCY*2, true, cu, syncBlock, now.Add(-35*time.Second))
-	// set a basic state for all other provider, with a recent time (so they can't be selected for exploration)
-	for i := 0; i < 10; i++ {
-		for index, address := range providersGen.providersAddresses {
-			if index == chosenIndex {
-				// we set chosenIndex with a past time so it can be selected for exploration
-				continue
-			}
-			// Set samples far in the future so they are never a candidate for exploration.
-			// This avoids flakiness under -race where the test can run long enough that "+1s" is no longer in the future.
-			providerOptimizer.appendRelayData(address, TEST_BASE_WORLD_LATENCY*2, true, cu, syncBlock, now.Add(24*time.Hour))
-		}
-		time.Sleep(4 * time.Millisecond)
-	}
-
-	// with a cost strategy we expect exploration at a 10% rate
-	providerOptimizer.strategy = StrategyBalanced         // that's the default but to be explicit
-	providerOptimizer.wantedNumProvidersInConcurrency = 2 // that's in the constructor but to be explicit
-	iterations := 10000
-	exploration = testProvidersExploration(iterations)
-	require.Less(t, exploration, float64(1.4)*float64(iterations)*DefaultExplorationChance)    // allow mistake buffer of 40% because of randomness
-	require.Greater(t, exploration, float64(0.6)*float64(iterations)*DefaultExplorationChance) // allow mistake buffer of 40% because of randomness
-
-	// with a cost strategy we expect exploration to happen once in 100 samples
-	providerOptimizer.strategy = StrategyCost
-	exploration = testProvidersExploration(iterations)
-	require.Less(t, exploration, float64(1.4)*float64(iterations)*CostExplorationChance)    // allow mistake buffer of 40% because of randomness
-	require.Greater(t, exploration, float64(0.6)*float64(iterations)*CostExplorationChance) // allow mistake buffer of 40% because of randomness
-
-	// privacy disables exploration
-	providerOptimizer.strategy = StrategyPrivacy
-	exploration = testProvidersExploration(iterations)
-	require.Equal(t, exploration, float64(0))
 }
 
 func TestProviderOptimizerUpdateWeightedSelectorStrategyPropagatesToSelector(t *testing.T) {

@@ -11,7 +11,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/lavaslices"
-	"github.com/lavanet/lava/v5/utils/rand"
 	"github.com/lavanet/lava/v5/utils/score"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	"gonum.org/v1/gonum/mathext"
@@ -24,10 +23,8 @@ import (
 // and stake amounts.
 
 const (
-	CacheMaxCost             = 20000 // each item cost would be 1
-	CacheNumCounters         = 20000 // expect 2000 items
-	DefaultExplorationChance = 0.1
-	CostExplorationChance    = 0.01
+	CacheMaxCost     = 20000 // each item cost would be 1
+	CacheNumCounters = 20000 // expect 2000 items
 )
 
 type ConcurrentBlockStore struct {
@@ -77,10 +74,10 @@ const (
 	StrategyBalanced      Strategy = iota
 	StrategyLatency                // prefer low latency
 	StrategySyncFreshness          // prefer better sync
-	StrategyCost                   // prefer low CU cost (minimize optimizer exploration)
+	StrategyCost                   // prefer low CU cost
 	StrategyPrivacy                // prefer pairing with a single provider (not fully implemented)
-	StrategyAccuracy               // encourage optimizer exploration (higher cost)
-	StrategyDistributed            // prefer pairing with different providers (slightly minimize optimizer exploration)
+	StrategyAccuracy               // higher cost for more accuracy
+	StrategyDistributed            // prefer pairing with different providers
 )
 
 func (s Strategy) String() string {
@@ -336,7 +333,7 @@ func (po *ProviderOptimizer) ChooseProviderWithStats(ctx context.Context, allAdd
 	}
 
 	// Calculate provider scores using weighted selector
-	providerScores, qosReports, scoreDetails := po.weightedSelector.CalculateProviderScores(
+	providerScores, _, scoreDetails := po.weightedSelector.CalculateProviderScores(
 		allAddresses,
 		ignoredProviders,
 		providerDataGetter,
@@ -352,28 +349,6 @@ func (po *ProviderOptimizer) ChooseProviderWithStats(ctx context.Context, allAdd
 	// Select provider using weighted random selection with stats
 	selectedProvider, selectionStats := po.weightedSelector.SelectProviderWithStats(ctx, providerScores, scoreDetails)
 	returnedProviders := []string{selectedProvider}
-
-	// Add exploration candidate if should explore
-	// Find the exploration candidate (provider not updated recently)
-	explorationCandidate := ""
-	oldestUpdateTime := time.Now()
-	for addr := range qosReports {
-		if _, ignored := ignoredProviders[addr]; ignored {
-			continue
-		}
-		if addr == selectedProvider {
-			continue // Don't add the same provider twice
-		}
-		_, lastUpdate, found := providerDataGetter(addr)
-		if found && lastUpdate.Add(10*time.Second).Before(time.Now()) && lastUpdate.Before(oldestUpdateTime) {
-			explorationCandidate = addr
-			oldestUpdateTime = lastUpdate
-		}
-	}
-
-	if explorationCandidate != "" && po.shouldExplore(1) {
-		returnedProviders = append(returnedProviders, explorationCandidate)
-	}
 
 	utils.LavaFormatTrace("[Optimizer] returned providers",
 		utils.LogAttr("providers", strings.Join(returnedProviders, ",")),
@@ -613,32 +588,6 @@ func (po *ProviderOptimizer) updateLatestSyncData(providerLatestBlock uint64, sa
 	return po.latestSyncData.Block, po.latestSyncData.Time
 }
 
-// shouldExplore determines whether the optimizer should continue exploring
-// after finding an appropriate provider for pairing.
-// The exploration mechanism makes the optimizer return providers that were not talking
-// to the consumer for a long time (a couple of seconds). This allows better distribution
-// of paired providers by avoiding returning the same best providers over and over.
-// Note, the legacy disributed strategy acts as the default balanced strategy
-func (po *ProviderOptimizer) shouldExplore(currentNumProviders int) bool {
-	if uint(currentNumProviders) >= po.wantedNumProvidersInConcurrency {
-		return false
-	}
-	explorationChance := DefaultExplorationChance
-	switch po.strategy {
-	case StrategyLatency:
-		return true // we want a lot of parallel tries on latency
-	case StrategyAccuracy:
-		return true
-	case StrategyCost:
-		explorationChance = CostExplorationChance
-	case StrategyDistributed:
-		explorationChance = DefaultExplorationChance * 0.25
-	case StrategyPrivacy:
-		return false // only one at a time
-	}
-	return rand.Float64() < explorationChance
-}
-
 // getProviderData gets a specific proivder's QoS data. If it doesn't exist, it returns a default provider data struct
 func (po *ProviderOptimizer) getProviderData(providerAddress string) (providerData ProviderData, found bool) {
 	storedVal, found := po.providersStorage.Get(providerAddress)
@@ -652,8 +601,8 @@ func (po *ProviderOptimizer) getProviderData(providerAddress string) (providerDa
 	} else {
 		providerData = ProviderData{
 			Availability: score.NewScoreStore(score.AvailabilityScoreType), // default score of 100%
-			Latency:      score.NewScoreStore(score.LatencyScoreType),      // default score of 10ms (encourage exploration)
-			Sync:         score.NewScoreStore(score.SyncScoreType),         // default score of 100ms (encourage exploration)
+			Latency:      score.NewScoreStore(score.LatencyScoreType),      // default score of 10ms
+			Sync:         score.NewScoreStore(score.SyncScoreType),         // default score of 100ms
 			SyncBlock:    0,
 		}
 	}
