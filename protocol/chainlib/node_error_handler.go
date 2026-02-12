@@ -238,7 +238,7 @@ func (geh *genericErrorHandler) ValidateRequestAndResponseIds(nodeMessageID json
 	if idErr != nil {
 		return fmt.Errorf("failed parsing ID %s", idErr.Error())
 	}
-	
+
 	// Allow empty/missing response ID for non-standard JSON-RPC implementations (e.g., XRPL/Ripple)
 	// Some chains don't follow JSON-RPC 2.0 spec strictly and omit the ID field in responses
 	//
@@ -251,7 +251,7 @@ func (geh *genericErrorHandler) ValidateRequestAndResponseIds(nodeMessageID json
 	if len(replyMsgID) == 0 || string(replyMsgID) == "null" || string(replyMsgID) == "[]" {
 		return nil // Skip ID validation when response has no ID
 	}
-	
+
 	respId, idErr := rpcInterfaceMessages.IdFromRawMessage(replyMsgID)
 	if idErr != nil {
 		return fmt.Errorf("failed parsing ID %s", idErr.Error())
