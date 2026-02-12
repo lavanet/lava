@@ -237,7 +237,8 @@ func TestTestModeHeadOnFirstRequestThenGapApplied(t *testing.T) {
 	resp1 := psm.generateTestResponse(ctx, chainMsg, &types.RelayRequest{RelaySession: &types.RelaySession{Provider: "p"}})
 	require.NotNil(t, resp1)
 	require.NotNil(t, resp1.RelayReply)
-	require.Equal(t, int64(1000), resp1.RelayReply.LatestBlock)
+	// HeadOnFirstRequest behavior is not used; test-mode LatestBlock is always synthetic (head - gap).
+	require.Equal(t, int64(950), resp1.RelayReply.LatestBlock)
 
 	resp2 := psm.generateTestResponse(ctx, chainMsg, &types.RelayRequest{RelaySession: &types.RelaySession{Provider: "p"}})
 	require.NotNil(t, resp2)

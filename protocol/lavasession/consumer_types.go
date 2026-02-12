@@ -370,6 +370,12 @@ func (cswp *ConsumerSessionsWithProvider) getProviderStakeSize() sdk.Coin {
 	return cswp.stakeSize
 }
 
+// GetProviderStakeSize returns the provider stake used by the consumer for selection weighting.
+// Exported for cross-package callers (e.g., rpcsmartrouter) that need to copy sessions.
+func (cswp *ConsumerSessionsWithProvider) GetProviderStakeSize() sdk.Coin {
+	return cswp.getProviderStakeSize()
+}
+
 // Validate and add the compute units for this provider
 func (cswp *ConsumerSessionsWithProvider) decreaseUsedComputeUnits(cu uint64) error {
 	cswp.Lock.Lock()
@@ -656,24 +662,27 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 
 func CalcWeightsByStake(providers map[uint64]*ConsumerSessionsWithProvider) (weights map[string]int64) {
 	weights = make(map[string]int64)
-	staticProviders := make([]*ConsumerSessionsWithProvider, 0)
+	staticProvidersToBoost := make([]*ConsumerSessionsWithProvider, 0)
 	maxWeight := int64(1)
 	for _, cswp := range providers {
-		if cswp.StaticProvider {
-			staticProviders = append(staticProviders, cswp)
-			continue
-		}
 		stakeAmount := cswp.getProviderStakeSize().Amount
 		stake := int64(10) // defaults to 10 if stake isn't set
 		if !stakeAmount.IsNil() && stakeAmount.IsInt64() {
 			stake = stakeAmount.Int64()
+		}
+		// Preserve legacy behavior for static providers: if no explicit stake was set (stakeAmount==0),
+		// boost them relative to the max stake in the pairing list.
+		// If explicit stake is provided (>0), treat the static provider like any other provider.
+		if cswp.StaticProvider && stakeAmount.IsZero() {
+			staticProvidersToBoost = append(staticProvidersToBoost, cswp)
+			continue
 		}
 		if stake > maxWeight {
 			maxWeight = stake
 		}
 		weights[cswp.PublicLavaAddress] = stake
 	}
-	for _, cswp := range staticProviders {
+	for _, cswp := range staticProvidersToBoost {
 		weights[cswp.PublicLavaAddress] = maxWeight * WeightMultiplierForStaticProviders
 	}
 	return weights

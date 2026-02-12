@@ -569,6 +569,19 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 				return
 			}
 			for _, result := range nodeErrors {
+				// Add nil checks to prevent panic
+				if result.Request == nil {
+					utils.LavaFormatWarning("Skipping availability degradation: Request is nil", nil,
+						utils.LogAttr("provider", result.ProviderInfo.ProviderAddress),
+					)
+					continue
+				}
+				if result.Request.RelaySession == nil {
+					utils.LavaFormatWarning("Skipping availability degradation: RelaySession is nil", nil,
+						utils.LogAttr("provider", result.ProviderInfo.ProviderAddress),
+					)
+					continue
+				}
 				session := result.Request.RelaySession
 				utils.LavaFormatDebug("Degrading availability for provider",
 					utils.LogAttr("provider", result.ProviderInfo.ProviderAddress),

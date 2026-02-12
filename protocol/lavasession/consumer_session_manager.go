@@ -200,7 +200,9 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 
 	// reset session related metrics
 	go csm.consumerMetricsManager.ResetSessionRelatedMetrics()
-	go csm.providerOptimizer.UpdateWeights(CalcWeightsByStake(pairingList), epoch)
+	// UpdateWeights is required for stake-weighted selection; run it synchronously so early relays/probes
+	// (which may start immediately after UpdateAllProviders) see correct stake values.
+	csm.providerOptimizer.UpdateWeights(CalcWeightsByStake(pairingList), epoch)
 	go csm.consumerMetricsManager.ResetBlockedProvidersMetrics(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, providerAddressToEndpoint)
 
 	// Store backup providers separately from main pairing list for emergency fallback scenarios

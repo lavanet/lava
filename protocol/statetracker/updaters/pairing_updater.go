@@ -261,13 +261,21 @@ func (pu *PairingUpdater) createProviderSessionsFromConfig(
 			endpoints = append(endpoints, endpoint)
 		}
 
-		// Create provider entry with high compute units and stake for availability
+		// Create provider entry with high compute units and stake for availability.
+		//
+		// NOTE: Stake is optional for static providers. If it is not provided, we keep stake=0 here
+		// so the weight calculator can apply the legacy "static provider boost" behavior.
+		// If it is provided (>0), it will be used as-is and the boost will not be applied.
+		stake := provider.Stake
+		if stake < 0 {
+			stake = 0
+		}
 		providerEntry := lavasession.NewConsumerSessionWithProvider(
 			provider.Name,
 			endpoints,
 			math.MaxUint64/2, // High compute units for availability
 			epoch,
-			sdk.NewInt64Coin("ulava", 1000000000000000), // 1b LAVA stake
+			sdk.NewInt64Coin("ulava", stake),
 		)
 		providerEntry.StaticProvider = true // Mark as static provider for simplified handling
 		providerSessions[startIdx+uint64(idx)] = providerEntry

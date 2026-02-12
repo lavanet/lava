@@ -608,135 +608,150 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		utils.LogAttr("supportedServices", providerPolicy.addons),
 		utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name})
 	chainParser.SetPolicy(providerPolicy, rpcProviderEndpoint.ChainID, apiInterface)
-	chainRouter, err := chainlib.GetChainRouter(ctx, rpcp.parallelConnections, rpcProviderEndpoint, chainParser)
-	if err != nil {
-		return utils.LavaFormatError("[PANIC] panic severity critical error, failed creating chain proxy, continuing with others endpoints", err, utils.Attribute{Key: "parallelConnections", Value: uint64(rpcp.parallelConnections)}, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
-	}
 
 	_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
 	var chainTracker chaintracker.IChainTracker
-	// chainTracker accepts a callback to be called on new blocks, we use this to call metrics update on a new block
-	recordMetricsOnNewBlock := func(blockFrom int64, blockTo int64, hash string) {
-		utils.LavaFormatDebug("ChainTracker callback triggered - new blocks detected",
-			utils.LogAttr("chainID", chainID),
-			utils.LogAttr("blockFrom", blockFrom),
-			utils.LogAttr("blockTo", blockTo),
-			utils.LogAttr("hash", hash),
-			utils.LogAttr("provider_endpoint", rpcProviderEndpoint.NetworkAddress.Address),
-			utils.LogAttr("num_blocks", blockTo-blockFrom),
-		)
-		for block := blockFrom + 1; block <= blockTo; block++ {
-			utils.LavaFormatDebug("ChainTracker calling SetLatestBlock for block",
-				utils.LogAttr("chainID", chainID),
-				utils.LogAttr("block", block),
-				utils.LogAttr("provider_endpoint", rpcProviderEndpoint.NetworkAddress.Address),
-			)
-			rpcp.providerMetricsManager.SetLatestBlock(chainID, rpcProviderEndpoint.NetworkAddress.Address, uint64(block))
-		}
-		utils.LavaFormatDebug("ChainTracker callback completed",
-			utils.LogAttr("chainID", chainID),
-			utils.LogAttr("blockFrom", blockFrom),
-			utils.LogAttr("blockTo", blockTo),
-			utils.LogAttr("total_blocks_processed", blockTo-blockFrom),
-		)
-	}
-	utils.LavaFormatInfo("Setting up ChainFetcher for spec", utils.LogAttr("chainId", rpcEndpoint.ChainID))
-	var chainFetcher chainlib.IChainFetcher = chainlib.NewChainFetcher(
-		ctx,
-		&chainlib.ChainFetcherOptions{
-			ChainRouter: chainRouter,
-			ChainParser: chainParser,
-			Endpoint:    rpcProviderEndpoint,
-			Cache:       rpcp.cache,
-		},
-	)
-	// so we can fetch failed verifications we need to add the chainFetcher before returning
-	rpcp.AddVerificationStatusFetcher(chainFetcher)
+	var chainRouter chainlib.ChainRouter
+	var loadManager *ProviderLoadManager
 
-	// check the chain fetcher verification works, if it doesn't we disable the chain+apiInterface and this triggers a boot retry
-	utils.LavaFormatInfo("validating ChainFetcher for spec",
-		utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name},
-		utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID})
-	err = chainFetcher.Validate(ctx)
-	if err != nil {
-		return utils.LavaFormatError("[PANIC] Failed starting due to chain fetcher validation failure", err,
+	// Provider test-mode should not depend on external node URLs.
+	// In test-mode, relays are served from predefined responses; routing to the node is unexpected.
+	if rpcp.testMode {
+		utils.LavaFormatWarning("Test mode: skipping chain proxy/fetcher setup (no node dialing)", nil,
 			utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID},
 			utils.Attribute{Key: "apiInterface", Value: apiInterface},
 			utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name},
 		)
-	}
+		chainRouter = chainlib.NewTestModeChainRouter()
+		chainTracker = &chaintracker.DummyChainTracker{}
+		loadManager = NewProviderLoadManager(rpcp.relayLoadLimit)
+	} else {
+		chainRouter, err = chainlib.GetChainRouter(ctx, rpcp.parallelConnections, rpcProviderEndpoint, chainParser)
+		if err != nil {
+			return utils.LavaFormatError("[PANIC] panic severity critical error, failed creating chain proxy, continuing with others endpoints", err, utils.Attribute{Key: "parallelConnections", Value: uint64(rpcp.parallelConnections)}, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
+		}
 
-	// in order to utilize shared resources between chains we need go routines with the same chain to wait for one another here
-	var loadManager *ProviderLoadManager
-	chainCommonSetup := func() error {
-		rpcp.chainMutexes[chainID].Lock()
-		defer rpcp.chainMutexes[chainID].Unlock()
+		// chainTracker accepts a callback to be called on new blocks, we use this to call metrics update on a new block
+		recordMetricsOnNewBlock := func(blockFrom int64, blockTo int64, hash string) {
+			utils.LavaFormatDebug("ChainTracker callback triggered - new blocks detected",
+				utils.LogAttr("chainID", chainID),
+				utils.LogAttr("blockFrom", blockFrom),
+				utils.LogAttr("blockTo", blockTo),
+				utils.LogAttr("hash", hash),
+				utils.LogAttr("provider_endpoint", rpcProviderEndpoint.NetworkAddress.Address),
+				utils.LogAttr("num_blocks", blockTo-blockFrom),
+			)
+			for block := blockFrom + 1; block <= blockTo; block++ {
+				utils.LavaFormatDebug("ChainTracker calling SetLatestBlock for block",
+					utils.LogAttr("chainID", chainID),
+					utils.LogAttr("block", block),
+					utils.LogAttr("provider_endpoint", rpcProviderEndpoint.NetworkAddress.Address),
+				)
+				rpcp.providerMetricsManager.SetLatestBlock(chainID, rpcProviderEndpoint.NetworkAddress.Address, uint64(block))
+			}
+			utils.LavaFormatDebug("ChainTracker callback completed",
+				utils.LogAttr("chainID", chainID),
+				utils.LogAttr("blockFrom", blockFrom),
+				utils.LogAttr("blockTo", blockTo),
+				utils.LogAttr("total_blocks_processed", blockTo-blockFrom),
+			)
+		}
+		utils.LavaFormatInfo("Setting up ChainFetcher for spec", utils.LogAttr("chainId", rpcEndpoint.ChainID))
+		var chainFetcher chainlib.IChainFetcher = chainlib.NewChainFetcher(
+			ctx,
+			&chainlib.ChainFetcherOptions{
+				ChainRouter: chainRouter,
+				ChainParser: chainParser,
+				Endpoint:    rpcProviderEndpoint,
+				Cache:       rpcp.cache,
+			},
+		)
+		// so we can fetch failed verifications we need to add the chainFetcher before returning
+		rpcp.AddVerificationStatusFetcher(chainFetcher)
 
-		consistencyErrorCallback := func(oldBlock, newBlock int64) {
-			utils.LavaFormatError("Consistency issue detected", nil,
-				utils.Attribute{Key: "oldBlock", Value: oldBlock},
-				utils.Attribute{Key: "newBlock", Value: newBlock},
+		// check the chain fetcher verification works, if it doesn't we disable the chain+apiInterface and this triggers a boot retry
+		utils.LavaFormatInfo("validating ChainFetcher for spec",
+			utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name},
+			utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID})
+		err = chainFetcher.Validate(ctx)
+		if err != nil {
+			return utils.LavaFormatError("[PANIC] Failed starting due to chain fetcher validation failure", err,
 				utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID},
 				utils.Attribute{Key: "apiInterface", Value: apiInterface},
 				utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name},
 			)
 		}
-		blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
-		chainTrackerConfig := chaintracker.ChainTrackerConfig{
-			BlocksToSave:          blocksToSaveChainTracker,
-			AverageBlockTime:      averageBlockTime,
-			ServerBlockMemory:     ChainTrackerDefaultMemory + blocksToSaveChainTracker,
-			NewLatestCallback:     recordMetricsOnNewBlock,
-			ConsistencyCallback:   consistencyErrorCallback,
-			Pmetrics:              rpcp.providerMetricsManager,
-			ChainId:               chainID,
-			ParseDirectiveEnabled: chainParser.ParseDirectiveEnabled(),
-		}
 
-		chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
-		if err != nil {
-			return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint}, utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name})
-		}
+		// in order to utilize shared resources between chains we need go routines with the same chain to wait for one another here
+		chainCommonSetup := func() error {
+			rpcp.chainMutexes[chainID].Lock()
+			defer rpcp.chainMutexes[chainID].Unlock()
 
-		if !chainTracker.IsDummy() {
-			chainTrackerLoaded, loaded, err := rpcp.chainTrackers.LoadOrStore(chainID, chainTracker)
+			consistencyErrorCallback := func(oldBlock, newBlock int64) {
+				utils.LavaFormatError("Consistency issue detected", nil,
+					utils.Attribute{Key: "oldBlock", Value: oldBlock},
+					utils.Attribute{Key: "newBlock", Value: newBlock},
+					utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID},
+					utils.Attribute{Key: "apiInterface", Value: apiInterface},
+					utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name},
+				)
+			}
+			blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
+			chainTrackerConfig := chaintracker.ChainTrackerConfig{
+				BlocksToSave:          blocksToSaveChainTracker,
+				AverageBlockTime:      averageBlockTime,
+				ServerBlockMemory:     ChainTrackerDefaultMemory + blocksToSaveChainTracker,
+				NewLatestCallback:     recordMetricsOnNewBlock,
+				ConsistencyCallback:   consistencyErrorCallback,
+				Pmetrics:              rpcp.providerMetricsManager,
+				ChainId:               chainID,
+				ParseDirectiveEnabled: chainParser.ParseDirectiveEnabled(),
+			}
+
+			chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
 			if err != nil {
-				utils.LavaFormatFatal("failed to load or store chain tracker", err, utils.LogAttr("chainID", chainID), utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name})
+				return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint}, utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name})
 			}
 
-			if !loaded { // this is the first time we are setting up the chain tracker, we need to register for spec verifications
-				chainTracker.StartAndServe(ctx)
-				utils.LavaFormatInfo("Registering for spec verifications for endpoint", utils.LogAttr("rpcEndpoint", rpcEndpoint), utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name})
-				// we register for spec verifications only once, and this triggers all chainFetchers of that specId when it triggers
-				err = rpcp.providerStateTracker.RegisterForSpecVerifications(ctx, specValidator, rpcEndpoint.ChainID)
+			if !chainTracker.IsDummy() {
+				chainTrackerLoaded, loaded, err := rpcp.chainTrackers.LoadOrStore(chainID, chainTracker)
 				if err != nil {
-					return utils.LavaFormatError("failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()}, utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name})
+					utils.LavaFormatFatal("failed to load or store chain tracker", err, utils.LogAttr("chainID", chainID), utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name})
 				}
-			} else { // loaded an existing chain tracker. use the same one instead
-				chainTracker = chainTrackerLoaded
-				utils.LavaFormatInfo("reusing chain tracker", utils.Attribute{Key: "chain", Value: rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name})
+
+				if !loaded { // this is the first time we are setting up the chain tracker, we need to register for spec verifications
+					chainTracker.StartAndServe(ctx)
+					utils.LavaFormatInfo("Registering for spec verifications for endpoint", utils.LogAttr("rpcEndpoint", rpcEndpoint), utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name})
+					// we register for spec verifications only once, and this triggers all chainFetchers of that specId when it triggers
+					err = rpcp.providerStateTracker.RegisterForSpecVerifications(ctx, specValidator, rpcEndpoint.ChainID)
+					if err != nil {
+						return utils.LavaFormatError("failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()}, utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name})
+					}
+				} else { // loaded an existing chain tracker. use the same one instead
+					chainTracker = chainTrackerLoaded
+					utils.LavaFormatInfo("reusing chain tracker", utils.Attribute{Key: "chain", Value: rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name})
+				}
 			}
+			// create provider load manager per chain ID
+			loadManager, _, err = rpcp.providerLoadManagersPerChain.LoadOrStore(rpcProviderEndpoint.ChainID, NewProviderLoadManager(rpcp.relayLoadLimit))
+			if err != nil {
+				utils.LavaFormatError("Failed LoadOrStore providerLoadManagersPerChain", err, utils.LogAttr("chainId", rpcProviderEndpoint.ChainID), utils.LogAttr("rpcp.relayLoadLimit", rpcp.relayLoadLimit))
+			}
+			return nil
+		}
+		err = chainCommonSetup()
+		if err != nil {
+			utils.LavaFormatError("failed to run chain common setup", err, utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name})
+			return err
 		}
 
-		// create provider load manager per chain ID
-		loadManager, _, err = rpcp.providerLoadManagersPerChain.LoadOrStore(rpcProviderEndpoint.ChainID, NewProviderLoadManager(rpcp.relayLoadLimit))
-		if err != nil {
-			utils.LavaFormatError("Failed LoadOrStore providerLoadManagersPerChain", err, utils.LogAttr("chainId", rpcProviderEndpoint.ChainID), utils.LogAttr("rpcp.relayLoadLimit", rpcp.relayLoadLimit))
-		}
-		return nil
-	}
-	err = chainCommonSetup()
-	if err != nil {
-		utils.LavaFormatError("failed to run chain common setup", err, utils.Attribute{Key: "Name", Value: rpcProviderEndpoint.Name})
-		return err
-	}
-
-	// Add the chain fetcher to the spec validator
-	// check the chain fetcher verification works, if it doesn't we disable the chain+apiInterface and this triggers a boot retry
-	if chainParser.ParseDirectiveEnabled() {
-		err = specValidator.AddChainFetcher(ctx, &chainFetcher, chainID)
-		if err != nil {
-			return utils.LavaFormatError("panic severity critical error, failed validating chain", err, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
+		// Add the chain fetcher to the spec validator
+		// check the chain fetcher verification works, if it doesn't we disable the chain+apiInterface and this triggers a boot retry
+		if chainParser.ParseDirectiveEnabled() {
+			err = specValidator.AddChainFetcher(ctx, &chainFetcher, chainID)
+			if err != nil {
+				return utils.LavaFormatError("panic severity critical error, failed validating chain", err, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
+			}
 		}
 	}
 	providerMetrics := rpcp.providerMetricsManager.AddProviderMetrics(chainID, apiInterface, rpcProviderEndpoint.NetworkAddress.Address)
@@ -745,7 +760,9 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	rpcp.rewardServer.AddDataBase(rpcProviderEndpoint.ChainID, rpcp.addr.String(), rpcp.shardID)
 
 	var relaysMonitor *metrics.RelaysMonitor = nil
-	if rpcp.relaysHealthCheckEnabled {
+	// In provider test-mode we don't have a real node connection, so relays health checks
+	// (which send crafted relays to the node) are not applicable.
+	if rpcp.relaysHealthCheckEnabled && !rpcp.testMode {
 		relaysMonitor = metrics.NewRelaysMonitor(rpcp.relaysHealthCheckInterval, chainID, apiInterface)
 		rpcp.relaysMonitorAggregator.RegisterRelaysMonitor(rpcEndpoint.Key(), relaysMonitor)
 		rpcp.providerMetricsManager.RegisterRelaysMonitor(chainID, apiInterface, relaysMonitor)

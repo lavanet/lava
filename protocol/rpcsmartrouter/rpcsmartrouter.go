@@ -79,10 +79,9 @@ var (
 	RelayHealthIntervalFlagDefault = 5 * time.Minute
 
 	// StaticProviderDummyCoin is used for type compatibility in provider sessions.
-	// Static providers don't use blockchain stake for selection; they automatically
-	// receive a 10x weight multiplier in CalcWeightsByStake (see lavasession package).
-	// The coin value is ignored but the object must exist to avoid nil pointer errors.
-	StaticProviderDummyCoin = sdk.NewCoin("ulava", sdk.NewInt(1))
+	// For static providers that do NOT specify an explicit stake, we keep this at 0 so CalcWeightsByStake
+	// can apply the legacy "static provider boost" behavior (see lavasession package).
+	StaticProviderDummyCoin = sdk.NewCoin("ulava", sdk.NewInt(0))
 )
 
 // staticPolicy is a simple implementation of chainlib.PolicyInf
@@ -237,7 +236,7 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 	}
 
 	smartRouterMetricsManager.SetVersion(upgrade.GetCurrentVersion().ConsumerVersion)
-	
+
 	// Start periodic selection stats metrics updates
 	if smartRouterOptimizerQoSClient != nil {
 		smartRouterMetricsManager.StartSelectionStatsUpdater(ctx, metrics.OptimizerQosServerSamplingInterval)
@@ -524,14 +523,23 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 				endpoints = append(endpoints, endpoint)
 			}
 
-			// Create provider session with static configuration
-			// Static providers get 10x weight multiplier automatically (see CalcWeightsByStake)
+			// Create provider session with static configuration.
+			// If stake is specified in the static provider config, use it (ulava).
+			// Otherwise keep stake=0 so CalcWeightsByStake applies the legacy static-provider boost.
+			stake := provider.Stake
+			if stake < 0 {
+				stake = 0
+			}
+			stakeCoin := StaticProviderDummyCoin
+			if stake > 0 {
+				stakeCoin = sdk.NewInt64Coin("ulava", stake)
+			}
 			providerEntry := lavasession.NewConsumerSessionWithProvider(
 				provider.Name,
 				endpoints,
-				999999999,               // High compute units for availability
-				1,                       // Fixed epoch (smart router doesn't track blockchain epochs)
-				StaticProviderDummyCoin, // Placeholder coin (value ignored, object required for type safety)
+				999999999, // High compute units for availability
+				1,         // Fixed epoch (smart router doesn't track blockchain epochs)
+				stakeCoin,
 			)
 			providerEntry.StaticProvider = true
 			sessions[uint64(idx)] = providerEntry
@@ -782,6 +790,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				for _, endpoint := range staticProviderEndpoints {
 					utils.LavaFormatInfo("Static Provider Endpoint:",
 						utils.Attribute{Key: "Name", Value: endpoint.Name},
+						utils.Attribute{Key: "Stake", Value: endpoint.Stake},
 						utils.Attribute{Key: "Urls", Value: endpoint.NodeUrls},
 						utils.Attribute{Key: "Chain ID", Value: endpoint.ChainID},
 						utils.Attribute{Key: "API Interface", Value: endpoint.ApiInterface})
@@ -1097,8 +1106,8 @@ func (rpsr *RPCSmartRouter) updateEpoch(epoch uint64) {
 				oldSession.PublicLavaAddress,
 				oldSession.Endpoints, // Endpoints are safe to reuse
 				oldSession.MaxComputeUnits,
-				epoch,                   // New epoch
-				StaticProviderDummyCoin, // Static providers use dummy coin for type compatibility
+				epoch, // New epoch
+				oldSession.GetProviderStakeSize(),
 			)
 			freshSession.StaticProvider = oldSession.StaticProvider
 			freshProviderSessions[idx] = freshSession
@@ -1117,7 +1126,7 @@ func (rpsr *RPCSmartRouter) updateEpoch(epoch uint64) {
 				oldSession.Endpoints,
 				oldSession.MaxComputeUnits,
 				epoch,
-				StaticProviderDummyCoin, // Static providers use dummy coin for type compatibility
+				oldSession.GetProviderStakeSize(),
 			)
 			freshSession.StaticProvider = oldSession.StaticProvider
 			freshBackupSessions[idx] = freshSession

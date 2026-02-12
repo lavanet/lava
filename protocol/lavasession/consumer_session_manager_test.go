@@ -308,12 +308,12 @@ func TestNoPairingAvailableFlow(t *testing.T) {
 	}
 
 	usedProviders := NewUsedProviders(nil)
-	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
+	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0, "", "") // get a session
 	require.NoError(t, err)
 	_, expectedProviderAddress := css[csm.validAddresses[0]]
 	require.True(t, expectedProviderAddress)
 
-	css2, err := csm.GetSessions(ctx, 1, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
+	css2, err := csm.GetSessions(ctx, 1, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0, "", "") // get a session
 	require.NoError(t, err)
 	_, expectedProviderAddress2 := css2[highestProviderCu]
 	require.True(t, expectedProviderAddress2)
@@ -323,7 +323,7 @@ func TestNoPairingAvailableFlow(t *testing.T) {
 	time.Sleep(time.Second)
 	require.Equal(t, len(csm.validAddresses), 2)
 
-	css3, err := csm.GetSessions(ctx, 1, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
+	css3, err := csm.GetSessions(ctx, 1, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0, "", "") // get a session
 	require.NoError(t, err)
 	runOnSessionFailureForConsumerSessionMap(t, css3, csm)
 	// check we still have only 2 valid addresses as this one failed
@@ -364,7 +364,7 @@ func TestSecondChanceRecoveryFlow(t *testing.T) {
 
 	// check we get provider1.
 	usedProviders := NewUsedProviders(nil)
-	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
+	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0, "", "") // get a session
 	require.NoError(t, err)
 	_, expectedProviderAddress := css[pairingList[1].PublicLavaAddress]
 	require.True(t, expectedProviderAddress)
@@ -861,7 +861,7 @@ func TestAllProvidersEndpointsDisabled(t *testing.T) {
 	pairingList := createPairingList("", false)
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil) // update the providers.
 	require.NoError(t, err)
-	cs, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
+	cs, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "", "") // get a session
 	require.Nil(t, cs)
 	require.Error(t, err)
 }
@@ -902,7 +902,7 @@ func TestGetSession(t *testing.T) {
 	pairingList := createPairingList("", true)
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil)
 	require.NoError(t, err)
-	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "")
+	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "", "")
 	require.NoError(t, err)
 
 	for _, cs := range css {
@@ -1051,7 +1051,7 @@ func TestNoPairingsError(t *testing.T) {
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil) // update the providers.
 	require.NoError(t, err)
 	time.Sleep(5 * time.Millisecond) // let probes finish
-	_, err = csm.getValidProviderAddresses(context.Background(), 1, map[string]struct{}{}, 10, 100, "invalid", nil, common.NO_STATE, "")
+	_, err = csm.getValidProviderAddresses(context.Background(), 1, map[string]struct{}{}, 10, 100, "invalid", nil, common.NO_STATE, "", "")
 	require.Error(t, err)
 	require.True(t, PairingListEmptyError.Is(err))
 }
@@ -1101,7 +1101,7 @@ func TestMaximumBlockedSessionsErrorsInPairingListEmpty(t *testing.T) {
 		}
 	}
 
-	_, err = csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "") // get a session
+	_, err = csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "", "") // get a session
 	require.ErrorIs(t, err, PairingListEmptyError)
 }
 
