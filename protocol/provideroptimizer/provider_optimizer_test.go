@@ -191,6 +191,7 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 //  0. There are 100 providers, the optimizer is configured to pick a single provider
 //  1. Append bad probe relay data for all provider but random three
 //  2. Pick providers and check they're picked most often
+//
 // TestProviderOptimizerAvailabilityProbeData tests the availability update when
 // the optimizer is updated with failed relays. Providers with bad scores should have
 // a worse chance to be picked (and vice versa).
