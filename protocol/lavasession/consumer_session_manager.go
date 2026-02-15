@@ -334,6 +334,7 @@ func (csm *ConsumerSessionManager) closePurgedUnusedPairingsConnections(pairingP
 
 func (csm *ConsumerSessionManager) PeriodicProbeProviders(ctx context.Context, interval time.Duration) {
 	ticker := time.NewTicker(interval)
+	defer ticker.Stop() // Ensure ticker is stopped to prevent goroutine/channel leak
 
 	for {
 		select {
