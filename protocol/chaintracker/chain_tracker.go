@@ -420,6 +420,7 @@ func (cs *ChainTracker) start(ctx context.Context, pollingTime time.Duration) er
 	blockGapTicker := time.NewTicker(pollingTime) // initially every block we check for a polling time
 	// Polls blocks and keeps a queue of them
 	go func() {
+		defer blockGapTicker.Stop() // Ensure ticker is stopped when goroutine exits
 		fetchFails := uint64(0)
 		for {
 			select {
