@@ -122,6 +122,7 @@ type rpcProviderStartOptions struct {
 	testResponsesFile         string
 	epochDuration             time.Duration
 	resourceLimiterOptions    *resourceLimiterOptions
+	enableConsistencyChecks   bool
 }
 
 type resourceLimiterOptions struct {
@@ -814,7 +815,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		)
 	}
 
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, chainTracker, rpcp.privKey, rpcp.cache, rpcp.cacheLatestBlockEnabled, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager, rpcp, numberOfRetriesAllowedOnNodeErrors, testModeConfig, resourceLimiter)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, chainTracker, rpcp.privKey, rpcp.cache, rpcp.cacheLatestBlockEnabled, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager, rpcp, numberOfRetriesAllowedOnNodeErrors, testModeConfig, resourceLimiter, options.enableConsistencyChecks)
 	// set up grpc listener
 	var listener *ProviderListener
 	func() {
@@ -1174,6 +1175,10 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			heavyQueueSize, _ := cmd.Flags().GetInt("heavy-queue-size")
 			normalMaxConcurrent, _ := cmd.Flags().GetInt64("normal-max-concurrent")
 
+			// Get consistency checks flag (disabled by default = enabled)
+			disableConsistencyChecks, _ := cmd.Flags().GetBool("disable-consistency-checks")
+			enableConsistencyChecks := !disableConsistencyChecks
+
 			resourceLimiterOptions := &resourceLimiterOptions{
 				enabled:             enableResourceLimiter,
 				cuThreshold:         cuThreshold,
@@ -1210,6 +1215,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				testResponsesFile,
 				epochDuration,
 				resourceLimiterOptions,
+				enableConsistencyChecks,
 			}
 
 			verificationsResponseCache, err := ristretto.NewCache(
@@ -1285,6 +1291,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().Int64("heavy-max-concurrent", 2, "Max concurrent heavy (high-CU/debug/trace) method calls")
 	cmdRPCProvider.Flags().Int("heavy-queue-size", 5, "Queue size for heavy methods")
 	cmdRPCProvider.Flags().Int64("normal-max-concurrent", 100, "Max concurrent normal method calls")
+	cmdRPCProvider.Flags().Bool("disable-consistency-checks", false, "Disable provider-side consistency checks (consistency checks are enabled by default)")
 	common.AddRollingLogConfig(cmdRPCProvider)
 	return cmdRPCProvider
 }
