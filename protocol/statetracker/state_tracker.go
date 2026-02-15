@@ -3,7 +3,6 @@ package statetracker
 import (
 	"context"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -13,7 +12,8 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	updaters "github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/utils"
-	specutils "github.com/lavanet/lava/v5/utils/keeper"
+	speckeeper "github.com/lavanet/lava/v5/utils/keeper"
+	"github.com/lavanet/lava/v5/utils/specfetcher"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
@@ -59,43 +59,76 @@ type SpecUpdaterInf interface {
 
 // Either register for spec updates or set spec for offline spec, used in both consumer and provider process
 func RegisterForSpecUpdatesOrSetStaticSpec(ctx context.Context, chainParser chainlib.ChainParser, specPath string, rpcEndpoint lavasession.RPCEndpoint, specUpdaterInf SpecUpdaterInf) error {
-	return RegisterForSpecUpdatesOrSetStaticSpecWithToken(ctx, chainParser, specPath, rpcEndpoint, specUpdaterInf, "")
+	return RegisterForSpecUpdatesOrSetStaticSpecWithToken(ctx, chainParser, specPath, rpcEndpoint, specUpdaterInf, "", "")
 }
 
-// Either register for spec updates or set spec for offline spec with GitHub token support
-func RegisterForSpecUpdatesOrSetStaticSpecWithToken(ctx context.Context, chainParser chainlib.ChainParser, specPath string, rpcEndpoint lavasession.RPCEndpoint, specUpdaterInf SpecUpdaterInf, githubToken string) error {
+// RegisterForSpecUpdatesOrSetStaticSpecWithToken loads specs from various sources.
+// It supports:
+//   - Remote repositories (GitHub/GitLab) - detected automatically by URL pattern
+//   - Local directories - all JSON files in the directory are loaded
+//   - Local files - single file or comma-separated list of files
+//
+// For remote repositories, the appropriate token (githubToken or gitlabToken) is used for authentication.
+func RegisterForSpecUpdatesOrSetStaticSpecWithToken(ctx context.Context, chainParser chainlib.ChainParser, specPath string, rpcEndpoint lavasession.RPCEndpoint, specUpdaterInf SpecUpdaterInf, githubToken string, gitlabToken string) error {
 	if specPath == "" {
 		return specUpdaterInf.RegisterForSpecUpdates(ctx, chainParser, rpcEndpoint)
 	}
 
-	// Check if specPath is a GitHub URL (not just contains "git" substring)
-	if strings.HasPrefix(specPath, "https://github.com") {
-		spec, err := specutils.GetSpecFromGitWithToken(specPath, rpcEndpoint.ChainID, githubToken)
+	// Check if specPath is a remote repository URL (GitHub or GitLab)
+	if specfetcher.IsRemoteRepoURL(specPath) {
+		return loadSpecFromRemoteRepo(ctx, chainParser, specPath, rpcEndpoint.ChainID, githubToken, gitlabToken)
+	}
+
+	// Local file or directory
+	return loadSpecFromLocal(chainParser, specPath, rpcEndpoint.ChainID)
+}
+
+// loadSpecFromRemoteRepo fetches specs from a GitHub or GitLab repository.
+func loadSpecFromRemoteRepo(ctx context.Context, chainParser chainlib.ChainParser, repoURL, chainID, githubToken, gitlabToken string) error {
+	// Determine which token to use based on the provider
+	var token string
+	if specfetcher.IsGitHubURL(repoURL) {
+		token = githubToken
+	} else if specfetcher.IsGitLabURL(repoURL) {
+		token = gitlabToken
+	}
+
+	spec, err := specfetcher.FetchSpec(ctx, repoURL, chainID, token)
+	if err != nil {
+		return utils.LavaFormatError("failed loading spec from remote repository", err,
+			utils.LogAttr("repo_url", repoURL),
+			utils.LogAttr("chain_id", chainID))
+	}
+	chainParser.SetSpec(spec)
+	return nil
+}
+
+// loadSpecFromLocal loads specs from a local file or directory.
+func loadSpecFromLocal(chainParser chainlib.ChainParser, specPath, chainID string) error {
+	// Check if it's a directory
+	fileInfo, err := os.Stat(specPath)
+	if err == nil && fileInfo.IsDir() {
+		spec, err := speckeeper.GetSpecFromLocalDir(specPath, chainID)
 		if err != nil {
-			return utils.LavaFormatError("failed loading git spec", err, utils.LogAttr("spec_path", specPath), utils.LogAttr("spec_id", rpcEndpoint.ChainID))
+			return utils.LavaFormatError("failed loading local spec directory", err,
+				utils.LogAttr("spec_path", specPath),
+				utils.LogAttr("chain_id", chainID))
 		}
 		chainParser.SetSpec(spec)
-	} else {
-		// Try to check if it's a directory (os.Stat will fail for comma-separated strings, which is OK)
-		fileInfo, err := os.Stat(specPath)
-
-		if err == nil && fileInfo.IsDir() {
-			// Directory mode - load all spec files from the directory
-			spec, err := specutils.GetSpecFromLocalDir(specPath, rpcEndpoint.ChainID)
-			if err != nil {
-				return utils.LavaFormatError("failed loading local spec directory", err, utils.LogAttr("spec_path", specPath), utils.LogAttr("chain_id", rpcEndpoint.ChainID))
-			}
-			chainParser.SetSpec(spec)
-		} else {
-			// Single file or comma-separated files mode
-			parsedOfflineSpec, err := specutils.GetSpecsFromPath(specPath, rpcEndpoint.ChainID, nil, nil)
-			if err != nil {
-				return utils.LavaFormatError("failed loading offline spec", err, utils.LogAttr("spec_path", specPath), utils.LogAttr("spec_id", rpcEndpoint.ChainID))
-			}
-			utils.LavaFormatInfo("Loaded offline spec successfully", utils.LogAttr("spec_path", specPath), utils.LogAttr("chain_id", parsedOfflineSpec.Index))
-			chainParser.SetSpec(parsedOfflineSpec)
-		}
+		return nil
 	}
+
+	// Single file or comma-separated files
+	spec, err := speckeeper.GetSpecsFromPath(specPath, chainID, nil, nil)
+	if err != nil {
+		return utils.LavaFormatError("failed loading offline spec", err,
+			utils.LogAttr("spec_path", specPath),
+			utils.LogAttr("chain_id", chainID))
+	}
+	utils.LavaFormatInfo("Loaded offline spec successfully",
+		utils.LogAttr("spec_path", specPath),
+		utils.LogAttr("chain_id", spec.Index))
+	chainParser.SetSpec(spec)
 	return nil
 }
 

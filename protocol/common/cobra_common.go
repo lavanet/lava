@@ -33,11 +33,34 @@ const (
 	SetRelayCountOnNodeErrorFlag = "set-retry-count-on-node-error"
 	// BatchNodeErrorOnAny controls batch request error detection for JSON-RPC batch requests
 	BatchNodeErrorOnAnyFlag = "batch-node-error-on-any"
-	UseStaticSpecFlag       = "use-static-spec" // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
-	GitHubTokenFlag         = "github-token"    // GitHub personal access token for accessing private repositories and higher API rate limits
-	EpochDurationFlag       = "epoch-duration"  // duration of each epoch for time-based epoch system (standalone mode)
-	DefaultEpochDuration    = 30 * time.Minute  // default epoch duration for regular mode (if using time-based epochs)
-	StandaloneEpochDuration = 15 * time.Minute  // default epoch duration for standalone/static provider mode
+
+	// UseStaticSpecFlag allows loading specs from various sources instead of the blockchain.
+	// Supported formats:
+	//   - Local file:      --use-static-spec ./specs/eth.json
+	//   - Local directory: --use-static-spec ./specs/mainnet-1/specs/
+	//   - Comma-separated: --use-static-spec ./specs/ibc.json,./specs/cosmossdk.json,./specs/eth.json
+	//   - GitHub URL:      --use-static-spec https://github.com/owner/repo/tree/branch/path/to/specs
+	//   - GitLab URL:      --use-static-spec https://gitlab.com/owner/repo/-/tree/branch/path/to/specs
+	//
+	// For private GitHub/GitLab repositories, use the corresponding token flag.
+	UseStaticSpecFlag = "use-static-spec"
+
+	// GitHubTokenFlag is a GitHub personal access token for accessing private repositories.
+	// Also provides higher API rate limits (5,000 requests/hour vs 60 for unauthenticated).
+	// Required URL format: https://github.com/{owner}/{repo}/tree/{branch}/{path}
+	// Example: --github-token ghp_xxxxxxxxxxxx
+	GitHubTokenFlag = "github-token"
+
+	// GitLabTokenFlag is a GitLab personal access token for accessing private repositories.
+	// Supports both gitlab.com and self-hosted GitLab instances.
+	// The token must have at least "Reporter" role with "read_repository" scope.
+	// Required URL format: https://gitlab.com/{owner}/{repo}/-/tree/{branch}/{path}
+	// Example: --gitlab-token glpat-xxxxxxxxxxxx
+	GitLabTokenFlag = "gitlab-token"
+
+	EpochDurationFlag       = "epoch-duration" // duration of each epoch for time-based epoch system (standalone mode)
+	DefaultEpochDuration    = 30 * time.Minute // default epoch duration for regular mode (if using time-based epochs)
+	StandaloneEpochDuration = 15 * time.Minute // default epoch duration for standalone/static provider mode
 
 	// optimizer flags
 	SetProviderOptimizerBestTierPickChance       = "set-provider-optimizer-best-tier-pick-chance"
@@ -101,6 +124,7 @@ type ConsumerCmdFlags struct {
 	DebugRelays              bool          // enables debug mode for relays
 	StaticSpecPath           string        // path to the spec file, works only when bootstrapping a single chain.
 	GitHubToken              string        // GitHub personal access token for accessing private repositories
+	GitLabToken              string        // GitLab personal access token for accessing private repositories
 	EpochDuration            time.Duration // duration of each epoch for time-based epoch system (standalone mode)
 }
 
