@@ -1201,7 +1201,6 @@ func (rpcps *RPCProviderServer) GetParametersForCache(ctx context.Context, reque
 	return requestedBlockHash, finalized, nil
 }
 
-
 // handleConsistency waits for the chain tracker to catch up with the consumer's seen block if needed
 // This ensures the provider doesn't return stale data when the consumer has already seen a newer block
 func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, baseRelayTimeout time.Duration, seenBlock int64, requestBlock int64, averageBlockTime time.Duration, blockLagForQosSync int64, blockDistanceToFinalization uint32, blocksInFinalizationData uint32) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, timeSlept time.Duration, err error) {
@@ -1327,7 +1326,6 @@ func (rpcps *RPCProviderServer) GetLatestBlockData(ctx context.Context, blockDis
 	}
 	return latestBlock, requestedHashes, changeTime, err
 }
-
 
 func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, request *pairingtypes.RelayRequest, chainMsg chainlib.ChainMessage, consumerAddr sdk.AccAddress) (*chainlib.RelayReplyWrapper, error) {
 	if debugLatency {
