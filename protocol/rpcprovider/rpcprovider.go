@@ -169,6 +169,7 @@ type RPCProvider struct {
 	githubToken                  string
 	relayLoadLimit               uint64
 	providerLoadManagersPerChain *common.SafeSyncMap[string, *ProviderLoadManager]
+	enableConsistencyChecks      bool
 
 	verificationsResponseCache                          *ristretto.Cache[string, []*pairingtypes.Verification]
 	allChainsAndAPIInterfacesVerificationStatusFetchers []IVerificationsStatus
@@ -212,6 +213,7 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.githubToken = options.githubToken
 	rpcp.relayLoadLimit = options.relayLoadLimit
 	rpcp.providerLoadManagersPerChain = &common.SafeSyncMap[string, *ProviderLoadManager]{}
+	rpcp.enableConsistencyChecks = options.enableConsistencyChecks
 	if options.resourceLimiterOptions != nil {
 		rpcp.resourceLimiterOptions = *options.resourceLimiterOptions
 	}
@@ -815,7 +817,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		)
 	}
 
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, chainTracker, rpcp.privKey, rpcp.cache, rpcp.cacheLatestBlockEnabled, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager, rpcp, numberOfRetriesAllowedOnNodeErrors, testModeConfig, resourceLimiter, options.enableConsistencyChecks)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, chainTracker, rpcp.privKey, rpcp.cache, rpcp.cacheLatestBlockEnabled, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager, rpcp, numberOfRetriesAllowedOnNodeErrors, testModeConfig, resourceLimiter, rpcp.enableConsistencyChecks)
 	// set up grpc listener
 	var listener *ProviderListener
 	func() {
