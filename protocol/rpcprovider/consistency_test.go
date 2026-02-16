@@ -7,16 +7,16 @@ import (
 	"testing"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/golang/mock/gomock"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	rpcclient "github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	extensionslib "github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/common"
-	extensionslib "github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -60,7 +60,7 @@ func TestHandleConsistency_HistoricalBlockNoWait(t *testing.T) {
 	mockTracker.SetLatestBlock(1000, time.Now().Add(-time.Second))
 
 	rpcps := &RPCProviderServer{
-		chainTracker:       mockTracker,
+		chainTracker:        mockTracker,
 		rpcProviderEndpoint: &lavasession.RPCProviderEndpoint{ChainID: "TEST"},
 	}
 
@@ -88,7 +88,7 @@ func TestHandleConsistency_TooNewBailsFast(t *testing.T) {
 	mockTracker.SetLatestBlock(1, time.Now().Add(-time.Second))
 
 	rpcps := &RPCProviderServer{
-		chainTracker:       mockTracker,
+		chainTracker:        mockTracker,
 		rpcProviderEndpoint: &lavasession.RPCProviderEndpoint{ChainID: "TEST"},
 	}
 
@@ -115,12 +115,12 @@ func TestHandleConsistency_SleepsAndCatchesUp(t *testing.T) {
 	// First call returns 1, subsequent calls return 2.
 	seqTracker := &sequenceChainTracker{
 		DummyChainTracker: &chaintracker.DummyChainTracker{},
-		seq:              []int64{1, 2, 2, 2},
-		changeTime:       time.Now().Add(-time.Second),
+		seq:               []int64{1, 2, 2, 2},
+		changeTime:        time.Now().Add(-time.Second),
 	}
 
 	rpcps := &RPCProviderServer{
-		chainTracker:       seqTracker,
+		chainTracker:        seqTracker,
 		rpcProviderEndpoint: &lavasession.RPCProviderEndpoint{ChainID: "TEST"},
 	}
 
@@ -144,10 +144,10 @@ func TestHandleConsistency_SleepsAndCatchesUp(t *testing.T) {
 }
 
 type fakeChainParser struct {
-	blockLagForQosSync         int64
-	averageBlockTime           time.Duration
-	blockDistanceToFinalized   uint32
-	blocksInFinalizationProof  uint32
+	blockLagForQosSync        int64
+	averageBlockTime          time.Duration
+	blockDistanceToFinalized  uint32
+	blocksInFinalizationProof uint32
 }
 
 func (fcp *fakeChainParser) ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata, extensionInfo extensionslib.ExtensionInfo) (chainlib.ChainMessage, error) {
@@ -179,12 +179,14 @@ func (fcp *fakeChainParser) GetVerifications(supported []string, internalPath st
 func (fcp *fakeChainParser) SeparateAddonsExtensions(ctx context.Context, supported []string) (addons, extensions []string, err error) {
 	return nil, nil, nil
 }
-func (fcp *fakeChainParser) SetPolicy(policy chainlib.PolicyInf, chainId string, apiInterface string) error { return nil }
-func (fcp *fakeChainParser) Active() bool                                                     { return true }
-func (fcp *fakeChainParser) Activate()                                                        {}
-func (fcp *fakeChainParser) UpdateBlockTime(newBlockTime time.Duration)                        {}
-func (fcp *fakeChainParser) GetUniqueName() string                                             { return "fake" }
-func (fcp *fakeChainParser) ExtensionsParser() *extensionslib.ExtensionParser                 { return nil }
+func (fcp *fakeChainParser) SetPolicy(policy chainlib.PolicyInf, chainId string, apiInterface string) error {
+	return nil
+}
+func (fcp *fakeChainParser) Active() bool                                     { return true }
+func (fcp *fakeChainParser) Activate()                                        {}
+func (fcp *fakeChainParser) UpdateBlockTime(newBlockTime time.Duration)       {}
+func (fcp *fakeChainParser) GetUniqueName() string                            { return "fake" }
+func (fcp *fakeChainParser) ExtensionsParser() *extensionslib.ExtensionParser { return nil }
 func (fcp *fakeChainParser) ExtractDataFromRequest(*http.Request) (string, string, string, []pairingtypes.Metadata, error) {
 	return "", "", "", nil, nil
 }
@@ -198,7 +200,9 @@ type fakeChainRouter struct{}
 func (fcr *fakeChainRouter) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage chainlib.ChainMessageForSend, extensions []string) (*chainlib.RelayReplyWrapper, string, *rpcclient.ClientSubscription, common.NodeUrl, string, error) {
 	return nil, "", nil, common.NodeUrl{}, "", nil
 }
-func (fcr *fakeChainRouter) ExtensionsSupported(internalPath string, extensions []string) bool { return true }
+func (fcr *fakeChainRouter) ExtensionsSupported(internalPath string, extensions []string) bool {
+	return true
+}
 
 func TestTryRelayWithWrapper_ReturnsOnConsistencyError(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -253,4 +257,3 @@ func TestTryRelayWithWrapper_ReturnsOnConsistencyError(t *testing.T) {
 	require.Nil(t, reply)
 	require.Nil(t, wrapper)
 }
-

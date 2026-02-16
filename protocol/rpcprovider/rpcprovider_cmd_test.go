@@ -12,4 +12,3 @@ func TestCreateRPCProviderCobraCommand_HasDisableConsistencyFlag(t *testing.T) {
 		t.Fatalf("expected default false, got %q", flag.DefValue)
 	}
 }
-
