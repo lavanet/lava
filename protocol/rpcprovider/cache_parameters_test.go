@@ -29,9 +29,7 @@ func TestGetParametersForCache_LatestBlock(t *testing.T) {
 		},
 	}
 
-	requestedBlockHash, finalized, err := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(15))
-
-	require.NoError(t, err)
+	requestedBlockHash, finalized := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(15))
 	require.Nil(t, requestedBlockHash, "LATEST_BLOCK should not have a hash")
 	require.False(t, finalized, "LATEST_BLOCK (current block) is not finalized - needs to age by blockDistanceToFinalization")
 }
@@ -52,9 +50,7 @@ func TestGetParametersForCache_SpecificBlock_WithHash(t *testing.T) {
 		},
 	}
 
-	requestedBlockHash, finalized, err := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(15))
-
-	require.NoError(t, err)
+	requestedBlockHash, finalized := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(15))
 	require.Equal(t, []byte("hash_950"), requestedBlockHash, "should return hash for specific block")
 	require.True(t, finalized, "block 950 should be finalized (1000 - 950 = 50 > 15)")
 }
@@ -75,9 +71,7 @@ func TestGetParametersForCache_SpecificBlock_NoHash(t *testing.T) {
 		},
 	}
 
-	requestedBlockHash, finalized, err := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(15))
-
-	require.NoError(t, err)
+	requestedBlockHash, finalized := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(15))
 	require.Nil(t, requestedBlockHash, "should return nil if hash not available")
 	require.True(t, finalized, "should still calculate finalized status")
 }
@@ -97,9 +91,7 @@ func TestGetParametersForCache_RecentBlock_NotFinalized(t *testing.T) {
 		},
 	}
 
-	_, finalized, err := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(15))
-
-	require.NoError(t, err)
+	_, finalized := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(15))
 	require.False(t, finalized, "block 995 should NOT be finalized (1000 - 995 = 5 < 15)")
 }
 
@@ -119,9 +111,7 @@ func TestGetParametersForCache_FinalizedBlock_EdgeCase(t *testing.T) {
 		},
 	}
 
-	_, finalized, err := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(15))
-
-	require.NoError(t, err)
+	_, finalized := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(15))
 	require.True(t, finalized, "block at exact boundary should be finalized")
 }
 
@@ -140,9 +130,7 @@ func TestGetParametersForCache_SafeBlock(t *testing.T) {
 		},
 	}
 
-	requestedBlockHash, _, err := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(15))
-
-	require.NoError(t, err)
+	requestedBlockHash, _ := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(15))
 	require.Nil(t, requestedBlockHash, "special block types should not have hash")
 }
 
@@ -161,9 +149,7 @@ func TestGetParametersForCache_EarliestBlock(t *testing.T) {
 		},
 	}
 
-	requestedBlockHash, _, err := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(15))
-
-	require.NoError(t, err)
+	requestedBlockHash, _ := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(15))
 	require.Nil(t, requestedBlockHash, "EARLIEST_BLOCK should not have hash")
 }
 
@@ -182,9 +168,7 @@ func TestGetParametersForCache_FinalizedBlockTag(t *testing.T) {
 		},
 	}
 
-	requestedBlockHash, _, err := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(15))
-
-	require.NoError(t, err)
+	requestedBlockHash, _ := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(15))
 	require.Nil(t, requestedBlockHash, "FINALIZED_BLOCK tag should not have hash")
 }
 
@@ -205,9 +189,7 @@ func TestGetParametersForCache_ChainTrackerError(t *testing.T) {
 	}
 
 	// Should handle error gracefully
-	requestedBlockHash, finalized, err := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(15))
-
-	require.NoError(t, err)
+	requestedBlockHash, finalized := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(15))
 	require.Nil(t, requestedBlockHash, "should return nil hash when GetLatestBlockData errors")
 	require.True(t, finalized, "should still calculate finalized status based on latest block")
 }
@@ -234,9 +216,7 @@ func TestGetParametersForCache_MultipleHashesReturned(t *testing.T) {
 		},
 	}
 
-	requestedBlockHash, _, err := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(15))
-
-	require.NoError(t, err)
+	requestedBlockHash, _ := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(15))
 	// Should only use hash if exactly 1 is returned
 	require.Nil(t, requestedBlockHash, "should return nil when multiple hashes returned")
 }
@@ -256,9 +236,7 @@ func TestGetParametersForCache_BlockZero(t *testing.T) {
 		},
 	}
 
-	requestedBlockHash, finalized, err := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(15))
-
-	require.NoError(t, err)
+	requestedBlockHash, finalized := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(15))
 	require.Nil(t, requestedBlockHash)
 	// Block 0 is ancient, should be finalized
 	require.True(t, finalized)
@@ -280,9 +258,7 @@ func TestGetParametersForCache_VeryLargeBlockDistanceForFinalization(t *testing.
 	}
 
 	// Very large finalization distance
-	_, finalized, err := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(10000))
-
-	require.NoError(t, err)
+	_, finalized := rpcps.GetParametersForCache(context.Background(), request, latestBlock, uint32(10000))
 	require.False(t, finalized, "with huge finalization distance, nothing should be finalized")
 }
 

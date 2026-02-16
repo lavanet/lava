@@ -970,7 +970,7 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 	var err error
 	var latestBlock int64
 	if rpcps.enableConsistency {
-		latestBlock, _, _, err = rpcps.handleConsistency(
+		latestBlock, _, err = rpcps.handleConsistency(
 			ctx,
 			relayTimeout,
 			request.RelayData.GetSeenBlock(),
@@ -991,10 +991,7 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 	// Calculate cache parameters using the consistent latest block
 	var requestedBlockHash []byte
 	var finalized bool
-	requestedBlockHash, finalized, err = rpcps.GetParametersForCache(ctx, request, latestBlock, blockDistanceToFinalization)
-	if err != nil {
-		return nil, nil, err
-	}
+	requestedBlockHash, finalized = rpcps.GetParametersForCache(ctx, request, latestBlock, blockDistanceToFinalization)
 
 	// currently used when cache hits.
 	var reply *pairingtypes.RelayReply
@@ -1180,7 +1177,7 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 
 // GetParametersForCache calculates cache parameters (block hash and finalization status)
 // It takes the latestBlock from handleConsistency to ensure consistency
-func (rpcps *RPCProviderServer) GetParametersForCache(ctx context.Context, request *pairingtypes.RelayRequest, latestBlock int64, blockDistanceToFinalization uint32) (requestedBlockHash []byte, finalized bool, err error) {
+func (rpcps *RPCProviderServer) GetParametersForCache(ctx context.Context, request *pairingtypes.RelayRequest, latestBlock int64, blockDistanceToFinalization uint32) (requestedBlockHash []byte, finalized bool) {
 	specificBlock := request.RelayData.RequestBlock
 	if specificBlock < spectypes.LATEST_BLOCK {
 		// cases of EARLIEST, FINALIZED, SAFE
@@ -1198,23 +1195,20 @@ func (rpcps *RPCProviderServer) GetParametersForCache(ctx context.Context, reque
 	modifiedReqBlock := lavaprotocol.ReplaceRequestedBlock(request.RelayData.RequestBlock, latestBlock)
 	finalized = spectypes.IsFinalizedBlock(modifiedReqBlock, latestBlock, int64(blockDistanceToFinalization))
 
-	return requestedBlockHash, finalized, nil
+	return requestedBlockHash, finalized
 }
 
 // handleConsistency waits for the chain tracker to catch up with the consumer's seen block if needed
 // This ensures the provider doesn't return stale data when the consumer has already seen a newer block
-func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, baseRelayTimeout time.Duration, seenBlock int64, requestBlock int64, averageBlockTime time.Duration, blockLagForQosSync int64, blockDistanceToFinalization uint32, blocksInFinalizationData uint32) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, timeSlept time.Duration, err error) {
-	latestBlock, requestedHashes, changeTime, err := rpcps.GetLatestBlockData(ctx, blockDistanceToFinalization, blocksInFinalizationData)
-	if err != nil {
-		return 0, nil, 0, err
-	}
+func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, baseRelayTimeout time.Duration, seenBlock int64, requestBlock int64, averageBlockTime time.Duration, blockLagForQosSync int64, blockDistanceToFinalization uint32, blocksInFinalizationData uint32) (latestBlock int64, timeSlept time.Duration, err error) {
+	latestBlock, changeTime := rpcps.chainTracker.GetLatestBlockNum()
 	if requestBlock == spectypes.LATEST_BLOCK && seenBlock > latestBlock {
 		// we can't just replace requested block here with what we have, it must be with at least seen block
 		requestBlock = seenBlock
 	}
 	if requestBlock <= latestBlock || seenBlock <= latestBlock {
 		// requested block is older than our information, or the consumer is asking a future block he has no information about
-		return latestBlock, requestedHashes, 0, nil
+		return latestBlock, 0, nil
 	}
 	// consumer asked for a block that is newer than our state tracker, calculate whether we should wait and try to update
 	blockGap := requestBlock - latestBlock
@@ -1248,7 +1242,7 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, baseRelay
 	}
 	// we only bail if there is no chance for the provider to get to the requested block and the consumer has already got a response from a different provider with that block
 	if (blockGap > blockLagForQosSync*2 || (blockGap > 1 && probabilityBlockError > 0.4)) && (seenBlock >= latestBlock) {
-		return latestBlock, requestedHashes, 0, utils.LavaFormatWarning("Requested a block that is too new", protocolerrors.ConsistencyError, utils.Attribute{Key: "blockGap", Value: blockGap}, utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "seenBlock", Value: seenBlock}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
+		return latestBlock, 0, utils.LavaFormatWarning("Requested a block that is too new", protocolerrors.ConsistencyError, utils.Attribute{Key: "blockGap", Value: blockGap}, utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "seenBlock", Value: seenBlock}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
 	}
 
 	if !ok {
@@ -1266,18 +1260,15 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, baseRelay
 	sleptTime := rpcps.SleepUntilTimeOrConditionReached(sleepContext, 50*time.Millisecond, getLatestBlock)
 	cancel()
 	// see if there is an updated info
-	latestBlock, requestedHashes, _, err = rpcps.GetLatestBlockData(ctx, blockDistanceToFinalization, blocksInFinalizationData)
-	if err != nil {
-		return 0, nil, sleptTime, utils.LavaFormatWarning("delayed fetch failed", err, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
-	}
+	latestBlock, _ = rpcps.chainTracker.GetLatestBlockNum()
 	if requestBlock > latestBlock && seenBlock > latestBlock {
 		// meaning we can't guarantee it will work since chainTracker didn't see this requested block yet
-		return 0, nil, sleptTime, utils.LavaFormatWarning("requested block is too new", nil, utils.Attribute{Key: "sleptTime", Value: sleptTime}, utils.Attribute{Key: "requested", Value: requestBlock}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "seenBlock", Value: seenBlock})
+		return 0, sleptTime, utils.LavaFormatWarning("requested block is too new", nil, utils.Attribute{Key: "sleptTime", Value: sleptTime}, utils.Attribute{Key: "requested", Value: requestBlock}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "seenBlock", Value: seenBlock})
 	}
 	if debugConsistency {
 		utils.LavaFormatDebug("consistency sleep done", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "sleptTime", Value: sleptTime})
 	}
-	return latestBlock, requestedHashes, sleptTime, nil
+	return latestBlock, sleptTime, nil
 }
 
 // SleepUntilTimeOrConditionReached sleeps in intervals, checking a condition periodically
