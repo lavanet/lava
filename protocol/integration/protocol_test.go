@@ -397,7 +397,32 @@ func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpc
 	require.NoError(t, err)
 	chainTracker.StartAndServe(ctx)
 	mockChainTracker := NewMockChainTracker(chainTracker)
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rws, providerSessionManager, mockChainTracker, rpcProviderOptions.account.SK, cache, false, chainRouter, &mockProviderStateTracker, rpcProviderOptions.account.Addr, rpcProviderOptions.lavaChainID, rpcprovider.DEFAULT_ALLOWED_MISSING_CU, nil, nil, nil, false, nil, nil, numberOfRetriesOnNodeErrorsProviderSide, nil, nil)
+	rpcProviderServer.ServeRPCRequests(
+		ctx,
+		rpcProviderEndpoint,
+		chainParser,
+		rws,
+		providerSessionManager,
+		chainTracker,
+		rpcProviderOptions.account.SK,
+		cache,
+		false,
+		chainRouter,
+		&mockProviderStateTracker,
+		rpcProviderOptions.account.Addr,
+		rpcProviderOptions.lavaChainID,
+		rpcprovider.DEFAULT_ALLOWED_MISSING_CU,
+		nil,   // providerMetrics
+		nil,   // relaysMonitor
+		nil,   // providerNodeSubscriptionManager
+		false, // staticProvider
+		nil,   // providerLoadManager
+		nil,   // verificationsStatusGetter
+		numberOfRetriesOnNodeErrorsProviderSide,
+		nil,   // testModeConfig
+		nil,   // resourceLimiter
+		false, // enableConsistency
+	)
 	listener := rpcprovider.NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress, "/health")
 	err = listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
 	require.NoError(t, err)
