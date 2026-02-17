@@ -35,12 +35,23 @@ const (
 	BatchNodeErrorOnAnyFlag = "batch-node-error-on-any"
 
 	// UseStaticSpecFlag allows loading specs from various sources instead of the blockchain.
+	// This flag can be specified multiple times to aggregate specs from multiple sources.
+	// Later sources override earlier ones for the same chain ID (last-wins).
+	//
 	// Supported formats:
 	//   - Local file:      --use-static-spec ./specs/eth.json
 	//   - Local directory: --use-static-spec ./specs/mainnet-1/specs/
-	//   - Comma-separated: --use-static-spec ./specs/ibc.json,./specs/cosmossdk.json,./specs/eth.json
 	//   - GitHub URL:      --use-static-spec https://github.com/owner/repo/tree/branch/path/to/specs
 	//   - GitLab URL:      --use-static-spec https://gitlab.com/owner/repo/-/tree/branch/path/to/specs
+	//
+	// Multiple local files can be specified either as separate flags or comma-separated:
+	//   --use-static-spec file1.json --use-static-spec file2.json
+	//   --use-static-spec file1.json,file2.json
+	//
+	// Example with multiple sources (order matters - later overrides earlier):
+	//   --use-static-spec https://github.com/lavanet/lava/tree/main/specs \
+	//   --use-static-spec https://gitlab.com/myorg/specs/-/tree/main \
+	//   --use-static-spec ./local-overrides/
 	//
 	// For private GitHub/GitLab repositories, use the corresponding token flag.
 	UseStaticSpecFlag = "use-static-spec"
@@ -122,7 +133,7 @@ type ConsumerCmdFlags struct {
 	RelaysHealthEnableFlag   bool          // enables relay health check
 	RelaysHealthIntervalFlag time.Duration // interval for relay health check
 	DebugRelays              bool          // enables debug mode for relays
-	StaticSpecPath           string        // path to the spec file, works only when bootstrapping a single chain.
+	StaticSpecPaths          []string      // paths to spec sources (files, directories, or remote URLs). Later entries override earlier for same chain ID.
 	GitHubToken              string        // GitHub personal access token for accessing private repositories
 	GitLabToken              string        // GitLab personal access token for accessing private repositories
 	EpochDuration            time.Duration // duration of each epoch for time-based epoch system (standalone mode)

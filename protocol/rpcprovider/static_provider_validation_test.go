@@ -88,46 +88,60 @@ func TestParseStaticProviderEndpoints_RequiresName(t *testing.T) {
 }
 
 // TestStaticProvider_RequiresSpecPath validates that static providers
-// must have a spec path configured, preventing silent failures when
+// must have spec paths configured, preventing silent failures when
 // the standalone state tracker cannot fetch specs from the blockchain.
 //
-// This test validates the fix for: "static providers without a spec path
+// This test validates the fix for: "static providers without spec paths
 // silently continue with no spec, leading to runtime failures later"
 func TestStaticProvider_RequiresSpecPath(t *testing.T) {
 	tests := []struct {
-		name           string
-		staticProvider bool
-		staticSpecPath string
-		shouldError    bool
-		errorContains  string
+		name            string
+		staticProvider  bool
+		staticSpecPaths []string
+		shouldError     bool
+		errorContains   string
 	}{
 		{
-			name:           "static provider without spec path should fail",
-			staticProvider: true,
-			staticSpecPath: "",
-			shouldError:    true,
-			errorContains:  "--static-spec-path is required when using --static-providers",
+			name:            "static provider without spec paths should fail",
+			staticProvider:  true,
+			staticSpecPaths: nil,
+			shouldError:     true,
+			errorContains:   "--use-static-spec is required when using --static-providers",
 		},
 		{
-			name:           "static provider with spec path should not fail early validation",
-			staticProvider: true,
-			staticSpecPath: "/path/to/spec.json",
-			shouldError:    false,
-			errorContains:  "--static-spec-path is required",
+			name:            "static provider with empty spec paths should fail",
+			staticProvider:  true,
+			staticSpecPaths: []string{},
+			shouldError:     true,
+			errorContains:   "--use-static-spec is required when using --static-providers",
 		},
 		{
-			name:           "regular provider without spec path should not fail with spec path error",
-			staticProvider: false,
-			staticSpecPath: "",
-			shouldError:    false,
-			errorContains:  "--static-spec-path is required",
+			name:            "static provider with spec paths should not fail early validation",
+			staticProvider:  true,
+			staticSpecPaths: []string{"/path/to/spec.json"},
+			shouldError:     false,
+			errorContains:   "--use-static-spec is required",
 		},
 		{
-			name:           "regular provider with spec path should not fail with spec path error",
-			staticProvider: false,
-			staticSpecPath: "/path/to/spec.json",
-			shouldError:    false,
-			errorContains:  "--static-spec-path is required",
+			name:            "static provider with multiple spec paths should not fail early validation",
+			staticProvider:  true,
+			staticSpecPaths: []string{"/path/to/spec1.json", "/path/to/spec2.json"},
+			shouldError:     false,
+			errorContains:   "--use-static-spec is required",
+		},
+		{
+			name:            "regular provider without spec paths should not fail with spec path error",
+			staticProvider:  false,
+			staticSpecPaths: nil,
+			shouldError:     false,
+			errorContains:   "--use-static-spec is required",
+		},
+		{
+			name:            "regular provider with spec paths should not fail with spec path error",
+			staticProvider:  false,
+			staticSpecPaths: []string{"/path/to/spec.json"},
+			shouldError:     false,
+			errorContains:   "--use-static-spec is required",
 		},
 	}
 
@@ -136,11 +150,11 @@ func TestStaticProvider_RequiresSpecPath(t *testing.T) {
 			// Validate the configuration logic that happens early in Start()
 			// We can't run the full Start() without complex setup, but we can
 			// validate the key validation logic
-			err := validateStaticProviderConfig(tt.staticProvider, tt.staticSpecPath)
+			err := validateStaticProviderConfig(tt.staticProvider, tt.staticSpecPaths)
 
 			if tt.shouldError {
-				require.Error(t, err, "Expected error for configuration: staticProvider=%v, staticSpecPath=%q",
-					tt.staticProvider, tt.staticSpecPath)
+				require.Error(t, err, "Expected error for configuration: staticProvider=%v, staticSpecPaths=%v",
+					tt.staticProvider, tt.staticSpecPaths)
 				require.Contains(t, err.Error(), tt.errorContains,
 					"Error should contain expected message")
 			} else {
@@ -156,10 +170,10 @@ func TestStaticProvider_RequiresSpecPath(t *testing.T) {
 
 // validateStaticProviderConfig encapsulates the validation logic from RPCProvider.Start()
 // This allows testing the validation without requiring full provider initialization
-func validateStaticProviderConfig(staticProvider bool, staticSpecPath string) error {
-	if staticProvider && staticSpecPath == "" {
+func validateStaticProviderConfig(staticProvider bool, staticSpecPaths []string) error {
+	if staticProvider && len(staticSpecPaths) == 0 {
 		return &validationError{
-			message: "--static-spec-path is required when using --static-providers",
+			message: "--use-static-spec is required when using --static-providers",
 		}
 	}
 	return nil

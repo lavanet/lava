@@ -8,7 +8,7 @@ import (
 
 // Test that verifies the GitHub token bug fix
 // This test ensures that when githubToken is set in RPCProvider,
-// it gets passed to RegisterForSpecUpdatesOrSetStaticSpecWithToken
+// it gets passed to RegisterForSpecUpdatesOrSetStaticSpecsWithToken
 func TestRPCProvider_GitHubTokenPassthrough(t *testing.T) {
 	// This test verifies the fix for the bug where --github-token flag
 	// was being read but not passed to the spec loading function
@@ -22,13 +22,12 @@ func TestRPCProvider_GitHubTokenPassthrough(t *testing.T) {
 	require.Equal(t, "test_token_12345", rpcp.githubToken)
 
 	// The actual fix is in SetupEndpoint() where it now calls:
-	// statetracker.RegisterForSpecUpdatesOrSetStaticSpecWithToken(..., rpcp.githubToken)
-	// instead of:
-	// statetracker.RegisterForSpecUpdatesOrSetStaticSpec(...)
+	// statetracker.RegisterForSpecUpdatesOrSetStaticSpecsWithToken(..., rpcp.githubToken, rpcp.gitlabToken)
+	// This supports multiple spec sources with aggregation and both GitHub/GitLab tokens
 
 	// This ensures that the token is actually used when fetching specs from GitHub
 	t.Log("GitHub token should be passed to spec loading function")
-	t.Log("Fixed: Changed from RegisterForSpecUpdatesOrSetStaticSpec to RegisterForSpecUpdatesOrSetStaticSpecWithToken")
+	t.Log("Current: Using RegisterForSpecUpdatesOrSetStaticSpecsWithToken for multi-source support")
 }
 
 // Test that empty token works (unauthenticated mode)
