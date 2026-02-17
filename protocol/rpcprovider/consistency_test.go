@@ -2,6 +2,7 @@ package rpcprovider
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"sync/atomic"
 	"testing"
@@ -19,6 +20,8 @@ import (
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
+
+var errFakeChainParserNotImplemented = errors.New("fakeChainParser: not implemented")
 
 // sequenceChainTracker returns a deterministic latest block sequence across calls.
 // It embeds DummyChainTracker to satisfy the full IChainTracker interface.
@@ -151,15 +154,17 @@ type fakeChainParser struct {
 }
 
 func (fcp *fakeChainParser) ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata, extensionInfo extensionslib.ExtensionInfo) (chainlib.ChainMessage, error) {
-	return nil, nil
+	return nil, errFakeChainParserNotImplemented
 }
 func (fcp *fakeChainParser) SetSpec(spec spectypes.Spec) {}
 func (fcp *fakeChainParser) ChainBlockStats() (int64, time.Duration, uint32, uint32) {
 	return fcp.blockLagForQosSync, fcp.averageBlockTime, fcp.blockDistanceToFinalized, fcp.blocksInFinalizationProof
 }
+
 func (fcp *fakeChainParser) GetParsingByTag(tag spectypes.FUNCTION_TAG) (*spectypes.ParseDirective, *spectypes.ApiCollection, bool) {
 	return nil, nil, false
 }
+
 func (fcp *fakeChainParser) IsTagInCollection(tag spectypes.FUNCTION_TAG, collectionKey chainlib.CollectionKey) bool {
 	return false
 }
@@ -167,18 +172,23 @@ func (fcp *fakeChainParser) GetAllInternalPaths() []string { return nil }
 func (fcp *fakeChainParser) IsInternalPathEnabled(internalPath string, apiInterface string, addon string) bool {
 	return true
 }
+
 func (fcp *fakeChainParser) CraftMessage(parser *spectypes.ParseDirective, connectionType string, craftData *chainlib.CraftData, metadata []pairingtypes.Metadata) (chainlib.ChainMessageForSend, error) {
-	return nil, nil
+	return nil, errFakeChainParserNotImplemented
 }
+
 func (fcp *fakeChainParser) HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) ([]pairingtypes.Metadata, string, []pairingtypes.Metadata) {
 	return metadata, "", nil
 }
+
 func (fcp *fakeChainParser) GetVerifications(supported []string, internalPath string, apiInterface string) ([]chainlib.VerificationContainer, error) {
-	return nil, nil
+	return []chainlib.VerificationContainer{}, nil
 }
+
 func (fcp *fakeChainParser) SeparateAddonsExtensions(ctx context.Context, supported []string) (addons, extensions []string, err error) {
-	return nil, nil, nil
+	return []string{}, []string{}, nil
 }
+
 func (fcp *fakeChainParser) SetPolicy(policy chainlib.PolicyInf, chainId string, apiInterface string) error {
 	return nil
 }
@@ -190,6 +200,7 @@ func (fcp *fakeChainParser) ExtensionsParser() *extensionslib.ExtensionParser { 
 func (fcp *fakeChainParser) ExtractDataFromRequest(*http.Request) (string, string, string, []pairingtypes.Metadata, error) {
 	return "", "", "", nil, nil
 }
+
 func (fcp *fakeChainParser) SetResponseFromRelayResult(*common.RelayResult) (*http.Response, error) {
 	return &http.Response{}, nil
 }
@@ -200,6 +211,7 @@ type fakeChainRouter struct{}
 func (fcr *fakeChainRouter) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage chainlib.ChainMessageForSend, extensions []string) (*chainlib.RelayReplyWrapper, string, *rpcclient.ClientSubscription, common.NodeUrl, string, error) {
 	return nil, "", nil, common.NodeUrl{}, "", nil
 }
+
 func (fcr *fakeChainRouter) ExtensionsSupported(internalPath string, extensions []string) bool {
 	return true
 }
