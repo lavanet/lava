@@ -69,18 +69,18 @@ const (
 	// Example: --gitlab-token glpat-xxxxxxxxxxxx
 	GitLabTokenFlag = "gitlab-token"
 
-	EpochDurationFlag       = "epoch-duration" // duration of each epoch for time-based epoch system (standalone mode)
-	DefaultEpochDuration    = 30 * time.Minute // default epoch duration for regular mode (if using time-based epochs)
-	StandaloneEpochDuration = 15 * time.Minute // default epoch duration for standalone/static provider mode
+	EpochDurationFlag              = "epoch-duration"         // duration of each epoch for time-based epoch system (standalone mode)
+	DefaultEpochDuration           = 30 * time.Minute         // default epoch duration for regular mode (if using time-based epochs)
+	StandaloneEpochDuration        = 15 * time.Minute         // default epoch duration for standalone/static provider mode
+	EnableSelectionStatsHeaderFlag = "enable-selection-stats" // enable selection stats header for debugging provider selection // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
 
-	// optimizer flags
-	SetProviderOptimizerBestTierPickChance       = "set-provider-optimizer-best-tier-pick-chance"
-	SetProviderOptimizerWorstTierPickChance      = "set-provider-optimizer-worst-tier-pick-chance"
-	SetProviderOptimizerNumberOfTiersToCreate    = "set-provider-optimizer-number-of-tiers-to-create"
-	SetProviderOptimizerNumberOfProvidersPerTier = "set-provider-optimizer-number-of-providers-per-tier"
-	// If we have 4 providers for a specific chain, we will put 1 provider in each tier, so we wont have all 4 in tier 1 (which makes no sense.)
-	SetProviderOptimizerAutoAdjustTiers        = "enable-provider-optimizer-auto-adjustment-of-tiers"     // will auto adjust the tiers based on the number of providers in pairing
-	SetProviderOptimizerQosSelectionInTierFlag = "set-provider-optimizer-qos-based-selection-within-tier" // enables QoS-based selection within tiers instead of stake-based selection
+	// weighted selection flags (new system replacing tiers)
+	UseWeightedSelection                = "use-weighted-provider-selection"         // enable weighted random selection based on composite QoS scores
+	ProviderOptimizerAvailabilityWeight = "provider-optimizer-availability-weight"  // weight for availability score (default: 0.4)
+	ProviderOptimizerLatencyWeight      = "provider-optimizer-latency-weight"       // weight for latency score (default: 0.3)
+	ProviderOptimizerSyncWeight         = "provider-optimizer-sync-weight"          // weight for sync score (default: 0.2)
+	ProviderOptimizerStakeWeight        = "provider-optimizer-stake-weight"         // weight for stake (default: 0.1)
+	ProviderOptimizerMinSelectionChance = "provider-optimizer-min-selection-chance" // minimum selection probability for any provider (default: 0.01)
 
 	// optimizer qos server flags
 	OptimizerQosServerAddressFlag          = "optimizer-qos-server-address"    // address of the optimizer qos server to send the qos reports
@@ -99,6 +99,7 @@ const (
 	// specification default flags
 	PeriodicProbeProvidersFlagName         = "enable-periodic-probe-providers"
 	PeriodicProbeProvidersIntervalFlagName = "periodic-probe-providers-interval"
+	ProbeUpdateWeightFlagName              = "probe-update-weight"
 
 	// batch request size limit
 	MaxBatchRequestSizeFlag        = "max-batch-request-size"
@@ -137,6 +138,7 @@ type ConsumerCmdFlags struct {
 	GitHubToken              string        // GitHub personal access token for accessing private repositories
 	GitLabToken              string        // GitLab personal access token for accessing private repositories
 	EpochDuration            time.Duration // duration of each epoch for time-based epoch system (standalone mode)
+	EnableSelectionStats     bool          // enables selection stats header for debugging provider selection
 }
 
 // default rolling logs behavior (if enabled) will store 3 files each 100MB for up to 1 day every time.

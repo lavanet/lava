@@ -1,0 +1,29 @@
+endpoints:
+  - chain-id: LAV1
+    api-interface: tendermintrpc
+    network-address: 127.0.0.1:3361
+
+static-providers:
+  - name: provider-2220-tendermintrpc
+    stake: 10
+    api-interface: tendermintrpc
+    chain-id: LAV1
+    node-urls:
+      - url: 127.0.0.1:2220
+  - name: provider-2221-tendermintrpc
+    stake: 50
+    api-interface: tendermintrpc
+    chain-id: LAV1
+    node-urls:
+      - url: 127.0.0.1:2221
+  - name: provider-2222-tendermintrpc
+    stake: 100
+    api-interface: tendermintrpc
+    chain-id: LAV1
+    node-urls:
+      - url: 127.0.0.1:2222
+
+account:
+  lava_account_address: lava@12345678
+  lava_chain_id: lava
+

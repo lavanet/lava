@@ -51,24 +51,28 @@ echo "Using static specs: $SPECS_DIR"
 # Export RPC endpoint URLs as environment variables
 # Set these before running the script:
 #   export ETH_RPC_URL_1="https://mainnet.infura.io/v3/YOUR_INFURA_KEY"
-#   export ETH_RPC_WS_1="wss://mainnet.infura.io/ws/v3/YOUR_INFURA_KEY"
 #   export ETH_RPC_URL_2="https://purple-newest-dew.quiknode.pro/YOUR_QUICKNODE_KEY"
-#   (ETH_RPC_WS_2 not used - Providers 2&3 use Infura WS instead)
+#   export ETH_RPC_URL_3="https://another-quiknode-endpoint.pro/YOUR_QUICKNODE_KEY"
 #   
-# Note: QuickNode free tier has a 2 WebSocket connection limit
-# Solution: All providers use Infura WebSocket ($ETH_RPC_WS_1)
-# Only HTTP endpoints use QuickNode to spread the load
+# Note: WebSocket endpoints are disabled in this configuration (HTTP only)
 
 # Set defaults if not already exported (placeholders will fail to connect)
 export ETH_RPC_URL_1="${ETH_RPC_URL_1:-https://mainnet.infura.io/v3/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX}"
-export ETH_RPC_WS_1="${ETH_RPC_WS_1:-wss://mainnet.infura.io/ws/v3/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX}"
 export ETH_RPC_URL_2="${ETH_RPC_URL_2:-https://purple-newest-dew.quiknode.pro/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX}"
-# ETH_RPC_WS_2 not used in current config (Providers 2&3 are HTTP only)
+export ETH_RPC_URL_3="${ETH_RPC_URL_3:-https://another-quiknode-endpoint.pro/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX}"
 
 # Validate that real URLs are set (not placeholders)
 if [[ "$ETH_RPC_URL_1" == *"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"* ]]; then
     echo "Warning: ETH_RPC_URL_1 contains placeholder. Set real values with:"
     echo "  export ETH_RPC_URL_1='https://mainnet.infura.io/v3/YOUR_KEY'"
+fi
+if [[ "$ETH_RPC_URL_2" == *"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"* ]]; then
+    echo "Warning: ETH_RPC_URL_2 contains placeholder. Set real values with:"
+    echo "  export ETH_RPC_URL_2='https://purple-newest-dew.quiknode.pro/YOUR_KEY'"
+fi
+if [[ "$ETH_RPC_URL_3" == *"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"* ]]; then
+    echo "Warning: ETH_RPC_URL_3 contains placeholder. Set real values with:"
+    echo "  export ETH_RPC_URL_3='https://another-quiknode-endpoint.pro/YOUR_KEY'"
 fi
 
 # Generate provider configs on-the-fly in project root (where viper can find them)
@@ -80,18 +84,19 @@ echo "Generating provider configs with environment variables..."
 echo "Config directory (absolute): $CONFIG_DIR"
 echo "Environment variables:"
 echo "  ETH_RPC_URL_1 (Infura HTTP):     ${ETH_RPC_URL_1:0:50}..."
-echo "  ETH_RPC_WS_1 (Infura WS):        ${ETH_RPC_WS_1:0:50}..."
 echo "  ETH_RPC_URL_2 (QuickNode HTTP):  ${ETH_RPC_URL_2:0:50}..."
+echo "  ETH_RPC_URL_3 (QuickNode HTTP):  ${ETH_RPC_URL_3:0:50}..."
 echo ""
-echo "Provider Endpoint Configuration:"
-echo "  Provider 1: Infura HTTP + Infura WS (archive)"
-echo "  Provider 2: QuickNode HTTP + Infura WS (debug + archive)"
-echo "  Provider 3: QuickNode HTTP + Infura WS (debug + archive)"
+echo "Provider Endpoint Configuration (HTTP only - WebSocket disabled):"
+echo "  Provider 1: Infura HTTP (archive)"
+echo "  Provider 2: QuickNode HTTP (debug + archive)"
+echo "  Provider 3: QuickNode HTTP endpoint 3 (debug + archive)"
 echo ""
-echo "Note: All providers use Infura WebSocket to avoid QuickNode's 2 WS connection limit"
-echo "      HTTP load is split: Provider 1 uses Infura, Providers 2&3 use QuickNode"
+echo "Note: WebSocket endpoints are disabled to skip WS verification"
+echo "      HTTP load is split: Provider 1 uses Infura, Providers 2&3 use QuickNode (separate endpoints)"
 
 # Provider 1 config (based on eth_provider_with_archive_debug.yml)
+# WebSocket URLs removed - HTTP only
 cat > $CONFIG_DIR/provider1_eth.yml <<EOF
 endpoints:
     - name: provider-archive
@@ -101,17 +106,13 @@ endpoints:
         address: "$PROVIDER1_LISTENER"
       node-urls:
         - url: $ETH_RPC_URL_1
-        - url: $ETH_RPC_WS_1
         - url: $ETH_RPC_URL_1
-          addons:
-            - archive
-        - url: $ETH_RPC_WS_1
           addons:
             - archive
 EOF
 
 # Provider 2 config (based on eth_provider_with_archive_debug1.yml)
-# Uses QuickNode HTTP + Infura WebSocket (to avoid QuickNode WS limit)
+# WebSocket URLs removed - HTTP only
 cat > $CONFIG_DIR/provider2_eth.yml <<EOF
 endpoints:
     - name: provider-debug-archive
@@ -122,19 +123,12 @@ endpoints:
       node-urls:
         # Base URLs (no addons) - for regular requests
         - url: $ETH_RPC_URL_2
-        - url: $ETH_RPC_WS_1
         # Debug addon URLs
         - url: $ETH_RPC_URL_2
           addons:
             - debug
-        - url: $ETH_RPC_WS_1
-          addons:
-            - debug
         # Archive addon URLs
         - url: $ETH_RPC_URL_2
-          addons:
-            - archive
-        - url: $ETH_RPC_WS_1
           addons:
             - archive
         # Combined debug+archive URLs
@@ -142,14 +136,10 @@ endpoints:
           addons:
             - debug
             - archive
-        - url: $ETH_RPC_WS_1
-          addons:
-            - debug
-            - archive
 EOF
 
 # Provider 3 config (based on eth_provider_with_archive_debug2.yml)
-# Uses QuickNode HTTP + Infura WebSocket (to avoid QuickNode WS limit)
+# WebSocket URLs removed - HTTP only
 cat > $CONFIG_DIR/provider3_eth.yml <<EOF
 endpoints:
     - name: provider-debug-archive-2
@@ -159,28 +149,17 @@ endpoints:
         address: "$PROVIDER3_LISTENER"
       node-urls:
         # Base URLs (no addons) - for regular requests
-        - url: $ETH_RPC_URL_2
-        - url: $ETH_RPC_WS_1
+        - url: $ETH_RPC_URL_3
         # Debug addon URLs
-        - url: $ETH_RPC_URL_2
-          addons:
-            - debug
-        - url: $ETH_RPC_WS_1
+        - url: $ETH_RPC_URL_3
           addons:
             - debug
         # Archive addon URLs
-        - url: $ETH_RPC_URL_2
-          addons:
-            - archive
-        - url: $ETH_RPC_WS_1
+        - url: $ETH_RPC_URL_3
           addons:
             - archive
         # Combined debug+archive URLs
-        - url: $ETH_RPC_URL_2
-          addons:
-            - debug
-            - archive
-        - url: $ETH_RPC_WS_1
+        - url: $ETH_RPC_URL_3
           addons:
             - debug
             - archive
@@ -209,9 +188,9 @@ done
 echo ""
 
 # Note: Using --parallel-connections 1 to limit connections per URL
-# Each provider has 8 node-urls (4 HTTP + 4 WS), with --parallel-connections 1
-# this opens max 8 connections during validation (4 HTTP + 4 WS)
-# WebSocket strategy: All use Infura WS to avoid QuickNode's 2 WS connection limit
+# Provider 1 has 2 node-urls (HTTP only), Providers 2&3 have 4 node-urls each (HTTP only)
+# With --parallel-connections 1, this opens limited connections during validation
+# WebSocket endpoints are disabled - using --skip-websocket-verification flag to bypass WS requirement
 
 # Start Provider 1 (archive, standalone mode, real ETH endpoint)
 echo "[Test Setup] starting Provider 1 (archive, standalone mode)"
@@ -221,6 +200,7 @@ provider1_eth \
 --use-static-spec $SPECS_DIR \
 --parallel-connections 1 \
 --cache-be \"127.0.0.1:20101\" \
+--skip-websocket-verification \
 --geolocation 1 --log_level debug --metrics-listen-address ':7777' 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 
 echo "Waiting 3 seconds for Provider 1 to complete validation before starting Provider 2..."
@@ -234,6 +214,7 @@ provider2_eth \
 --use-static-spec $SPECS_DIR \
 --parallel-connections 1 \
 --cache-be \"127.0.0.1:20101\" \
+--skip-websocket-verification \
 --geolocation 1 --log_level debug --metrics-listen-address ':7766' 2>&1 | tee $LOGS_DIR/PROVIDER2.log" && sleep 0.25
 
 echo "Waiting 3 seconds for Provider 2 to complete validation before starting Provider 3..."
@@ -247,6 +228,7 @@ provider3_eth \
 --use-static-spec $SPECS_DIR \
 --parallel-connections 1 \
 --cache-be \"127.0.0.1:20101\" \
+--skip-websocket-verification \
 --geolocation 1 --log_level debug --metrics-listen-address ':7756' 2>&1 | tee $LOGS_DIR/PROVIDER3.log" && sleep 0.25
 
 sleep 2
@@ -267,15 +249,14 @@ done
 echo ""
 
 # Start consumer (rpcsmartrouter - standalone mode, works with static providers)
-echo "[Test Setup] starting consumer (rpcsmartrouter with cache, standalone mode)"
+echo "[Test Setup] starting consumer (standalone mode)"
 screen -d -m -S consumer bash -c "cd $PROJECT_ROOT && source ~/.bashrc; lavap rpcsmartrouter \
 config/consumer_examples/lava_consumer_static_with_backup_eth.yml \
 --geolocation 1 --log_level trace \
---cache-be "127.0.0.1:20100" \
 --allow-insecure-provider-dialing \
 --use-static-spec $SPECS_DIR \
 --metrics-listen-address ':7779' \
---enable-provider-optimizer-auto-adjustment-of-tiers 2>&1 | tee $LOGS_DIR/CONSUMER.log" && sleep 0.25
+2>&1 | tee $LOGS_DIR/CONSUMER.log" && sleep 0.25
 
 echo "--- setting up screens done ---"
 screen -ls
@@ -286,18 +267,19 @@ echo "Test Setup Complete (Fully Standalone Mode)"
 echo "============================================"
 echo "Consumer Cache:  127.0.0.1:20100 (metrics: 20200)"
 echo "Provider Cache:  127.0.0.1:20101 (metrics: 20201)"
-echo "Provider 1:      $PROVIDER1_LISTENER (Infura HTTP + Infura WS, archive)"
-echo "Provider 2:      $PROVIDER2_LISTENER (QuickNode HTTP + Infura WS, debug+archive)"
-echo "Provider 3:      $PROVIDER3_LISTENER (QuickNode HTTP + Infura WS, debug+archive)"
+echo "Provider 1:      $PROVIDER1_LISTENER (Infura HTTP, archive)"
+echo "Provider 2:      $PROVIDER2_LISTENER (QuickNode HTTP, debug+archive)"
+echo "Provider 3:      $PROVIDER3_LISTENER (QuickNode HTTP endpoint 3, debug+archive)"
 echo "Consumer:        rpcsmartrouter (fully standalone, cache-enabled)"
 echo ""
 echo "All components disconnected from Lava blockchain!"
 echo "Using static specs: $SPECS_DIR"
 echo "Logs: $LOGS_DIR"
 echo ""
-echo "Endpoint Strategy:"
-echo "  - All WebSocket: Infura (avoids QuickNode's 2 WS limit)"
-echo "  - HTTP: Provider 1 uses Infura, Providers 2&3 use QuickNode (load distribution)"
+echo "Endpoint Strategy (HTTP only - WebSocket disabled):"
+echo "  - Provider 1 uses Infura HTTP"
+echo "  - Provider 2 uses QuickNode HTTP endpoint 2"
+echo "  - Provider 3 uses QuickNode HTTP endpoint 3"
 echo "  - Parallel connections: 1 per URL (avoids overwhelming endpoints)"
 echo ""
 echo "Cache Configuration:"

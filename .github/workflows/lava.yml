@@ -40,17 +40,29 @@ jobs:
       - name: Run Utils Tests
         run: |
           set -o pipefail
-          go test -v -coverprofile=utils-coverage.out ./utils/... 2>&1 | tee utils-test.log | go-junit-report -iocopy -set-exit-code -out utils-report.xml
+          go test -json -coverprofile=utils-coverage.out ./utils/... \
+            | tee utils-test.json \
+            | grep -v '"Action":"output"' \
+            | go-junit-report -parser gojson -set-exit-code -out utils-report.xml
+          jq -r 'select(.Action=="output") | .Output' utils-test.json > utils-test.log || true
 
       - name: Run Common Tests
         run: |
           set -o pipefail
-          go test -v -coverprofile=common-coverage.out ./protocol/common/... ./testutil/common/... ./cmd/common/... 2>&1 | tee common-test.log | go-junit-report -iocopy -set-exit-code -out common-report.xml
+          go test -json -coverprofile=common-coverage.out ./protocol/common/... ./testutil/common/... ./cmd/common/... \
+            | tee common-test.json \
+            | grep -v '"Action":"output"' \
+            | go-junit-report -parser gojson -set-exit-code -out common-report.xml
+          jq -r 'select(.Action=="output") | .Output' common-test.json > common-test.log || true
 
       - name: Run X Tests
         run: |
           set -o pipefail
-          go test -v -coverprofile=x-coverage.out ./x/... 2>&1 | tee x-test.log | go-junit-report -iocopy -set-exit-code -out x-report.xml
+          go test -json -coverprofile=x-coverage.out ./x/... \
+            | tee x-test.json \
+            | grep -v '"Action":"output"' \
+            | go-junit-report -parser gojson -set-exit-code -out x-report.xml
+          jq -r 'select(.Action=="output") | .Output' x-test.json > x-test.log || true
 
       - name: Upload Test Results
         if: always()
@@ -60,6 +72,7 @@ jobs:
           path: |
             *-report.xml
             *-test.log
+            *-test.json
             *-coverage.out
 
       - name: Upload coverage to Codecov
@@ -92,13 +105,21 @@ jobs:
         timeout-minutes: 20
         run: |
           set -o pipefail
-          go test -v -timeout 15m -coverprofile=protocol-coverage.out ./protocol/... 2>&1 | tee protocol-test.log | go-junit-report -iocopy -set-exit-code -out protocol-report.xml
+          go test -json -timeout 15m -coverprofile=protocol-coverage.out ./protocol/... \
+            | tee protocol-test.json \
+            | grep -v '"Action":"output"' \
+            | go-junit-report -parser gojson -set-exit-code -out protocol-report.xml
+          jq -r 'select(.Action=="output") | .Output' protocol-test.json > protocol-test.log || true
 
       - name: Run Cache Tests
         timeout-minutes: 10
         run: |
           set -o pipefail
-          go test -v -coverprofile=cache-coverage.out ./ecosystem/cache/... 2>&1 | tee cache-test.log | go-junit-report -iocopy -set-exit-code -out cache-report.xml
+          go test -json -coverprofile=cache-coverage.out ./ecosystem/cache/... \
+            | tee cache-test.json \
+            | grep -v '"Action":"output"' \
+            | go-junit-report -parser gojson -set-exit-code -out cache-report.xml
+          jq -r 'select(.Action=="output") | .Output' cache-test.json > cache-test.log || true
 
       - name: Upload Test Results
         if: always()
@@ -108,6 +129,7 @@ jobs:
           path: |
             *-report.xml
             *-test.log
+            *-test.json
             *-coverage.out
 
       - name: Upload coverage to Codecov
@@ -144,7 +166,11 @@ jobs:
         timeout-minutes: 20
         run: |
           set -o pipefail
-          go test ./testutil/e2e/ -run ^TestLavaProtocol$ -v -timeout 1200s 2>&1 | tee protocol-e2e-test.log | go-junit-report -iocopy -set-exit-code -out protocol-e2e-report.xml  # 20mins
+          go test -json ./testutil/e2e/ -run ^TestLavaProtocol$ -timeout 1200s \
+            | tee protocol-e2e-test.json \
+            | grep -v '"Action":"output"' \
+            | go-junit-report -parser gojson -set-exit-code -out protocol-e2e-report.xml  # 20mins
+          jq -r 'select(.Action=="output") | .Output' protocol-e2e-test.json > protocol-e2e-test.log || true
 
       - name: Upload Test Results
         if: always()
@@ -154,6 +180,7 @@ jobs:
           path: |
             *-report.xml
             *-test.log
+            *-test.json
 
       - name: tail -n 1000 Lavad Logs
         if: always()
@@ -276,7 +303,11 @@ jobs:
         timeout-minutes: 15
         run: |
           set -o pipefail
-          go test ./testutil/e2e/ -run ^TestLavaProtocolPayment$ -v -timeout 1200s 2>&1 | tee payment-e2e-test.log | go-junit-report -iocopy -set-exit-code -out payment-e2e-report.xml # 20mins
+          go test -json ./testutil/e2e/ -run ^TestLavaProtocolPayment$ -timeout 1200s \
+            | tee payment-e2e-test.json \
+            | grep -v '"Action":"output"' \
+            | go-junit-report -parser gojson -set-exit-code -out payment-e2e-report.xml # 20mins
+          jq -r 'select(.Action=="output") | .Output' payment-e2e-test.json > payment-e2e-test.log || true
 
       - name: Upload Test Results
         if: always()
@@ -286,6 +317,7 @@ jobs:
           path: |
             *-report.xml
             *-test.log
+            *-test.json
 
       - name: Lavad Logs
         if: always()
@@ -341,6 +373,7 @@ jobs:
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           files: "artifacts/**/*.xml"
 
   build_docker:

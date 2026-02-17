@@ -44,6 +44,10 @@ type RPCStaticProviderEndpoint struct {
 	Geolocation    uint64             `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
 	NodeUrls       []common.NodeUrl   `yaml:"node-urls,omitempty" json:"node-urls,omitempty" mapstructure:"node-urls"`
 	Name           string             `yaml:"name,omitempty" json:"name,omitempty" mapstructure:"name,omitempty"`
+	// Stake is an optional stake amount (in ulava) used for provider selection scoring in static-provider tests.
+	// If omitted, it is treated as 0 so the weight calculator can apply the legacy
+	// "static provider boost" behavior (instead of using an explicit stake value).
+	Stake int64 `yaml:"stake,omitempty" json:"stake,omitempty" mapstructure:"stake,omitempty"`
 }
 
 // ToBase returns the base RPCProviderEndpoint (for compatibility with existing code)

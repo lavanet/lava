@@ -80,7 +80,8 @@ func createRpcConsumer(t *testing.T, ctrl *gomock.Controller, ctx context.Contex
 		AnyTimes()
 
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
-	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, averageBlockTime, 2, nil, "dontcare", false)
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, averageBlockTime, 2, nil, "dontcare")
+	optimizer.SetDeterministicSeed(1234567)
 	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage())
 	consumerSessionManager.UpdateAllProviders(epoch, map[uint64]*lavasession.ConsumerSessionsWithProvider{
 		epoch: {

@@ -94,6 +94,7 @@ type RPCConsumerServer struct {
 	connectedSubscriptionsLock     sync.RWMutex
 	relayRetriesManager            *lavaprotocol.RelayRetriesManager
 	initialized                    atomic.Bool
+	enableSelectionStats           bool // feature flag to enable selection stats header
 }
 
 type ConsumerTxSender interface {
@@ -132,6 +133,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.sharedState = sharedState
 	rpccs.reporter = reporter
 	rpccs.debugRelays = cmdFlags.DebugRelays
+	rpccs.enableSelectionStats = cmdFlags.EnableSelectionStats
 	rpccs.connectedSubscriptionsContexts = make(map[string]*CancelableContextHolder)
 	rpccs.consumerProcessGuid = strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)
 	rpccs.relayRetriesManager = lavaprotocol.NewRelayRetriesManager()
@@ -992,13 +994,13 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		utils.LavaFormatTrace("found stickiness header", utils.LogAttr("id", stickiness), utils.LogAttr("GUID", ctx))
 	}
 
-	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, numOfProviders, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness)
+	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, numOfProviders, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness, "")
 	if err != nil {
 		if lavasession.PairingListEmptyError.Is(err) {
 			if addon != "" {
 				return utils.LavaFormatError("No Providers For Addon", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", userData.ConsumerIp), utils.LogAttr("GUID", ctx))
 			} else if len(extensions) > 0 && relayProcessor.GetAllowSessionDegradation() { // if we have no providers for that extension, use a regular provider, otherwise return the extension results
-				sessions, err = rpccs.consumerSessionManager.GetSessions(ctx, numOfProviders, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, []*spectypes.Extension{}, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness)
+				sessions, err = rpccs.consumerSessionManager.GetSessions(ctx, numOfProviders, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, []*spectypes.Extension{}, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness, "")
 				if err != nil {
 					return err
 				}
@@ -2005,6 +2007,18 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 	// Metrics have already been emitted above
 	if relayResult == nil {
 		return
+	}
+	// Add selection stats header if feature is enabled
+	if rpccs.enableSelectionStats {
+		if selectionStats := rpccs.consumerSessionManager.GetSelectionStats(); selectionStats != nil {
+			statsString := selectionStats.FormatSelectionStats()
+			if statsString != "" {
+				metadataReply = append(metadataReply, pairingtypes.Metadata{
+					Name:  common.SELECTION_STATS_HEADER_NAME,
+					Value: statsString,
+				})
+			}
+		}
 	}
 
 	if relayResult.Reply == nil {
