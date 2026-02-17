@@ -42,6 +42,16 @@ func FetchSpec(ctx context.Context, repoURL, chainID, token string) (types.Spec,
 	return fetcher.FetchSpec(ctx, repoURL, chainID)
 }
 
+// FetchAllSpecsFromRemote fetches all specs from a remote repository without expansion.
+// This is useful for aggregating specs from multiple sources before expanding.
+// The returned map contains unexpanded specs keyed by their chain ID (Index).
+func FetchAllSpecsFromRemote(ctx context.Context, repoURL, token string) (map[string]types.Spec, error) {
+	config := DefaultConfig()
+	config.Token = token
+	fetcher := New(config)
+	return fetcher.FetchAllSpecs(ctx, repoURL)
+}
+
 // IsGitHubURL returns true if the URL is a GitHub repository URL.
 func IsGitHubURL(rawURL string) bool {
 	info, err := ParseRepoURL(rawURL)

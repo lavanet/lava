@@ -85,30 +85,6 @@ func decodeProposal(path string) (specutils.SpecAddProposalJSON, error) {
 	return proposal, err
 }
 
-func GetSpecsFromPath(path string, specIndex string, ctxArg *sdk.Context, keeper *keeper.Keeper) (specRet types.Spec, err error) {
-	var ctx sdk.Context
-	if keeper == nil || ctxArg == nil {
-		keeper, ctx, err = specKeeper()
-		if err != nil {
-			return types.Spec{}, err
-		}
-	} else {
-		ctx = *ctxArg
-	}
-
-	// Split the string by "," if we have a spec with dependencies we need to first load the dependencies.. for example:
-	// ibc.json, cosmossdk.json, lava.json.
-	files := strings.Split(path, ",")
-	for _, fileName := range files {
-		trimmedFileName := strings.TrimSpace(fileName)
-		spec, err := GetSpecFromPath(trimmedFileName, specIndex, &ctx, keeper)
-		if err == nil {
-			return spec, nil
-		}
-	}
-	return types.Spec{}, fmt.Errorf("spec not found %s", specIndex)
-}
-
 func GetSpecFromPath(path string, specIndex string, ctxArg *sdk.Context, keeper *keeper.Keeper) (specRet types.Spec, err error) {
 	var ctx sdk.Context
 	if keeper == nil || ctxArg == nil {
@@ -307,4 +283,100 @@ func expandSpecWithDependencies(specs map[string]types.Spec, index string) (*typ
 	}
 
 	return &spec, nil
+}
+
+// ExpandSpecWithDependencies is the public version of expandSpecWithDependencies.
+// It expands a spec by resolving all its dependencies (inherited specs) from a provided spec map.
+func ExpandSpecWithDependencies(specs map[string]types.Spec, index string) (*types.Spec, error) {
+	return expandSpecWithDependencies(specs, index)
+}
+
+// GetAllSpecsFromFile loads all specs from a single file without expansion.
+// Returns a map of specs keyed by their chain ID (Index).
+func GetAllSpecsFromFile(path string) (map[string]types.Spec, error) {
+	proposal, err := decodeProposal(path)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding proposal from %s: %w", path, err)
+	}
+
+	specs := make(map[string]types.Spec)
+	for _, spec := range proposal.Proposal.Specs {
+		specs[spec.Index] = spec
+	}
+	return specs, nil
+}
+
+// GetAllSpecsFromLocalDir loads all specs from a local directory without expansion.
+// Returns a map of specs keyed by their chain ID (Index).
+// Later files in directory order override earlier ones for the same chain ID.
+func GetAllSpecsFromLocalDir(specPath string) (map[string]types.Spec, error) {
+	specs := make(map[string]types.Spec)
+	var errs []error
+
+	// Walk through all files and subdirectories in the specPath
+	err := filepath.WalkDir(specPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			errs = append(errs, fmt.Errorf("error accessing path %s: %w", path, err))
+			return nil // Continue walking, but record the error
+		}
+
+		if d.IsDir() {
+			return nil // Skip directories
+		}
+
+		// Only process JSON files
+		if !strings.HasSuffix(path, ".json") {
+			return nil
+		}
+
+		// Attempt to decode the proposal from the file
+		proposal, err := decodeProposal(path)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("error decoding proposal from %s: %w", path, err))
+			return nil // Continue walking, but record the error
+		}
+
+		// Extract specs from the proposal and add them to the map
+		for _, spec := range proposal.Proposal.Specs {
+			specs[spec.Index] = spec
+		}
+		return nil
+	})
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	if len(errs) > 0 && len(specs) == 0 {
+		// Only return error if we couldn't load any specs
+		return nil, fmt.Errorf("failed to load any specs: %v", errs)
+	}
+
+	// Log loaded specs for debugging
+	if len(specs) > 0 {
+		specIDs := make([]string, 0, len(specs))
+		for id := range specs {
+			specIDs = append(specIDs, id)
+		}
+		utils.LavaFormatInfo("Loaded specs from local directory",
+			utils.LogAttr("spec_count", len(specs)),
+			utils.LogAttr("directory", specPath),
+			utils.LogAttr("spec_ids", strings.Join(specIDs, ", ")))
+	}
+
+	return specs, nil
+}
+
+// GetAllSpecsFromPath loads all specs from a local path (file or directory) without expansion.
+// Returns a map of specs keyed by their chain ID (Index).
+func GetAllSpecsFromPath(path string) (map[string]types.Spec, error) {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to stat path %s: %w", path, err)
+	}
+
+	if fileInfo.IsDir() {
+		return GetAllSpecsFromLocalDir(path)
+	}
+
+	return GetAllSpecsFromFile(path)
 }

@@ -115,7 +115,7 @@ type rpcProviderStartOptions struct {
 	rewardsSnapshotTimeoutSec uint
 	healthCheckMetricsOptions *rpcProviderHealthCheckMetricsOptions
 	staticProvider            bool
-	staticSpecPath            string
+	staticSpecPaths           []string
 	githubToken               string
 	gitlabToken               string
 	relayLoadLimit            uint64
@@ -166,7 +166,7 @@ type RPCProvider struct {
 	sessionManagers              map[string]*lavasession.ProviderSessionManager // key: chainID-apiInterface
 	sessionManagersLock          sync.RWMutex                                   // protects sessionManagers map
 	staticProvider               bool
-	staticSpecPath               string
+	staticSpecPaths              []string
 	githubToken                  string
 	gitlabToken                  string
 	relayLoadLimit               uint64
@@ -211,7 +211,7 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.relaysMonitorAggregator = metrics.NewRelaysMonitorAggregator(rpcp.relaysHealthCheckInterval, rpcp.providerMetricsManager)
 	rpcp.grpcHealthCheckEndpoint = options.healthCheckMetricsOptions.grpcHealthCheckEndpoint
 	rpcp.staticProvider = options.staticProvider
-	rpcp.staticSpecPath = options.staticSpecPath
+	rpcp.staticSpecPaths = options.staticSpecPaths
 	rpcp.githubToken = options.githubToken
 	rpcp.gitlabToken = options.gitlabToken
 	rpcp.relayLoadLimit = options.relayLoadLimit
@@ -228,12 +228,12 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	if options.staticProvider {
 		// Validate that static providers have a spec path configured
 		// Standalone mode cannot fetch specs from the blockchain, so specs must be provided
-		if options.staticSpecPath == "" {
+		if len(options.staticSpecPaths) == 0 {
 			return utils.LavaFormatError(
-				"--static-spec-path is required when using --static-providers",
+				"--use-static-spec is required when using --static-providers",
 				nil,
 				utils.LogAttr("static-providers", true),
-				utils.LogAttr("static-spec-path", "empty"),
+				utils.LogAttr("use-static-spec", "empty"),
 			)
 		}
 
@@ -578,7 +578,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	}
 
 	rpcEndpoint := lavasession.RPCEndpoint{ChainID: chainID, ApiInterface: apiInterface}
-	err = statetracker.RegisterForSpecUpdatesOrSetStaticSpecWithToken(ctx, chainParser, rpcp.staticSpecPath, rpcEndpoint, rpcp.providerStateTracker, rpcp.githubToken, rpcp.gitlabToken)
+	err = statetracker.RegisterForSpecUpdatesOrSetStaticSpecsWithToken(ctx, chainParser, rpcp.staticSpecPaths, rpcEndpoint, rpcp.providerStateTracker, rpcp.githubToken, rpcp.gitlabToken)
 	if err != nil {
 		return utils.LavaFormatError("[PANIC] failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 	}
@@ -1137,7 +1137,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			enableRelaysHealth := viper.GetBool(common.RelaysHealthEnableFlag)
 			relaysHealthInterval := viper.GetDuration(common.RelayHealthIntervalFlag)
 			healthCheckURLPath := viper.GetString(HealthCheckURLPathFlagName)
-			offlineSpecPath := viper.GetString(common.UseStaticSpecFlag)
+			offlineSpecPaths := viper.GetStringSlice(common.UseStaticSpecFlag)
 			githubToken := viper.GetString(common.GitHubTokenFlag)
 			gitlabToken := viper.GetString(common.GitLabTokenFlag)
 			epochDuration := viper.GetDuration(common.EpochDurationFlag)
@@ -1214,7 +1214,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				rewardsSnapshotTimeoutSec,
 				&rpcProviderHealthCheckMetricsOptions,
 				staticProvider,
-				offlineSpecPath,
+				offlineSpecPaths,
 				githubToken,
 				gitlabToken,
 				relayLoadLimit,
@@ -1286,7 +1286,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().String(HealthCheckURLPathFlagName, HealthCheckURLPathFlagDefault, "the url path for the provider's grpc health check")
 	cmdRPCProvider.Flags().DurationVar(&updaters.TimeOutForFetchingLavaBlocks, common.TimeOutForFetchingLavaBlocksFlag, time.Second*5, "setting the timeout for fetching lava blocks")
 	cmdRPCProvider.Flags().IntVar(&numberOfRetriesAllowedOnNodeErrors, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
-	cmdRPCProvider.Flags().String(common.UseStaticSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain, example for spec with inheritance: --use-static-spec ./specs/mainnet-1/specs/ibc.json,./specs/mainnet-1/specs/tendermint.json,./specs/mainnet-1/specs/cosmossdk.json,./specs/mainnet-1/specs/ethermint.json,./specs/mainnet-1/specs/ethereum.json,./specs/mainnet-1/specs/evmos.json")
+	cmdRPCProvider.Flags().StringArray(common.UseStaticSpecFlag, nil, "load specs from file, directory, or remote URL (GitHub/GitLab). Can be specified multiple times; later sources override earlier ones for same chain ID")
 	cmdRPCProvider.Flags().String(common.GitHubTokenFlag, "", "GitHub personal access token for accessing private repositories and higher API rate limits (5,000 requests/hour vs 60 for unauthenticated)")
 	cmdRPCProvider.Flags().String(common.GitLabTokenFlag, "", "GitLab personal access token for accessing private repositories (supports gitlab.com and self-hosted instances)")
 	cmdRPCProvider.Flags().Duration(common.EpochDurationFlag, 0, "duration of each epoch for time-based epoch system (e.g., 30m, 1h). If not set, epochs are disabled")

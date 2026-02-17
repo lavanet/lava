@@ -322,9 +322,9 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 
 	// Load spec from static file or query from blockchain
 	// Smart router queries spec once during initialization (no ongoing updates)
-	if options.cmdFlags.StaticSpecPath != "" {
-		// Load spec from static file/directory
-		err = statetracker.RegisterForSpecUpdatesOrSetStaticSpecWithToken(ctx, chainParser, options.cmdFlags.StaticSpecPath, *rpcEndpoint, nil, options.cmdFlags.GitHubToken, options.cmdFlags.GitLabToken)
+	if len(options.cmdFlags.StaticSpecPaths) > 0 {
+		// Load spec from static file/directory/URL sources
+		err = statetracker.RegisterForSpecUpdatesOrSetStaticSpecsWithToken(ctx, chainParser, options.cmdFlags.StaticSpecPaths, *rpcEndpoint, nil, options.cmdFlags.GitHubToken, options.cmdFlags.GitLabToken)
 		if err != nil {
 			err = utils.LavaFormatError("failed loading static spec", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 			errCh <- err
@@ -904,7 +904,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				RelaysHealthEnableFlag:   viper.GetBool(common.RelaysHealthEnableFlag),
 				RelaysHealthIntervalFlag: viper.GetDuration(common.RelayHealthIntervalFlag),
 				DebugRelays:              viper.GetBool(DebugRelaysFlagName),
-				StaticSpecPath:           viper.GetString(common.UseStaticSpecFlag),
+				StaticSpecPaths:          viper.GetStringSlice(common.UseStaticSpecFlag),
 				GitHubToken:              viper.GetString(common.GitHubTokenFlag),
 				GitLabToken:              viper.GetString(common.GitLabTokenFlag),
 				EpochDuration:            epochDuration,
@@ -998,7 +998,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().Duration(common.RelayHealthIntervalFlag, RelayHealthIntervalFlagDefault, "interval between relay health checks")
 	cmdRPCSmartRouter.Flags().String(reportsSendBEAddress, "", "address to send reports to")
 	cmdRPCSmartRouter.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
-	cmdRPCSmartRouter.Flags().String(common.UseStaticSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain")
+	cmdRPCSmartRouter.Flags().StringArray(common.UseStaticSpecFlag, nil, "load specs from file, directory, or remote URL (GitHub/GitLab). Can be specified multiple times; later sources override earlier ones for same chain ID")
 	cmdRPCSmartRouter.Flags().String(common.GitHubTokenFlag, "", "GitHub personal access token for accessing private repositories and higher API rate limits (5,000 requests/hour vs 60 for unauthenticated)")
 	cmdRPCSmartRouter.Flags().String(common.GitLabTokenFlag, "", "GitLab personal access token for accessing private repositories (supports gitlab.com and self-hosted instances)")
 	cmdRPCSmartRouter.Flags().Duration(common.EpochDurationFlag, 0, "duration of each epoch for time-based epoch system (e.g., 30m, 1h). If not set, epochs are disabled")
