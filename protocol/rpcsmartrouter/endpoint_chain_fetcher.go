@@ -218,31 +218,49 @@ func (ecf *EndpointChainFetcher) CustomMessage(ctx context.Context, path string,
 }
 
 // sendRawRequest sends a raw request to the endpoint and returns the response.
+// For REST/GET requests, requestData is a URL path that must be appended to the base URL.
+// For JSON-RPC/POST requests, requestData is the JSON body.
 func (ecf *EndpointChainFetcher) sendRawRequest(ctx context.Context, requestData []byte, connectionType string, apiName string) ([]byte, error) {
 	if ecf.directConnection == nil || !ecf.directConnection.IsHealthy() {
 		return nil, fmt.Errorf("direct connection is not healthy for endpoint %s", ecf.endpointURL)
 	}
 
-	// Build headers based on connection type
-	headers := make(map[string]string)
-	switch connectionType {
-	case "POST", "jsonrpc", "tendermintrpc":
-		headers["Content-Type"] = "application/json"
-	case "rest", "GET":
-		// REST requests may not need Content-Type for GET
-		if len(requestData) > 0 {
-			headers["Content-Type"] = "application/json"
+	// REST GET: requestData is a URL path (e.g. "/cosmos/base/tendermint/v1beta1/blocks/latest")
+	// Must be appended to the base URL and sent as an HTTP GET.
+	if connectionType == "GET" {
+		httpDoer, ok := ecf.directConnection.(lavasession.HTTPDirectRPCDoer)
+		if !ok {
+			return nil, fmt.Errorf("connection does not support HTTP requests for endpoint %s", ecf.endpointURL)
 		}
-	default:
-		headers["Content-Type"] = "application/json"
+
+		fullURL, err := joinURLPath(ecf.directConnection.GetURL(), string(requestData))
+		if err != nil {
+			return nil, fmt.Errorf("failed to build REST URL: %w", err)
+		}
+
+		resp, err := httpDoer.DoHTTPRequest(ctx, lavasession.HTTPRequestParams{
+			Method: "GET",
+			URL:    fullURL,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if resp.StatusCode >= 400 {
+			return nil, &lavasession.HTTPStatusError{
+				StatusCode: resp.StatusCode,
+				Status:     fmt.Sprintf("%d", resp.StatusCode),
+				Body:       resp.Body,
+			}
+		}
+		return resp.Body, nil
 	}
 
-	// Send the request
+	// JSON-RPC / Tendermint RPC / POST: send requestData as body
+	headers := map[string]string{"Content-Type": "application/json"}
 	response, err := ecf.directConnection.SendRequest(ctx, requestData, headers)
 	if err != nil {
 		return nil, err
 	}
-
 	return response.Data, nil
 }
 

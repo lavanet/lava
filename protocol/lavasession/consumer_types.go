@@ -514,11 +514,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 
 	// try to lock an existing session, if can't create a new one
 	var numberOfBlockedSessions uint64 = 0
-	for sessionID, session := range cswp.Sessions {
-		if sessionID == DataReliabilitySessionId {
-			continue // we cant use the data reliability session. which is located at key DataReliabilitySessionId
-		}
-
+	for _, session := range cswp.Sessions {
 		// Match session to connection (different logic for provider-relay vs direct RPC)
 		matchesConnection := false
 		if isProviderRelay {

@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net/http"
-	"runtime/debug"
 	"sort"
 	"strconv"
 	"strings"
@@ -129,7 +128,7 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 	// NewChainListener now accepts WSSubscriptionManager interface, which is implemented
 	// by both ConsumerWSSubscriptionManager (provider-relay mode) and
 	// DirectWSSubscriptionManager (direct RPC mode for smart router).
-	rpcss.chainListener, err = chainlib.NewChainListener(ctx, listenEndpoint, rpcss, rpcss, rpcSmartRouterLogs, chainParser, wsSubscriptionManager)
+	rpcss.chainListener, err = chainlib.NewChainListener(ctx, listenEndpoint, rpcss, rpcss, rpcSmartRouterLogs, chainParser, nil, wsSubscriptionManager)
 	if err != nil {
 		return err
 	}
@@ -485,16 +484,6 @@ func (rpcss *RPCSmartRouterServer) SendParsedRelay(
 		return nil, err
 	}
 
-	// Handle Data Reliability
-	enabled, dataReliabilityThreshold := rpcss.chainParser.DataReliabilityParams()
-	if enabled && !relayProcessor.GetSkipDataReliability() {
-		guid, found := utils.GetUniqueIdentifier(ctx)
-		dataReliabilityContext := context.Background()
-		if found {
-			dataReliabilityContext = utils.WithUniqueIdentifier(dataReliabilityContext, guid)
-		}
-		go rpcss.sendDataReliabilityRelayIfApplicable(dataReliabilityContext, protocolMessage, dataReliabilityThreshold, relayProcessor)
-	}
 	returnedResult, err := relayProcessor.ProcessingResult()
 
 	utils.LavaFormatInfo("ProcessingResult RETURNED",
@@ -848,8 +837,12 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 					// Update global latest block height and estimator (for getLatestBlock fallback)
 					rpcss.updateLatestBlockHeight(uint64(latestBlock), endpointAddress)
 				} else if rpcss.chainTracker != nil && !rpcss.chainTracker.IsDummy() {
-					// Fallback to ChainTracker (global)
+					// Fallback to ChainTracker (global) -- propagate to relay result
+					// so downstream consumers (consistency, caching) see the actual latest block
 					latestBlock, _ = rpcss.chainTracker.GetLatestBlockNum()
+					if latestBlock > 0 && localRelayResult.Reply != nil {
+						localRelayResult.Reply.LatestBlock = latestBlock
+					}
 					utils.LavaFormatTrace("using latest block from chain tracker",
 						utils.LogAttr("latest_block", latestBlock),
 						utils.LogAttr("GUID", goroutineCtx),
@@ -1167,22 +1160,6 @@ func (rpcss *RPCSmartRouterServer) tryCacheWrite(
 
 	// Skip if stateful (stateful requests mutate state - must not cache)
 	if chainlib.GetStateful(protocolMessage) == common.CONSISTENCY_SELECT_ALL_PROVIDERS {
-		return
-	}
-
-	// Skip if quorum is enabled (quorum requires fresh endpoint validation on each request)
-	quorumParams, err := protocolMessage.GetQuorumParameters()
-	if err != nil {
-		utils.LavaFormatDebug("cache write skipped: failed to get quorum params",
-			utils.LogAttr("error", err),
-			utils.LogAttr("GUID", ctx),
-		)
-		return
-	}
-	if quorumParams.Enabled() {
-		utils.LavaFormatDebug("cache write skipped: quorum enabled",
-			utils.LogAttr("GUID", ctx),
-		)
 		return
 	}
 

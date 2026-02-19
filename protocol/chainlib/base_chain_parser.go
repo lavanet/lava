@@ -337,19 +337,26 @@ func (bcp *BaseChainParser) IsInternalPathEnabled(internalPath string, apiInterf
 }
 
 func (bcp *BaseChainParser) ExtensionParsing(addon string, parsedMessageArg *baseChainMessageContainer, extensionInfo extensionslib.ExtensionInfo) {
-	utils.LavaFormatTrace("[Archive Debug] ExtensionParsing called", utils.LogAttr("addon", addon), utils.LogAttr("extensionInfo", extensionInfo))
+	// Only emit archive debug traces for user relays (LatestBlock > 0), not internal chain tracker polls
+	debugLog := extensionInfo.LatestBlock > 0
+	if debugLog {
+		utils.LavaFormatTrace("[Archive Debug] ExtensionParsing called", utils.LogAttr("addon", addon), utils.LogAttr("extensionInfo", extensionInfo))
+	}
 	if extensionInfo.ExtensionOverride == nil {
-		// consumer side extension parsing. to set the extension based on the latest block and the request
-		utils.LavaFormatTrace("[Archive Debug] Using extensionParsingInner", utils.LogAttr("latestBlock", extensionInfo.LatestBlock))
+		if debugLog {
+			utils.LavaFormatTrace("[Archive Debug] Using extensionParsingInner", utils.LogAttr("latestBlock", extensionInfo.LatestBlock))
+		}
 		bcp.extensionParsingInner(addon, parsedMessageArg, extensionInfo.LatestBlock)
 	} else {
-		// this is used for provider parsing. as the provider needs to set the requested extension by the request.
-		utils.LavaFormatTrace("[Archive Debug] Using OverrideExtensions", utils.LogAttr("extensionOverride", extensionInfo.ExtensionOverride))
+		if debugLog {
+			utils.LavaFormatTrace("[Archive Debug] Using OverrideExtensions", utils.LogAttr("extensionOverride", extensionInfo.ExtensionOverride))
+		}
 		parsedMessageArg.OverrideExtensions(extensionInfo.ExtensionOverride, &bcp.extensionParser)
 	}
-	// in case we want to force extensions we can add additional extensions. this is used on consumer side with flags.
 	if extensionInfo.AdditionalExtensions != nil {
-		utils.LavaFormatTrace("[Archive Debug] Using AdditionalExtensions", utils.LogAttr("additionalExtensions", extensionInfo.AdditionalExtensions))
+		if debugLog {
+			utils.LavaFormatTrace("[Archive Debug] Using AdditionalExtensions", utils.LogAttr("additionalExtensions", extensionInfo.AdditionalExtensions))
+		}
 		parsedMessageArg.OverrideExtensions(extensionInfo.AdditionalExtensions, &bcp.extensionParser)
 	}
 }
