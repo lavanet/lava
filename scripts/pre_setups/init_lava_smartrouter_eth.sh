@@ -175,8 +175,7 @@ endpoints:
     api-interface: "jsonrpc"
     network-address: "0.0.0.0:3360"  # Simple string format
 
-# Static providers - DIRECT RPC mode (bypasses Lava provider-relay protocol)
-static-providers:
+direct-rpc:
   # Endpoint 1: Infura (primary)
   - name: "infura-eth-mainnet"
     chain-id: "ETH1"

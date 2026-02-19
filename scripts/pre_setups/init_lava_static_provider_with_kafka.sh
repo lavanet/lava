@@ -49,10 +49,10 @@ wait_next_block
 sleep_until_next_epoch
 
 screen -d -m -S provider4 bash -c "source ~/.bashrc; lavap rpcprovider provider_examples/lava_example.yml\
-$EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer4 --static-providers --chain-id lava 2>&1 | tee $LOGS_DIR/PROVIDER4.log" && sleep 0.25
+$EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer4 --chain-id lava 2>&1 | tee $LOGS_DIR/PROVIDER4.log" && sleep 0.25
 
 screen -d -m -S provider3 bash -c "source ~/.bashrc; lavap rpcprovider provider_examples/lava_example2.yml\
-$EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 --static-providers --chain-id lava 2>&1 | tee $LOGS_DIR/PROVIDER3.log" && sleep 0.25
+$EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 --chain-id lava 2>&1 | tee $LOGS_DIR/PROVIDER3.log" && sleep 0.25
 
 screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcconsumer consumer_examples/lava_consumer_static_peers.yml \
 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing --relay-kafka-address "127.0.0.1:9092" --relay-kafka-topic "lava-relay-metrics" --metrics-listen-address ":7779" --enable-provider-optimizer-auto-adjustment-of-tiers --use-lava-over-lava-backup=false 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25

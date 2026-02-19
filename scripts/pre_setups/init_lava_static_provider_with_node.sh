@@ -58,10 +58,10 @@ $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level trace --from servicer1 --chain
 wait_next_block
 
 screen -d -m -S provider4 bash -c "source ~/.bashrc; lavap rpcprovider provider_examples/lava_example.yml\
-$EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer4 --static-providers --chain-id lava --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/PROVIDER4.log" && sleep 0.25
+$EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer4 --chain-id lava --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/PROVIDER4.log" && sleep 0.25
 
 screen -d -m -S provider3 bash -c "source ~/.bashrc; lavap rpcprovider provider_examples/lava_example2.yml\
-$EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 --static-providers --chain-id lava --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/PROVIDER3.log" && sleep 0.25
+$EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 --chain-id lava --allow-insecure-provider-dialing 2>&1 | tee $LOGS_DIR/PROVIDER3.log" && sleep 0.25
 
 screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcsmartrouter consumer_examples/lava_consumer_static_peers.yml \
 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --allow-insecure-provider-dialing --metrics-listen-address ":7779" --enable-provider-optimizer-auto-adjustment-of-tiers 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25

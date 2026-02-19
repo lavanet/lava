@@ -1054,15 +1054,19 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				}
 			}
 
-			// check if StaticProvidersConfigName exists in viper, if it does parse it with ParseStaticProviderEndpoints function
-			var staticProviderEndpoints []*lavasession.RPCStaticProviderEndpoint
-			if viper.IsSet(common.StaticProvidersConfigName) {
-				staticProviderEndpoints, err = rpcprovider.ParseStaticProviderEndpoints(viper.GetViper(), common.StaticProvidersConfigName, geolocation)
+			// Parse direct RPC endpoints (new key: "direct-rpc", backward compat: "static-providers")
+			var directRPCEndpoints []*lavasession.RPCStaticProviderEndpoint
+			directRPCConfigKey := common.DirectRPCConfigName
+			if !viper.IsSet(directRPCConfigKey) {
+				directRPCConfigKey = common.StaticProvidersConfigName // backward compat
+			}
+			if viper.IsSet(directRPCConfigKey) {
+				directRPCEndpoints, err = rpcprovider.ParseStaticProviderEndpoints(viper.GetViper(), directRPCConfigKey, geolocation)
 				if err != nil {
-					return utils.LavaFormatError("invalid static providers definition", err)
+					return utils.LavaFormatError("invalid direct-rpc endpoints definition", err)
 				}
-				for _, endpoint := range staticProviderEndpoints {
-					utils.LavaFormatInfo("Static Provider Endpoint:",
+				for _, endpoint := range directRPCEndpoints {
+					utils.LavaFormatInfo("Direct RPC Endpoint:",
 						utils.Attribute{Key: "Name", Value: endpoint.Name},
 						utils.Attribute{Key: "Urls", Value: endpoint.NodeUrls},
 						utils.Attribute{Key: "Chain ID", Value: endpoint.ChainID},
@@ -1070,16 +1074,20 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				}
 			}
 
-			// check if BackupProvidersConfigName exists in viper, if it does parse it with ParseStaticProviderEndpoints function
-			var backupProviderEndpoints []*lavasession.RPCStaticProviderEndpoint
-			if viper.IsSet(common.BackupProvidersConfigName) {
-				utils.LavaFormatInfo("Backup Providers Config Name exists", utils.Attribute{Key: "Backup Providers Config Name", Value: common.BackupProvidersConfigName})
-				backupProviderEndpoints, err = rpcprovider.ParseStaticProviderEndpoints(viper.GetViper(), common.BackupProvidersConfigName, geolocation)
+			// Parse backup direct RPC endpoints (new key: "backup-direct-rpc", backward compat: "backup-providers")
+			var backupDirectRPCEndpoints []*lavasession.RPCStaticProviderEndpoint
+			backupConfigKey := common.BackupDirectRPCConfigName
+			if !viper.IsSet(backupConfigKey) {
+				backupConfigKey = common.BackupProvidersConfigName // backward compat
+			}
+			if viper.IsSet(backupConfigKey) {
+				utils.LavaFormatInfo("Backup direct-rpc config found", utils.Attribute{Key: "configKey", Value: backupConfigKey})
+				backupDirectRPCEndpoints, err = rpcprovider.ParseStaticProviderEndpoints(viper.GetViper(), backupConfigKey, geolocation)
 				if err != nil {
-					return utils.LavaFormatError("invalid backup providers definition", err)
+					return utils.LavaFormatError("invalid backup-direct-rpc endpoints definition", err)
 				}
-				for _, endpoint := range backupProviderEndpoints {
-					utils.LavaFormatInfo("Backup Provider Endpoint:",
+				for _, endpoint := range backupDirectRPCEndpoints {
+					utils.LavaFormatInfo("Backup Direct RPC Endpoint:",
 						utils.Attribute{Key: "Name", Value: endpoint.Name},
 						utils.Attribute{Key: "Urls", Value: endpoint.NodeUrls},
 						utils.Attribute{Key: "Chain ID", Value: endpoint.ChainID},
@@ -1087,32 +1095,31 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				}
 			}
 
-			if len(staticProviderEndpoints) == 0 {
+			if len(directRPCEndpoints) == 0 {
 				return utils.LavaFormatError(
-					"smart router requires static providers configuration",
+					"smart router requires direct-rpc endpoints configuration",
 					nil,
-					utils.Attribute{Key: "hint", Value: "add 'static-providers' section to config file"},
+					utils.Attribute{Key: "hint", Value: "add 'direct-rpc' section to config file"},
 				)
 			}
 
-			// After parsing both endpoints and providers:
 			for _, endpoint := range rpcEndpoints {
-				hasProvider := false
-				for _, provider := range staticProviderEndpoints {
-					if provider.ChainID == endpoint.ChainID &&
-						provider.ApiInterface == endpoint.ApiInterface {
-						hasProvider = true
+				hasDirectRPC := false
+				for _, directEndpoint := range directRPCEndpoints {
+					if directEndpoint.ChainID == endpoint.ChainID &&
+						directEndpoint.ApiInterface == endpoint.ApiInterface {
+						hasDirectRPC = true
 						break
 					}
 				}
 
-				if !hasProvider {
+				if !hasDirectRPC {
 					return utils.LavaFormatError(
-						"no static providers configured for endpoint",
+						"no direct-rpc endpoints configured for listener",
 						nil,
 						utils.Attribute{Key: "chainID", Value: endpoint.ChainID},
 						utils.Attribute{Key: "apiInterface", Value: endpoint.ApiInterface},
-						utils.Attribute{Key: "hint", Value: "add provider in 'static-providers' section"},
+						utils.Attribute{Key: "hint", Value: "add endpoint in 'direct-rpc' section"},
 					)
 				}
 			}
@@ -1206,8 +1213,8 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				analyticsServerAddresses: analyticsServerAddresses,
 				cmdFlags:                 consumerPropagatedFlags,
 				stateShare:               rpcSmartRouterSharedState,
-				staticProvidersList:      staticProviderEndpoints,
-				backupProvidersList:      backupProviderEndpoints,
+				staticProvidersList:      directRPCEndpoints,
+				backupProvidersList:      backupDirectRPCEndpoints,
 				geoLocation:              geolocation,
 				clientCtx:                clientCtx,
 			})

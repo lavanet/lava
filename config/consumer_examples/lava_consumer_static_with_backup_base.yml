@@ -2,7 +2,7 @@ endpoints:
     - chain-id: BASE
       api-interface: jsonrpc
       network-address: 127.0.0.1:3360
-static-providers:
+direct-rpc:
   - name: primary-2220-jsonrpc
     api-interface: jsonrpc
     chain-id: BASE
@@ -27,7 +27,7 @@ static-providers:
           - debug
           - archive
 
-backup-providers:
+backup-direct-rpc:
   - name: backup-2220-jsonrpc
     api-interface: jsonrpc
     chain-id: BASE

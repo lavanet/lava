@@ -8,7 +8,7 @@ endpoints:
     - chain-id: LAV1
       api-interface: grpc
       network-address: 127.0.0.1:3362
-static-providers:
+direct-rpc:
   - name: primary-2220-tendermintrpc
     api-interface: tendermintrpc
     chain-id: LAV1
@@ -43,7 +43,7 @@ static-providers:
     node-urls:
       - url: 127.0.0.1:2221
 
-backup-providers:
+backup-direct-rpc:
   - name: backup-2220-tendermintrpc
     api-interface: tendermintrpc
     chain-id: LAV1

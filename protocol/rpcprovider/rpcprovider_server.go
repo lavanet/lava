@@ -93,7 +93,6 @@ type RPCProviderServer struct {
 	relaysMonitor                   *metrics.RelaysMonitor
 	providerNodeSubscriptionManager *chainlib.ProviderNodeSubscriptionManager
 	providerUniqueId                string
-	StaticProvider                  bool
 	providerStateMachine            *ProviderStateMachine
 	providerLoadManager             *ProviderLoadManager
 	verificationsStatusGetter       IVerificationsStatus
@@ -140,7 +139,6 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	providerMetrics *metrics.ProviderMetrics,
 	relaysMonitor *metrics.RelaysMonitor,
 	providerNodeSubscriptionManager *chainlib.ProviderNodeSubscriptionManager,
-	staticProvider bool,
 	providerLoadManager *ProviderLoadManager,
 	verificationsStatusGetter IVerificationsStatus,
 	numberOfRetries int,
@@ -158,7 +156,6 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 		utils.LavaFormatError("disabled rewards for provider, reward server not defined", nil)
 		rewardServer = &rewardserver.DisabledRewardServer{}
 	}
-	rpcps.StaticProvider = staticProvider
 	rpcps.rewardServer = rewardServer
 	rpcps.chainParser = chainParser
 	rpcps.rpcProviderEndpoint = rpcProviderEndpoint
@@ -289,7 +286,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 			)
 
 			// Unlock session if needed
-			if !rpcps.StaticProvider && relaySession != nil {
+			if relaySession != nil {
 				utils.LavaFormatWarning("Unlocking session after panic", nil,
 					utils.LogAttr("sessionID", relaySession.SessionID),
 					utils.LogAttr("GUID", ctx),
@@ -305,16 +302,14 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 
 	// Check that this is not subscription related messages
 	if chainlib.IsFunctionTagOfType(chainMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
-		// Unlock session before returning error
-		if !rpcps.StaticProvider && relaySession != nil {
+		if relaySession != nil {
 			_ = rpcps.providerSessionManager.OnSessionFailure(relaySession, request.RelaySession.RelayNum)
 		}
 		return nil, errors.New("subscribe method is not supported through Relay")
 	}
 
 	if chainlib.IsFunctionTagOfType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE_ALL) {
-		// Unlock session before returning error
-		if !rpcps.StaticProvider && relaySession != nil {
+		if relaySession != nil {
 			_ = rpcps.providerSessionManager.OnSessionFailure(relaySession, request.RelaySession.RelayNum)
 		}
 		return nil, errors.New("unsubscribe_all method  is not supported through Relay")
@@ -359,9 +354,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 			go rpcps.metrics.AddFunctionError(apiName)
 		}
 
-		if !rpcps.StaticProvider {
-			execErr = rpcps.finalizeSession(isErroredRelay, ctx, consumerAddress, reply, chainMessage, relaySession, request, replyWrapper, execErr)
-		}
+		execErr = rpcps.finalizeSession(isErroredRelay, ctx, consumerAddress, reply, chainMessage, relaySession, request, replyWrapper, execErr)
 
 		return execErr
 	})
@@ -374,7 +367,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		// 1. Unlock the session
 		// 2. Rollback the CU deltas
 		// 3. Prevent session leak
-		if !rpcps.StaticProvider && relaySession != nil {
+		if relaySession != nil {
 			relayFailureError := rpcps.providerSessionManager.OnSessionFailure(relaySession, request.RelaySession.RelayNum)
 			if relayFailureError != nil {
 				utils.LavaFormatError("Failed to cleanup session after resource limiter rejection", relayFailureError,
@@ -515,36 +508,23 @@ func (rpcps *RPCProviderServer) finalizeSession(isRelayError bool, ctx context.C
 }
 
 func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingtypes.RelayRequest) (relaySession *lavasession.SingleProviderSession, consumerAddress sdk.AccAddress, chainMessage chainlib.ChainMessage, err error) {
-	if !rpcps.StaticProvider {
-		relaySession, consumerAddress, err = rpcps.verifyRelaySession(ctx, request)
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		defer func(relaySession *lavasession.SingleProviderSession) {
-			// if we error in here until PrepareSessionForUsage was called successfully we can't call OnSessionFailure
-			if err != nil {
-				relaySession.DisbandSession()
-			}
-		}(relaySession) // lock in the session address
-	}
-	extensionInfo := extensionslib.ExtensionInfo{LatestBlock: 0, ExtensionOverride: request.RelayData.Extensions}
-	if extensionInfo.ExtensionOverride == nil { // in case consumer did not set an extension, we skip the extension parsing and we are sending it to the regular url
-		extensionInfo.ExtensionOverride = []string{}
-	}
-	// parse the message to extract the cu and chainMessage for sending it
-	chainMessage, err = rpcps.chainParser.ParseMsg(request.RelayData.ApiUrl, request.RelayData.Data, request.RelayData.ConnectionType, request.RelayData.GetMetadata(), extensionInfo)
+	relaySession, consumerAddress, err = rpcps.verifyRelaySession(ctx, request)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	// we only need the chainMessage for a static provider
-	if rpcps.StaticProvider {
-		// extract consumer address from signature
-		extractedConsumerAddress, err := rpcps.ExtractConsumerAddress(ctx, request.RelaySession)
+	defer func(relaySession *lavasession.SingleProviderSession) {
 		if err != nil {
-			return nil, nil, nil, err
+			relaySession.DisbandSession()
 		}
+	}(relaySession)
 
-		return nil, extractedConsumerAddress, chainMessage, nil
+	extensionInfo := extensionslib.ExtensionInfo{LatestBlock: 0, ExtensionOverride: request.RelayData.Extensions}
+	if extensionInfo.ExtensionOverride == nil {
+		extensionInfo.ExtensionOverride = []string{}
+	}
+	chainMessage, err = rpcps.chainParser.ParseMsg(request.RelayData.ApiUrl, request.RelayData.Data, request.RelayData.ConnectionType, request.RelayData.GetMetadata(), extensionInfo)
+	if err != nil {
+		return nil, nil, nil, err
 	}
 	relayCU := chainMessage.GetApi().ComputeUnits
 	virtualEpoch := rpcps.stateTracker.GetVirtualEpoch(uint64(request.RelaySession.Epoch))
@@ -1324,12 +1304,7 @@ func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, requ
 	}
 	// add stickiness header
 	chainMsg.AppendHeader([]pairingtypes.Metadata{{Name: RPCProviderStickinessHeaderName, Value: common.GetUniqueToken(common.UserData{DappId: consumerAddr.String(), ConsumerIp: common.GetTokenFromGrpcContext(ctx)})}})
-	// For static providers, use the provider name instead of address
-	providerIdentifier := rpcps.providerAddress.String()
-	if rpcps.StaticProvider && rpcps.rpcProviderEndpoint.Name != "" {
-		providerIdentifier = rpcps.rpcProviderEndpoint.Name
-	}
-	chainMsg.AppendHeader([]pairingtypes.Metadata{{Name: RPCProviderAddressHeader, Value: providerIdentifier}})
+	chainMsg.AppendHeader([]pairingtypes.Metadata{{Name: RPCProviderAddressHeader, Value: rpcps.providerAddress.String()}})
 	if debugConsistency {
 		utils.LavaFormatDebug("adding stickiness header", utils.LogAttr("tokenFromContext", common.GetTokenFromGrpcContext(ctx)), utils.LogAttr("unique_token", common.GetUniqueToken(common.UserData{DappId: consumerAddr.String(), ConsumerIp: common.GetIpFromGrpcContext(ctx)})))
 	}

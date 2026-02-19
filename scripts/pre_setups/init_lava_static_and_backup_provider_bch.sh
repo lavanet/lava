@@ -156,7 +156,6 @@ echo ""
 echo "[Test Setup] starting Provider 1 (archive, standalone mode)"
 screen -d -m -S provider1 bash -c "cd $PROJECT_ROOT && source ~/.bashrc; lavap rpcprovider \
 provider1_bch \
---static-providers \
 --use-static-spec $SPECS_DIR \
 --parallel-connections 1 \
 --cache-be \"127.0.0.1:20101\" \
@@ -169,7 +168,6 @@ sleep 3
 echo "[Test Setup] starting Provider 2 (archive, standalone mode)"
 screen -d -m -S provider2 bash -c "cd $PROJECT_ROOT && source ~/.bashrc; lavap rpcprovider \
 provider2_bch \
---static-providers \
 --use-static-spec $SPECS_DIR \
 --parallel-connections 1 \
 --cache-be \"127.0.0.1:20101\" \
@@ -182,7 +180,6 @@ sleep 3
 echo "[Test Setup] starting Provider 3 (archive, standalone mode)"
 screen -d -m -S provider3 bash -c "cd $PROJECT_ROOT && source ~/.bashrc; lavap rpcprovider \
 provider3_bch \
---static-providers \
 --use-static-spec $SPECS_DIR \
 --parallel-connections 1 \
 --cache-be \"127.0.0.1:20101\" \

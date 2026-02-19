@@ -101,7 +101,7 @@ endpoints:
     chain-id: "LAV1"
     api-interface: "tendermintrpc"
 
-static-providers:
+direct-rpc:
   # 3 upstream REST endpoints (all pointing at the same local node by default)
   # This matches the ETH direct-RPC scripts pattern and is useful for testing selection/failover logic.
   - name: "lava-local-rest-1"

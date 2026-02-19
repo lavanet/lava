@@ -19,11 +19,10 @@ endpoints:
     network-address: "0.0.0.0:3360"  # Simple string format
   
   # Note: Ethereum only supports jsonrpc API interface
-  # WebSocket subscriptions are handled via the websocket static-provider below
+  # WebSocket subscriptions are handled via the websocket direct-rpc endpoint below
   # To test multiple endpoints, use smartrouter_lava.yml (supports jsonrpc, rest, grpc, tendermintrpc)
 
-# Static providers - DIRECT RPC mode (bypasses Lava provider-relay protocol)
-static-providers:
+direct-rpc:
 
   - name: "mock-eth-mainnet-1"
     chain-id: "ETH1"
