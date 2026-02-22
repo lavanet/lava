@@ -76,8 +76,10 @@ type ProviderOptimizer interface {
 	AppendProbeRelayData(providerAddress string, latency time.Duration, success bool)
 	AppendRelayFailure(providerAddress string)
 	AppendRelayData(providerAddress string, latency time.Duration, cu, syncBlock uint64)
-	ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int)
-	ChooseProviderFromTopTier(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string)
+	ChooseProvider(ctx context.Context, allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string)
+	ChooseProviderWithStats(ctx context.Context, allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, stats *provideroptimizer.SelectionStats)
+	ChooseBestProvider(ctx context.Context, allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string)
+	ChooseBestProviderWithStats(ctx context.Context, allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, stats *provideroptimizer.SelectionStats)
 	GetReputationReportForProvider(string) (*pairingtypes.QualityOfServiceReport, time.Time)
 	Strategy() provideroptimizer.Strategy
 	UpdateWeights(map[string]int64, uint64)
@@ -367,6 +369,12 @@ func (cswp *ConsumerSessionsWithProvider) getProviderStakeSize() sdk.Coin {
 	cswp.Lock.RLock()
 	defer cswp.Lock.RUnlock()
 	return cswp.stakeSize
+}
+
+// GetProviderStakeSize returns the provider stake used by the consumer for selection weighting.
+// Exported for cross-package callers (e.g., rpcsmartrouter) that need to copy sessions.
+func (cswp *ConsumerSessionsWithProvider) GetProviderStakeSize() sdk.Coin {
+	return cswp.getProviderStakeSize()
 }
 
 // Validate and add the compute units for this provider
@@ -680,24 +688,34 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 
 func CalcWeightsByStake(providers map[uint64]*ConsumerSessionsWithProvider) (weights map[string]int64) {
 	weights = make(map[string]int64)
-	staticProviders := make([]*ConsumerSessionsWithProvider, 0)
+	staticProvidersToBoost := make([]*ConsumerSessionsWithProvider, 0)
 	maxWeight := int64(1)
 	for _, cswp := range providers {
-		if cswp.StaticProvider {
-			staticProviders = append(staticProviders, cswp)
-			continue
-		}
 		stakeAmount := cswp.getProviderStakeSize().Amount
 		stake := int64(10) // defaults to 10 if stake isn't set
 		if !stakeAmount.IsNil() && stakeAmount.IsInt64() {
 			stake = stakeAmount.Int64()
+		}
+		// NOTE: stakeAmount may be a zero-value (nil-backed) math.Int if stake wasn't initialized
+		// (e.g. when ConsumerSessionsWithProvider is constructed directly without setting stakeSize).
+		// Calling IsZero() on a nil-backed Int will panic, so guard IsZero() with IsNil().
+		stakeOmitted := stakeAmount.IsNil()
+		if !stakeOmitted {
+			stakeOmitted = stakeAmount.IsZero()
+		}
+		// Preserve legacy behavior for static providers: if no explicit stake was set (stakeAmount==0),
+		// boost them relative to the max stake in the pairing list.
+		// If explicit stake is provided (>0), treat the static provider like any other provider.
+		if cswp.StaticProvider && stakeOmitted {
+			staticProvidersToBoost = append(staticProvidersToBoost, cswp)
+			continue
 		}
 		if stake > maxWeight {
 			maxWeight = stake
 		}
 		weights[cswp.PublicLavaAddress] = stake
 	}
-	for _, cswp := range staticProviders {
+	for _, cswp := range staticProvidersToBoost {
 		weights[cswp.PublicLavaAddress] = maxWeight * WeightMultiplierForStaticProviders
 	}
 	return weights

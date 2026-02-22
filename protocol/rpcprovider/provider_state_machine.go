@@ -16,6 +16,8 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	"google.golang.org/grpc/codes"
+	grpcstatus "google.golang.org/grpc/status"
 )
 
 type ProviderRelaySender interface {
@@ -64,8 +66,7 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 		// Check if this is a test mode request
 		isTestMode, _ := ctx.Value(TestModeContextKey{}).(bool)
 		if isTestMode && psm.testModeConfig != nil && psm.testModeConfig.TestMode {
-			replyWrapper = psm.generateTestResponse(ctx, chainMsg, request)
-			err = nil // No error in test mode
+			replyWrapper, err = psm.generateTestResponseWithAvailability(ctx, chainMsg, request)
 		} else {
 			// Original behavior - send to real node
 			replyWrapper, _, _, _, _, err = psm.relaySender.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
@@ -73,6 +74,11 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 		latency := time.Since(sendTime)
 		finalLatency = latency // Track latency outside loop to preserve it when breaking early
 		if err != nil {
+			// Preserve gRPC status errors (used by test mode availability failures) without wrapping,
+			// so the consumer can see a stable failure code. Wrap all other errors for logging context.
+			if _, ok := grpcstatus.FromError(err); ok {
+				return nil, emptyTime, err
+			}
 			return nil, emptyTime, utils.LavaFormatError("Sending chainMsg failed", err, utils.LogAttr("attempt", retryAttempt), utils.LogAttr("GUID", ctx), utils.LogAttr("specID", psm.chainId))
 		}
 
@@ -167,6 +173,66 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 	return replyWrapper, finalLatency, nil
 }
 
+func clampProb01(v float64) float64 {
+	if v < 0 {
+		return 0
+	}
+	if v > 1 {
+		return 1
+	}
+	return v
+}
+
+// generateTestResponseWithAvailability wraps generateTestResponse with an availability gate.
+// If the request falls into the unavailable bucket, it returns a gRPC-level error so the consumer
+// treats it as a relay failure (availability sample = 0).
+func (psm *ProviderStateMachine) generateTestResponseWithAvailability(ctx context.Context, chainMsg chainlib.ChainMessage, request *pairingtypes.RelayRequest) (*chainlib.RelayReplyWrapper, error) {
+	// Resolve method name
+	apiMethod := ""
+	if chainMsg != nil && chainMsg.GetApi() != nil {
+		apiMethod = chainMsg.GetApi().Name
+	}
+
+	// Get test response config (or defaults)
+	testResponse, exists := psm.testModeConfig.Responses[apiMethod]
+	if !exists {
+		// If method isn't configured, behave as always-available by default.
+		return psm.generateTestResponse(ctx, chainMsg, request), nil
+	}
+
+	availability := 1.0
+	if testResponse.Availability != nil {
+		availability = clampProb01(*testResponse.Availability)
+	}
+	// Gate on availability first
+	if rand.Float64() > availability {
+		return nil, grpcstatus.Error(codes.Unavailable, "test mode availability failure")
+	}
+
+	return psm.generateTestResponse(ctx, chainMsg, request), nil
+}
+
+func clampNonNegativeInt64(v int64) int64 {
+	if v < 0 {
+		return 0
+	}
+	return v
+}
+
+func (psm *ProviderStateMachine) sleepWithContext(ctx context.Context, d time.Duration) {
+	if d <= 0 {
+		return
+	}
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return
+	case <-timer.C:
+		return
+	}
+}
+
 // generateTestResponse generates a test response based on the configured probabilities
 func (psm *ProviderStateMachine) generateTestResponse(ctx context.Context, chainMsg chainlib.ChainMessage, request *pairingtypes.RelayRequest) *chainlib.RelayReplyWrapper {
 	// Get the API method name
@@ -189,6 +255,30 @@ func (psm *ProviderStateMachine) generateTestResponse(ctx context.Context, chain
 			RateLimitProbability:   0.03,
 			UnsupportedProbability: 0.02,
 		}
+	}
+
+	// Apply per-method artificial delay (optional). This influences consumer-measured relay latency.
+	delayMs := testResponse.DelayMs
+	delayJitterMs := testResponse.DelayJitterMs
+	delayMs = clampNonNegativeInt64(delayMs)
+	delayJitterMs = clampNonNegativeInt64(delayJitterMs)
+	if delayMs > 0 || delayJitterMs > 0 {
+		jitter := int64(0)
+		if delayJitterMs > 0 {
+			jitter = rand.Int63n(delayJitterMs + 1)
+		}
+		totalDelay := time.Duration(delayMs+jitter) * time.Millisecond
+		// Clamp delay to remaining time, if a deadline exists, to avoid hanging beyond caller timeout.
+		if deadline, ok := ctx.Deadline(); ok {
+			remaining := time.Until(deadline)
+			if remaining < 0 {
+				remaining = 0
+			}
+			if totalDelay > remaining {
+				totalDelay = remaining
+			}
+		}
+		psm.sleepWithContext(ctx, totalDelay)
 	}
 
 	// Generate response based on probabilities
@@ -228,10 +318,34 @@ func (psm *ProviderStateMachine) generateTestResponse(ctx context.Context, chain
 		utils.LogAttr("statusCode", statusCode),
 		utils.LogAttr("GUID", ctx))
 
+	// Compute LatestBlock; precedence: method-level override if set, else default.
+	latestBlock := int64(12345)
+	latestBlockJitter := int64(0)
+	if testResponse.LatestBlock != 0 || testResponse.LatestBlockJitter != 0 {
+		latestBlock = testResponse.LatestBlock
+		latestBlockJitter = testResponse.LatestBlockJitter
+	} else if psm.testModeConfig != nil && psm.testModeConfig.HeadBlock != 0 {
+		// Provider-level deterministic head/gap behavior (per provider file).
+		head := psm.testModeConfig.HeadBlock
+		gap := psm.testModeConfig.GapBlocks
+		if gap < 0 {
+			gap = 0
+		}
+
+		latestBlock = head - gap
+	}
+	latestBlockJitter = clampNonNegativeInt64(latestBlockJitter)
+	if latestBlockJitter > 0 {
+		latestBlock += rand.Int63n(latestBlockJitter + 1)
+	}
+	if latestBlock < 0 {
+		latestBlock = 0
+	}
+
 	return &chainlib.RelayReplyWrapper{
 		RelayReply: &pairingtypes.RelayReply{
 			Data:        []byte(responseData),
-			LatestBlock: 12345, // Mock block number
+			LatestBlock: latestBlock,
 		},
 		StatusCode: statusCode,
 	}

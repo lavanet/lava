@@ -41,7 +41,9 @@ const (
 	FORCE_CACHE_REFRESH_HEADER_NAME             = "lava-force-cache-refresh"
 	LAVA_DEBUG_RELAY                            = "lava-debug-relay"
 	LAVA_LB_UNIQUE_ID_HEADER                    = "lava-lb-unique-id"
+	SELECTION_STATS_HEADER_NAME                 = "lava-selection-stats"
 	STICKINESS_HEADER_NAME                      = "lava-stickiness"
+	SELECT_PROVIDER_HEADER_NAME                 = "lava-select-provider"
 	CROSS_VALIDATION_HEADER_MAX_PARTICIPANTS    = "lava-cross-validation-max-participants"
 	CROSS_VALIDATION_HEADER_AGREEMENT_THRESHOLD = "lava-cross-validation-agreement-threshold"
 	CROSS_VALIDATION_ALL_PROVIDERS_HEADER_NAME  = "lava-cross-validation-all-providers"
@@ -59,6 +61,7 @@ var SPECIAL_LAVA_DIRECTIVE_HEADERS = map[string]struct{}{
 	FORCE_CACHE_REFRESH_HEADER_NAME:             {},
 	LAVA_DEBUG_RELAY:                            {},
 	STICKINESS_HEADER_NAME:                      {},
+	SELECT_PROVIDER_HEADER_NAME:                 {},
 	CROSS_VALIDATION_HEADER_MAX_PARTICIPANTS:    {},
 	CROSS_VALIDATION_HEADER_AGREEMENT_THRESHOLD: {},
 }

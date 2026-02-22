@@ -31,6 +31,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
+	scoreutils "github.com/lavanet/lava/v5/utils/score"
 	"github.com/lavanet/lava/v5/utils/sigs"
 	plantypes "github.com/lavanet/lava/v5/x/plans/types"
 	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
@@ -128,6 +129,7 @@ type rpcConsumerStartOptions struct {
 	cmdFlags                 common.ConsumerCmdFlags
 	stateShare               bool
 	geoLocation              uint64
+	weightedSelectorConfig   provideroptimizer.WeightedSelectorConfig
 }
 
 func getConsumerAddressAndKeys(clientCtx client.Context) (sdk.AccAddress, *secp256k1.PrivateKey, error) {
@@ -188,6 +190,11 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	}
 
 	consumerMetricsManager.SetVersion(upgrade.GetCurrentVersion().ConsumerVersion)
+
+	// Start periodic selection stats metrics updates
+	if consumerOptimizerQoSClient != nil {
+		consumerMetricsManager.StartSelectionStatsUpdater(ctx, metrics.OptimizerQosServerSamplingInterval)
+	}
 
 	// spawn up ConsumerStateTracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
@@ -331,8 +338,8 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 		var err error
 
 		// Create / Use existing optimizer
-		// QoS selection is disabled by default (false) - can be enabled via command flag in the future
-		newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, options.maxConcurrentProviders, consumerOptimizerQoSClient, chainID, false)
+		newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, options.maxConcurrentProviders, consumerOptimizerQoSClient, chainID)
+		newOptimizer.ConfigureWeightedSelector(options.weightedSelectorConfig)
 		optimizer, loaded, err = optimizers.LoadOrStore(chainID, newOptimizer)
 		if err != nil {
 			return utils.LavaFormatError("failed loading optimizer", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
@@ -631,6 +638,16 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			}
 
 			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)
+			if err := scoreutils.SetProbeUpdateWeight(viper.GetFloat64(common.ProbeUpdateWeightFlagName)); err != nil {
+				return err
+			}
+			weightedSelectorConfig := provideroptimizer.DefaultWeightedSelectorConfig()
+			weightedSelectorConfig.AvailabilityWeight = viper.GetFloat64(common.ProviderOptimizerAvailabilityWeight)
+			weightedSelectorConfig.LatencyWeight = viper.GetFloat64(common.ProviderOptimizerLatencyWeight)
+			weightedSelectorConfig.SyncWeight = viper.GetFloat64(common.ProviderOptimizerSyncWeight)
+			weightedSelectorConfig.StakeWeight = viper.GetFloat64(common.ProviderOptimizerStakeWeight)
+			weightedSelectorConfig.MinSelectionChance = viper.GetFloat64(common.ProviderOptimizerMinSelectionChance)
+			weightedSelectorConfig.Strategy = strategyFlag.Strategy
 			consumerPropagatedFlags := common.ConsumerCmdFlags{
 				HeadersFlag:              viper.GetString(common.CorsHeadersFlag),
 				CredentialsFlag:          viper.GetString(common.CorsCredentialsFlag),
@@ -643,21 +660,23 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				StaticSpecPaths:          viper.GetStringSlice(common.UseStaticSpecFlag),
 				GitHubToken:              viper.GetString(common.GitHubTokenFlag),
 				GitLabToken:              viper.GetString(common.GitLabTokenFlag),
+				EnableSelectionStats:     viper.GetBool(common.EnableSelectionStatsHeaderFlag),
 			}
 
 			rpcConsumerSharedState := viper.GetBool(common.SharedStateFlag)
 			err = rpcConsumer.Start(ctx, &rpcConsumerStartOptions{
-				txFactory,
-				clientCtx,
-				rpcEndpoints,
-				requiredResponses,
-				cache,
-				strategyFlag.Strategy,
-				maxConcurrentProviders,
-				analyticsServerAddresses,
-				consumerPropagatedFlags,
-				rpcConsumerSharedState,
-				geolocation,
+				txFactory:                txFactory,
+				clientCtx:                clientCtx,
+				rpcEndpoints:             rpcEndpoints,
+				requiredResponses:        requiredResponses,
+				cache:                    cache,
+				strategy:                 strategyFlag.Strategy,
+				maxConcurrentProviders:   maxConcurrentProviders,
+				analyticsServerAddresses: analyticsServerAddresses,
+				cmdFlags:                 consumerPropagatedFlags,
+				stateShare:               rpcConsumerSharedState,
+				geoLocation:              geolocation,
+				weightedSelectorConfig:   weightedSelectorConfig,
 			})
 			return err
 		},
@@ -681,6 +700,27 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().String(performance.PyroscopeTagsFlagName, "", "comma-separated list of tags in key=value format (e.g., instance=consumer-1,region=us-east)")
 	cmdRPCConsumer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdRPCConsumer.Flags().Var(&strategyFlag, "strategy", fmt.Sprintf("the strategy to use to pick providers (%s)", strings.Join(strategyNames, "|")))
+	defaultWeightedConfig := provideroptimizer.DefaultWeightedSelectorConfig()
+	cmdRPCConsumer.Flags().Float64(common.ProviderOptimizerAvailabilityWeight, defaultWeightedConfig.AvailabilityWeight, "weight assigned to provider availability when computing selection scores")
+	cmdRPCConsumer.Flags().Float64(common.ProviderOptimizerLatencyWeight, defaultWeightedConfig.LatencyWeight, "weight assigned to provider latency when computing selection scores")
+	cmdRPCConsumer.Flags().Float64(common.ProviderOptimizerSyncWeight, defaultWeightedConfig.SyncWeight, "weight assigned to provider sync freshness when computing selection scores")
+	cmdRPCConsumer.Flags().Float64(common.ProviderOptimizerStakeWeight, defaultWeightedConfig.StakeWeight, "weight assigned to provider stake when computing selection scores")
+	cmdRPCConsumer.Flags().Float64(common.ProviderOptimizerMinSelectionChance, defaultWeightedConfig.MinSelectionChance, "minimum selection probability for any provider regardless of score")
+	if err := viper.BindPFlag(common.ProviderOptimizerAvailabilityWeight, cmdRPCConsumer.Flags().Lookup(common.ProviderOptimizerAvailabilityWeight)); err != nil {
+		utils.LavaFormatFatal("failed binding availability weight flag", err)
+	}
+	if err := viper.BindPFlag(common.ProviderOptimizerLatencyWeight, cmdRPCConsumer.Flags().Lookup(common.ProviderOptimizerLatencyWeight)); err != nil {
+		utils.LavaFormatFatal("failed binding latency weight flag", err)
+	}
+	if err := viper.BindPFlag(common.ProviderOptimizerSyncWeight, cmdRPCConsumer.Flags().Lookup(common.ProviderOptimizerSyncWeight)); err != nil {
+		utils.LavaFormatFatal("failed binding sync weight flag", err)
+	}
+	if err := viper.BindPFlag(common.ProviderOptimizerStakeWeight, cmdRPCConsumer.Flags().Lookup(common.ProviderOptimizerStakeWeight)); err != nil {
+		utils.LavaFormatFatal("failed binding stake weight flag", err)
+	}
+	if err := viper.BindPFlag(common.ProviderOptimizerMinSelectionChance, cmdRPCConsumer.Flags().Lookup(common.ProviderOptimizerMinSelectionChance)); err != nil {
+		utils.LavaFormatFatal("failed binding min selection chance flag", err)
+	}
 	cmdRPCConsumer.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
 	cmdRPCConsumer.Flags().Bool(metrics.AddApiMethodCallsMetrics, false, "adding a counter gauge for each method called per chain per api interface")
 	cmdRPCConsumer.Flags().String(metrics.RelayServerFlagName, metrics.DisabledFlagOption, "the http address of the relay usage server api endpoint (example http://127.0.0.1:8080)")
@@ -692,6 +732,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().Bool(metrics.RelayKafkaTLSEnabledFlagName, false, "enable TLS for kafka connections")
 	cmdRPCConsumer.Flags().Bool(metrics.RelayKafkaTLSInsecureFlagName, false, "skip TLS certificate verification for kafka connections")
 	cmdRPCConsumer.Flags().Bool(DebugRelaysFlagName, false, "adding debug information to relays")
+	cmdRPCConsumer.Flags().Bool(common.EnableSelectionStatsHeaderFlag, false, "enable selection stats header for debugging provider selection")
 	// CORS related flags
 	cmdRPCConsumer.Flags().String(common.CorsCredentialsFlag, "true", "Set up CORS allowed credentials,default \"true\"")
 	cmdRPCConsumer.Flags().String(common.CorsHeadersFlag, "", "Set up CORS allowed headers, * for all, default simple cors specification headers")
@@ -710,17 +751,15 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().String(common.GitLabTokenFlag, "", "GitLab personal access token for accessing private repositories (supports gitlab.com and self-hosted instances)")
 	cmdRPCConsumer.Flags().IntVar(&relaycore.RelayCountOnNodeError, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
 	cmdRPCConsumer.Flags().BoolVar(&rpcInterfaceMessages.BatchNodeErrorOnAny, common.BatchNodeErrorOnAnyFlag, false, "if true, batch requests are treated as node errors if ANY sub-request fails; if false (default), only if ALL fail")
-	// optimizer metrics
-	cmdRPCConsumer.Flags().Float64Var(&provideroptimizer.ATierChance, common.SetProviderOptimizerBestTierPickChance, provideroptimizer.ATierChance, "set the chances for picking a provider from the best group, default is 75% -> 0.75")
-	cmdRPCConsumer.Flags().Float64Var(&provideroptimizer.LastTierChance, common.SetProviderOptimizerWorstTierPickChance, provideroptimizer.LastTierChance, "set the chances for picking a provider from the worse group, default is 0% -> 0.0")
-	cmdRPCConsumer.Flags().IntVar(&provideroptimizer.OptimizerNumTiers, common.SetProviderOptimizerNumberOfTiersToCreate, provideroptimizer.OptimizerNumTiers, "set the number of groups to create, default is 4")
-	cmdRPCConsumer.Flags().IntVar(&provideroptimizer.MinimumEntries, common.SetProviderOptimizerNumberOfProvidersPerTier, provideroptimizer.MinimumEntries, "set the number of providers to have in each tier, default is 5")
+	cmdRPCConsumer.Flags().Float64(common.ProbeUpdateWeightFlagName, scoreutils.DefaultProbeUpdateWeight, "weight multiplier for provider-optimizer probe updates (liveness/latency); must be > 0")
+	if err := viper.BindPFlag(common.ProbeUpdateWeightFlagName, cmdRPCConsumer.Flags().Lookup(common.ProbeUpdateWeightFlagName)); err != nil {
+		utils.LavaFormatFatal("failed binding probe update weight flag", err)
+	}
 	// optimizer qos reports
 	cmdRPCConsumer.Flags().String(common.OptimizerQosServerAddressFlag, "", "address to send optimizer qos reports to")
 	cmdRPCConsumer.Flags().Bool(common.OptimizerQosListenFlag, false, "enable listening for optimizer qos reports on metrics endpoint i.e GET -> localhost:7779/provider_optimizer_metrics")
 	cmdRPCConsumer.Flags().DurationVar(&metrics.OptimizerQosServerPushInterval, common.OptimizerQosServerPushIntervalFlag, time.Minute*5, "interval to push optimizer qos reports")
 	cmdRPCConsumer.Flags().DurationVar(&metrics.OptimizerQosServerSamplingInterval, common.OptimizerQosServerSamplingIntervalFlag, time.Second*1, "interval to sample optimizer qos reports")
-	cmdRPCConsumer.Flags().BoolVar(&provideroptimizer.AutoAdjustTiers, common.SetProviderOptimizerAutoAdjustTiers, provideroptimizer.AutoAdjustTiers, "optimizer enable auto adjust tiers, this flag will fix the tiers based on the number of providers in the pairing, defaults to (false)")
 	// metrics
 	cmdRPCConsumer.Flags().BoolVar(&metrics.ShowProviderEndpointInMetrics, common.ShowProviderEndpointInMetricsFlagName, metrics.ShowProviderEndpointInMetrics, "show provider endpoint in consumer metrics")
 	// websocket flags

@@ -91,6 +91,7 @@ type RPCSmartRouterServer struct {
 	initialized                    atomic.Bool
 	latestBlockHeight              atomic.Uint64
 	latestBlockEstimator           *relaycore.LatestBlockEstimator
+	enableSelectionStats           bool // feature flag to enable selection stats header
 }
 
 func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
@@ -124,6 +125,7 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 	rpcss.sharedState = sharedState
 	rpcss.reporter = reporter
 	rpcss.debugRelays = cmdFlags.DebugRelays
+	rpcss.enableSelectionStats = cmdFlags.EnableSelectionStats
 	rpcss.connectedSubscriptionsContexts = make(map[string]*CancelableContextHolder)
 	rpcss.smartRouterProcessGuid = strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)
 	rpcss.relayRetriesManager = lavaprotocol.NewRelayRetriesManager()
@@ -979,13 +981,20 @@ func (rpcss *RPCSmartRouterServer) sendRelayToProvider(
 		utils.LavaFormatTrace("found stickiness header", utils.LogAttr("id", stickiness), utils.LogAttr("GUID", ctx))
 	}
 
-	sessions, err := rpcss.sessionManager.GetSessions(ctx, numOfProviders, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness)
+	// provider selection via header (smartrouter only)
+	selectedProvider := ""
+	if providerAddr, exists := directiveHeaders[common.SELECT_PROVIDER_HEADER_NAME]; exists {
+		selectedProvider = providerAddr
+		utils.LavaFormatTrace("found provider selection header", utils.LogAttr("provider", selectedProvider), utils.LogAttr("GUID", ctx))
+	}
+
+	sessions, err := rpcss.sessionManager.GetSessions(ctx, numOfProviders, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness, selectedProvider)
 	if err != nil {
 		if lavasession.PairingListEmptyError.Is(err) {
 			if addon != "" {
 				return utils.LavaFormatError("No Providers For Addon", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", userData.ConsumerIp), utils.LogAttr("GUID", ctx))
 			} else if len(extensions) > 0 && relayProcessor.GetAllowSessionDegradation() { // if we have no providers for that extension, use a regular provider, otherwise return the extension results
-				sessions, err = rpcss.sessionManager.GetSessions(ctx, numOfProviders, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, []*spectypes.Extension{}, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness)
+				sessions, err = rpcss.sessionManager.GetSessions(ctx, numOfProviders, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, []*spectypes.Extension{}, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness, selectedProvider)
 				if err != nil {
 					return err
 				}
@@ -1916,6 +1925,19 @@ func (rpcss *RPCSmartRouterServer) appendHeadersToRelayResult(ctx context.Contex
 	// The cross-validation info is included in the error message and metrics have been emitted.
 	if relayResult == nil {
 		return
+	}
+
+	// Add selection stats header if feature is enabled
+	if rpcss.enableSelectionStats {
+		if selectionStats := rpcss.sessionManager.GetSelectionStats(); selectionStats != nil {
+			statsString := selectionStats.FormatSelectionStats()
+			if statsString != "" {
+				metadataReply = append(metadataReply, pairingtypes.Metadata{
+					Name:  common.SELECTION_STATS_HEADER_NAME,
+					Value: statsString,
+				})
+			}
+		}
 	}
 
 	if relayResult.Reply == nil {

@@ -1,0 +1,15 @@
+{
+  "test_mode": true,
+  "head_block": 1000,
+  "gap_blocks": 1,
+  "head_on_first_request": false,
+  "responses": {
+    "health": {
+      "success_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"default_success\"}",
+      "success_probability": 1.0,
+      "availability": 1.0,
+      "delay_ms": 50
+    }
+  }
+}
+

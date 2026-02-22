@@ -67,6 +67,10 @@ type ConsumerSessionManager struct {
 
 	addonAddresses    map[string][]string // key is RouterKey.String()
 	reportedProviders *ReportedProviders
+
+	// Latest selection stats for debugging provider selection (thread-safe access)
+	selectionStatsLock   sync.RWMutex
+	latestSelectionStats *provideroptimizer.SelectionStats
 	// pairingPurge - contains all pairings that are unwanted this epoch, keeps them in memory in order to avoid release.
 	// (if a consumer session still uses one of them or we want to report it.)
 	pairingPurge                       map[string]*ConsumerSessionsWithProvider
@@ -90,6 +94,35 @@ func (csm *ConsumerSessionManager) GetNumberOfValidProviders() int {
 	csm.lock.RLock()
 	defer csm.lock.RUnlock()
 	return len(csm.validAddresses)
+}
+
+// IsStaticProvider returns true when the given provider address belongs to a
+// static provider in the current pairing (including backup providers).
+//
+// This is used by higher-level flows (e.g. WS subscriptions) to decide whether
+// to skip reply signature verification, matching the behavior of regular RPC
+// calls for static providers.
+func (csm *ConsumerSessionManager) IsStaticProvider(providerAddr string) bool {
+	if csm == nil || providerAddr == "" {
+		return false
+	}
+
+	csm.lock.RLock()
+	defer csm.lock.RUnlock()
+
+	if cswp, ok := csm.pairing[providerAddr]; ok && cswp != nil {
+		cswp.Lock.RLock()
+		defer cswp.Lock.RUnlock()
+		return cswp.StaticProvider
+	}
+
+	if cswp, ok := csm.backupProviders[providerAddr]; ok && cswp != nil {
+		cswp.Lock.RLock()
+		defer cswp.Lock.RUnlock()
+		return cswp.StaticProvider
+	}
+
+	return false
 }
 
 // this is being read in multiple locations and but never changes so no need to lock.
@@ -196,7 +229,9 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 
 	// reset session related metrics
 	go csm.consumerMetricsManager.ResetSessionRelatedMetrics()
-	go csm.providerOptimizer.UpdateWeights(CalcWeightsByStake(pairingList), epoch)
+	// UpdateWeights is required for stake-weighted selection; run it synchronously so early relays/probes
+	// (which may start immediately after UpdateAllProviders) see correct stake values.
+	csm.providerOptimizer.UpdateWeights(CalcWeightsByStake(pairingList), epoch)
 	go csm.consumerMetricsManager.ResetBlockedProvidersMetrics(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, providerAddressToEndpoint)
 
 	// Store backup providers separately from main pairing list for emergency fallback scenarios
@@ -296,17 +331,6 @@ func (csm *ConsumerSessionManager) closePurgedUnusedPairingsConnections(pairingP
 	}
 
 	for providerAddr, purgedPairing := range pairingPurge {
-		// Skip closing connections for static providers.
-		// Static providers (used by smart router) reuse the same Endpoint objects across epochs,
-		// so closing connections here would break in-flight requests using the shared endpoints.
-		// Static provider connections are managed separately and persist for the lifetime of the process.
-		if purgedPairing.StaticProvider {
-			utils.LavaFormatTrace("skipping purge for static provider, connections are shared across epochs",
-				utils.LogAttr("providerAddr", providerAddr),
-			)
-			continue
-		}
-
 		callbackPurge := func() {
 			for _, endpoint := range purgedPairing.Endpoints {
 				for _, endpointConnection := range endpoint.Connections {
@@ -334,7 +358,6 @@ func (csm *ConsumerSessionManager) closePurgedUnusedPairingsConnections(pairingP
 
 func (csm *ConsumerSessionManager) PeriodicProbeProviders(ctx context.Context, interval time.Duration) {
 	ticker := time.NewTicker(interval)
-	defer ticker.Stop() // Ensure ticker is stopped to prevent goroutine/channel leak
 
 	for {
 		select {
@@ -604,8 +627,8 @@ func (csm *ConsumerSessionManager) validatePairingListNotEmpty(addon string, ext
 	return numberOfResets
 }
 
-func (csm *ConsumerSessionManager) getSessionWithProviderOrError(ctx context.Context, wantedProviderNumber int, usedProviders UsedProvidersInf, tempIgnoredProviders *ignoredProviders, cuNeededForSession uint64, requestedBlock int64, addon string, extensionNames []string, stateful uint32, virtualEpoch uint64, stickiness string) (sessionWithProviderMap SessionWithProviderMap, err error) {
-	sessionWithProviderMap, err = csm.getValidConsumerSessionsWithProvider(ctx, wantedProviderNumber, tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch, stickiness)
+func (csm *ConsumerSessionManager) getSessionWithProviderOrError(ctx context.Context, wantedProviderNumber int, usedProviders UsedProvidersInf, tempIgnoredProviders *ignoredProviders, cuNeededForSession uint64, requestedBlock int64, addon string, extensionNames []string, stateful uint32, virtualEpoch uint64, stickiness string, selectedProvider string) (sessionWithProviderMap SessionWithProviderMap, err error) {
+	sessionWithProviderMap, err = csm.getValidConsumerSessionsWithProvider(ctx, wantedProviderNumber, tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch, stickiness, selectedProvider)
 	if err != nil {
 		if PairingListEmptyError.Is(err) {
 			// Emergency fallback chain: backup providers first, then blocked providers for maximum availability
@@ -640,7 +663,8 @@ func (csm *ConsumerSessionManager) getSessionWithProviderOrError(ctx context.Con
 
 // GetSessions will return a ConsumerSession, given cu needed for that session.
 // The user can also request specific providers to not be included in the search for a session.
-func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, wantedProviderNumber int, cuNeededForSession uint64, usedProviders UsedProvidersInf, requestedBlock int64, addon string, extensions []*spectypes.Extension, stateful uint32, virtualEpoch uint64, stickiness string) (
+// selectedProvider allows forcing selection of a specific provider by address (smartrouter only).
+func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, wantedProviderNumber int, cuNeededForSession uint64, usedProviders UsedProvidersInf, requestedBlock int64, addon string, extensions []*spectypes.Extension, stateful uint32, virtualEpoch uint64, stickiness string, selectedProvider string) (
 	consumerSessionMap ConsumerSessionsMap, errRet error,
 ) {
 	// set usedProviders if they were chosen for this relay
@@ -673,7 +697,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, wantedProvid
 	utils.LavaFormatTrace("GetSessions tempIgnoredProviders", utils.LogAttr("tempIgnoredProviders", tempIgnoredProviders), utils.LogAttr("GUID", ctx))
 
 	// Get a valid consumerSessionsWithProvider
-	sessionWithProviderMap, err := csm.getSessionWithProviderOrError(ctx, wantedProviderNumber, usedProviders, tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch, stickiness)
+	sessionWithProviderMap, err := csm.getSessionWithProviderOrError(ctx, wantedProviderNumber, usedProviders, tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch, stickiness, selectedProvider)
 	if err != nil {
 		utils.LavaFormatTrace("GetSessions error", utils.LogAttr("error", err.Error()), utils.LogAttr("GUID", ctx))
 		return nil, err
@@ -808,7 +832,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, wantedProvid
 		}
 
 		// If we do not have enough fetch more
-		sessionWithProviderMap, err = csm.getSessionWithProviderOrError(ctx, 1, usedProviders, tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch, stickiness)
+		sessionWithProviderMap, err = csm.getSessionWithProviderOrError(ctx, 1, usedProviders, tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch, stickiness, selectedProvider)
 		// If error exists but we have sessions, return them
 		if err != nil && len(sessions) != 0 {
 			return sessions, nil
@@ -845,13 +869,59 @@ func (csm *ConsumerSessionManager) getTopTenProvidersForStatefulCalls(validAddre
 	return addresses
 }
 
+// convertSelectionStatsToMetrics converts SelectionStats to metrics format with all provider scores
+func convertSelectionStatsToMetrics(stats *provideroptimizer.SelectionStats) (allScores []metrics.ProviderSelectionScores, rngValue float64) {
+	if stats == nil {
+		return nil, 0
+	}
+	rngValue = stats.RNGValue
+	allScores = make([]metrics.ProviderSelectionScores, 0, len(stats.ProviderScores))
+	for _, score := range stats.ProviderScores {
+		allScores = append(allScores, metrics.ProviderSelectionScores{
+			ProviderAddress: score.Address,
+			Availability:    score.Availability,
+			Latency:         score.Latency,
+			Sync:            score.Sync,
+			Stake:           score.Stake,
+			Composite:       score.Composite,
+		})
+	}
+	return allScores, rngValue
+}
+
 // Get a valid provider address.
-func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context, wantedProviders int, ignoredProvidersList map[string]struct{}, cu uint64, requestedBlock int64, addon string, extensions []string, stateful uint32, stickiness string) (addresses []string, err error) {
+func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context, wantedProviders int, ignoredProvidersList map[string]struct{}, cu uint64, requestedBlock int64, addon string, extensions []string, stateful uint32, stickiness string, selectedProvider string) (addresses []string, err error) {
 	// cs.Lock must be Rlocked here.
 	ignoredProvidersListLength := len(ignoredProvidersList)
 	validAddresses := csm.getValidAddresses(addon, extensions, ctx)
 	validAddressesLength := len(validAddresses)
 	totalValidLength := validAddressesLength - ignoredProvidersListLength
+
+	// Handle provider selection via header (smartrouter only)
+	if selectedProvider != "" {
+		// Validate that the selected provider is in the valid addresses list
+		providerValid := slices.Contains(validAddresses, selectedProvider)
+		if providerValid {
+			addresses = []string{selectedProvider}
+			utils.LavaFormatInfo("Provider selected via header",
+				utils.LogAttr("provider", selectedProvider),
+				utils.LogAttr("addon", addon),
+				utils.LogAttr("extensions", extensions),
+				utils.LogAttr("GUID", ctx))
+			return addresses, nil
+		} else {
+			// Return error instead of falling back to random selection
+			return nil, utils.LavaFormatError(
+				"Selected provider not available",
+				nil,
+				utils.LogAttr("selectedProvider", selectedProvider),
+				utils.LogAttr("validProviders", validAddresses),
+				utils.LogAttr("addon", addon),
+				utils.LogAttr("extensions", extensions),
+				utils.LogAttr("GUID", ctx),
+			)
+		}
+	}
 
 	if stickysession, ok := csm.stickySessions.Get(stickiness); ok {
 		// Check if sticky session provider is still valid
@@ -884,20 +954,72 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 	if stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS && csm.providerOptimizer.Strategy() != provideroptimizer.StrategyCost {
 		providers = csm.getTopTenProvidersForStatefulCalls(validAddresses, ignoredProvidersList)
 	} else if stickiness != "" {
-		providers = csm.providerOptimizer.ChooseProviderFromTopTier(validAddresses, ignoredProvidersList, cu, requestedBlock)
+		var selectionStats *provideroptimizer.SelectionStats
+		providers, selectionStats = csm.providerOptimizer.ChooseBestProviderWithStats(ctx, validAddresses, ignoredProvidersList, cu, requestedBlock)
+		if selectionStats != nil {
+			csm.setSelectionStats(selectionStats)
+		}
+		// Track provider selection for metrics with all provider scores
+		if len(providers) > 0 {
+			if selectionStats == nil {
+				utils.LavaFormatWarning("Selection stats missing for sticky session provider", nil,
+					utils.LogAttr("provider", providers[0]),
+					utils.LogAttr("chainId", csm.rpcEndpoint.ChainID),
+					utils.LogAttr("addon", addon),
+					utils.LogAttr("extensions", extensions),
+					utils.LogAttr("GUID", ctx),
+				)
+			} else if len(selectionStats.ProviderScores) == 0 {
+				utils.LavaFormatWarning("Selection stats missing provider scores for sticky session", nil,
+					utils.LogAttr("provider", providers[0]),
+					utils.LogAttr("selectedProvider", selectionStats.SelectedProvider),
+					utils.LogAttr("chainId", csm.rpcEndpoint.ChainID),
+					utils.LogAttr("addon", addon),
+					utils.LogAttr("extensions", extensions),
+					utils.LogAttr("GUID", ctx),
+				)
+			}
+			allScores, rngValue := convertSelectionStatsToMetrics(selectionStats)
+			csm.consumerMetricsManager.SetProviderSelected(csm.rpcEndpoint.ChainID, providers[0], allScores, rngValue)
+		}
 	} else {
 		// Make a copy of ignoredProvidersList to avoid modifying the original
 		ignoredProvidersListCopy := make(map[string]struct{}, len(ignoredProvidersList))
 		for k, v := range ignoredProvidersList {
 			ignoredProvidersListCopy[k] = v
 		}
-		for range wantedProviders {
-			provider, _ := csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersListCopy, cu, requestedBlock)
+		for i := 0; i < wantedProviders; i++ {
+			provider, selectionStats := csm.providerOptimizer.ChooseProviderWithStats(ctx, validAddresses, ignoredProvidersListCopy, cu, requestedBlock)
 			if len(provider) == 0 {
 				break
 			}
-			for _, provider := range provider {
-				ignoredProvidersListCopy[provider] = struct{}{}
+			// Store the latest selection stats for the first provider selection
+			if i == 0 && selectionStats != nil {
+				csm.setSelectionStats(selectionStats)
+			}
+			// Track provider selection for metrics with all provider scores
+			if selectionStats == nil {
+				utils.LavaFormatWarning("Selection stats missing for provider selection", nil,
+					utils.LogAttr("provider", provider[0]),
+					utils.LogAttr("chainId", csm.rpcEndpoint.ChainID),
+					utils.LogAttr("addon", addon),
+					utils.LogAttr("extensions", extensions),
+					utils.LogAttr("GUID", ctx),
+				)
+			} else if len(selectionStats.ProviderScores) == 0 {
+				utils.LavaFormatWarning("Selection stats missing provider scores", nil,
+					utils.LogAttr("provider", provider[0]),
+					utils.LogAttr("selectedProvider", selectionStats.SelectedProvider),
+					utils.LogAttr("chainId", csm.rpcEndpoint.ChainID),
+					utils.LogAttr("addon", addon),
+					utils.LogAttr("extensions", extensions),
+					utils.LogAttr("GUID", ctx),
+				)
+			}
+			allScores, rngValue := convertSelectionStatsToMetrics(selectionStats)
+			for _, providerAddr := range provider {
+				ignoredProvidersListCopy[providerAddr] = struct{}{}
+				csm.consumerMetricsManager.SetProviderSelected(csm.rpcEndpoint.ChainID, providerAddr, allScores, rngValue)
 			}
 			providers = append(providers, provider...)
 		}
@@ -960,7 +1082,7 @@ func (csm *ConsumerSessionManager) tryGetConsumerSessionWithProviderFromBlockedP
 			utils.LavaFormatDebug("Epoch changed between getValidConsumerSessionsWithProvider to tryGetConsumerSessionWithProviderFromBlockedProviderList getting pairing from new epoch list", utils.LogAttr("GUID", ctx))
 		}
 		csm.lock.RUnlock() // unlock because getValidConsumerSessionsWithProvider is locking.
-		return csm.getValidConsumerSessionsWithProvider(ctx, wantedProviderNumber, ignoredProviders, cuNeededForSession, requestedBlock, addon, extensions, stateful, virtualEpoch, "")
+		return csm.getValidConsumerSessionsWithProvider(ctx, wantedProviderNumber, ignoredProviders, cuNeededForSession, requestedBlock, addon, extensions, stateful, virtualEpoch, "", "")
 	}
 
 	// if we got here we validated the epoch is still the same epoch as we expected and we need to fetch a session from the blocked provider list.
@@ -1005,7 +1127,7 @@ func (csm *ConsumerSessionManager) tryGetConsumerSessionWithProviderFromBlockedP
 	}
 
 	// if we got here we failed to fetch a valid provider meaning no pairing available.
-	return nil, utils.LavaFormatError("could not get a provider address from blocked provider list", PairingListEmptyError, utils.LogAttr("chainID", csm.rpcEndpoint.ChainID), utils.LogAttr("currentlyBlockedProviderAddresses", csm.currentlyBlockedProviderAddresses), utils.LogAttr("addons", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("ignoredProviders", ignoredProviders.providers), utils.LogAttr("GUID", ctx))
+	return nil, utils.LavaFormatError(csm.rpcEndpoint.ChainID+" could not get a provider address from blocked provider list", PairingListEmptyError, utils.LogAttr("csm.currentlyBlockedProviderAddresses", csm.currentlyBlockedProviderAddresses), utils.LogAttr("addons", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("ignoredProviders", ignoredProviders.providers), utils.LogAttr("GUID", ctx))
 }
 
 // getValidConsumerSessionsWithProviderFromBackupProviderList retrieves valid backup provider sessions for emergency fallback when no regular providers are available.
@@ -1083,7 +1205,7 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProviderFromBacku
 	return sessionWithProviderMap, nil
 }
 
-func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ctx context.Context, wantedProviderNumber int, ignoredProviders *ignoredProviders, cuNeededForSession uint64, requestedBlock int64, addon string, extensions []string, stateful uint32, virtualEpoch uint64, stickiness string) (sessionWithProviderMap SessionWithProviderMap, err error) {
+func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ctx context.Context, wantedProviderNumber int, ignoredProviders *ignoredProviders, cuNeededForSession uint64, requestedBlock int64, addon string, extensions []string, stateful uint32, virtualEpoch uint64, stickiness string, selectedProvider string) (sessionWithProviderMap SessionWithProviderMap, err error) {
 	csm.lock.RLock()
 	defer csm.lock.RUnlock()
 
@@ -1097,9 +1219,9 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ctx cont
 	}
 
 	// Fetch provider addresses
-	providerAddresses, err := csm.getValidProviderAddresses(ctx, wantedProviderNumber, ignoredProviders.providers, cuNeededForSession, requestedBlock, addon, extensions, stateful, stickiness)
+	providerAddresses, err := csm.getValidProviderAddresses(ctx, wantedProviderNumber, ignoredProviders.providers, cuNeededForSession, requestedBlock, addon, extensions, stateful, stickiness, selectedProvider)
 	if err != nil {
-		utils.LavaFormatDebug("could not get provider addresses", utils.LogAttr("chainID", csm.rpcEndpoint.ChainID), utils.LogAttr("error", err), utils.LogAttr("GUID", ctx))
+		utils.LavaFormatDebug(csm.rpcEndpoint.ChainID+" could not get a provider addresses", utils.LogAttr("error", err), utils.LogAttr("GUID", ctx))
 		return nil, err
 	}
 
@@ -1147,7 +1269,7 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ctx cont
 		}
 
 		// If we do not have enough fetch more
-		providerAddresses, err = csm.getValidProviderAddresses(ctx, 1, ignoredProviders.providers, cuNeededForSession, requestedBlock, addon, extensions, stateful, stickiness)
+		providerAddresses, err = csm.getValidProviderAddresses(ctx, 1, ignoredProviders.providers, cuNeededForSession, requestedBlock, addon, extensions, stateful, stickiness, "")
 
 		// If error exists but we have providers, return them
 		if err != nil && len(sessionWithProviderMap) != 0 {
@@ -1462,6 +1584,20 @@ func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleC
 	}()
 }
 
+// setSelectionStats stores the latest selection stats (thread-safe)
+func (csm *ConsumerSessionManager) setSelectionStats(stats *provideroptimizer.SelectionStats) {
+	csm.selectionStatsLock.Lock()
+	defer csm.selectionStatsLock.Unlock()
+	csm.latestSelectionStats = stats
+}
+
+// GetSelectionStats retrieves the latest selection stats (thread-safe)
+func (csm *ConsumerSessionManager) GetSelectionStats() *provideroptimizer.SelectionStats {
+	csm.selectionStatsLock.RLock()
+	defer csm.selectionStatsLock.RUnlock()
+	return csm.latestSelectionStats
+}
+
 // Get the reported providers currently stored in the session manager.
 func (csm *ConsumerSessionManager) GetReportedProviders(epoch uint64) []*pairingtypes.ReportedProvider {
 	if epoch != csm.atomicReadCurrentEpoch() {
@@ -1640,24 +1776,6 @@ func NewConsumerSessionManager(
 	csm.activeSubscriptionProvidersStorage = activeSubscriptionProvidersStorage
 	csm.stickySessions = NewStickySessionStore()
 	return csm
-}
-
-// IsStaticProvider returns true if the given provider address belongs to a static provider in the current session manager state.
-// If the provider is unknown, it returns false.
-func (csm *ConsumerSessionManager) IsStaticProvider(providerAddress string) bool {
-	csm.lock.RLock()
-	defer csm.lock.RUnlock()
-
-	if cswp, ok := csm.pairing[providerAddress]; ok {
-		return cswp.StaticProvider
-	}
-	if cswp, ok := csm.backupProviders[providerAddress]; ok {
-		return cswp.StaticProvider
-	}
-	if cswp, ok := csm.pairingPurge[providerAddress]; ok {
-		return cswp.StaticProvider
-	}
-	return false
 }
 
 // SetLavaBlockHeightCallback sets the callback function to get current Lava blockchain block height
