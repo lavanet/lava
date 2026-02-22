@@ -12,7 +12,8 @@ func TestBadgerDB_BatchSaveLargeTransaction(t *testing.T) {
 	// This test verifies that BatchSave handles a large number of entries
 	// that would exceed BadgerDB's single transaction size limit.
 	// Before the fix, this would fail with: "Txn is too big to fit into one request"
-	db := NewMemoryDB("specId").(*BadgerDB)
+	db, ok := NewMemoryDB("specId").(*BadgerDB)
+	require.True(t, ok)
 	defer db.Close()
 
 	// Each entry has ~10KB of data. With default MemTableSize of 64MB,
