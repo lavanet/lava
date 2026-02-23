@@ -32,7 +32,6 @@ package rpcsmartrouter
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -40,13 +39,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/app"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
@@ -62,6 +61,7 @@ import (
 	scoreutils "github.com/lavanet/lava/v5/utils/score"
 	"github.com/lavanet/lava/v5/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	planstypes "github.com/lavanet/lava/v5/x/plans/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -164,11 +164,13 @@ type RPCSmartRouter struct {
 	sessionManagers        map[string]*lavasession.ConsumerSessionManager                  // key: chainID-apiInterface
 	providerSessions       map[string]map[uint64]*lavasession.ConsumerSessionsWithProvider // key: chainID-apiInterface
 	backupProviderSessions map[string]map[uint64]*lavasession.ConsumerSessionsWithProvider // key: chainID-apiInterface
+
+	// Server references for per-endpoint ChainTracker cleanup on epoch updates
+	rpcServers map[string]*RPCSmartRouterServer // key: chainID-apiInterface
 }
 
 type rpcSmartRouterStartOptions struct {
 	rpcEndpoints             []*lavasession.RPCEndpoint
-	requiredResponses        int
 	cache                    *performance.Cache
 	strategy                 provideroptimizer.Strategy
 	maxConcurrentProviders   uint
@@ -178,13 +180,11 @@ type rpcSmartRouterStartOptions struct {
 	staticProvidersList      []*lavasession.RPCStaticProviderEndpoint // define static providers as primary providers
 	backupProvidersList      []*lavasession.RPCStaticProviderEndpoint // define backup providers as emergency fallback when no providers available
 	geoLocation              uint64
-	clientCtx                client.Context    // Blockchain client context for querying specs
-	privKey                  *btcec.PrivateKey // Private key for signing relay requests
-	lavaChainID              string            // Lava blockchain chain ID
+	clientCtx                client.Context // Blockchain client context for querying specs
 	weightedSelectorConfig   provideroptimizer.WeightedSelectorConfig
 }
 
-// spawns a new RPCConsumer server with all it's processes and internals ready for communications
+// spawns a new RPCSmartRouter server with all its processes and internals ready for communications
 func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterStartOptions) (err error) {
 	if common.IsTestMode(ctx) {
 		testModeWarn("RPCSmartRouter running tests")
@@ -194,6 +194,7 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 	rpsr.sessionManagers = make(map[string]*lavasession.ConsumerSessionManager)
 	rpsr.providerSessions = make(map[string]map[uint64]*lavasession.ConsumerSessionsWithProvider)
 	rpsr.backupProviderSessions = make(map[string]map[uint64]*lavasession.ConsumerSessionsWithProvider)
+	rpsr.rpcServers = make(map[string]*RPCSmartRouterServer)
 
 	// RPCSmartRouter always runs in standalone mode with time-based epochs
 	epochDuration := options.cmdFlags.EpochDuration
@@ -514,12 +515,37 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 					extensions[extension] = struct{}{}
 				}
 
+				// Create DirectRPCConnection for smart router (direct mode)
+				// Use default parallel connections for HTTP connection pooling
+				// Pass ApiInterface for proper protocol detection (bare host:port → gRPC when interface is gRPC)
+				directConn, err := lavasession.NewDirectRPCConnection(
+					ctx,
+					url,
+					uint(lavasession.DefaultMaximumStreamsOverASingleConnection),
+					provider.ApiInterface, // Used for protocol detection when URL has no scheme
+				)
+				if err != nil {
+					utils.LavaFormatWarning("failed to create direct RPC connection", err,
+						utils.LogAttr("url", url.Url),
+						utils.LogAttr("provider", provider.Name),
+					)
+					continue
+				}
+
+				utils.LavaFormatInfo("created direct RPC connection",
+					utils.LogAttr("url", url.Url),
+					utils.LogAttr("protocol", directConn.GetProtocol()),
+					utils.LogAttr("provider", provider.Name),
+				)
+
 				endpoint := &lavasession.Endpoint{
-					NetworkAddress: url.Url,
-					Enabled:        true,
-					Addons:         extensions,
-					Extensions:     extensions,
-					Connections:    []*lavasession.EndpointConnection{},
+					NetworkAddress:    url.Url,
+					Enabled:           true,
+					Addons:            extensions,
+					Extensions:        extensions,
+					Connections:       nil,                                           // rpcconsumer only - not used in smart router
+					DirectConnections: []lavasession.DirectRPCConnection{directConn}, // Smart router uses direct RPC
+					Geolocation:       planstypes.Geolocation(provider.Geolocation),
 				}
 				endpoints = append(endpoints, endpoint)
 			}
@@ -597,22 +623,292 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 
 	rpcSmartRouterServer := &RPCSmartRouterServer{}
 
-	var wsSubscriptionManager *chainlib.ConsumerWSSubscriptionManager
-	var specMethodType string
-	if rpcEndpoint.ApiInterface == spectypes.APIInterfaceJsonRPC {
-		specMethodType = http.MethodPost
+	// Create WebSocket subscription manager
+	// Uses interface type to support both provider-based (ConsumerWSSubscriptionManager)
+	// and direct RPC (DirectWSSubscriptionManager) implementations
+	var wsSubscriptionManager chainlib.WSSubscriptionManager
+
+	// Collect ALL WebSocket-capable endpoints from static providers for direct subscriptions
+	// WebSocket URLs are identified by ws:// or wss:// prefix
+	var wsEndpoints []*common.NodeUrl
+	for _, provider := range relevantStaticProviderList {
+		for i := range provider.NodeUrls {
+			url := strings.ToLower(provider.NodeUrls[i].Url)
+			if strings.HasPrefix(url, "ws://") || strings.HasPrefix(url, "wss://") {
+				wsEndpoints = append(wsEndpoints, &provider.NodeUrls[i])
+				utils.LavaFormatInfo("Found WebSocket endpoint for direct subscriptions",
+					utils.LogAttr("url", provider.NodeUrls[i].Url),
+					utils.LogAttr("provider", provider.Name),
+					utils.LogAttr("chainID", provider.ChainID),
+				)
+			}
+		}
 	}
-	wsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(sessionManager, rpcSmartRouterServer, specMethodType, chainParser, activeSubscriptionProvidersStorage, smartRouterMetricsManager)
+
+	// Create DirectWSSubscriptionManager if WebSocket endpoints are available
+	// Otherwise fall back to provider-based subscription manager
+	if len(wsEndpoints) > 0 {
+		directWSManager := NewDirectWSSubscriptionManager(
+			smartRouterMetricsManager,
+			spectypes.APIInterfaceJsonRPC, // WebSocket subscriptions use JSON-RPC
+			rpcEndpoint.ChainID,
+			rpcEndpoint.ApiInterface,
+			wsEndpoints,
+			optimizer, // Pass optimizer for endpoint selection
+			nil,       // Use default WebSocket config (configurable via CLI flags later)
+		)
+		// Start background cleanup goroutine
+		directWSManager.Start(ctx)
+		wsSubscriptionManager = directWSManager
+		utils.LavaFormatInfo("Using DirectWSSubscriptionManager for direct WebSocket subscriptions",
+			utils.LogAttr("chainID", rpcEndpoint.ChainID),
+			utils.LogAttr("apiInterface", rpcEndpoint.ApiInterface),
+			utils.LogAttr("wsEndpointCount", len(wsEndpoints)),
+			utils.LogAttr("optimizerEnabled", optimizer != nil),
+		)
+	} else {
+		// No WebSocket endpoints configured - use NoOp manager that returns clear errors
+		// Smart router does NOT fall back to provider-based subscriptions (per implementation plan)
+		// Provider-based subscriptions are only for rpcconsumer, not rpcsmartrouter
+		wsSubscriptionManager = NewNoOpWSSubscriptionManager(rpcEndpoint.ChainID, rpcEndpoint.ApiInterface)
+		utils.LavaFormatInfo("No WebSocket endpoints configured for direct subscriptions",
+			utils.LogAttr("chainID", rpcEndpoint.ChainID),
+			utils.LogAttr("apiInterface", rpcEndpoint.ApiInterface),
+			utils.LogAttr("hint", "Add ws:// or wss:// URLs to static-providers-list to enable subscriptions"),
+		)
+	}
+
+	// Create gRPC streaming subscription manager for gRPC server-streaming methods
+	// This supports Cosmos Event Streaming, Solana Geyser, and other gRPC streaming protocols
+	var grpcEndpoints []*common.NodeUrl
+	if rpcEndpoint.ApiInterface == spectypes.APIInterfaceGrpc {
+		// Collect gRPC endpoints from static providers
+		for _, provider := range relevantStaticProviderList {
+			if provider.ApiInterface == spectypes.APIInterfaceGrpc {
+				for i := range provider.NodeUrls {
+					grpcEndpoints = append(grpcEndpoints, &provider.NodeUrls[i])
+					utils.LavaFormatInfo("Found gRPC endpoint for streaming subscriptions",
+						utils.LogAttr("url", provider.NodeUrls[i].Url),
+						utils.LogAttr("provider", provider.Name),
+						utils.LogAttr("chainID", provider.ChainID),
+					)
+				}
+			}
+		}
+	}
+
+	// Initialize DirectGRPCSubscriptionManager if gRPC endpoints are available
+	if len(grpcEndpoints) > 0 {
+		grpcSubManager := NewDirectGRPCSubscriptionManager(
+			smartRouterMetricsManager, // Metrics manager for tracking
+			rpcEndpoint.ChainID,
+			rpcEndpoint.ApiInterface,
+			grpcEndpoints,
+			optimizer, // Pass optimizer for endpoint selection (same as WS manager)
+			nil,       // Use default GRPCStreamingConfig
+		)
+		// Start background cleanup goroutine
+		grpcSubManager.Start(ctx)
+		rpcSmartRouterServer.grpcSubscriptionManager = grpcSubManager
+		utils.LavaFormatInfo("Using DirectGRPCSubscriptionManager for gRPC streaming subscriptions",
+			utils.LogAttr("chainID", rpcEndpoint.ChainID),
+			utils.LogAttr("apiInterface", rpcEndpoint.ApiInterface),
+			utils.LogAttr("grpcEndpointCount", len(grpcEndpoints)),
+			utils.LogAttr("optimizerEnabled", optimizer != nil),
+		)
+	}
+
+	// ============================================================================
+	// PHASE 1: Static Provider Validation
+	// ============================================================================
+	// Validate ALL static providers BEFORE creating chain tracker (matches provider behavior).
+	// Only validates providers matching this endpoint's api-interface.
+	// See: rpcprovider.go:644-667 for provider's validation approach.
+	if len(relevantStaticProviderList) > 0 {
+		utils.LavaFormatInfo("Validating static providers",
+			utils.LogAttr("chain", rpcEndpoint.ChainID),
+			utils.LogAttr("apiInterface", rpcEndpoint.ApiInterface),
+			utils.LogAttr("providerCount", len(relevantStaticProviderList)),
+		)
+
+		validatedCount := 0
+		for _, staticProvider := range relevantStaticProviderList {
+			// Skip providers with different api-interface (validated by their own endpoint)
+			if staticProvider.ApiInterface != rpcEndpoint.ApiInterface {
+				utils.LavaFormatDebug("Skipping provider - different api-interface",
+					utils.LogAttr("provider", staticProvider.Name),
+					utils.LogAttr("providerInterface", staticProvider.ApiInterface),
+					utils.LogAttr("endpointInterface", rpcEndpoint.ApiInterface),
+				)
+				continue
+			}
+			validatedCount++
+
+			// Prepare ALL URLs for validation together (matches provider behavior).
+			// ChainRouter requires both with-addon and without-addon routes for addon URLs
+			// (see chain_router.go:258 which appends "" to addons list).
+			verificationNodeUrls := []common.NodeUrl{}
+			for _, nodeUrl := range staticProvider.NodeUrls {
+				verificationNodeUrls = append(verificationNodeUrls, nodeUrl)
+				// For addon URLs, also add a non-addon copy for routing flexibility
+				if len(nodeUrl.Addons) > 0 {
+					noAddonUrl := nodeUrl
+					noAddonUrl.Addons = []string{}
+					verificationNodeUrls = append(verificationNodeUrls, noAddonUrl)
+				}
+			}
+
+			verificationEndpoint := &lavasession.RPCProviderEndpoint{
+				NetworkAddress: staticProvider.NetworkAddress,
+				ChainID:        staticProvider.ChainID,
+				ApiInterface:   staticProvider.ApiInterface,
+				Geolocation:    staticProvider.Geolocation,
+				NodeUrls:       verificationNodeUrls,
+			}
+
+			// Create chain router with all URLs for complete supportedMap (HTTP + WebSocket)
+			parallelConnections := uint(lavasession.DefaultMaximumStreamsOverASingleConnection)
+			verificationRouter, err := chainlib.GetChainRouter(ctx, parallelConnections, verificationEndpoint, chainParser)
+			if err != nil {
+				err = utils.LavaFormatError("[PANIC] failed creating chain router for verification", err,
+					utils.LogAttr("chain", rpcEndpoint.ChainID),
+					utils.LogAttr("provider", staticProvider.Name),
+				)
+				errCh <- err
+				return err
+			}
+
+			// Create full ChainFetcher for verification (respects severity, skip-verifications)
+			verificationFetcher := chainlib.NewChainFetcher(ctx, &chainlib.ChainFetcherOptions{
+				ChainRouter: verificationRouter,
+				ChainParser: chainParser,
+				Endpoint:    verificationEndpoint,
+				Cache:       nil,
+			})
+
+			utils.LavaFormatInfo("Validating static provider",
+				utils.LogAttr("name", staticProvider.Name),
+				utils.LogAttr("chain", rpcEndpoint.ChainID),
+				utils.LogAttr("urlCount", len(staticProvider.NodeUrls)),
+			)
+
+			err = verificationFetcher.Validate(ctx)
+			if err != nil {
+				err = utils.LavaFormatError("[PANIC] static provider validation failed", err,
+					utils.LogAttr("chain", rpcEndpoint.ChainID),
+					utils.LogAttr("provider", staticProvider.Name),
+				)
+				errCh <- err
+				return err
+			}
+
+			utils.LavaFormatInfo("Static provider validated successfully",
+				utils.LogAttr("chain", rpcEndpoint.ChainID),
+				utils.LogAttr("provider", staticProvider.Name),
+			)
+		}
+
+		utils.LavaFormatInfo("All providers validated for api-interface",
+			utils.LogAttr("chain", rpcEndpoint.ChainID),
+			utils.LogAttr("apiInterface", rpcEndpoint.ApiInterface),
+			utils.LogAttr("validated", validatedCount),
+			utils.LogAttr("total", len(relevantStaticProviderList)),
+		)
+	}
+
+	// ============================================================================
+	// PHASE 2: Chain Tracker Setup
+	// ============================================================================
+	// Create ChainTracker for latest block tracking using first provider.
+	// ChainTracker polls for latest block and maintains block history for sync verification.
+	var chainTracker chaintracker.IChainTracker
+	if len(relevantStaticProviderList) > 0 {
+		firstProvider := relevantStaticProviderList[0]
+
+		// Minimal endpoint for ChainTracker (no addons needed, only polls latest block)
+		chainTrackerEndpoint := &lavasession.RPCProviderEndpoint{
+			NetworkAddress: firstProvider.NetworkAddress,
+			ChainID:        firstProvider.ChainID,
+			ApiInterface:   firstProvider.ApiInterface,
+			Geolocation:    firstProvider.Geolocation,
+			NodeUrls: []common.NodeUrl{
+				{
+					Url:        firstProvider.NodeUrls[0].Url,
+					AuthConfig: firstProvider.NodeUrls[0].AuthConfig,
+					Addons:     []string{},
+				},
+			},
+		}
+
+		parallelConnections := uint(lavasession.DefaultMaximumStreamsOverASingleConnection)
+		chainRouter, err := chainlib.GetChainRouter(ctx, parallelConnections, chainTrackerEndpoint, chainParser)
+		if err != nil {
+			utils.LavaFormatWarning("Failed to create chain router for chain tracker", err,
+				utils.LogAttr("chain", rpcEndpoint.ChainID),
+			)
+		} else {
+			// Full ChainFetcher for chain tracker (matches provider behavior)
+			chainFetcher := chainlib.NewChainFetcher(ctx, &chainlib.ChainFetcherOptions{
+				ChainRouter: chainRouter,
+				ChainParser: chainParser,
+				Endpoint:    chainTrackerEndpoint,
+				Cache:       options.cache,
+			})
+
+			_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
+			blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
+
+			chainTrackerConfig := chaintracker.ChainTrackerConfig{
+				BlocksToSave:          blocksToSaveChainTracker,
+				AverageBlockTime:      averageBlockTime,
+				ServerBlockMemory:     rpcprovider.ChainTrackerDefaultMemory + blocksToSaveChainTracker,
+				ChainId:               rpcEndpoint.ChainID,
+				ParseDirectiveEnabled: chainParser.ParseDirectiveEnabled(),
+			}
+
+			chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
+			if err != nil {
+				utils.LavaFormatWarning("Failed to create chain tracker, sync tracking disabled", err,
+					utils.LogAttr("chain", rpcEndpoint.ChainID),
+				)
+				chainTracker = nil
+			} else {
+				go func() {
+					err := chainTracker.StartAndServe(ctx)
+					if err != nil {
+						utils.LavaFormatError("Chain tracker failed", err,
+							utils.LogAttr("chain", rpcEndpoint.ChainID),
+						)
+					}
+				}()
+
+				utils.LavaFormatInfo("Chain tracker started",
+					utils.LogAttr("chain", rpcEndpoint.ChainID),
+					utils.LogAttr("pollingInterval", averageBlockTime/time.Duration(chaintracker.MostFrequentPollingMultiplier)),
+					utils.LogAttr("blocksToSave", blocksToSaveChainTracker),
+				)
+			}
+		}
+	}
+
+	if chainTracker == nil {
+		utils.LavaFormatInfo("Starting without chain tracker (sync tracking disabled)",
+			utils.LogAttr("chain", rpcEndpoint.ChainID),
+		)
+	}
 
 	utils.LavaFormatInfo("RPCSmartRouter Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
 	// Convert smartRouterIdentifier string to empty sdk.AccAddress for smart router
-	emptyConsumerAddr := []byte{}
-	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, sessionManager, options.requiredResponses, options.privKey, options.lavaChainID, options.cache, rpcSmartRouterMetrics, emptyConsumerAddr, smartRouterConsistency, relaysMonitor, options.cmdFlags, options.stateShare, smartRouterReportsManager, wsSubscriptionManager)
+	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, chainTracker, sessionManager, options.cache, rpcSmartRouterMetrics, smartRouterConsistency, relaysMonitor, options.cmdFlags, options.stateShare, wsSubscriptionManager)
 	if err != nil {
 		err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 		errCh <- err
 		return err
 	}
+
+	// Store server reference for per-endpoint ChainTracker cleanup on epoch updates
+	rpsr.rpcServers[sessionManagerKey] = rpcSmartRouterServer
+
 	return nil
 }
 
@@ -680,16 +976,12 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			closeLoggerOnFinish := common.SetupRollingLogger()
 			defer closeLoggerOnFinish()
 
-			utils.LavaFormatInfo("RPCConsumer started:", utils.Attribute{Key: "args", Value: strings.Join(args, ",")})
+			utils.LavaFormatInfo("RPCSmartRouter started:", utils.Attribute{Key: "args", Value: strings.Join(args, ",")})
 
 			// setting the insecure option on provider dial, this should be used in development only!
 			lavasession.AllowInsecureConnectionToProviders = viper.GetBool(lavasession.AllowInsecureConnectionToProvidersFlag)
 			if lavasession.AllowInsecureConnectionToProviders {
 				utils.LavaFormatWarning("AllowInsecureConnectionToProviders is set to true, this should be used only in development", nil, utils.Attribute{Key: lavasession.AllowInsecureConnectionToProvidersFlag, Value: lavasession.AllowInsecureConnectionToProviders})
-			}
-			lavasession.AllowGRPCCompressionForConsumerProviderCommunication = viper.GetBool(lavasession.AllowGRPCCompressionFlag)
-			if lavasession.AllowGRPCCompressionForConsumerProviderCommunication {
-				utils.LavaFormatInfo("AllowGRPCCompressionForConsumerProviderCommunication is set to true, messages will be compressed", utils.Attribute{Key: lavasession.AllowGRPCCompressionFlag, Value: lavasession.AllowGRPCCompressionForConsumerProviderCommunication})
 			}
 
 			var rpcEndpoints []*lavasession.RPCEndpoint
@@ -777,19 +1069,20 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 					return utils.LavaFormatError("failed to start pyroscope profiler", err)
 				}
 			}
-			// Note: VerifyAndHandleUnsupportedFlags is not called here because rpcsmartrouter
-			// doesn't use blockchain transaction flags (--fees, --from, etc.) since it operates
-			// in centralized mode without blockchain interactions
 
-			// check if StaticProvidersConfigName exists in viper, if it does parse it with ParseStaticProviderEndpoints function
-			var staticProviderEndpoints []*lavasession.RPCStaticProviderEndpoint
-			if viper.IsSet(common.StaticProvidersConfigName) {
-				staticProviderEndpoints, err = rpcprovider.ParseStaticProviderEndpoints(viper.GetViper(), common.StaticProvidersConfigName, geolocation)
+			// Parse direct RPC endpoints (new key: "direct-rpc", backward compat: "static-providers")
+			var directRPCEndpoints []*lavasession.RPCStaticProviderEndpoint
+			directRPCConfigKey := common.DirectRPCConfigName
+			if !viper.IsSet(directRPCConfigKey) {
+				directRPCConfigKey = common.StaticProvidersConfigName // backward compat
+			}
+			if viper.IsSet(directRPCConfigKey) {
+				directRPCEndpoints, err = rpcprovider.ParseStaticProviderEndpoints(viper.GetViper(), directRPCConfigKey, geolocation)
 				if err != nil {
-					return utils.LavaFormatError("invalid static providers definition", err)
+					return utils.LavaFormatError("invalid direct-rpc endpoints definition", err)
 				}
-				for _, endpoint := range staticProviderEndpoints {
-					utils.LavaFormatInfo("Static Provider Endpoint:",
+				for _, endpoint := range directRPCEndpoints {
+					utils.LavaFormatInfo("Direct RPC Endpoint:",
 						utils.Attribute{Key: "Name", Value: endpoint.Name},
 						utils.Attribute{Key: "Stake", Value: endpoint.Stake},
 						utils.Attribute{Key: "Urls", Value: endpoint.NodeUrls},
@@ -798,16 +1091,20 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				}
 			}
 
-			// check if BackupProvidersConfigName exists in viper, if it does parse it with ParseStaticProviderEndpoints function
-			var backupProviderEndpoints []*lavasession.RPCStaticProviderEndpoint
-			if viper.IsSet(common.BackupProvidersConfigName) {
-				utils.LavaFormatInfo("Backup Providers Config Name exists", utils.Attribute{Key: "Backup Providers Config Name", Value: common.BackupProvidersConfigName})
-				backupProviderEndpoints, err = rpcprovider.ParseStaticProviderEndpoints(viper.GetViper(), common.BackupProvidersConfigName, geolocation)
+			// Parse backup direct RPC endpoints (new key: "backup-direct-rpc", backward compat: "backup-providers")
+			var backupDirectRPCEndpoints []*lavasession.RPCStaticProviderEndpoint
+			backupConfigKey := common.BackupDirectRPCConfigName
+			if !viper.IsSet(backupConfigKey) {
+				backupConfigKey = common.BackupProvidersConfigName // backward compat
+			}
+			if viper.IsSet(backupConfigKey) {
+				utils.LavaFormatInfo("Backup direct-rpc config found", utils.Attribute{Key: "configKey", Value: backupConfigKey})
+				backupDirectRPCEndpoints, err = rpcprovider.ParseStaticProviderEndpoints(viper.GetViper(), backupConfigKey, geolocation)
 				if err != nil {
-					return utils.LavaFormatError("invalid backup providers definition", err)
+					return utils.LavaFormatError("invalid backup-direct-rpc endpoints definition", err)
 				}
-				for _, endpoint := range backupProviderEndpoints {
-					utils.LavaFormatInfo("Backup Provider Endpoint:",
+				for _, endpoint := range backupDirectRPCEndpoints {
+					utils.LavaFormatInfo("Backup Direct RPC Endpoint:",
 						utils.Attribute{Key: "Name", Value: endpoint.Name},
 						utils.Attribute{Key: "Urls", Value: endpoint.NodeUrls},
 						utils.Attribute{Key: "Chain ID", Value: endpoint.ChainID},
@@ -815,38 +1112,36 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				}
 			}
 
-			if len(staticProviderEndpoints) == 0 {
+			if len(directRPCEndpoints) == 0 {
 				return utils.LavaFormatError(
-					"smart router requires static providers configuration",
+					"smart router requires direct-rpc endpoints configuration",
 					nil,
-					utils.Attribute{Key: "hint", Value: "add 'static-providers' section to config file"},
+					utils.Attribute{Key: "hint", Value: "add 'direct-rpc' section to config file"},
 				)
 			}
 
-			// After parsing both endpoints and providers:
 			for _, endpoint := range rpcEndpoints {
-				hasProvider := false
-				for _, provider := range staticProviderEndpoints {
-					if provider.ChainID == endpoint.ChainID &&
-						provider.ApiInterface == endpoint.ApiInterface {
-						hasProvider = true
+				hasDirectRPC := false
+				for _, directEndpoint := range directRPCEndpoints {
+					if directEndpoint.ChainID == endpoint.ChainID &&
+						directEndpoint.ApiInterface == endpoint.ApiInterface {
+						hasDirectRPC = true
 						break
 					}
 				}
 
-				if !hasProvider {
+				if !hasDirectRPC {
 					return utils.LavaFormatError(
-						"no static providers configured for endpoint",
+						"no direct-rpc endpoints configured for listener",
 						nil,
 						utils.Attribute{Key: "chainID", Value: endpoint.ChainID},
 						utils.Attribute{Key: "apiInterface", Value: endpoint.ApiInterface},
-						utils.Attribute{Key: "hint", Value: "add provider in 'static-providers' section"},
+						utils.Attribute{Key: "hint", Value: "add endpoint in 'direct-rpc' section"},
 					)
 				}
 			}
 
 			rpcSmartRouter := RPCSmartRouter{}
-			requiredResponses := 1 // TODO: handle secure flag, for a majority between providers
 			utils.LavaFormatInfo("lavap Binary Version: " + upgrade.GetCurrentVersion().ConsumerVersion)
 			rand.InitRandomSeed()
 
@@ -937,45 +1232,17 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				EnableSelectionStats:     viper.GetBool(common.EnableSelectionStatsHeaderFlag),
 			}
 
-			// Get private key for signing relay requests
-			// Smart router uses ephemeral key in static provider mode since providers
-			// are configured to accept requests from anyone (no signature verification)
-			keyName, err := sigs.GetKeyName(clientCtx)
-			var privKey *btcec.PrivateKey
-			if err != nil {
-				// If no key in keyring, generate ephemeral key for static provider mode
-				utils.LavaFormatWarning("No key found in keyring, generating ephemeral key for signing (static provider mode)", err)
-				privKey, err = btcec.NewPrivateKey()
-				if err != nil {
-					utils.LavaFormatFatal("failed generating ephemeral private key", err)
-				}
-			} else {
-				// Use key from keyring if available
-				privKey, err = sigs.GetPrivKey(clientCtx, keyName)
-				if err != nil {
-					utils.LavaFormatWarning("Failed getting key from keyring, generating ephemeral key for signing (static provider mode)", err, utils.Attribute{Key: "keyName", Value: keyName})
-					privKey, err = btcec.NewPrivateKey()
-					if err != nil {
-						utils.LavaFormatFatal("failed generating ephemeral private key", err)
-					}
-				}
-			}
-
-			// Get Lava chain ID
-			lavaChainID := clientCtx.ChainID
-
 			rpcSmartRouterSharedState := viper.GetBool(common.SharedStateFlag)
 			err = rpcSmartRouter.Start(ctx, &rpcSmartRouterStartOptions{
 				rpcEndpoints:             rpcEndpoints,
-				requiredResponses:        requiredResponses,
 				cache:                    cache,
 				strategy:                 strategyFlag.Strategy,
 				maxConcurrentProviders:   maxConcurrentProviders,
 				analyticsServerAddresses: analyticsServerAddresses,
 				cmdFlags:                 consumerPropagatedFlags,
 				stateShare:               rpcSmartRouterSharedState,
-				staticProvidersList:      staticProviderEndpoints,
-				backupProvidersList:      backupProviderEndpoints,
+				staticProvidersList:      directRPCEndpoints,
+				backupProvidersList:      backupDirectRPCEndpoints,
 				geoLocation:              geolocation,
 				clientCtx:                clientCtx,
 				privKey:                  privKey,
@@ -992,7 +1259,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().Uint(common.MaximumConcurrentProvidersFlagName, 3, "max number of concurrent providers to communicate with")
 	cmdRPCSmartRouter.MarkFlagRequired(common.GeolocationFlag)
 	cmdRPCSmartRouter.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allow insecure provider-dialing. used for development and testing")
-	cmdRPCSmartRouter.Flags().Bool(lavasession.AllowGRPCCompressionFlag, false, "allow messages to be compressed when communicating between the consumer and provider")
 	cmdRPCSmartRouter.Flags().Uint64Var(&lavasession.MaximumStreamsOverASingleConnection, lavasession.MaximumStreamsOverASingleConnectionFlag, lavasession.DefaultMaximumStreamsOverASingleConnection, "maximum number of parallel streams over a single provider connection")
 	cmdRPCSmartRouter.Flags().Bool(common.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
 	cmdRPCSmartRouter.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
@@ -1068,6 +1334,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().DurationVar(&chainlib.WebSocketBanDuration, common.BanDurationForWebsocketRateLimitExceededFlag, chainlib.WebSocketBanDuration, "once websocket rate limit is reached, user will be banned Xfor a duration, default no ban")
 	cmdRPCSmartRouter.Flags().BoolVar(&chainlib.SkipPolicyVerification, common.SkipPolicyVerificationFlag, chainlib.SkipPolicyVerification, "skip policy verifications, this flag will skip onchain policy verification and will use the static provider list")
 	cmdRPCSmartRouter.Flags().BoolVar(&lavaprotocol.SkipRelaySigning, common.SkipRelaySigningFlag, lavaprotocol.SkipRelaySigning, "skip cryptographic signing of relay requests/responses to reduce CPU and memory usage (use only with static providers)")
+	cmdRPCSmartRouter.Flags().BoolVar(&chainlib.SkipWebsocketVerification, common.SkipWebsocketVerificationFlag, chainlib.SkipWebsocketVerification, "skip websocket verification for chains that require ws/wss endpoints")
 
 	cmdRPCSmartRouter.Flags().BoolVar(&lavasession.PeriodicProbeProviders, common.PeriodicProbeProvidersFlagName, lavasession.PeriodicProbeProviders, "enable periodic probing of providers")
 	cmdRPCSmartRouter.Flags().DurationVar(&lavasession.PeriodicProbeProvidersInterval, common.PeriodicProbeProvidersIntervalFlagName, lavasession.PeriodicProbeProvidersInterval, "interval for periodic probing of providers")
@@ -1157,6 +1424,60 @@ func (rpsr *RPCSmartRouter) updateEpoch(epoch uint64) {
 				utils.LogAttr("chainKey", chainKeyLog),
 			)
 		}
+
+		// Cleanup stale ChainTrackers for endpoints no longer in the provider sessions
+		// This must happen AFTER UpdateAllProviders so connections are closed first
+		if server, exists := rpsr.rpcServers[chainKey]; exists && server != nil {
+			rpsr.cleanupStaleTrackers(chainKey, server, freshProviderSessions, freshBackupSessions)
+		}
+	}
+}
+
+// cleanupStaleTrackers removes ChainTrackers for endpoints that are no longer in the current provider sessions.
+// This prevents resource leaks from trackers polling endpoints that have been removed during epoch updates.
+func (rpsr *RPCSmartRouter) cleanupStaleTrackers(
+	chainKey string,
+	server *RPCSmartRouterServer,
+	providerSessions map[uint64]*lavasession.ConsumerSessionsWithProvider,
+	backupSessions map[uint64]*lavasession.ConsumerSessionsWithProvider,
+) {
+	if server.endpointChainTrackerManager == nil {
+		return
+	}
+
+	// Build set of current endpoint URLs from both primary and backup providers
+	currentEndpoints := make(map[string]bool)
+	for _, provider := range providerSessions {
+		for _, endpoint := range provider.Endpoints {
+			currentEndpoints[endpoint.NetworkAddress] = true
+		}
+	}
+	for _, provider := range backupSessions {
+		for _, endpoint := range provider.Endpoints {
+			currentEndpoints[endpoint.NetworkAddress] = true
+		}
+	}
+
+	// Get all tracked endpoints and remove stale ones
+	trackedEndpoints := server.endpointChainTrackerManager.GetAllEndpoints()
+	removedCount := 0
+	for _, trackedURL := range trackedEndpoints {
+		if !currentEndpoints[trackedURL] {
+			utils.LavaFormatInfo("removing stale ChainTracker on epoch update",
+				utils.LogAttr("endpoint", trackedURL),
+				utils.LogAttr("chainKey", chainKey),
+			)
+			server.endpointChainTrackerManager.RemoveTracker(trackedURL)
+			removedCount++
+		}
+	}
+
+	if removedCount > 0 {
+		utils.LavaFormatInfo("epoch update: cleaned up stale ChainTrackers",
+			utils.LogAttr("chainKey", chainKey),
+			utils.LogAttr("removed", removedCount),
+			utils.LogAttr("remaining", server.endpointChainTrackerManager.GetEndpointCount()),
+		)
 	}
 }
 

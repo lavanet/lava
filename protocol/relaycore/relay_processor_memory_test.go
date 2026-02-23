@@ -105,7 +105,7 @@ func BenchmarkRelayProcessorCrossValidationMemory(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		rp := &RelayProcessor{
-			crossValidationMap: make(map[[32]byte]int),
+			quorumMap: make(map[[32]byte]int),
 		}
 
 		for range 100 {
@@ -125,9 +125,9 @@ func BenchmarkRelayProcessorCrossValidationMemory(b *testing.B) {
 			// Only hash successful responses
 			if response.Err == nil {
 				hash := sha256.Sum256(response.RelayResult.GetReply().GetData())
-				rp.crossValidationMap[hash]++
-				if rp.crossValidationMap[hash] > rp.currentCrossValidationEqualResults {
-					rp.currentCrossValidationEqualResults = rp.crossValidationMap[hash]
+				rp.quorumMap[hash]++
+				if rp.quorumMap[hash] > rp.currentQuorumEqualResults {
+					rp.currentQuorumEqualResults = rp.quorumMap[hash]
 				}
 			}
 		}

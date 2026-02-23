@@ -37,7 +37,6 @@ echo "Using static specs: $SPECS_DIR"
 echo "[Test Setup] starting Provider 1 (non-archive, standalone mode)"
 screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
 config/provider_examples/provider1_noarchive.yml \
---static-providers \
 --use-static-spec $SPECS_DIR \
 --geolocation 1 --log_level debug --metrics-listen-address ':7766' 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 
@@ -45,7 +44,6 @@ config/provider_examples/provider1_noarchive.yml \
 echo "[Test Setup] starting Provider 2 (non-archive, standalone mode)"
 screen -d -m -S provider2 bash -c "source ~/.bashrc; lavap rpcprovider \
 config/provider_examples/provider2_noarchive.yml \
---static-providers \
 --use-static-spec $SPECS_DIR \
 --geolocation 1 --log_level debug --metrics-listen-address ':7756' 2>&1 | tee $LOGS_DIR/PROVIDER2.log" && sleep 0.25
 
@@ -53,7 +51,6 @@ config/provider_examples/provider2_noarchive.yml \
 echo "[Test Setup] starting Provider 3 (archive, standalone mode)"
 screen -d -m -S provider3 bash -c "source ~/.bashrc; lavap rpcprovider \
 config/provider_examples/lava_example_archive.yml \
---static-providers \
 --use-static-spec $SPECS_DIR \
 --geolocation 1 --log_level debug --metrics-listen-address ':7777' 2>&1 | tee $LOGS_DIR/PROVIDER3.log" && sleep 0.25
 

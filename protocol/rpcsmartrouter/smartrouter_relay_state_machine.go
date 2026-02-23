@@ -187,29 +187,11 @@ func (srsm *SmartRouterRelayStateMachine) shouldRetry(numberOfNodeErrors uint64)
 	return shouldRetry
 }
 
-// hasUnsupportedMethodErrorsInStateMachine checks if we have unsupported method errors at state machine level
-func (srsm *SmartRouterRelayStateMachine) hasUnsupportedMethodErrorsInStateMachine() bool {
-	if srsm.resultsChecker == nil {
-		return false
-	}
-
-	// Check if the results checker has unsupported method errors
-	if relayProcessor, ok := srsm.resultsChecker.(*relaycore.RelayProcessor); ok {
-		return relayProcessor.HasUnsupportedMethodErrors()
-	}
-
-	return false
-}
 
 func (srsm *SmartRouterRelayStateMachine) retryCondition(numberOfRetriesLaunched int) bool {
 	utils.LavaFormatTrace("[StateMachine] retryCondition", utils.LogAttr("numberOfRetriesLaunched", numberOfRetriesLaunched), utils.LogAttr("GUID", srsm.ctx), utils.LogAttr("batchNumber", srsm.usedProviders.BatchNumber()), utils.LogAttr("selection", srsm.selection))
 
 	switch srsm.selection {
-	case relaycore.CrossValidation:
-		// No retries - each provider gets exactly one chance
-		utils.LavaFormatTrace("[StateMachine] retryCondition: CrossValidation mode, no retry", utils.LogAttr("GUID", srsm.ctx))
-		return false
-
 	case relaycore.Stateful:
 		// No retries - sends to top providers, returns first result
 		utils.LavaFormatTrace("[StateMachine] retryCondition: Stateful mode, no retry", utils.LogAttr("GUID", srsm.ctx))
@@ -221,11 +203,7 @@ func (srsm *SmartRouterRelayStateMachine) retryCondition(numberOfRetriesLaunched
 			utils.LavaFormatTrace("[StateMachine] retryCondition: batch request retry disabled, no retry", utils.LogAttr("GUID", srsm.ctx))
 			return false
 		}
-		// Retry unless: unsupported method or max retries reached
-		if srsm.hasUnsupportedMethodErrorsInStateMachine() {
-			utils.LavaFormatTrace("[StateMachine] retryCondition: unsupported method detected, no retry", utils.LogAttr("GUID", srsm.ctx))
-			return false
-		}
+		// Retry unless: max retries reached
 		if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
 			utils.LavaFormatTrace("[StateMachine] retryCondition: max retries reached, no retry", utils.LogAttr("GUID", srsm.ctx), utils.LogAttr("numberOfRetriesLaunched", numberOfRetriesLaunched))
 			return false
@@ -419,7 +397,17 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 					utils.LavaFormatTrace("[StateMachine] successfully sent message", utils.LogAttr("GUID", srsm.ctx))
 					// Reset pairing error counter on success
 					srsm.consecutivePairingErrors = 0
+
+					utils.LavaFormatInfo("STATE MACHINE: ABOUT TO SEND DONE=TRUE",
+						utils.LogAttr("GUID", srsm.ctx),
+					)
+
 					relayTaskChannel <- RelayStateSendInstructions{Done: true}
+
+					utils.LavaFormatInfo("STATE MACHINE: DONE MESSAGE SENT (BLOCKING SEND COMPLETED)",
+						utils.LogAttr("GUID", srsm.ctx),
+					)
+
 					return
 				}
 

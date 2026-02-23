@@ -3,35 +3,22 @@ package rpcsmartrouter
 import (
 	"context"
 	"fmt"
-	"net"
-	"net/http"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	btcSecp256k1 "github.com/btcsuite/btcd/btcec/v2"
-	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
-	"github.com/lavanet/lava/v5/protocol/metrics"
-	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
 	"github.com/lavanet/lava/v5/protocol/relaycore"
-	"github.com/lavanet/lava/v5/utils/rand"
-	"github.com/lavanet/lava/v5/utils/sigs"
-	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
-	"go.uber.org/mock/gomock"
-	grpc "google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 )
 
 // getFreePort returns a free port by briefly listening on :0 and then closing
@@ -87,7 +74,7 @@ func createRpcSmartRouter(t *testing.T, ctrl *gomock.Controller, ctx context.Con
 	rpcSmartRouterLogs, err := metrics.NewRPCConsumerLogs(nil, nil, nil, nil)
 	require.NoError(t, err)
 	// Smart router signature: no consumerStateTracker, no finalizationConsensus
-	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, consumerSessionManager, requiredResponses, consumeSK, lavaChainID, nil, rpcSmartRouterLogs, consumerAccount, smartRouterConsistency, nil, consumerCmdFlags, false, nil, nil)
+	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, &chaintracker.DummyChainTracker{}, consumerSessionManager, requiredResponses, consumeSK, lavaChainID, nil, rpcSmartRouterLogs, consumerAccount, smartRouterConsistency, nil, consumerCmdFlags, false, nil, nil)
 	require.NoError(t, err)
 
 	return rpcSmartRouterServer, chainParser
@@ -868,7 +855,9 @@ func (m *MockResultsManager) NodeErrors() (ret []common.RelayResult) {
 
 // MockProtocolMessage implements the ProtocolMessage interface for testing
 type MockProtocolMessage struct {
-	api *spectypes.Api
+	api            *spectypes.Api
+	requestedBlock int64 // configurable requested block, defaults to 0
+	userData       common.UserData
 }
 
 func (m *MockProtocolMessage) GetApi() *spectypes.Api {
@@ -884,7 +873,7 @@ func (m *MockProtocolMessage) GetParseDirective() *spectypes.ParseDirective {
 }
 
 func (m *MockProtocolMessage) GetUserData() common.UserData {
-	return common.UserData{}
+	return m.userData
 }
 
 func (m *MockProtocolMessage) GetRelayData() *pairingtypes.RelayPrivateData {
@@ -917,7 +906,7 @@ func (m *MockProtocolMessage) SubscriptionIdExtractor(reply *rpcclient.JsonrpcMe
 }
 
 func (m *MockProtocolMessage) RequestedBlock() (latest int64, earliest int64) {
-	return 0, 0
+	return m.requestedBlock, 0
 }
 
 func (m *MockProtocolMessage) UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modified bool) {
@@ -999,57 +988,6 @@ func (m *MockProtocolMessage) UpdateEarliestAndValidateExtensionRules(extensionP
 // ============================================================================
 // Tests for Issue #1: Goroutine Leak in waitForPairing()
 // ============================================================================
-
-// Mock implementation for Relayer_RelaySubscribeClient used in subscription tests
-type mockRelaySubscribeClient struct {
-	ctx       context.Context
-	replyData []byte
-	delay     time.Duration
-	recvError error
-}
-
-func (m *mockRelaySubscribeClient) Recv() (*pairingtypes.RelayReply, error) {
-	if m.delay > 0 {
-		time.Sleep(m.delay)
-	}
-	if m.recvError != nil {
-		return nil, m.recvError
-	}
-	return &pairingtypes.RelayReply{Data: m.replyData}, nil
-}
-
-func (m *mockRelaySubscribeClient) RecvMsg(msg interface{}) error {
-	if m.delay > 0 {
-		time.Sleep(m.delay)
-	}
-	if m.recvError != nil {
-		return m.recvError
-	}
-	if reply, ok := msg.(*pairingtypes.RelayReply); ok {
-		reply.Data = m.replyData
-	}
-	return nil
-}
-
-func (m *mockRelaySubscribeClient) Context() context.Context {
-	return m.ctx
-}
-
-func (m *mockRelaySubscribeClient) Header() (metadata.MD, error) {
-	return metadata.MD{}, nil
-}
-
-func (m *mockRelaySubscribeClient) Trailer() metadata.MD {
-	return nil
-}
-
-func (m *mockRelaySubscribeClient) CloseSend() error {
-	return nil
-}
-
-func (m *mockRelaySubscribeClient) SendMsg(msg interface{}) error {
-	return nil
-}
 
 // TestWaitForPairingContextCancellation tests that waitForPairing exits when context is cancelled
 // This is the critical test for Issue #1: Goroutine Leak
@@ -1275,466 +1213,6 @@ func TestWaitForPairingConcurrentCalls(t *testing.T) {
 	time.Sleep(300 * time.Millisecond)
 }
 
-// TestGetFirstSubscriptionReplyNoLeakSuccess verifies no goroutine leak on successful subscription
-func TestGetFirstSubscriptionReplyNoLeakSuccess(t *testing.T) {
-	defer goleak.VerifyNone(t,
-		goleak.IgnoreCurrent(),
-		// gRPC infrastructure goroutines
-		goleak.IgnoreTopFunction("google.golang.org/grpc.(*addrConn).resetTransport"),
-		goleak.IgnoreTopFunction("google.golang.org/grpc/internal/grpcsync.(*CallbackSerializer).run"),
-		goleak.IgnoreTopFunction("google.golang.org/grpc.(*ccBalancerWrapper).watcher"),
-	)
-
-	ctx := context.Background()
-	mockReplyServer := &mockRelaySubscribeClient{
-		ctx:       context.Background(),
-		replyData: []byte(`{"jsonrpc":"2.0","result":"0x123","id":1}`),
-	}
-
-	server := &RPCSmartRouterServer{}
-
-	reply, err := server.getFirstSubscriptionReply(ctx, "test-hash", mockReplyServer)
-	require.NoError(t, err)
-	require.NotNil(t, reply)
-	require.Equal(t, mockReplyServer.replyData, reply.Data)
-
-	// Give goroutines time to exit
-	time.Sleep(100 * time.Millisecond)
-	// goleak.VerifyNone should pass - no leaked goroutines
-}
-
-// TestGetFirstSubscriptionReplyNoLeakTimeout verifies no goroutine leak when timeout occurs
-// Note: This test uses the actual 10s timeout from common.SubscriptionFirstReplyTimeout
-// For CI/CD, consider using -short flag to skip this test if runtime is a concern
-func TestGetFirstSubscriptionReplyNoLeakTimeout(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping timeout test in short mode (requires 10+ seconds)")
-	}
-
-	defer goleak.VerifyNone(t,
-		goleak.IgnoreCurrent(),
-		// gRPC infrastructure goroutines
-		goleak.IgnoreTopFunction("google.golang.org/grpc.(*addrConn).resetTransport"),
-		goleak.IgnoreTopFunction("google.golang.org/grpc/internal/grpcsync.(*CallbackSerializer).run"),
-		goleak.IgnoreTopFunction("google.golang.org/grpc.(*ccBalancerWrapper).watcher"),
-	)
-
-	ctx := context.Background()
-	mockReplyServer := &mockRelaySubscribeClient{
-		ctx:       context.Background(),
-		delay:     15 * time.Second, // Longer than 10s timeout
-		replyData: []byte(`{"jsonrpc":"2.0","result":"0x123","id":1}`),
-	}
-
-	server := &RPCSmartRouterServer{}
-
-	// This will timeout but should not leak goroutines
-	_, _ = server.getFirstSubscriptionReply(ctx, "test-hash", mockReplyServer)
-
-	// Wait for timeout goroutine to exit (timeout is 10s, plus buffer)
-	time.Sleep(500 * time.Millisecond)
-	// goleak.VerifyNone should pass - goroutine exited after timeout
-}
-
-// TestGetFirstSubscriptionReplyNoLeakEarlyError verifies no goroutine leak on early error
-func TestGetFirstSubscriptionReplyNoLeakEarlyError(t *testing.T) {
-	defer goleak.VerifyNone(t,
-		goleak.IgnoreCurrent(),
-		// gRPC infrastructure goroutines
-		goleak.IgnoreTopFunction("google.golang.org/grpc.(*addrConn).resetTransport"),
-		goleak.IgnoreTopFunction("google.golang.org/grpc/internal/grpcsync.(*CallbackSerializer).run"),
-		goleak.IgnoreTopFunction("google.golang.org/grpc.(*ccBalancerWrapper).watcher"),
-	)
-
-	ctx := context.Background()
-	cancelledCtx, cancel := context.WithCancel(context.Background())
-	cancel() // Cancel context immediately
-
-	mockReplyServer := &mockRelaySubscribeClient{
-		ctx: cancelledCtx,
-	}
-
-	server := &RPCSmartRouterServer{}
-
-	_, err := server.getFirstSubscriptionReply(ctx, "test-hash", mockReplyServer)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "reply server context canceled")
-
-	// Give defer time to signal channel
-	time.Sleep(100 * time.Millisecond)
-	// goleak.VerifyNone should pass - defer signaled channel, goroutine exited
-}
-
-// TestGetFirstSubscriptionReplyNoDataRace verifies no data race with concurrent access
-func TestGetFirstSubscriptionReplyNoDataRace(t *testing.T) {
-	// Run with: go test -race
-	defer goleak.VerifyNone(t,
-		goleak.IgnoreCurrent(),
-		// gRPC infrastructure goroutines
-		goleak.IgnoreTopFunction("google.golang.org/grpc.(*addrConn).resetTransport"),
-		goleak.IgnoreTopFunction("google.golang.org/grpc/internal/grpcsync.(*CallbackSerializer).run"),
-		goleak.IgnoreTopFunction("google.golang.org/grpc.(*ccBalancerWrapper).watcher"),
-	)
-
-	ctx := context.Background()
-
-	// Run multiple times to increase race detection likelihood
-	for i := 0; i < 50; i++ {
-		mockReplyServer := &mockRelaySubscribeClient{
-			ctx:       context.Background(),
-			replyData: []byte(`{"jsonrpc":"2.0","result":"0x123","id":1}`),
-			delay:     time.Duration(i%10) * time.Millisecond, // Vary timing
-		}
-
-		server := &RPCSmartRouterServer{}
-		_, _ = server.getFirstSubscriptionReply(ctx, "test-hash", mockReplyServer)
-	}
-
-	time.Sleep(100 * time.Millisecond)
-	// Race detector should not report any races
-}
-
-// TestGetFirstSubscriptionReplyContextCancellation verifies goroutine exits on context cancellation
-func TestGetFirstSubscriptionReplyContextCancellation(t *testing.T) {
-	defer goleak.VerifyNone(t,
-		goleak.IgnoreCurrent(),
-		// gRPC infrastructure goroutines
-		goleak.IgnoreTopFunction("google.golang.org/grpc.(*addrConn).resetTransport"),
-		goleak.IgnoreTopFunction("google.golang.org/grpc/internal/grpcsync.(*CallbackSerializer).run"),
-		goleak.IgnoreTopFunction("google.golang.org/grpc.(*ccBalancerWrapper).watcher"),
-	)
-
-	ctx, cancel := context.WithCancel(context.Background())
-
-	mockReplyServer := &mockRelaySubscribeClient{
-		ctx:       context.Background(),
-		delay:     500 * time.Millisecond, // Long delay
-		replyData: []byte(`{"jsonrpc":"2.0","result":"0x123","id":1}`),
-	}
-
-	server := &RPCSmartRouterServer{}
-
-	// Start the call in a goroutine
-	go func() {
-		_, _ = server.getFirstSubscriptionReply(ctx, "test-hash", mockReplyServer)
-	}()
-
-	// Cancel context after a short time
-	time.Sleep(50 * time.Millisecond)
-	cancel()
-
-	// Wait for goroutine to exit via ctx.Done()
-	time.Sleep(150 * time.Millisecond)
-	// goleak.VerifyNone should pass - goroutine respected context cancellation
-}
-
-// TestErrorPathCleanup_SimulatedSubscriptionError simulates the error path in subscription handling
-// This test validates the PRIMARY FIX: explicit cleanup on error (line 1077)
-func TestErrorPathCleanup_SimulatedSubscriptionError(t *testing.T) {
-	server := &RPCSmartRouterServer{
-		connectedSubscriptionsContexts: make(map[string]*CancelableContextHolder),
-	}
-
-	// Simulate subscription creation
-	subscriptionKey := "test-error-path"
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	holder := &CancelableContextHolder{
-		Ctx:        ctx,
-		CancelFunc: cancel,
-	}
-
-	// Add to map (simulating what happens in sendRelayToProvider)
-	server.connectedSubscriptionsLock.Lock()
-	server.connectedSubscriptionsContexts[subscriptionKey] = holder
-	server.connectedSubscriptionsLock.Unlock()
-
-	// Verify entry exists
-	server.connectedSubscriptionsLock.RLock()
-	initialSize := len(server.connectedSubscriptionsContexts)
-	server.connectedSubscriptionsLock.RUnlock()
-	require.Equal(t, 1, initialSize, "Entry should be added")
-
-	// Simulate error in relaySubscriptionInner by calling cleanup
-	// (This is what line 1077 does: rpcss.CancelSubscriptionContext(hashedParams))
-	server.CancelSubscriptionContext(subscriptionKey)
-
-	// Verify entry is removed
-	server.connectedSubscriptionsLock.RLock()
-	finalSize := len(server.connectedSubscriptionsContexts)
-	server.connectedSubscriptionsLock.RUnlock()
-	require.Equal(t, 0, finalSize, "Entry should be cleaned up on error")
-}
-
-// TestCleanupStaleSubscriptions_RemovesCancelledContexts tests periodic cleanup of cancelled contexts
-// This test validates the SAFETY NET: periodic cleanup goroutine
-func TestCleanupStaleSubscriptions_RemovesCancelledContexts(t *testing.T) {
-	server := &RPCSmartRouterServer{
-		connectedSubscriptionsContexts: make(map[string]*CancelableContextHolder),
-	}
-
-	// Create server context that controls the cleanup goroutine
-	serverCtx, serverCancel := context.WithCancel(context.Background())
-	defer serverCancel()
-
-	// Start the cleanup goroutine with shorter interval for testing
-	cleanupComplete := make(chan struct{})
-	go func() {
-		ticker := time.NewTicker(100 * time.Millisecond) // Shorter interval for testing
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-serverCtx.Done():
-				close(cleanupComplete)
-				return
-			case <-ticker.C:
-				server.connectedSubscriptionsLock.Lock()
-
-				staleKeys := []string{}
-				for key, holder := range server.connectedSubscriptionsContexts {
-					select {
-					case <-holder.Ctx.Done():
-						staleKeys = append(staleKeys, key)
-					default:
-						// Context still active
-					}
-				}
-
-				for _, key := range staleKeys {
-					holder := server.connectedSubscriptionsContexts[key]
-					holder.CancelFunc()
-					delete(server.connectedSubscriptionsContexts, key)
-				}
-
-				server.connectedSubscriptionsLock.Unlock()
-			}
-		}
-	}()
-
-	// Add active subscription
-	activeCtx, activeCancel := context.WithCancel(context.Background())
-	defer activeCancel()
-	server.connectedSubscriptionsLock.Lock()
-	server.connectedSubscriptionsContexts["active-sub"] = &CancelableContextHolder{
-		Ctx:        activeCtx,
-		CancelFunc: activeCancel,
-	}
-	server.connectedSubscriptionsLock.Unlock()
-
-	// Add subscriptions and cancel some of them
-	cancelledCtx1, cancel1 := context.WithCancel(context.Background())
-	cancelledCtx2, cancel2 := context.WithCancel(context.Background())
-	cancelledCtx3, cancel3 := context.WithCancel(context.Background())
-
-	server.connectedSubscriptionsLock.Lock()
-	server.connectedSubscriptionsContexts["cancelled-sub-1"] = &CancelableContextHolder{
-		Ctx:        cancelledCtx1,
-		CancelFunc: cancel1,
-	}
-	server.connectedSubscriptionsContexts["cancelled-sub-2"] = &CancelableContextHolder{
-		Ctx:        cancelledCtx2,
-		CancelFunc: cancel2,
-	}
-	server.connectedSubscriptionsContexts["cancelled-sub-3"] = &CancelableContextHolder{
-		Ctx:        cancelledCtx3,
-		CancelFunc: cancel3,
-	}
-	server.connectedSubscriptionsLock.Unlock()
-
-	// Cancel the three subscriptions
-	cancel1()
-	cancel2()
-	cancel3()
-
-	// Wait for cleanup cycle (multiple cycles to be safe)
-	time.Sleep(300 * time.Millisecond)
-
-	// Check that cancelled subscriptions were removed
-	server.connectedSubscriptionsLock.RLock()
-	size := len(server.connectedSubscriptionsContexts)
-	_, activeExists := server.connectedSubscriptionsContexts["active-sub"]
-	_, cancelled1Exists := server.connectedSubscriptionsContexts["cancelled-sub-1"]
-	_, cancelled2Exists := server.connectedSubscriptionsContexts["cancelled-sub-2"]
-	_, cancelled3Exists := server.connectedSubscriptionsContexts["cancelled-sub-3"]
-	server.connectedSubscriptionsLock.RUnlock()
-
-	require.Equal(t, 1, size, "Only active subscription should remain")
-	require.True(t, activeExists, "Active subscription should still exist")
-	require.False(t, cancelled1Exists, "Cancelled subscription 1 should be removed")
-	require.False(t, cancelled2Exists, "Cancelled subscription 2 should be removed")
-	require.False(t, cancelled3Exists, "Cancelled subscription 3 should be removed")
-
-	// Stop cleanup goroutine
-	serverCancel()
-	select {
-	case <-cleanupComplete:
-		// Cleanup goroutine stopped successfully
-	case <-time.After(1 * time.Second):
-		t.Fatal("Cleanup goroutine did not stop within timeout")
-	}
-}
-
-// TestCleanupStaleSubscriptions_ConcurrentAccess tests concurrent access patterns
-// This test validates production safety under heavy concurrent load
-func TestCleanupStaleSubscriptions_ConcurrentAccess(t *testing.T) {
-	server := &RPCSmartRouterServer{
-		connectedSubscriptionsContexts: make(map[string]*CancelableContextHolder),
-	}
-
-	serverCtx, serverCancel := context.WithCancel(context.Background())
-	defer serverCancel()
-
-	// Start cleanup goroutine
-	go func() {
-		ticker := time.NewTicker(10 * time.Millisecond)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-serverCtx.Done():
-				return
-			case <-ticker.C:
-				server.connectedSubscriptionsLock.Lock()
-
-				staleKeys := []string{}
-				for key, holder := range server.connectedSubscriptionsContexts {
-					select {
-					case <-holder.Ctx.Done():
-						staleKeys = append(staleKeys, key)
-					default:
-					}
-				}
-
-				for _, key := range staleKeys {
-					holder := server.connectedSubscriptionsContexts[key]
-					holder.CancelFunc()
-					delete(server.connectedSubscriptionsContexts, key)
-				}
-
-				server.connectedSubscriptionsLock.Unlock()
-			}
-		}
-	}()
-
-	var wg sync.WaitGroup
-	numGoroutines := 50
-	subscriptionsPerGoroutine := 10
-
-	// Concurrently add, cancel, and remove subscriptions
-	for i := 0; i < numGoroutines; i++ {
-		wg.Add(1)
-		go func(goroutineID int) {
-			defer wg.Done()
-
-			for j := 0; j < subscriptionsPerGoroutine; j++ {
-				ctx, cancel := context.WithCancel(context.Background())
-				key := "concurrent-sub-" + string(rune('0'+goroutineID)) + "-" + string(rune('0'+j))
-
-				// Add subscription
-				server.connectedSubscriptionsLock.Lock()
-				server.connectedSubscriptionsContexts[key] = &CancelableContextHolder{
-					Ctx:        ctx,
-					CancelFunc: cancel,
-				}
-				server.connectedSubscriptionsLock.Unlock()
-
-				// Random delay
-				time.Sleep(time.Duration(j) * time.Millisecond)
-
-				// Cancel subscription
-				cancel()
-
-				// Let cleanup goroutine do its work or manually cancel
-				if j%2 == 0 {
-					server.CancelSubscriptionContext(key)
-				}
-				// else: let cleanup goroutine handle it
-			}
-		}(i)
-	}
-
-	// Wait for all goroutines
-	wg.Wait()
-
-	// Give cleanup goroutine time to finish
-	time.Sleep(100 * time.Millisecond)
-
-	// Verify map is empty or nearly empty (cleanup should catch everything)
-	server.connectedSubscriptionsLock.RLock()
-	size := len(server.connectedSubscriptionsContexts)
-	server.connectedSubscriptionsLock.RUnlock()
-
-	// Should be 0 or very small (in case of race with final additions)
-	assert.LessOrEqual(t, size, 5, "Map should be mostly empty after cleanup")
-}
-
-// TestMemoryLeakScenario_NoCleanup validates that the fix prevents memory leaks
-// This test compares OLD behavior (leak) vs NEW behavior (fixed)
-func TestMemoryLeakScenario_NoCleanup(t *testing.T) {
-	// This test documents what WOULD happen without the fix
-	server := &RPCSmartRouterServer{
-		connectedSubscriptionsContexts: make(map[string]*CancelableContextHolder),
-	}
-
-	initialSize := 0
-
-	// Simulate 100 failed subscriptions (without cleanup - OLD BEHAVIOR)
-	for i := 0; i < 100; i++ {
-		ctx, cancel := context.WithCancel(context.Background())
-		// Immediately cancel to simulate failure
-		cancel()
-
-		key := "failed-sub-" + string(rune(i))
-		server.connectedSubscriptionsLock.Lock()
-		server.connectedSubscriptionsContexts[key] = &CancelableContextHolder{
-			Ctx:        ctx,
-			CancelFunc: cancel,
-		}
-		server.connectedSubscriptionsLock.Unlock()
-		// NOTE: In old code, we would NOT call CancelSubscriptionContext here
-		// This would cause the leak
-	}
-
-	// Check size - in old behavior, all entries would remain
-	server.connectedSubscriptionsLock.RLock()
-	sizeWithoutCleanup := len(server.connectedSubscriptionsContexts)
-	server.connectedSubscriptionsLock.RUnlock()
-
-	require.Equal(t, 100, sizeWithoutCleanup, "Without cleanup, all entries would leak")
-
-	// Now test NEW behavior - explicit cleanup
-	serverWithFix := &RPCSmartRouterServer{
-		connectedSubscriptionsContexts: make(map[string]*CancelableContextHolder),
-	}
-
-	// Simulate 100 failed subscriptions WITH cleanup (NEW BEHAVIOR)
-	for i := 0; i < 100; i++ {
-		ctx, cancel := context.WithCancel(context.Background())
-		cancel() // Simulate failure
-
-		key := "failed-sub-fixed-" + string(rune(i))
-		serverWithFix.connectedSubscriptionsLock.Lock()
-		serverWithFix.connectedSubscriptionsContexts[key] = &CancelableContextHolder{
-			Ctx:        ctx,
-			CancelFunc: cancel,
-		}
-		serverWithFix.connectedSubscriptionsLock.Unlock()
-
-		// NEW: Explicit cleanup on error (line 1077)
-		serverWithFix.CancelSubscriptionContext(key)
-	}
-
-	// Check size - with fix, no entries should remain
-	serverWithFix.connectedSubscriptionsLock.RLock()
-	sizeWithCleanup := len(serverWithFix.connectedSubscriptionsContexts)
-	serverWithFix.connectedSubscriptionsLock.RUnlock()
-
-	require.Equal(t, 0, sizeWithCleanup, "With cleanup, no entries should leak")
-	require.Equal(t, initialSize, sizeWithCleanup, "Map should return to initial size")
-}
-
 // ============================================================================
 // Tests for Session Leak Prevention in sendRelayToProvider (Smart Router)
 // These tests validate that sessions are properly freed on all exit paths
@@ -1924,32 +1402,6 @@ func TestSmartRouterSessionLeakPrevention_ConcurrentSessions(t *testing.T) {
 	})
 }
 
-// TestSmartRouterSessionLeakPrevention_SubscriptionPath tests subscription path session handling
-func TestSmartRouterSessionLeakPrevention_SubscriptionPath(t *testing.T) {
-	t.Run("subscription path marks session as handled", func(t *testing.T) {
-		sessionHandled := false
-		cleanupCalled := false
-
-		// Run in a function to trigger defer
-		func() {
-			defer func() {
-				if !sessionHandled {
-					cleanupCalled = true
-				}
-			}()
-
-			// Simulate subscription path where relaySubscriptionInner handles cleanup
-			isSubscription := true
-			if isSubscription {
-				sessionHandled = true // relaySubscriptionInner handles cleanup
-			}
-		}()
-
-		require.True(t, sessionHandled)
-		require.False(t, cleanupCalled, "Cleanup should not be called for subscription path")
-	})
-}
-
 // TestSmartRouterSessionLeakPrevention_HighConcurrency tests the smart router under high concurrency
 // This simulates the real-world scenario that caused session exhaustion
 func TestSmartRouterSessionLeakPrevention_HighConcurrency(t *testing.T) {
@@ -2062,4 +1514,431 @@ func TestSmartRouterSessionLeakPrevention_SingleProvider(t *testing.T) {
 		final := atomic.LoadInt32(&activeSessions)
 		require.Equal(t, int32(0), final, "All sessions should be released at the end")
 	})
+}
+
+// ============================================================================
+// Tests for Epoch Cleanup Integration - EndpointChainTrackerManager Lifecycle
+// These tests validate that the EndpointChainTrackerManager properly cleans up
+// when trackers are removed (supporting epoch-based cleanup in RPCSmartRouter)
+// ============================================================================
+
+// TestEndpointChainTrackerManager_RemoveTrackerCallsCancel tests that RemoveTracker
+// properly invokes the cancel function for per-tracker context cancellation
+func TestEndpointChainTrackerManager_RemoveTrackerCallsCancel(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	t.Run("RemoveTracker invokes cancel function", func(t *testing.T) {
+		trackerManager := NewEndpointChainTrackerManager(ctx, EndpointChainTrackerConfig{
+			ChainID:          "ETH",
+			ApiInterface:     "jsonrpc",
+			AverageBlockTime: 12 * time.Second,
+			BlocksToSave:     10,
+		})
+		require.NotNil(t, trackerManager)
+		defer trackerManager.Stop()
+
+		// Manually add a cancel function to simulate a tracker
+		endpoint := "http://test:8545"
+		cancelCalled := false
+		trackerManager.cancelFuncs[endpoint] = func() { cancelCalled = true }
+
+		// Remove the tracker - should call cancel function
+		trackerManager.RemoveTracker(endpoint)
+
+		require.True(t, cancelCalled, "RemoveTracker should call the cancel function")
+		require.Empty(t, trackerManager.cancelFuncs)
+	})
+
+	t.Run("Stop invokes all cancel functions", func(t *testing.T) {
+		trackerManager := NewEndpointChainTrackerManager(ctx, EndpointChainTrackerConfig{
+			ChainID:          "ETH",
+			ApiInterface:     "jsonrpc",
+			AverageBlockTime: 12 * time.Second,
+			BlocksToSave:     10,
+		})
+		require.NotNil(t, trackerManager)
+
+		// Add multiple cancel functions
+		cancelledEndpoints := make(map[string]bool)
+		endpoints := []string{"http://ep1:8545", "http://ep2:8545", "http://ep3:8545"}
+
+		for _, ep := range endpoints {
+			ep := ep // capture
+			trackerManager.cancelFuncs[ep] = func() { cancelledEndpoints[ep] = true }
+		}
+
+		// Stop should cancel all
+		trackerManager.Stop()
+
+		for _, ep := range endpoints {
+			require.True(t, cancelledEndpoints[ep], "Stop should cancel %s", ep)
+		}
+		require.Empty(t, trackerManager.cancelFuncs)
+	})
+
+	t.Run("concurrent RemoveTracker and Stop are thread-safe", func(t *testing.T) {
+		defer goleak.VerifyNone(t, goleak.IgnoreCurrent())
+
+		trackerManager := NewEndpointChainTrackerManager(ctx, EndpointChainTrackerConfig{
+			ChainID:          "ETH",
+			ApiInterface:     "jsonrpc",
+			AverageBlockTime: 12 * time.Second,
+			BlocksToSave:     10,
+		})
+		require.NotNil(t, trackerManager)
+
+		var wg sync.WaitGroup
+		const numGoroutines = 50
+
+		// Add many cancel functions
+		for i := 0; i < numGoroutines; i++ {
+			endpoint := fmt.Sprintf("http://endpoint%d:8545", i)
+			trackerManager.cancelFuncs[endpoint] = func() {}
+		}
+
+		// Simulate concurrent removal operations
+		for i := 0; i < numGoroutines; i++ {
+			wg.Add(1)
+			go func(id int) {
+				defer wg.Done()
+				endpoint := fmt.Sprintf("http://endpoint%d:8545", id)
+				trackerManager.RemoveTracker(endpoint)
+			}(i)
+		}
+
+		wg.Wait()
+
+		// Cleanup
+		trackerManager.Stop()
+		// If we reach here without race detector error or panic, the test passes
+	})
+}
+
+// ============================================================================
+// Mock Consistency for filterEndpointsByConsistency tests
+// ============================================================================
+
+type mockConsistency struct {
+	seenBlocks map[string]int64
+}
+
+func newMockConsistency() *mockConsistency {
+	return &mockConsistency{seenBlocks: make(map[string]int64)}
+}
+
+func (mc *mockConsistency) SetSeenBlock(blockSeen int64, userData common.UserData) {
+	key := mc.Key(userData)
+	mc.seenBlocks[key] = blockSeen
+}
+
+func (mc *mockConsistency) GetSeenBlock(userData common.UserData) (int64, bool) {
+	key := mc.Key(userData)
+	block, found := mc.seenBlocks[key]
+	return block, found
+}
+
+func (mc *mockConsistency) SetSeenBlockFromKey(blockSeen int64, key string) {
+	mc.seenBlocks[key] = blockSeen
+}
+
+func (mc *mockConsistency) Key(userData common.UserData) string {
+	return userData.DappId + "|" + userData.ConsumerIp
+}
+
+// ============================================================================
+// Tests for Phase 3.1: Consistency Pre-Validation Retry with Different Providers
+// ============================================================================
+
+// TestFilterEndpointsByConsistency_ReturnsFailedSessions tests that the modified
+// filterEndpointsByConsistency returns failed sessions separately from valid ones.
+func TestFilterEndpointsByConsistency_ReturnsFailedSessions(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("all sessions valid - no failed sessions", func(t *testing.T) {
+		consistency := newMockConsistency()
+		userData := common.UserData{DappId: "test", ConsumerIp: "1.2.3.4"}
+		consistency.SetSeenBlock(100, userData)
+
+		config := relaycore.DefaultConsistencyValidationConfig()
+
+		// Create endpoint at block 100 (synced)
+		endpoint := &lavasession.Endpoint{NetworkAddress: "http://ep1:8545"}
+		endpoint.LatestBlock.Store(100)
+
+		sessions := lavasession.ConsumerSessionsMap{
+			"http://ep1:8545": &lavasession.SessionInfo{
+				Session: &lavasession.SingleConsumerSession{
+					Connection: &lavasession.DirectRPCSessionConnection{
+						Endpoint: endpoint,
+					},
+				},
+			},
+		}
+
+		rpcss := &RPCSmartRouterServer{
+			consistencyConfig:      config,
+			smartRouterConsistency: consistency,
+		}
+
+		protocolMsg := &MockProtocolMessage{
+			api:            &spectypes.Api{Name: "eth_getBalance"},
+			requestedBlock: spectypes.LATEST_BLOCK,
+			userData:       userData,
+		}
+
+		valid, failed, err := rpcss.filterEndpointsByConsistency(ctx, sessions, protocolMsg)
+		require.NoError(t, err)
+		require.Len(t, valid, 1)
+		require.Len(t, failed, 0)
+	})
+
+	t.Run("some sessions fail - split into valid and failed", func(t *testing.T) {
+		consistency := newMockConsistency()
+		userData := common.UserData{DappId: "test", ConsumerIp: "1.2.3.4"}
+		consistency.SetSeenBlock(200, userData)
+
+		// EndpointLagThreshold defaults to 10
+		config := relaycore.DefaultConsistencyValidationConfig()
+
+		// Create synced endpoint at block 195 (within threshold)
+		syncedEndpoint := &lavasession.Endpoint{NetworkAddress: "http://synced:8545"}
+		syncedEndpoint.LatestBlock.Store(195)
+
+		// Create stale endpoint at block 100 (way behind, lag=100 > threshold=10)
+		staleEndpoint := &lavasession.Endpoint{NetworkAddress: "http://stale:8545"}
+		staleEndpoint.LatestBlock.Store(100)
+
+		sessions := lavasession.ConsumerSessionsMap{
+			"http://synced:8545": &lavasession.SessionInfo{
+				Session: &lavasession.SingleConsumerSession{
+					Connection: &lavasession.DirectRPCSessionConnection{
+						Endpoint: syncedEndpoint,
+					},
+				},
+			},
+			"http://stale:8545": &lavasession.SessionInfo{
+				Session: &lavasession.SingleConsumerSession{
+					Connection: &lavasession.DirectRPCSessionConnection{
+						Endpoint: staleEndpoint,
+					},
+				},
+			},
+		}
+
+		rpcss := &RPCSmartRouterServer{
+			consistencyConfig:      config,
+			smartRouterConsistency: consistency,
+		}
+
+		protocolMsg := &MockProtocolMessage{
+			api:            &spectypes.Api{Name: "eth_getBalance"},
+			requestedBlock: spectypes.LATEST_BLOCK,
+			userData:       userData,
+		}
+
+		valid, failed, err := rpcss.filterEndpointsByConsistency(ctx, sessions, protocolMsg)
+		require.NoError(t, err)
+		require.Len(t, valid, 1)
+		require.Len(t, failed, 1)
+		require.Contains(t, valid, "http://synced:8545")
+		require.Contains(t, failed, "http://stale:8545")
+	})
+
+	t.Run("all sessions fail - returns error and all failed", func(t *testing.T) {
+		consistency := newMockConsistency()
+		userData := common.UserData{DappId: "test", ConsumerIp: "1.2.3.4"}
+		consistency.SetSeenBlock(200, userData)
+
+		config := relaycore.DefaultConsistencyValidationConfig()
+
+		// Both endpoints are stale
+		staleEndpoint1 := &lavasession.Endpoint{NetworkAddress: "http://stale1:8545"}
+		staleEndpoint1.LatestBlock.Store(100)
+
+		staleEndpoint2 := &lavasession.Endpoint{NetworkAddress: "http://stale2:8545"}
+		staleEndpoint2.LatestBlock.Store(50)
+
+		sessions := lavasession.ConsumerSessionsMap{
+			"http://stale1:8545": &lavasession.SessionInfo{
+				Session: &lavasession.SingleConsumerSession{
+					Connection: &lavasession.DirectRPCSessionConnection{
+						Endpoint: staleEndpoint1,
+					},
+				},
+			},
+			"http://stale2:8545": &lavasession.SessionInfo{
+				Session: &lavasession.SingleConsumerSession{
+					Connection: &lavasession.DirectRPCSessionConnection{
+						Endpoint: staleEndpoint2,
+					},
+				},
+			},
+		}
+
+		rpcss := &RPCSmartRouterServer{
+			consistencyConfig:      config,
+			smartRouterConsistency: consistency,
+		}
+
+		protocolMsg := &MockProtocolMessage{
+			api:            &spectypes.Api{Name: "eth_getBalance"},
+			requestedBlock: spectypes.LATEST_BLOCK,
+			userData:       userData,
+		}
+
+		valid, failed, err := rpcss.filterEndpointsByConsistency(ctx, sessions, protocolMsg)
+		require.Error(t, err)
+		require.True(t, lavasession.ConsistencyPreValidationError.Is(err))
+		require.Nil(t, valid)
+		require.Len(t, failed, 2)
+	})
+
+	t.Run("no seen block - skip validation, return all as valid", func(t *testing.T) {
+		consistency := newMockConsistency()
+		// No seenBlock set for this user
+
+		config := relaycore.DefaultConsistencyValidationConfig()
+
+		endpoint := &lavasession.Endpoint{NetworkAddress: "http://ep1:8545"}
+		endpoint.LatestBlock.Store(100)
+
+		sessions := lavasession.ConsumerSessionsMap{
+			"http://ep1:8545": &lavasession.SessionInfo{
+				Session: &lavasession.SingleConsumerSession{
+					Connection: &lavasession.DirectRPCSessionConnection{
+						Endpoint: endpoint,
+					},
+				},
+			},
+		}
+
+		rpcss := &RPCSmartRouterServer{
+			consistencyConfig:      config,
+			smartRouterConsistency: consistency,
+		}
+
+		protocolMsg := &MockProtocolMessage{
+			api:            &spectypes.Api{Name: "eth_getBalance"},
+			requestedBlock: spectypes.LATEST_BLOCK,
+			userData:       common.UserData{DappId: "new-user", ConsumerIp: "5.6.7.8"},
+		}
+
+		valid, failed, err := rpcss.filterEndpointsByConsistency(ctx, sessions, protocolMsg)
+		require.NoError(t, err)
+		require.Len(t, valid, 1)
+		require.Nil(t, failed)
+	})
+
+	t.Run("no config - skip validation, return all as valid", func(t *testing.T) {
+		sessions := lavasession.ConsumerSessionsMap{
+			"http://ep1:8545": &lavasession.SessionInfo{
+				Session: &lavasession.SingleConsumerSession{},
+			},
+		}
+
+		rpcss := &RPCSmartRouterServer{
+			consistencyConfig:      nil,
+			smartRouterConsistency: nil,
+		}
+
+		protocolMsg := &MockProtocolMessage{
+			api:            &spectypes.Api{Name: "eth_getBalance"},
+			requestedBlock: spectypes.LATEST_BLOCK,
+		}
+
+		valid, failed, err := rpcss.filterEndpointsByConsistency(ctx, sessions, protocolMsg)
+		require.NoError(t, err)
+		require.Len(t, valid, 1)
+		require.Nil(t, failed)
+	})
+
+	t.Run("endpoint with no block data - allowed through (first relay)", func(t *testing.T) {
+		consistency := newMockConsistency()
+		userData := common.UserData{DappId: "test", ConsumerIp: "1.2.3.4"}
+		consistency.SetSeenBlock(200, userData)
+
+		config := relaycore.DefaultConsistencyValidationConfig()
+
+		// Endpoint has no block data yet (LatestBlock == 0)
+		newEndpoint := &lavasession.Endpoint{NetworkAddress: "http://new:8545"}
+
+		sessions := lavasession.ConsumerSessionsMap{
+			"http://new:8545": &lavasession.SessionInfo{
+				Session: &lavasession.SingleConsumerSession{
+					Connection: &lavasession.DirectRPCSessionConnection{
+						Endpoint: newEndpoint,
+					},
+				},
+			},
+		}
+
+		rpcss := &RPCSmartRouterServer{
+			consistencyConfig:      config,
+			smartRouterConsistency: consistency,
+		}
+
+		protocolMsg := &MockProtocolMessage{
+			api:            &spectypes.Api{Name: "eth_getBalance"},
+			requestedBlock: spectypes.LATEST_BLOCK,
+			userData:       userData,
+		}
+
+		valid, failed, err := rpcss.filterEndpointsByConsistency(ctx, sessions, protocolMsg)
+		require.NoError(t, err)
+		require.Len(t, valid, 1)
+		require.Contains(t, valid, "http://new:8545")
+		require.Len(t, failed, 0)
+	})
+
+	t.Run("historical block request - skip validation", func(t *testing.T) {
+		consistency := newMockConsistency()
+		userData := common.UserData{DappId: "test", ConsumerIp: "1.2.3.4"}
+		consistency.SetSeenBlock(200, userData)
+
+		config := relaycore.DefaultConsistencyValidationConfig()
+
+		staleEndpoint := &lavasession.Endpoint{NetworkAddress: "http://stale:8545"}
+		staleEndpoint.LatestBlock.Store(50) // very stale
+
+		sessions := lavasession.ConsumerSessionsMap{
+			"http://stale:8545": &lavasession.SessionInfo{
+				Session: &lavasession.SingleConsumerSession{
+					Connection: &lavasession.DirectRPCSessionConnection{
+						Endpoint: staleEndpoint,
+					},
+				},
+			},
+		}
+
+		rpcss := &RPCSmartRouterServer{
+			consistencyConfig:      config,
+			smartRouterConsistency: consistency,
+		}
+
+		// Historical block request (block 42) - should skip validation
+		protocolMsg := &MockProtocolMessage{
+			api:            &spectypes.Api{Name: "eth_getBlockByNumber"},
+			requestedBlock: 42,
+			userData:       userData,
+		}
+
+		valid, failed, err := rpcss.filterEndpointsByConsistency(ctx, sessions, protocolMsg)
+		require.NoError(t, err)
+		require.Len(t, valid, 1)
+		require.Nil(t, failed)
+	})
+}
+
+// TestConsistencyPreValidationError_NotRetryable verifies that ConsistencyPreValidationError
+// is NOT treated as a retryable sync loss error (unlike SessionOutOfSyncError).
+// This ensures immediate blocking via unwantedProviders rather than "allow one retry".
+func TestConsistencyPreValidationError_NotRetryable(t *testing.T) {
+	// ConsistencyPreValidationError should NOT be a session sync loss
+	require.False(t, lavasession.IsSessionSyncLoss(lavasession.ConsistencyPreValidationError),
+		"ConsistencyPreValidationError should NOT be treated as session sync loss")
+
+	// SessionOutOfSyncError IS a session sync loss (for comparison)
+	require.True(t, lavasession.IsSessionSyncLoss(lavasession.SessionOutOfSyncError),
+		"SessionOutOfSyncError should be treated as session sync loss")
 }

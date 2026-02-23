@@ -42,22 +42,19 @@ PROVIDER3_LISTENER="127.0.0.1:2222"
 # For Test 3 (sync impact), load the full spec set (LAV1 imports other specs).
 SPECS_DIR="./specs/mainnet-1/specs/tendermint.json,./specs/mainnet-1/specs/ibc.json,./specs/mainnet-1/specs/cosmossdk.json,./specs/testnet-2/specs/lava.json"
 echo "Using static specs: $SPECS_DIR"
-
-# Start Provider 1 (SYNCED: gap=0, test mode, standalone)
-echo "[Test 3] starting Provider 1 (SYNCED - head_block=1000, gap=0)"
-screen -d -m -S provider1 bash -c "cd /Users/anna/go/lava && source ~/.bashrc; lavap rpcprovider \
-config/provider_examples/provider1_test3_tendermintrpc_only.yml \
---test_mode --test_responses ./wrs_test_configs/test3_synced.json \
---static-providers \
+# Start Provider 1 (non-archive, test mode, standalone)
+echo "[Test Setup] starting Provider 1 (non-archive, standalone mode)"
+screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
+config/provider_examples/provider1_noarchive.yml \
+--test_mode --test_responses ./scripts/test_data/test_responses_jsonrpc_noarchive.json \
 --use-static-spec $SPECS_DIR \
 --geolocation 1 --log_level trace --metrics-listen-address ':7766' 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 
-# Start Provider 2 (LAGGING: gap=1, test mode, standalone)
-echo "[Test 3] starting Provider 2 (LAGGING - head_block=1000, gap=1)"
-screen -d -m -S provider2 bash -c "cd /Users/anna/go/lava && source ~/.bashrc; lavap rpcprovider \
-config/provider_examples/provider2_test3_tendermintrpc_only.yml \
---test_mode --test_responses ./wrs_test_configs/test3_lagging.json \
---static-providers \
+# Start Provider 2 (non-archive, test mode, standalone)
+echo "[Test Setup] starting Provider 2 (non-archive, standalone mode)"
+screen -d -m -S provider2 bash -c "source ~/.bashrc; lavap rpcprovider \
+config/provider_examples/provider2_noarchive.yml \
+--test_mode --test_responses ./scripts/test_data/test_responses_jsonrpc_noarchive.json \
 --use-static-spec $SPECS_DIR \
 --geolocation 1 --log_level trace --metrics-listen-address ':7756' 2>&1 | tee $LOGS_DIR/PROVIDER2.log" && sleep 0.25
 
@@ -65,8 +62,7 @@ config/provider_examples/provider2_test3_tendermintrpc_only.yml \
 echo "[Test 3] starting Provider 3 (VERY_LAGGING - head_block=1000, gap=2, archive endpoints)"
 screen -d -m -S provider3 bash -c "cd /Users/anna/go/lava && source ~/.bashrc; lavap rpcprovider \
 config/provider_examples/lava_example_archive.yml \
---test_mode --test_responses ./wrs_test_configs/test3_very_lagging.json \
---static-providers \
+--test_mode --test_responses ./scripts/test_data/test_responses_jsonrpc_archive.json \
 --use-static-spec $SPECS_DIR \
 --geolocation 1 --log_level trace --metrics-listen-address ':7777' 2>&1 | tee $LOGS_DIR/PROVIDER3.log" && sleep 0.25
 

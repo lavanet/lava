@@ -311,7 +311,16 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		return relayReply.Data, convertRelayMetaDataToMDMetaData(metadataToReply), nil
 	}
 
-	_, httpServer, err := grpcproxy.NewGRPCProxy(sendRelayCallback, apil.endpoint.HealthCheckPath, cmdFlags, apil.healthReporter)
+	// Check if the relay sender supports gRPC reflection (optional interface)
+	var reflectionCallback grpcproxy.ReflectionProxyCallback
+	if reflectionProvider, ok := apil.relaySender.(GRPCReflectionProvider); ok {
+		reflectionCallback = reflectionProvider.GetGRPCReflectionConnection
+		utils.LavaFormatInfo("gRPC reflection support enabled",
+			utils.LogAttr("address", apil.endpoint.NetworkAddress),
+		)
+	}
+
+	_, httpServer, err := grpcproxy.NewGRPCProxyWithReflection(sendRelayCallback, apil.endpoint.HealthCheckPath, cmdFlags, apil.healthReporter, reflectionCallback)
 	if err != nil {
 		utils.LavaFormatFatal("provider failure RegisterServer", err, utils.Attribute{Key: "listenAddr", Value: apil.endpoint.NetworkAddress})
 	}

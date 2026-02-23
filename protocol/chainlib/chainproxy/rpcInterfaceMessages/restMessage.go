@@ -1,6 +1,7 @@
 package rpcInterfaceMessages
 
 import (
+	"fmt"
 	"net/url"
 	"strings"
 
@@ -49,6 +50,13 @@ func (rm *RestMessage) GetRawRequestHash() ([]byte, error) {
 }
 
 func (jm RestMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
+	// Treat 5xx and 429 as node errors (triggers retries)
+	if httpStatusCode >= 500 || httpStatusCode == 429 {
+		// Server error or rate limit - treat as node error for retry logic
+		errorMsg := extractErrorMessage(data, httpStatusCode)
+		return true, errorMsg
+	}
+
 	// Check Cosmos SDK transaction errors (HTTP 2xx with error code in JSON)
 	if httpStatusCode >= 200 && httpStatusCode < 300 {
 		if hasError, errMsg := checkCosmosTxError(data); hasError {
@@ -58,8 +66,9 @@ func (jm RestMessage) CheckResponseError(data []byte, httpStatusCode int) (hasEr
 		return false, ""
 	}
 
-	// Check generic REST errors (non-2xx HTTP status)
-	return checkGenericRESTError(data)
+	// 4xx (except 429) are client errors - NOT node errors
+	// Return false so state machine doesn't retry (client error won't succeed on retry)
+	return false, ""
 }
 
 // checkCosmosTxError detects errors in Cosmos SDK transaction responses
@@ -78,7 +87,41 @@ func checkCosmosTxError(data []byte) (bool, string) {
 	return false, ""
 }
 
-// checkGenericRESTError detects errors in generic REST API responses
+// extractErrorMessage attempts to extract error message from response body
+// Tries common fields in order: "message", "error", raw body (truncated), or fallback to status
+func extractErrorMessage(data []byte, httpStatusCode int) string {
+	// Try to parse as JSON and extract error message
+	var result map[string]interface{}
+	if err := json.Unmarshal(data, &result); err == nil {
+		// Try common error field names
+		if msg, ok := result["message"].(string); ok && msg != "" {
+			return msg
+		}
+		if msg, ok := result["error"].(string); ok && msg != "" {
+			return msg
+		}
+		// Try nested error.message
+		if errorObj, ok := result["error"].(map[string]interface{}); ok {
+			if msg, ok := errorObj["message"].(string); ok && msg != "" {
+				return msg
+			}
+		}
+	}
+
+	// Fallback: use raw body (truncated to 1KB)
+	bodyStr := string(data)
+	if len(bodyStr) > 1024 {
+		bodyStr = bodyStr[:1024] + "..."
+	}
+	if bodyStr != "" {
+		return bodyStr
+	}
+
+	// Final fallback: use HTTP status code
+	return fmt.Sprintf("HTTP %d", httpStatusCode)
+}
+
+// checkGenericRESTError detects errors in generic REST API responses (deprecated - kept for backward compatibility)
 // Expects format: {"message": "error text", "code": <error_code>}
 func checkGenericRESTError(data []byte) (bool, string) {
 	result := make(map[string]interface{})

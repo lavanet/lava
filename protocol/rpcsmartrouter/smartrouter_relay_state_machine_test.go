@@ -128,7 +128,7 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 		usedProviders := lavasession.NewUsedProviders(nil)
 		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
 		require.NoError(t, err)
-		relayProcessor := relaycore.NewRelayProcessor(ctx, nil, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -201,7 +201,7 @@ func TestConsumerStateMachineExhaustRetries(t *testing.T) {
 		usedProviders := lavasession.NewUsedProviders(nil)
 		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
 		require.NoError(t, err)
-		relayProcessor := relaycore.NewRelayProcessor(ctx, nil, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -281,7 +281,7 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 		require.NoError(t, err)
 		relayProcessor := relaycore.NewRelayProcessor(
 			ctx,
-			nil,
+			common.DefaultQuorumParams,
 			consistency,
 			relaycoretest.RelayProcessorMetrics,
 			relaycoretest.RelayProcessorMetrics,
@@ -355,7 +355,7 @@ func TestSmartRouterStateMachineCircuitBreakerOnPairingErrors(t *testing.T) {
 		usedProviders := lavasession.NewUsedProviders(nil)
 		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
 		require.NoError(t, err)
-		relayProcessor := relaycore.NewRelayProcessor(ctx, nil, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
 		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
 		require.NoError(t, err)
@@ -405,7 +405,7 @@ func TestSmartRouterStateMachineCircuitBreakerResetsOnSuccess(t *testing.T) {
 		usedProviders := lavasession.NewUsedProviders(nil)
 		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
 		require.NoError(t, err)
-		relayProcessor := relaycore.NewRelayProcessor(ctx, nil, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -462,7 +462,7 @@ func TestSmartRouterStateMachineCircuitBreakerResetsOnDifferentError(t *testing.
 		usedProviders := lavasession.NewUsedProviders(nil)
 		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
 		require.NoError(t, err)
-		relayProcessor := relaycore.NewRelayProcessor(ctx, nil, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
 		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
 		require.NoError(t, err)
@@ -528,7 +528,7 @@ func TestProcessingContextTimeoutEnforcement(t *testing.T) {
 
 		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, mockSender, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
 		require.NoError(t, err)
-		relayProcessor := relaycore.NewRelayProcessor(ctx, nil, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5) // Overall test timeout
 		defer cancel()
@@ -616,7 +616,7 @@ func TestProcessingContextStillValidAllowsRetries(t *testing.T) {
 		// LONG processing timeout (10 seconds) - retries should continue
 		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
 		require.NoError(t, err)
-		relayProcessor := relaycore.NewRelayProcessor(ctx, nil, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*2) // Test timeout
 		defer cancel()
@@ -699,7 +699,7 @@ func TestProcessingContextRaceCondition(t *testing.T) {
 
 		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, mockSender, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
 		require.NoError(t, err)
-		relayProcessor := relaycore.NewRelayProcessor(ctx, nil, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, common.DefaultQuorumParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 		defer cancel()
@@ -726,7 +726,7 @@ func TestProcessingContextRaceCondition(t *testing.T) {
 			// Count tasks spawned AFTER the 200ms timeout
 			if elapsed > 200*time.Millisecond {
 				tasksAfterTimeout++
-				t.Logf("⚠️  Task %d spawned AFTER timeout! (%v after start)", taskNum, elapsed)
+				t.Logf("[WARN] Task %d spawned AFTER timeout! (%v after start)", taskNum, elapsed)
 			}
 
 			if task.IsDone() {
