@@ -76,7 +76,7 @@ func TestDetectProtocol(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			protocol, err := DetectProtocol(tt.url, "")
-			
+
 			if tt.wantErr {
 				require.Error(t, err)
 				assert.Equal(t, DirectRPCProtocol(""), protocol)

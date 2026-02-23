@@ -47,9 +47,9 @@ type EndpointChainTrackerManager struct {
 	blocksToSave     uint64
 
 	// Callbacks for events (optional)
-	onFork         func(endpointURL string, blockNum int64)
-	onNewBlock     func(endpointURL string, fromBlock, toBlock int64)
-	onConsistency  func(endpointURL string, oldBlock, newBlock int64)
+	onFork        func(endpointURL string, blockNum int64)
+	onNewBlock    func(endpointURL string, fromBlock, toBlock int64)
+	onConsistency func(endpointURL string, oldBlock, newBlock int64)
 
 	// Context for managing goroutines (parent context for all trackers)
 	ctx    context.Context
@@ -141,13 +141,13 @@ func (m *EndpointChainTrackerManager) GetOrCreateTracker(
 
 	// Configure the ChainTracker
 	config := chaintracker.ChainTrackerConfig{
-		BlocksToSave:     m.blocksToSave,
-		AverageBlockTime: m.averageBlockTime,
-		ServerBlockMemory: chaintracker.DefaultAssumedBlockMemory,
+		BlocksToSave:             m.blocksToSave,
+		AverageBlockTime:         m.averageBlockTime,
+		ServerBlockMemory:        chaintracker.DefaultAssumedBlockMemory,
 		BlocksCheckpointDistance: chaintracker.DefaultBlockCheckpointDistance,
-		Pmetrics:         m.pmetrics,
-		ChainId:          m.chainID,
-		ParseDirectiveEnabled: true, // Always enabled for direct RPC
+		Pmetrics:                 m.pmetrics,
+		ChainId:                  m.chainID,
+		ParseDirectiveEnabled:    true, // Always enabled for direct RPC
 	}
 
 	// Set up callbacks with endpoint context

@@ -18,7 +18,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
-	reflectionpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 )
 
 // UpstreamGRPCStreamConnection wraps a grpc.ClientConn with health tracking and stream count.
@@ -31,7 +30,7 @@ type UpstreamGRPCStreamConnection struct {
 	healthy          atomic.Bool
 	lastError        atomic.Value // stores error
 	createdAt        time.Time
-	activeStreams    atomic.Int32                                  // Number of active streams on this connection
+	activeStreams    atomic.Int32                                        // Number of active streams on this connection
 	descriptorsCache *common.SafeSyncMap[string, *desc.MethodDescriptor] // Cached method descriptors
 	lock             sync.RWMutex
 	closed           atomic.Bool
@@ -209,7 +208,7 @@ func (c *UpstreamGRPCStreamConnection) GetMethodDescriptor(
 	}
 
 	// Use reflection to get descriptor
-	cl := grpcreflect.NewClient(ctx, reflectionpb.NewServerReflectionClient(conn))
+	cl := grpcreflect.NewClientAuto(ctx, conn)
 	defer cl.Reset()
 
 	descriptorSource := rpcInterfaceMessages.DescriptorSourceFromServer(cl)
@@ -243,34 +242,34 @@ func (c *UpstreamGRPCStreamConnection) GetMethodDescriptor(
 // The pool automatically scales between minConnections and maxConnections based on
 // stream load, targeting approximately streamsPerConn streams per connection.
 type UpstreamGRPCPool struct {
-	nodeUrl       *common.NodeUrl
-	sanitizedURL  string
-	connections   []*UpstreamGRPCStreamConnection
-	backoff       *ExponentialBackoff
-	reconnectMu   sync.Mutex // Prevents concurrent reconnection attempts
-	lock          sync.RWMutex
-	closed        atomic.Bool
-	reconnecting  atomic.Bool
-	onReconnect   func() // Callback when reconnected (for stream restoration)
+	nodeUrl      *common.NodeUrl
+	sanitizedURL string
+	connections  []*UpstreamGRPCStreamConnection
+	backoff      *ExponentialBackoff
+	reconnectMu  sync.Mutex // Prevents concurrent reconnection attempts
+	lock         sync.RWMutex
+	closed       atomic.Bool
+	reconnecting atomic.Bool
+	onReconnect  func() // Callback when reconnected (for stream restoration)
 
 	// Pool configuration
-	minConnections   int           // Minimum connections to maintain (default: 1)
-	maxConnections   int           // Maximum connections allowed (default: 5)
-	streamsPerConn   int           // Target streams per connection (default: 100)
-	connectTimeout   time.Duration // Connection establishment timeout
+	minConnections int           // Minimum connections to maintain (default: 1)
+	maxConnections int           // Maximum connections allowed (default: 5)
+	streamsPerConn int           // Target streams per connection (default: 100)
+	connectTimeout time.Duration // Connection establishment timeout
 }
 
 // NewUpstreamGRPCPool creates a new gRPC connection pool for streaming
 func NewUpstreamGRPCPool(nodeUrl *common.NodeUrl) *UpstreamGRPCPool {
 	return &UpstreamGRPCPool{
-		nodeUrl:          nodeUrl,
-		sanitizedURL:     sanitizeEndpointURL(nodeUrl.Url),
-		connections:      make([]*UpstreamGRPCStreamConnection, 0),
-		backoff:          NewWebSocketBackoff(), // Reuse the same backoff logic
-		minConnections:   1,
-		maxConnections:   5,
-		streamsPerConn:   100,
-		connectTimeout:   30 * time.Second,
+		nodeUrl:        nodeUrl,
+		sanitizedURL:   sanitizeEndpointURL(nodeUrl.Url),
+		connections:    make([]*UpstreamGRPCStreamConnection, 0),
+		backoff:        NewWebSocketBackoff(), // Reuse the same backoff logic
+		minConnections: 1,
+		maxConnections: 5,
+		streamsPerConn: 100,
+		connectTimeout: 30 * time.Second,
 	}
 }
 

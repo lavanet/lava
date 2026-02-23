@@ -29,8 +29,8 @@ type ConsistencyValidationConfig struct {
 // suitable for most chains. Uses conservative defaults.
 func DefaultConsistencyValidationConfig() *ConsistencyValidationConfig {
 	return &ConsistencyValidationConfig{
-		EndpointLagThreshold: 10,                  // Allow endpoints up to 10 blocks behind for pre-request
-		EnableWaitForCatchup: false,               // Don't wait by default, just skip
+		EndpointLagThreshold: 10,                     // Allow endpoints up to 10 blocks behind for pre-request
+		EnableWaitForCatchup: false,                  // Don't wait by default, just skip
 		MaxWaitTime:          500 * time.Millisecond, // Default max wait if enabled
 	}
 }

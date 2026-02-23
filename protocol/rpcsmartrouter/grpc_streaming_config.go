@@ -23,8 +23,8 @@ type GRPCStreamingConfig struct {
 	UnsubscribesPerMinutePerClient  int // Max unsubscribe requests per minute per client (default: 60)
 
 	// Timeouts
-	ConnectionTimeout         time.Duration // gRPC connection establishment timeout (default: 30s)
-	StreamIdleTimeout         time.Duration // Close streams with no messages for this duration (default: 5m)
+	ConnectionTimeout             time.Duration // gRPC connection establishment timeout (default: 30s)
+	StreamIdleTimeout             time.Duration // Close streams with no messages for this duration (default: 5m)
 	SubscriptionFirstReplyTimeout time.Duration // Timeout waiting for first streaming message (default: 30s)
 
 	// Cleanup
@@ -53,8 +53,8 @@ func DefaultGRPCStreamingConfig() *GRPCStreamingConfig {
 		UnsubscribesPerMinutePerClient:  60,
 
 		// Timeouts - gRPC streaming may take longer to establish
-		ConnectionTimeout:         30 * time.Second,
-		StreamIdleTimeout:         5 * time.Minute,
+		ConnectionTimeout:             30 * time.Second,
+		StreamIdleTimeout:             5 * time.Minute,
 		SubscriptionFirstReplyTimeout: 30 * time.Second,
 
 		// Cleanup

@@ -18,23 +18,23 @@ type SingleConsumerSession struct {
 	lock          utils.LavaMutex
 	RelayNum      uint64
 	LatestBlock   int64
-	
+
 	// Connection type - uses composition pattern for type safety
 	// Either ProviderRelayConnection (rpcconsumer) or DirectRPCSessionConnection (rpcsmartrouter)
 	Connection SessionConnection
-	
+
 	// Legacy field - maintained for backward compatibility
 	// For provider-relay mode, this points to the same connection as Connection.(*ProviderRelayConnection).EndpointConnection
 	EndpointConnection *EndpointConnection
-	
-	BlockListed        bool // if session lost sync we blacklist it.
-	ConsecutiveErrors  []error
-	errorsCount        uint64
-	usedProviders      UsedProvidersInf
-	providerUniqueId   string
-	StaticProvider     bool
-	routerKey          RouterKey
-	epoch              uint64
+
+	BlockListed       bool // if session lost sync we blacklist it.
+	ConsecutiveErrors []error
+	errorsCount       uint64
+	usedProviders     UsedProvidersInf
+	providerUniqueId  string
+	StaticProvider    bool
+	routerKey         RouterKey
+	epoch             uint64
 }
 
 // returns the expected latency to a threshold.
@@ -50,7 +50,7 @@ func (cs *SingleConsumerSession) getQosComputedResultOrZero() sdk.Dec {
 	if qosManager == nil {
 		return sdk.ZeroDec()
 	}
-	
+
 	lastReputationReport := qosManager.GetLastReputationQoSReport(cs.epoch, cs.SessionId)
 	if lastReputationReport != nil {
 		computedReputation, errComputing := lastReputationReport.ComputeReputation()
@@ -83,11 +83,11 @@ func (scs *SingleConsumerSession) Free(err error) {
 		scs.usedProviders = nil
 	}
 	scs.routerKey = NewRouterKey(nil)
-	
+
 	// Only decrease connection usage for provider-relay sessions
 	// Direct RPC sessions don't have EndpointConnection
 	if scs.EndpointConnection != nil {
-	scs.EndpointConnection.decreaseSessionUsingConnection()
+		scs.EndpointConnection.decreaseSessionUsingConnection()
 	}
 	scs.lock.Unlock()
 }
@@ -104,11 +104,11 @@ func (session *SingleConsumerSession) TryUseSession() (blocked bool, ok bool) {
 			session.lock.Unlock()
 			return true, false
 		}
-		
+
 		// Only increase connection usage for provider-relay sessions
 		// Direct RPC sessions don't have EndpointConnection
 		if session.EndpointConnection != nil {
-		session.EndpointConnection.addSessionUsingConnection()
+			session.EndpointConnection.addSessionUsingConnection()
 		}
 		return false, true
 	}

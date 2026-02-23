@@ -47,8 +47,8 @@ type directActiveSubscription struct {
 	hashedParams    string            // Hash of subscription parameters
 
 	// Subscription params for restoration after reconnect
-	subscriptionParams []byte  // Original subscription params (JSON)
-	subscribeMethod    string  // Method name (e.g., "eth_subscribe", "subscribe")
+	subscriptionParams []byte // Original subscription params (JSON)
+	subscribeMethod    string // Method name (e.g., "eth_subscribe", "subscribe")
 
 	// Client tracking - multiple clients can share one upstream subscription
 	connectedClients map[string]*common.SafeChannelSender[*pairingtypes.RelayReply]
@@ -110,9 +110,9 @@ type DirectWSSubscriptionManager struct {
 	apiInterface   string
 
 	// Upstream endpoint configuration - multiple endpoints for optimizer selection
-	wsEndpoints    []*common.NodeUrl            // All available WebSocket endpoints
-	endpointsByURL map[string]*common.NodeUrl   // Quick lookup by URL
-	optimizer      WebSocketEndpointOptimizer   // Optimizer for endpoint selection (can be nil)
+	wsEndpoints    []*common.NodeUrl          // All available WebSocket endpoints
+	endpointsByURL map[string]*common.NodeUrl // Quick lookup by URL
+	optimizer      WebSocketEndpointOptimizer // Optimizer for endpoint selection (can be nil)
 
 	// Sticky sessions for subscription affinity - same client uses same endpoint
 	stickyStore *lavasession.StickySessionStore
@@ -1280,8 +1280,8 @@ func (dwsm *DirectWSSubscriptionManager) handleUpstreamDisconnect(
 
 	activeSub.upstreamSubscription = newUpstreamSub
 	activeSub.upstreamID = newUpstreamID
-	activeSub.upstreamConnection = conn    // Update to new connection
-	activeSub.messagesChan = newMsgChan    // Update to new channel from upstream
+	activeSub.upstreamConnection = conn // Update to new connection
+	activeSub.messagesChan = newMsgChan // Update to new channel from upstream
 
 	// Collect all client router IDs to re-register
 	clientRouterIDs := make([]string, 0, len(activeSub.clientRouterIDs))
@@ -1542,8 +1542,8 @@ func createSubscriptionReplyFromRouterID(routerID string, requestID json.RawMess
 	if apiInterface == "tendermintrpc" && originalResult != nil {
 		response := map[string]interface{}{
 			"jsonrpc": "2.0",
-			"id":      json.RawMessage(requestID),
-			"result":  json.RawMessage(originalResult), // Preserve {"query":"..."} format
+			"id":      requestID,
+			"result":  originalResult,
 		}
 		return json.Marshal(response)
 	}
@@ -1552,7 +1552,7 @@ func createSubscriptionReplyFromRouterID(routerID string, requestID json.RawMess
 	// JSON-RPC 2.0 requires the response ID to match the request ID exactly
 	response := map[string]interface{}{
 		"jsonrpc": "2.0",
-		"id":      json.RawMessage(requestID), // Use client's actual request ID
+		"id":      requestID,
 		"result":  routerID,
 	}
 

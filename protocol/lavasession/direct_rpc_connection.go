@@ -25,7 +25,6 @@ import (
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
-	reflectionpbo "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 	"google.golang.org/grpc/status"
 )
 
@@ -690,7 +689,7 @@ func (g *GRPCDirectRPCConnection) getMethodDescriptor(
 	}
 
 	// Use reflection to get descriptor
-	cl := grpcreflect.NewClient(ctx, reflectionpbo.NewServerReflectionClient(conn))
+	cl := grpcreflect.NewClientAuto(ctx, conn)
 	defer cl.Reset()
 
 	descriptorSource := rpcInterfaceMessages.DescriptorSourceFromServer(cl)
@@ -747,7 +746,7 @@ func (g *GRPCDirectRPCConnection) parseInputMessage(
 	// Detect if input is JSON or binary proto
 	if len(data) > 0 && (data[0] == '{' || data[0] == '[') {
 		// JSON input - use grpcurl parser
-		cl := grpcreflect.NewClient(ctx, reflectionpbo.NewServerReflectionClient(conn))
+		cl := grpcreflect.NewClientAuto(ctx, conn)
 		defer cl.Reset()
 		descriptorSource := rpcInterfaceMessages.DescriptorSourceFromServer(cl)
 
@@ -813,13 +812,13 @@ func (g *GRPCDirectRPCConnection) handleGRPCError(ctx context.Context, err error
 	// Return the error response with metadata
 	// The caller can inspect the response to determine if it's an error
 	return &DirectRPCResponse{
-		Data:       respBytes,
-		Metadata:   respHeaders, // Include any headers received before the error
-		StatusCode: int(errorCode),
-	}, &GRPCStatusError{
-		Code:    errorCode,
-		Message: errorMessage,
-	}
+			Data:       respBytes,
+			Metadata:   respHeaders, // Include any headers received before the error
+			StatusCode: int(errorCode),
+		}, &GRPCStatusError{
+			Code:    errorCode,
+			Message: errorMessage,
+		}
 }
 
 // GRPCStatusError represents a gRPC status error

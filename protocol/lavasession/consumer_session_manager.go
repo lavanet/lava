@@ -545,7 +545,7 @@ func (csm *ConsumerSessionManager) probeDirectRPCEndpoints(
 
 	var healthyEndpoints int
 	var totalEndpoints int
-	var minLatency time.Duration = time.Hour // Start with a large value
+	minLatency := time.Hour // Start with a large value
 
 	for _, endpoint := range consumerSessionsWithProvider.Endpoints {
 		if !endpoint.IsDirectRPC() {
@@ -866,7 +866,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, wantedProvid
 			reportedProviders := csm.GetReportedProviders(sessionEpoch)
 
 			// Get session from endpoint or create new or continue. if more than 10 connections are open.
-		consumerSession, pairingEpoch, err := consumerSessionsWithProvider.GetConsumerSessionInstanceFromEndpoint(endpoint.chosenEndpointConnection, numberOfResets, csm.qosManager, endpoint.endpoint.NetworkAddress)
+			consumerSession, pairingEpoch, err := consumerSessionsWithProvider.GetConsumerSessionInstanceFromEndpoint(endpoint.chosenEndpointConnection, numberOfResets, csm.qosManager, endpoint.endpoint.NetworkAddress)
 			if err != nil {
 				utils.LavaFormatError("Error on consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint", err,
 					utils.LogAttr("providerAddress", providerAddress),
@@ -1543,7 +1543,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 		// Block the endpoint and the consumer session from future usages
 		// Only block EndpointConnection for provider-relay sessions
 		if consumerSession.EndpointConnection != nil {
-		consumerSession.EndpointConnection.blockListed.Store(true)
+			consumerSession.EndpointConnection.blockListed.Store(true)
 		}
 		consumerSession.BlockListed = true
 	}

@@ -26,8 +26,8 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/common"
-	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
@@ -414,11 +414,11 @@ func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpc
 		rpcProviderOptions.account.Addr,
 		rpcProviderOptions.lavaChainID,
 		rpcprovider.DEFAULT_ALLOWED_MISSING_CU,
-		nil,   // providerMetrics
-		nil,   // relaysMonitor
-		nil,   // providerNodeSubscriptionManager
-		nil,   // providerLoadManager
-		nil,   // verificationsStatusGetter
+		nil, // providerMetrics
+		nil, // relaysMonitor
+		nil, // providerNodeSubscriptionManager
+		nil, // providerLoadManager
+		nil, // verificationsStatusGetter
 		numberOfRetriesOnNodeErrorsProviderSide,
 		nil,   // testModeConfig
 		nil,   // resourceLimiter

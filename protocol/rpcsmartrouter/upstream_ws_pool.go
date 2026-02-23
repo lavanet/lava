@@ -14,16 +14,16 @@ import (
 
 // UpstreamWSConnection wraps an rpcclient.Client with health tracking and subscription count
 type UpstreamWSConnection struct {
-	client           *rpcclient.Client
-	endpoint         string
-	sanitizedURL     string // For logging (no auth)
-	nodeUrl          *common.NodeUrl
-	healthy          atomic.Bool
-	lastError        atomic.Value // stores error
-	createdAt        time.Time
+	client            *rpcclient.Client
+	endpoint          string
+	sanitizedURL      string // For logging (no auth)
+	nodeUrl           *common.NodeUrl
+	healthy           atomic.Bool
+	lastError         atomic.Value // stores error
+	createdAt         time.Time
 	subscriptionCount atomic.Int32 // Number of active subscriptions on this connection
-	lock             sync.RWMutex
-	closed           atomic.Bool
+	lock              sync.RWMutex
+	closed            atomic.Bool
 }
 
 // NewUpstreamWSConnection creates a new upstream WebSocket connection
@@ -151,15 +151,15 @@ func (c *UpstreamWSConnection) SubscriptionCount() int32 {
 // The pool automatically scales between minConnections and maxConnections based on
 // subscription load, targeting approximately subscriptionsPerConn subscriptions per connection.
 type UpstreamWSPool struct {
-	nodeUrl          *common.NodeUrl
-	sanitizedURL     string
-	connections      []*UpstreamWSConnection // Slice of connections for auto-scaling
-	backoff          *ExponentialBackoff
-	reconnectMu      sync.Mutex // Prevents concurrent reconnection attempts
-	lock             sync.RWMutex
-	closed           atomic.Bool
-	reconnecting     atomic.Bool
-	onReconnect      func() // Callback when reconnected (for subscription restoration)
+	nodeUrl      *common.NodeUrl
+	sanitizedURL string
+	connections  []*UpstreamWSConnection // Slice of connections for auto-scaling
+	backoff      *ExponentialBackoff
+	reconnectMu  sync.Mutex // Prevents concurrent reconnection attempts
+	lock         sync.RWMutex
+	closed       atomic.Bool
+	reconnecting atomic.Bool
+	onReconnect  func() // Callback when reconnected (for subscription restoration)
 
 	// Pool configuration (from WebsocketConfig)
 	minConnections       int // Minimum connections to maintain (default: 1)

@@ -15,8 +15,8 @@ const (
 	EndpointsConfigName                = "endpoints"
 	DirectRPCConfigName                = "direct-rpc"
 	BackupDirectRPCConfigName          = "backup-direct-rpc"
-	StaticProvidersConfigName          = "static-providers"      // Deprecated: use DirectRPCConfigName
-	BackupProvidersConfigName          = "backup-providers"      // Deprecated: use BackupDirectRPCConfigName
+	StaticProvidersConfigName          = "static-providers" // Deprecated: use DirectRPCConfigName
+	BackupProvidersConfigName          = "backup-providers" // Deprecated: use BackupDirectRPCConfigName
 	SaveConfigFlagName                 = "save-conf"
 	GeolocationFlag                    = "geolocation"
 	TestModeFlagName                   = "test-mode"

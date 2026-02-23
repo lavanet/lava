@@ -352,4 +352,3 @@ func TestRESTRelay_ResponseHeaders(t *testing.T) {
 	}
 	assert.True(t, found, fmt.Sprintf("expected X-Custom-Header in metadata, got: %+v", result.Reply.Metadata))
 }
-

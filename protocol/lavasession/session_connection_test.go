@@ -14,7 +14,7 @@ import (
 func TestProviderRelayConnection_InterfaceCompliance(t *testing.T) {
 	qosManager := &qos.QoSManager{}
 	endpointConn := &EndpointConnection{}
-	
+
 	prc := &ProviderRelayConnection{
 		EndpointConnection: endpointConn,
 		QoSManager:         qosManager,
@@ -64,12 +64,12 @@ func TestProviderRelayConnection_IsHealthy(t *testing.T) {
 func TestDirectRPCSessionConnection_InterfaceCompliance(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: "https://eth-mainnet.g.alchemy.com/v2/test"}
-	
+
 	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
-	
+
 	qosManager := &qos.QoSManager{}
-	
+
 	drsc := &DirectRPCSessionConnection{
 		DirectConnection: directConn,
 		QoSManager:       qosManager,
@@ -88,7 +88,7 @@ func TestDirectRPCSessionConnection_InterfaceCompliance(t *testing.T) {
 func TestDirectRPCSessionConnection_IsHealthy(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: "https://test.example.com"}
-	
+
 	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
@@ -125,7 +125,7 @@ func TestDirectRPCSessionConnection_IsHealthy(t *testing.T) {
 func TestSingleConsumerSession_GetDirectConnection(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: "https://test.example.com"}
-	
+
 	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
@@ -163,7 +163,7 @@ func TestSingleConsumerSession_GetProviderConnection(t *testing.T) {
 func TestSingleConsumerSession_IsDirectRPC(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: "https://test.example.com"}
-	
+
 	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
@@ -204,9 +204,9 @@ func TestSingleConsumerSession_GetSessionQoSManager(t *testing.T) {
 	qosManager := &qos.QoSManager{}
 
 	tests := []struct {
-		name       string
-		session    *SingleConsumerSession
-		expected   *qos.QoSManager
+		name     string
+		session  *SingleConsumerSession
+		expected *qos.QoSManager
 	}{
 		{
 			name: "gets QoS from connection",
@@ -238,7 +238,7 @@ func TestSingleConsumerSession_GetSessionQoSManager(t *testing.T) {
 func TestEndpoint_IsDirectRPC(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: "https://test.example.com"}
-	
+
 	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
@@ -262,7 +262,7 @@ func TestEndpoint_IsDirectRPC(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "endpoint with no connections",
+			name:     "endpoint with no connections",
 			endpoint: &Endpoint{},
 			expected: false,
 		},
@@ -278,7 +278,7 @@ func TestEndpoint_IsDirectRPC(t *testing.T) {
 func TestEndpoint_IsProviderRelay(t *testing.T) {
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: "https://test.example.com"}
-	
+
 	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
@@ -302,7 +302,7 @@ func TestEndpoint_IsProviderRelay(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "endpoint with no connections",
+			name:     "endpoint with no connections",
 			endpoint: &Endpoint{},
 			expected: false,
 		},
@@ -319,7 +319,7 @@ func TestSessionConnection_TypeSafety(t *testing.T) {
 	// This test verifies that you cannot accidentally mix connection types
 	ctx := context.Background()
 	nodeUrl := common.NodeUrl{Url: "https://test.example.com"}
-	
+
 	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
@@ -351,15 +351,15 @@ func TestSessionConnection_TypeSafety(t *testing.T) {
 func TestGetConsumerSessionInstanceFromEndpoint_Integration(t *testing.T) {
 	// This test verifies that the Connection field is properly set when creating
 	// sessions through GetConsumerSessionInstanceFromEndpoint (the actual production path)
-	
+
 	// Initialize random seed (required by session creation)
 	rand.InitRandomSeed()
-	
+
 	// Create a ConsumerSessionsWithProvider
 	cswp := &ConsumerSessionsWithProvider{
-		Sessions:      make(map[int64]*SingleConsumerSession),
-		PairingEpoch:  100,
-		StaticProvider: false,
+		Sessions:          make(map[int64]*SingleConsumerSession),
+		PairingEpoch:      100,
+		StaticProvider:    false,
 		PublicLavaAddress: "lava@test123",
 	}
 
@@ -439,7 +439,7 @@ func TestSingleConsumerSession_TryUseSession_WithNilEndpointConnection(t *testin
 	blocked, ok := session.TryUseSession()
 	assert.False(t, blocked)
 	assert.True(t, ok)
-	
+
 	// Clean up
 	session.Free(nil)
 }

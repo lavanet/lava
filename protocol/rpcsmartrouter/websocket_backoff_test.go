@@ -153,16 +153,16 @@ func TestExponentialBackoff_BackoffProgression(t *testing.T) {
 	backoff.JitterFactor = 0 // Disable jitter for exact values
 
 	expected := []time.Duration{
-		100 * time.Millisecond,  // Attempt 1
-		200 * time.Millisecond,  // Attempt 2
-		400 * time.Millisecond,  // Attempt 3
-		800 * time.Millisecond,  // Attempt 4
-		1600 * time.Millisecond, // Attempt 5
-		3200 * time.Millisecond, // Attempt 6
-		6400 * time.Millisecond, // Attempt 7
-		12800 * time.Millisecond,// Attempt 8
-		25600 * time.Millisecond,// Attempt 9
-		30 * time.Second,        // Attempt 10 (capped)
+		100 * time.Millisecond,   // Attempt 1
+		200 * time.Millisecond,   // Attempt 2
+		400 * time.Millisecond,   // Attempt 3
+		800 * time.Millisecond,   // Attempt 4
+		1600 * time.Millisecond,  // Attempt 5
+		3200 * time.Millisecond,  // Attempt 6
+		6400 * time.Millisecond,  // Attempt 7
+		12800 * time.Millisecond, // Attempt 8
+		25600 * time.Millisecond, // Attempt 9
+		30 * time.Second,         // Attempt 10 (capped)
 	}
 
 	for i, exp := range expected {

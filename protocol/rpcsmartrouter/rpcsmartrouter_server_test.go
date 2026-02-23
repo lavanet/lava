@@ -1393,7 +1393,6 @@ func TestEndpointChainTrackerManager_RemoveTrackerCallsCancel(t *testing.T) {
 		endpoints := []string{"http://ep1:8545", "http://ep2:8545", "http://ep3:8545"}
 
 		for _, ep := range endpoints {
-			ep := ep // capture
 			trackerManager.cancelFuncs[ep] = func() { cancelledEndpoints[ep] = true }
 		}
 

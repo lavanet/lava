@@ -74,7 +74,7 @@ type DirectRPCSessionConnection struct {
 	DirectConnection DirectRPCConnection
 	QoSManager       *qos.QoSManager
 	EndpointAddress  string
-	Endpoint         *Endpoint  // Direct reference to endpoint for per-endpoint tracking
+	Endpoint         *Endpoint // Direct reference to endpoint for per-endpoint tracking
 }
 
 func (drsc *DirectRPCSessionConnection) GetQoSManager() *qos.QoSManager {
@@ -197,7 +197,7 @@ type Endpoint struct {
 	Addons             map[string]struct{}
 	Extensions         map[string]struct{}
 	Geolocation        planstypes.Geolocation
-	mu sync.RWMutex // Protects Connections, ConnectionRefusals, and Enabled fields
+	mu                 sync.RWMutex // Protects Connections, ConnectionRefusals, and Enabled fields
 
 	// Per-endpoint sync tracking (for direct RPC QoS)
 	LatestBlock     atomic.Int64 // Latest block seen from this endpoint
@@ -577,7 +577,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 			if endpoint.NetworkAddress == networkAddress && endpoint.IsDirectRPC() {
 				if len(endpoint.DirectConnections) > 0 {
 					directConn = endpoint.DirectConnections[0]
-					selectedEndpoint = endpoint  // ✅ Store endpoint reference
+					selectedEndpoint = endpoint // ✅ Store endpoint reference
 					break
 				}
 			}
@@ -591,7 +591,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 			DirectConnection: directConn,
 			QoSManager:       qosManager,
 			EndpointAddress:  networkAddress,
-			Endpoint:         selectedEndpoint,  // ✅ Store for per-endpoint tracking
+			Endpoint:         selectedEndpoint, // ✅ Store for per-endpoint tracking
 		}
 	}
 	consumerSession := &SingleConsumerSession{

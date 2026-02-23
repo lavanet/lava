@@ -33,9 +33,9 @@ type RelayProcessor struct {
 	relayRetriesManager          *lavaprotocol.RelayRetriesManager
 	ResultsManager
 	RelayStateMachine
-	quorumMap                      map[[32]byte]int
-	currentQuorumEqualResults      int
-	statefulRelayTargets           []string // stores all providers that received a stateful relay
+	quorumMap                       map[[32]byte]int
+	currentQuorumEqualResults       int
+	statefulRelayTargets            []string // stores all providers that received a stateful relay
 	crossValidationQueriedProviders []string // stores all providers that were queried for cross-validation (even if response not received)
 }
 
@@ -74,20 +74,20 @@ func NewRelayProcessor(
 	}
 
 	relayProcessor := &RelayProcessor{
-		crossValidationParams:     crossValidationParams,
-		responses:                make(chan *RelayResponse, MaxCallsPerRelay), // buffered to prevent blocking
-		ResultsManager:           NewResultsManager(guid),
-		guid:                     guid,
-		consistency:              consistency,
-		debugRelay:               relayStateMachine.GetDebugState(),
-		metricsInf:               metricsInf,
+		crossValidationParams:        crossValidationParams,
+		responses:                    make(chan *RelayResponse, MaxCallsPerRelay), // buffered to prevent blocking
+		ResultsManager:               NewResultsManager(guid),
+		guid:                         guid,
+		consistency:                  consistency,
+		debugRelay:                   relayStateMachine.GetDebugState(),
+		metricsInf:                   metricsInf,
 		chainIdAndApiInterfaceGetter: chainIdAndApiInterfaceGetter,
-		relayRetriesManager:      relayRetriesManager,
-		RelayStateMachine:        relayStateMachine,
-		selection:                selection,
-		usedProviders:            relayStateMachine.GetUsedProviders(),
-		quorumMap:                make(map[[32]byte]int),
-		currentQuorumEqualResults: 0,
+		relayRetriesManager:          relayRetriesManager,
+		RelayStateMachine:            relayStateMachine,
+		selection:                    selection,
+		usedProviders:                relayStateMachine.GetUsedProviders(),
+		quorumMap:                    make(map[[32]byte]int),
+		currentQuorumEqualResults:    0,
 	}
 	relayProcessor.RelayStateMachine.SetResultsChecker(relayProcessor)
 	relayProcessor.RelayStateMachine.SetRelayRetriesManager(relayRetriesManager)
@@ -416,7 +416,7 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 					utils.LogAttr("resultsCount", resultsCount),
 					utils.LogAttr("nodeErrors", nodeErrors),
 					utils.LogAttr("specialNodeErrors", specialNodeErrors),
-				utils.LogAttr("currentQuorumEqualResults", rp.currentQuorumEqualResults),
+					utils.LogAttr("currentQuorumEqualResults", rp.currentQuorumEqualResults),
 				)
 			}
 			return !shouldRetry, nodeErrors

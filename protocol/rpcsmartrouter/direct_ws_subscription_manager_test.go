@@ -13,8 +13,8 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
-	rpcclient "github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	rpcInterfaceMessages "github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	rpcclient "github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/metrics"
@@ -243,6 +243,7 @@ func (m *mockWSProtocolMessage) IsDefaultApi() bool            { return false }
 func (m *mockWSProtocolMessage) UpdateEarliestAndValidateExtensionRules(extensionParser *extensionslib.ExtensionParser, earliestBlockHashRequested int64, addon string, seenBlock int64) bool {
 	return false
 }
+
 func (m *mockWSProtocolMessage) GetCrossValidationParameters() (common.CrossValidationParams, bool, error) {
 	return common.CrossValidationParams{}, false, nil
 }
@@ -260,8 +261,10 @@ func (m *mockWSGenericMessage) GetResult() json.RawMessage          { return nil
 func (m *mockWSGenericMessage) GetID() json.RawMessage              { return []byte("1") }
 
 // Package-level test metrics manager to avoid duplicate registration
-var testMetricsManager *metrics.ConsumerMetricsManager
-var testMetricsOnce sync.Once
+var (
+	testMetricsManager *metrics.ConsumerMetricsManager
+	testMetricsOnce    sync.Once
+)
 
 func getTestMetricsManager() *metrics.ConsumerMetricsManager {
 	testMetricsOnce.Do(func() {
@@ -1001,7 +1004,8 @@ func TestRouteMessageToClientsPerClientID(t *testing.T) {
 		var msg1 map[string]interface{}
 		err := json.Unmarshal(reply1.Data, &msg1)
 		require.NoError(t, err)
-		params1 := msg1["params"].(map[string]interface{})
+		params1, ok := msg1["params"].(map[string]interface{})
+		require.True(t, ok, "params should be a map")
 		assert.Equal(t, client1RouterID, params1["subscription"],
 			"Client 1 should receive message with their router ID")
 	default:
@@ -1014,7 +1018,8 @@ func TestRouteMessageToClientsPerClientID(t *testing.T) {
 		var msg2 map[string]interface{}
 		err := json.Unmarshal(reply2.Data, &msg2)
 		require.NoError(t, err)
-		params2 := msg2["params"].(map[string]interface{})
+		params2, ok := msg2["params"].(map[string]interface{})
+		require.True(t, ok, "params should be a map")
 		assert.Equal(t, client2RouterID, params2["subscription"],
 			"Client 2 should receive message with their router ID")
 	default:

@@ -19,8 +19,8 @@ func TestMapDirectRPCError_ConnectionRefused(t *testing.T) {
 	// Create a proper connection refused error by wrapping syscall.ECONNREFUSED in a net.OpError
 	// The isConnectionRefused function expects the Err field to be wrapped in another layer
 	innerErr := &net.OpError{
-		Op:  "dial",
-		Net: "tcp",
+		Op:   "dial",
+		Net:  "tcp",
 		Addr: &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 8080},
 		Err: &net.OpError{
 			Err: syscall.ECONNREFUSED,

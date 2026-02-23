@@ -33,7 +33,7 @@ type grpcActiveSubscription struct {
 	hashedParams         string // Hash of method + request params
 
 	// Client tracking - multiple clients can share ONE upstream stream
-	clientRouterIDs  map[string]string                                        // clientKey -> routerID
+	clientRouterIDs  map[string]string // clientKey -> routerID
 	connectedClients map[string]*common.SafeChannelSender[*pairingtypes.RelayReply]
 
 	// Request info for restoration

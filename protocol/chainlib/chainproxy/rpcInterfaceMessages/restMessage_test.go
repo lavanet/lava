@@ -553,14 +553,14 @@ func TestCheckResponseError_ServerErrors(t *testing.T) {
 		name          string
 		httpStatus    int
 		response      string
-		expectedError bool  // Should be node error?
+		expectedError bool // Should be node error?
 		errorCheck    func(t *testing.T, errorMessage string)
 	}{
 		{
 			name:          "503 Service Unavailable with JSON error",
 			httpStatus:    503,
 			response:      `{"error":"service temporarily unavailable"}`,
-			expectedError: true,  // Node error - triggers retry
+			expectedError: true, // Node error - triggers retry
 			errorCheck: func(t *testing.T, errorMessage string) {
 				require.Contains(t, errorMessage, "service temporarily unavailable")
 			},
@@ -569,7 +569,7 @@ func TestCheckResponseError_ServerErrors(t *testing.T) {
 			name:          "503 with plain text body",
 			httpStatus:    503,
 			response:      `Service Unavailable`,
-			expectedError: true,  // Node error even without JSON
+			expectedError: true, // Node error even without JSON
 			errorCheck: func(t *testing.T, errorMessage string) {
 				require.Contains(t, errorMessage, "Service Unavailable")
 			},
@@ -578,7 +578,7 @@ func TestCheckResponseError_ServerErrors(t *testing.T) {
 			name:          "500 Internal Server Error",
 			httpStatus:    500,
 			response:      `{"message":"internal server error"}`,
-			expectedError: true,  // Node error
+			expectedError: true, // Node error
 			errorCheck: func(t *testing.T, errorMessage string) {
 				require.Contains(t, errorMessage, "internal server error")
 			},
@@ -587,13 +587,13 @@ func TestCheckResponseError_ServerErrors(t *testing.T) {
 			name:          "502 Bad Gateway",
 			httpStatus:    502,
 			response:      `Bad Gateway`,
-			expectedError: true,  // Node error
+			expectedError: true, // Node error
 		},
 		{
 			name:          "429 Rate Limit Exceeded",
 			httpStatus:    429,
 			response:      `{"error":"rate limit exceeded"}`,
-			expectedError: true,  // Node error (triggers backoff/retry)
+			expectedError: true, // Node error (triggers backoff/retry)
 			errorCheck: func(t *testing.T, errorMessage string) {
 				require.Contains(t, errorMessage, "rate limit exceeded")
 			},
@@ -602,22 +602,22 @@ func TestCheckResponseError_ServerErrors(t *testing.T) {
 			name:          "429 with empty body",
 			httpStatus:    429,
 			response:      ``,
-			expectedError: true,  // Still node error
+			expectedError: true, // Still node error
 			errorCheck: func(t *testing.T, errorMessage string) {
-				require.Equal(t, "HTTP 429", errorMessage)  // Fallback to status
+				require.Equal(t, "HTTP 429", errorMessage) // Fallback to status
 			},
 		},
 		{
 			name:          "404 Not Found (client error)",
 			httpStatus:    404,
 			response:      `{"code":5,"message":"block not found"}`,
-			expectedError: false,  // NOT a node error - client error
+			expectedError: false, // NOT a node error - client error
 		},
 		{
 			name:          "400 Bad Request (client error)",
 			httpStatus:    400,
 			response:      `{"error":"invalid request"}`,
-			expectedError: false,  // NOT a node error
+			expectedError: false, // NOT a node error
 		},
 	}
 
@@ -629,7 +629,7 @@ func TestCheckResponseError_ServerErrors(t *testing.T) {
 
 			require.Equal(t, tc.expectedError, hasError,
 				"Expected node error=%v for HTTP %d", tc.expectedError, tc.httpStatus)
-			
+
 			if tc.errorCheck != nil {
 				tc.errorCheck(t, errorMessage)
 			}

@@ -38,7 +38,6 @@ import (
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
-	reflectionpbo "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 	"google.golang.org/grpc/status"
 )
 
@@ -407,7 +406,11 @@ func newGrpcChainProxy(ctx context.Context, averageBlockTime time.Duration, pars
 		conn.ReturnRpc(reflectionConnection)
 	}()
 
-	err = parser.(*GrpcChainParser).setupForProvider(reflectionConnection)
+	grpcParser, ok := parser.(*GrpcChainParser)
+	if !ok {
+		return nil, fmt.Errorf("grpc chain proxy: parser is not a GrpcChainParser")
+	}
+	err = grpcParser.setupForProvider(reflectionConnection)
 	if err != nil {
 		return nil, fmt.Errorf("grpc chain proxy: failed to setup parser: %w", err)
 	}
@@ -445,7 +448,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		ctx = metadata.NewOutgoingContext(ctx, md)
 	}
 
-	cl := grpcreflect.NewClient(ctx, reflectionpbo.NewServerReflectionClient(conn))
+	cl := grpcreflect.NewClientAuto(ctx, conn)
 	descriptorSource := rpcInterfaceMessages.DescriptorSourceFromServer(cl)
 	svc, methodName := rpcInterfaceMessages.ParseSymbol(nodeMessage.Path)
 

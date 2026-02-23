@@ -26,8 +26,8 @@ type WebsocketConfig struct {
 	MaxMessageSize int64 // Maximum message size in bytes (default: 1MB = 1048576)
 
 	// Timeouts
-	HandshakeTimeout         time.Duration // WebSocket handshake timeout (default: 10s)
-	WriteTimeout             time.Duration // Write timeout for sending messages (default: 10s)
+	HandshakeTimeout              time.Duration // WebSocket handshake timeout (default: 10s)
+	WriteTimeout                  time.Duration // Write timeout for sending messages (default: 10s)
 	SubscriptionFirstReplyTimeout time.Duration // Timeout for first subscription reply (default: 10s)
 
 	// Cleanup
@@ -60,8 +60,8 @@ func DefaultWebsocketConfig() *WebsocketConfig {
 		MaxMessageSize: 1048576, // 1 MB
 
 		// Timeouts
-		HandshakeTimeout:         10 * time.Second,
-		WriteTimeout:             10 * time.Second,
+		HandshakeTimeout:              10 * time.Second,
+		WriteTimeout:                  10 * time.Second,
 		SubscriptionFirstReplyTimeout: 10 * time.Second,
 
 		// Cleanup
@@ -81,10 +81,10 @@ type ClientRateLimiter struct {
 	// unsubscribeLimiters tracks unsubscription rate per client
 	unsubscribeLimiters map[string]*rate.Limiter
 
-	subscribeRate   rate.Limit // subscriptions per second
-	unsubscribeRate rate.Limit // unsubscribes per second
-	subscribeBurst  int        // max burst for subscriptions
-	unsubscribeBurst int       // max burst for unsubscribes
+	subscribeRate    rate.Limit // subscriptions per second
+	unsubscribeRate  rate.Limit // unsubscribes per second
+	subscribeBurst   int        // max burst for subscriptions
+	unsubscribeBurst int        // max burst for unsubscribes
 }
 
 // NewClientRateLimiter creates a new rate limiter based on config

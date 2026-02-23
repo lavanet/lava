@@ -45,23 +45,23 @@ const (
 
 // implements Relay Sender interfaced and uses an ChainListener to get it called
 type RPCSmartRouterServer struct {
-	chainParser                    chainlib.ChainParser
-	chainTracker                   chaintracker.IChainTracker
-	sessionManager                 *lavasession.ConsumerSessionManager
-	listenEndpoint                 *lavasession.RPCEndpoint
-	rpcSmartRouterLogs             *metrics.RPCConsumerLogs
-	cache                          *performance.Cache
-	smartRouterConsistency         relaycore.Consistency
-	consistencyConfig              *relaycore.ConsistencyValidationConfig // Configuration for consistency validation
-	sharedState                    bool // using the cache backend to sync the latest seen block
-	relaysMonitor                  *metrics.RelaysMonitor
-	debugRelays                    bool
-	chainListener                  chainlib.ChainListener
-	relayRetriesManager            *lavaprotocol.RelayRetriesManager
-	initialized                    atomic.Bool
-	latestBlockHeight              atomic.Uint64
-	latestBlockEstimator           *relaycore.LatestBlockEstimator
-	enableSelectionStats           bool // feature flag to enable selection stats header
+	chainParser            chainlib.ChainParser
+	chainTracker           chaintracker.IChainTracker
+	sessionManager         *lavasession.ConsumerSessionManager
+	listenEndpoint         *lavasession.RPCEndpoint
+	rpcSmartRouterLogs     *metrics.RPCConsumerLogs
+	cache                  *performance.Cache
+	smartRouterConsistency relaycore.Consistency
+	consistencyConfig      *relaycore.ConsistencyValidationConfig // Configuration for consistency validation
+	sharedState            bool                                   // using the cache backend to sync the latest seen block
+	relaysMonitor          *metrics.RelaysMonitor
+	debugRelays            bool
+	chainListener          chainlib.ChainListener
+	relayRetriesManager    *lavaprotocol.RelayRetriesManager
+	initialized            atomic.Bool
+	latestBlockHeight      atomic.Uint64
+	latestBlockEstimator   *relaycore.LatestBlockEstimator
+	enableSelectionStats   bool // feature flag to enable selection stats header
 
 	// Per-endpoint ChainTracker manager for continuous block polling
 	endpointChainTrackerManager *EndpointChainTrackerManager

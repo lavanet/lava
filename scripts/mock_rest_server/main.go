@@ -17,7 +17,7 @@ type Config struct {
 }
 
 var config = &Config{
-	status: 200,
+	status:   200,
 	response: `{"tx_response":{"height":"0","txhash":"B303F5540A6CDDD8CEECD3F7CEF1F3913440E9047E0403EE5614C15B177687F6","codespace":"sdk","code":32,"data":"","raw_log":"account sequence mismatch, expected 8, got 4: incorrect account sequence","logs":[],"info":"","gas_wanted":"0","gas_used":"0","tx":null,"timestamp":"","events":[]}}`,
 }
 
@@ -34,7 +34,7 @@ var validationResponses = map[string]string{
 // Handler for all requests
 func requestHandler(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
-	
+
 	// Check if this is a validation endpoint that needs a proper response
 	if validationResponse, isValidation := validationResponses[path]; isValidation {
 		log.Printf("📋 Validation Request: %s %s from %s -> returning mock validation response", r.Method, path, r.RemoteAddr)
@@ -62,11 +62,11 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 	config.mu.RUnlock()
 
 	log.Printf("⚠️  API Request: %s %s from %s -> returning configured response (node error)", r.Method, path, r.RemoteAddr)
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	w.Write([]byte(response))
-	
+
 	log.Printf("Response: status=%d", status)
 }
 
@@ -78,9 +78,9 @@ func controlHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := r.URL.Query()
-	
+
 	config.mu.Lock()
-	
+
 	if statusStr := query.Get("status"); statusStr != "" {
 		var status int
 		fmt.Sscanf(statusStr, "%d", &status)
@@ -89,12 +89,12 @@ func controlHandler(w http.ResponseWriter, r *http.Request) {
 			log.Printf("Control: status set to %d", status)
 		}
 	}
-	
+
 	if response := query.Get("response"); response != "" {
 		config.response = response
 		log.Printf("Control: response set to: %s", response)
 	}
-	
+
 	if responseType := query.Get("type"); responseType != "" {
 		switch responseType {
 		case "sequence_error":
@@ -108,13 +108,13 @@ func controlHandler(w http.ResponseWriter, r *http.Request) {
 			log.Println("Control: response set to insufficient_fee")
 		}
 	}
-	
+
 	currentConfig := map[string]interface{}{
 		"status":   config.status,
 		"response": config.response,
 	}
 	config.mu.Unlock()
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(currentConfig)
 }
@@ -135,7 +135,7 @@ func main() {
 	log.Printf("  - Change to error:   curl 'http://localhost:%d/control?type=sequence_error'", *port)
 	log.Printf("  - HTTP 500:          curl 'http://localhost:%d/control?status=500'", *port)
 	log.Printf("  - Reset to 200:      curl 'http://localhost:%d/control?status=200'", *port)
-	
+
 	if err := http.ListenAndServe(addr, nil); err != nil {
 		log.Fatal(err)
 	}

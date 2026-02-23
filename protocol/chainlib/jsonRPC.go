@@ -390,19 +390,19 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		defer utils.LavaFormatDebug("jsonrpc websocket closed", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
 
 		consumerWebsocketManager := NewConsumerWebsocketManager(ConsumerWebsocketManagerOptions{
-			WebsocketConn:           websocketConn,
-			RpcConsumerLogs:         apil.logger,
-			RefererMatchString:      refererMatchString,
-			CmdFlags:                cmdFlags,
-			RelayMsgLogMaxChars:     relayMsgLogMaxChars,
-			ChainID:                 chainID,
-			ApiInterface:            apiInterface,
-			ConnectionType:          fiber.MethodPost, // We use it for the ParseMsg method, which needs to know the connection type to find the method in the spec
-			RefererData:             apil.refererData,
-			RelaySender:             apil.relaySender,
-			WsSubscriptionManager:   apil.wsSubscriptionManager,
-			WebsocketConnectionUID:  strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10),
-			headerRateLimit:         uint64(rateLimit),
+			WebsocketConn:          websocketConn,
+			RpcConsumerLogs:        apil.logger,
+			RefererMatchString:     refererMatchString,
+			CmdFlags:               cmdFlags,
+			RelayMsgLogMaxChars:    relayMsgLogMaxChars,
+			ChainID:                chainID,
+			ApiInterface:           apiInterface,
+			ConnectionType:         fiber.MethodPost, // We use it for the ParseMsg method, which needs to know the connection type to find the method in the spec
+			RefererData:            apil.refererData,
+			RelaySender:            apil.relaySender,
+			WsSubscriptionManager:  apil.wsSubscriptionManager,
+			WebsocketConnectionUID: strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10),
+			headerRateLimit:        uint64(rateLimit),
 		})
 
 		consumerWebsocketManager.ListenToMessages()
