@@ -49,6 +49,8 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 	registry.RegisterImplementations(
 		(*v1beta1.Content)(nil),
 		&UnstakeProposal{},
+		&JailProposal{},
+		&UnjailProposal{},
 	)
 }
 

@@ -56,6 +56,116 @@ func GetTxCmd() *cobra.Command {
 	return cmd
 }
 
+// NewSubmitJailProposalTxCmd returns a CLI command handler for creating a jail proposal governance transaction.
+//
+// JSON file format:
+//
+//	{
+//	  "proposal": {
+//	    "title": "Jail provider X",
+//	    "description": "Jailing provider X for cross-chain block height poisoning",
+//	    "providers_info": [
+//	      { "provider": "lava@1abc...", "chain_id": "LAVA", "reason": "cross-chain block height poisoning", "jail_end_time": 0 }
+//	    ]
+//	  },
+//	  "deposit": "10000000ulava"
+//	}
+//
+// Set jail_end_time to 0 for a permanent jail, or a Unix timestamp (seconds) for a time-bounded jail.
+func NewSubmitJailProposalTxCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "jail proposal-file",
+		Args:  cobra.ExactArgs(1),
+		Short: "Submit a provider jail proposal",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Submit a provider jail proposal via a JSON file.
+Example:
+$ %s tx gov pairing-proposal jail <path/to/proposal.json> --from=<key_or_address>
+`, version.AppName),
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			proposal, err := utils.ParseJailProposalJSON(clientCtx.LegacyAmino, args[0])
+			if err != nil {
+				return err
+			}
+
+			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
+			if err != nil {
+				return err
+			}
+
+			from := clientCtx.GetFromAddress()
+			content := &proposal.Proposal
+
+			msg, err := v1beta1.NewMsgSubmitProposal(content, deposit, from)
+			if err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+}
+
+// NewSubmitUnjailProposalTxCmd returns a CLI command handler for creating an unjail proposal governance transaction.
+//
+// JSON file format:
+//
+//	{
+//	  "proposal": {
+//	    "title": "Unjail provider X",
+//	    "description": "Unjailing provider X after issue is resolved",
+//	    "providers_info": [
+//	      { "provider": "lava@1abc...", "chain_id": "LAVA", "reason": "issue resolved" }
+//	    ]
+//	  },
+//	  "deposit": "10000000ulava"
+//	}
+func NewSubmitUnjailProposalTxCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "unjail proposal-file",
+		Args:  cobra.ExactArgs(1),
+		Short: "Submit a provider unjail proposal",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`Submit a provider unjail proposal via a JSON file.
+Example:
+$ %s tx gov pairing-proposal unjail <path/to/proposal.json> --from=<key_or_address>
+`, version.AppName),
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			proposal, err := utils.ParseUnjailProposalJSON(clientCtx.LegacyAmino, args[0])
+			if err != nil {
+				return err
+			}
+
+			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
+			if err != nil {
+				return err
+			}
+
+			from := clientCtx.GetFromAddress()
+			content := &proposal.Proposal
+
+			msg, err := v1beta1.NewMsgSubmitProposal(content, deposit, from)
+			if err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+		},
+	}
+}
+
 // NewSubmitUnstakeProposalTxCmd returns a CLI command handler for creating
 // an unstake proposal governance transaction.
 func NewSubmitUnstakeProposalTxCmd() *cobra.Command {

@@ -5,4 +5,8 @@ import (
 	"github.com/lavanet/lava/v5/x/pairing/client/cli"
 )
 
-var PairingUnstakeProposal = govclient.NewProposalHandler(cli.NewSubmitUnstakeProposalTxCmd)
+var (
+	PairingUnstakeProposal = govclient.NewProposalHandler(cli.NewSubmitUnstakeProposalTxCmd)
+	PairingJailProposal    = govclient.NewProposalHandler(cli.NewSubmitJailProposalTxCmd)
+	PairingUnjailProposal  = govclient.NewProposalHandler(cli.NewSubmitUnjailProposalTxCmd)
+)

@@ -20,6 +20,44 @@ func (k msgServer) FreezeProvider(goCtx context.Context, msg *types.MsgFreezePro
 	return &types.MsgFreezeProviderResponse{}, err
 }
 
+// JailProviderForProposal freezes the provider and sets JailEndTime via governance proposal.
+// jailEndTime = 0 is treated by the caller as permanent (math.MaxInt64).
+func (k Keeper) JailProviderForProposal(ctx sdk.Context, provider string, chainID string, jailEndTime int64) error {
+	stakeEntry, found := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chainID, provider)
+	if !found {
+		return utils.LavaFormatWarning("JailProviderForProposal_cant_get_stake_entry", types.FreezeStakeEntryNotFoundError,
+			utils.Attribute{Key: "chainID", Value: chainID},
+			utils.Attribute{Key: "providerAddress", Value: provider},
+		)
+	}
+
+	stakeEntry.Freeze()
+	stakeEntry.JailEndTime = jailEndTime
+	stakeEntry.Jails++
+
+	k.epochStorageKeeper.SetStakeEntryCurrent(ctx, stakeEntry)
+	return nil
+}
+
+// UnjailProviderForProposal resets JailEndTime and Jails, then unfreezes the provider via governance proposal.
+func (k Keeper) UnjailProviderForProposal(ctx sdk.Context, provider string, chainID string) error {
+	stakeEntry, found := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chainID, provider)
+	if !found {
+		return utils.LavaFormatWarning("UnjailProviderForProposal_cant_get_stake_entry", types.FreezeStakeEntryNotFoundError,
+			utils.Attribute{Key: "chainID", Value: chainID},
+			utils.Attribute{Key: "providerAddress", Value: provider},
+		)
+	}
+
+	unfreezeBlock := k.epochStorageKeeper.GetCurrentNextEpoch(ctx) + 1
+	stakeEntry.JailEndTime = 0
+	stakeEntry.Jails = 0
+	stakeEntry.UnFreeze(unfreezeBlock)
+
+	k.epochStorageKeeper.SetStakeEntryCurrent(ctx, stakeEntry)
+	return nil
+}
+
 func (k Keeper) FreezeProvider(ctx sdk.Context, provider string, chainIDs []string, reason string) error {
 	if !utils.IsBech32Address(provider) {
 		return utils.LavaFormatWarning("Freeze_get_provider_address", fmt.Errorf("invalid address"),

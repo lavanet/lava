@@ -2,6 +2,7 @@ package pairing
 
 import (
 	"log"
+	"math"
 	"strings"
 
 	sdkerrors "cosmossdk.io/errors"
@@ -19,9 +20,13 @@ func NewPairingProposalsHandler(k keeper.Keeper) v1beta1.Handler {
 		switch c := content.(type) {
 		case *types.UnstakeProposal:
 			return handleUnstakeProposal(ctx, k, c)
+		case *types.JailProposal:
+			return handleJailProposal(ctx, k, c)
+		case *types.UnjailProposal:
+			return handleUnjailProposal(ctx, k, c)
 		default:
-			log.Println("unrecognized plans proposal content")
-			return sdkerrors.Wrapf(legacyerrors.ErrUnknownRequest, "unrecognized plans proposal content type: %T", c)
+			log.Println("unrecognized pairing proposal content")
+			return sdkerrors.Wrapf(legacyerrors.ErrUnknownRequest, "unrecognized pairing proposal content type: %T", c)
 		}
 	}
 }
@@ -80,6 +85,74 @@ func handleUnstakeProposal(ctx sdk.Context, k keeper.Keeper, p *types.UnstakePro
 	details["delegators_failed_slaghing"] = strings.Join(delegatorsFailedSlashing, ";")
 
 	utils.LogLavaEvent(ctx, k.Logger(ctx), types.UnstakeProposalEventName, details, "Unstake gov proposal performed")
+
+	return nil
+}
+
+func handleJailProposal(ctx sdk.Context, k keeper.Keeper, p *types.JailProposal) error {
+	const permanentJailEndTime = int64(math.MaxInt64)
+
+	details := map[string]string{}
+	var jailed, notFound []string
+
+	for _, info := range p.ProvidersInfo {
+		chainIDs := []string{info.ChainId}
+		if info.ChainId == "*" {
+			chainIDs = k.GetAllChainIDs(ctx)
+		}
+
+		jailEndTime := info.JailEndTime
+		if jailEndTime == 0 {
+			jailEndTime = permanentJailEndTime
+		}
+
+		for _, chainID := range chainIDs {
+			if err := k.JailProviderForProposal(ctx, info.Provider, chainID, jailEndTime); err != nil {
+				notFound = append(notFound, strings.Join([]string{info.Provider, chainID, err.Error()}, ","))
+				continue
+			}
+			jailed = append(jailed, strings.Join([]string{info.Provider, chainID}, ","))
+		}
+	}
+
+	details["jailed"]    = strings.Join(jailed, ";")
+	details["not_found"] = strings.Join(notFound, ";")
+	details["reason"]    = func() string {
+		reasons := make([]string, 0, len(p.ProvidersInfo))
+		for _, info := range p.ProvidersInfo {
+			reasons = append(reasons, info.Reason)
+		}
+		return strings.Join(reasons, ";")
+	}()
+
+	utils.LogLavaEvent(ctx, k.Logger(ctx), types.JailProposalEventName, details, "Jail provider gov proposal performed")
+
+	return nil
+}
+
+func handleUnjailProposal(ctx sdk.Context, k keeper.Keeper, p *types.UnjailProposal) error {
+	details := map[string]string{}
+	var unjailed, notFound []string
+
+	for _, info := range p.ProvidersInfo {
+		chainIDs := []string{info.ChainId}
+		if info.ChainId == "*" {
+			chainIDs = k.GetAllChainIDs(ctx)
+		}
+
+		for _, chainID := range chainIDs {
+			if err := k.UnjailProviderForProposal(ctx, info.Provider, chainID); err != nil {
+				notFound = append(notFound, strings.Join([]string{info.Provider, chainID, err.Error()}, ","))
+				continue
+			}
+			unjailed = append(unjailed, strings.Join([]string{info.Provider, chainID}, ","))
+		}
+	}
+
+	details["unjailed"]  = strings.Join(unjailed, ";")
+	details["not_found"] = strings.Join(notFound, ";")
+
+	utils.LogLavaEvent(ctx, k.Logger(ctx), types.UnjailProposalEventName, details, "Unjail provider gov proposal performed")
 
 	return nil
 }

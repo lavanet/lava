@@ -193,6 +193,8 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 		plansmoduleclient.PlansAddProposalHandler,
 		plansmoduleclient.PlansDelProposalHandler,
 		pairingmoduleclient.PairingUnstakeProposal,
+		pairingmoduleclient.PairingJailProposal,
+		pairingmoduleclient.PairingUnjailProposal,
 		rewardsmoduleclient.SetIprpcDataProposalHandler,
 		protocolmoduleclient.SetProtocolVersionProposalHandler,
 		// this line is used by starport scaffolding # stargate/app/govProposalHandler

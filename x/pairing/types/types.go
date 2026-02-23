@@ -12,6 +12,13 @@ const (
 	LatestBlocksReportEventName      = "provider_latest_block_report"
 	RejectedCuEventName              = "rejected_cu"
 	UnstakeProposalEventName         = "unstake_gov_proposal"
+	JailProposalEventName   = "jail_provider_gov_proposal"
+	UnjailProposalEventName = "unjail_provider_gov_proposal"
+)
+
+const (
+	ProposalTypeJail   = "JailProvider"
+	ProposalTypeUnjail = "UnjailProvider"
 )
 
 // unstake description strings
