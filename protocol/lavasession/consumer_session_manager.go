@@ -97,7 +97,9 @@ func (csm *ConsumerSessionManager) GetNumberOfValidProviders() int {
 }
 
 // IsStaticProvider returns true when the given provider address belongs to a
-// static provider in the current pairing (including backup providers).
+// static provider in the current pairing (including backup providers and
+// purged providers that may still be serving active subscriptions across an
+// epoch boundary).
 //
 // This is used by higher-level flows (e.g. WS subscriptions) to decide whether
 // to skip reply signature verification, matching the behavior of regular RPC
@@ -117,6 +119,15 @@ func (csm *ConsumerSessionManager) IsStaticProvider(providerAddr string) bool {
 	}
 
 	if cswp, ok := csm.backupProviders[providerAddr]; ok && cswp != nil {
+		cswp.Lock.RLock()
+		defer cswp.Lock.RUnlock()
+		return cswp.StaticProvider
+	}
+
+	// pairingPurge holds providers from the previous epoch that may still be
+	// actively serving subscriptions. Check it so static providers are not
+	// misclassified after an epoch handover.
+	if cswp, ok := csm.pairingPurge[providerAddr]; ok && cswp != nil {
 		cswp.Lock.RLock()
 		defer cswp.Lock.RUnlock()
 		return cswp.StaticProvider
