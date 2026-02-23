@@ -326,6 +326,7 @@ func (m *mockChainMessage) UpdateEarliestInMessage(incomingEarliest int64) bool 
 func (m *mockChainMessage) SetExtension(extension *spectypes.Extension)         {}
 func (m *mockChainMessage) GetUsedDefaultValue() bool                           { return false }
 func (m *mockChainMessage) GetParseDirective() *spectypes.ParseDirective        { return nil }
+func (m *mockChainMessage) IsBatch() bool                                       { return false }
 
 type mockGenericMessage struct {
 	data []byte

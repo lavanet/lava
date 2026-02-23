@@ -59,7 +59,6 @@ import (
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
 	scoreutils "github.com/lavanet/lava/v5/utils/score"
-	"github.com/lavanet/lava/v5/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/v5/x/plans/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
@@ -1245,8 +1244,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				backupProvidersList:      backupDirectRPCEndpoints,
 				geoLocation:              geolocation,
 				clientCtx:                clientCtx,
-				privKey:                  privKey,
-				lavaChainID:              lavaChainID,
 				weightedSelectorConfig:   weightedSelectorConfig,
 			})
 

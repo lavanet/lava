@@ -133,7 +133,7 @@ type DirectWSSubscriptionManager struct {
 // This allows using ProviderOptimizer or a simple round-robin fallback
 type WebSocketEndpointOptimizer interface {
 	// ChooseProvider selects the best endpoint(s) from available addresses
-	ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int)
+	ChooseProvider(ctx context.Context, allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string)
 	// AppendRelayData updates metrics after successful relay
 	AppendRelayData(provider string, latency time.Duration, cu, syncBlock uint64)
 	// AppendRelayFailure updates metrics after failed relay
@@ -293,7 +293,7 @@ func (dwsm *DirectWSSubscriptionManager) performCleanup() {
 //  1. Sticky session (if client already has affinity to an endpoint)
 //  2. Optimizer-based selection (QoS, latency, etc.)
 //  3. First available endpoint (fallback)
-func (dwsm *DirectWSSubscriptionManager) selectEndpoint(clientKey string, ignoredEndpoints map[string]struct{}) (*common.NodeUrl, error) {
+func (dwsm *DirectWSSubscriptionManager) selectEndpoint(ctx context.Context, clientKey string, ignoredEndpoints map[string]struct{}) (*common.NodeUrl, error) {
 	if len(dwsm.wsEndpoints) == 0 {
 		return nil, fmt.Errorf("no WebSocket endpoints configured")
 	}
@@ -348,7 +348,7 @@ func (dwsm *DirectWSSubscriptionManager) selectEndpoint(clientKey string, ignore
 	}
 
 	// cu=1 and requestedBlock=LATEST_BLOCK are sensible defaults for subscriptions
-	selectedURLs, tier := dwsm.optimizer.ChooseProvider(allURLs, ignoredEndpoints, 1, -2) // -2 = LATEST_BLOCK
+	selectedURLs := dwsm.optimizer.ChooseProvider(ctx, allURLs, ignoredEndpoints, 1, -2) // -2 = LATEST_BLOCK
 
 	if len(selectedURLs) == 0 {
 		// Optimizer returned nothing, fall back to first non-ignored
@@ -371,7 +371,6 @@ func (dwsm *DirectWSSubscriptionManager) selectEndpoint(clientKey string, ignore
 
 	utils.LavaFormatDebug("DirectWS: selected endpoint via optimizer",
 		utils.LogAttr("endpoint", sanitizeEndpointURL(selectedURL)),
-		utils.LogAttr("tier", tier),
 		utils.LogAttr("totalEndpoints", len(dwsm.wsEndpoints)),
 	)
 
@@ -531,7 +530,7 @@ func (dwsm *DirectWSSubscriptionManager) StartSubscription(
 	// No active subscription found, create new one
 	// Select best endpoint using sticky session, optimizer, or first available
 	startTime := time.Now()
-	selectedEndpoint, err := dwsm.selectEndpoint(clientKey, nil)
+	selectedEndpoint, err := dwsm.selectEndpoint(ctx, clientKey, nil)
 	if err != nil {
 		dwsm.failPendingSubscription(hashedParams)
 		go dwsm.metricsManager.SetFailedWsSubscriptionRequestMetric(dwsm.chainID, dwsm.apiInterface)

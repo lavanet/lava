@@ -229,6 +229,7 @@ func (m *mockWSProtocolMessage) UpdateEarliestInMessage(incomingEarliest int64) 
 func (m *mockWSProtocolMessage) SetExtension(extension *spectypes.Extension)         {}
 func (m *mockWSProtocolMessage) GetUsedDefaultValue() bool                           { return false }
 func (m *mockWSProtocolMessage) GetParseDirective() *spectypes.ParseDirective        { return nil }
+func (m *mockWSProtocolMessage) IsBatch() bool                                       { return false }
 func (m *mockWSProtocolMessage) CheckResponseError(data []byte, httpStatusCode int) (bool, string) {
 	return false, ""
 }
@@ -242,8 +243,8 @@ func (m *mockWSProtocolMessage) IsDefaultApi() bool            { return false }
 func (m *mockWSProtocolMessage) UpdateEarliestAndValidateExtensionRules(extensionParser *extensionslib.ExtensionParser, earliestBlockHashRequested int64, addon string, seenBlock int64) bool {
 	return false
 }
-func (m *mockWSProtocolMessage) GetQuorumParameters() (common.QuorumParams, error) {
-	return common.QuorumParams{}, nil
+func (m *mockWSProtocolMessage) GetCrossValidationParameters() (common.CrossValidationParams, bool, error) {
+	return common.CrossValidationParams{}, false, nil
 }
 
 type mockWSGenericMessage struct {
