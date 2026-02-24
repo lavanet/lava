@@ -675,46 +675,46 @@ func (ws *WeightedSelector) SelectProviderWithStats(
 	for _, ps := range providerScores {
 		cumulativeScore += ps.SelectionWeight
 		if randomValue <= cumulativeScore {
-			// Calculate selection probability for each provider
-			selectionProbabilities := make(map[string]float64)
-			for _, p := range providerScores {
-				selectionProbabilities[p.Address] = (p.SelectionWeight / totalScore) * 100.0
-			}
-
-			// Log comprehensive selection summary
-			logAttrs := []utils.Attribute{
-				utils.LogAttr("GUID", ctx),
-				utils.LogAttr("selected_provider", ps.Address),
-				utils.LogAttr("selected_score", ps.SelectionWeight),
-				utils.LogAttr("selected_probability_pct", selectionProbabilities[ps.Address]),
-				utils.LogAttr("total_score", totalScore),
-				utils.LogAttr("random_value", randomValue),
-				utils.LogAttr("num_candidates", len(providerScores)),
-			}
-
-			// Add all candidates' scores and probabilities with parameter breakdown
-			for i, p := range providerScores {
-				prefix := fmt.Sprintf("candidate_%d", i+1)
-				logAttrs = append(logAttrs,
-					utils.LogAttr(prefix+"_provider", p.Address),
-					utils.LogAttr(prefix+"_score", p.SelectionWeight),
-					utils.LogAttr(prefix+"_probability_pct", selectionProbabilities[p.Address]),
-				)
-
-				// Add parameter breakdown if available
-				if i < len(scoreDetails) {
-					detail := scoreDetails[i]
-					logAttrs = append(logAttrs,
-						utils.LogAttr(prefix+"_availability", detail.Availability),
-						utils.LogAttr(prefix+"_latency", detail.Latency),
-						utils.LogAttr(prefix+"_sync", detail.Sync),
-						utils.LogAttr(prefix+"_stake", detail.Stake),
-						utils.LogAttr(prefix+"_composite", detail.Composite),
-					)
+			// Build per-candidate log payload only when debug logging is active
+			// to avoid allocations on every selection in production.
+			if utils.IsDebugEnabled() {
+				selectionProbabilities := make(map[string]float64)
+				for _, p := range providerScores {
+					selectionProbabilities[p.Address] = (p.SelectionWeight / totalScore) * 100.0
 				}
-			}
 
-			utils.LavaFormatDebug("Provider selection completed", logAttrs...)
+				logAttrs := []utils.Attribute{
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("selected_provider", ps.Address),
+					utils.LogAttr("selected_score", ps.SelectionWeight),
+					utils.LogAttr("selected_probability_pct", selectionProbabilities[ps.Address]),
+					utils.LogAttr("total_score", totalScore),
+					utils.LogAttr("random_value", randomValue),
+					utils.LogAttr("num_candidates", len(providerScores)),
+				}
+
+				for i, p := range providerScores {
+					prefix := fmt.Sprintf("candidate_%d", i+1)
+					logAttrs = append(logAttrs,
+						utils.LogAttr(prefix+"_provider", p.Address),
+						utils.LogAttr(prefix+"_score", p.SelectionWeight),
+						utils.LogAttr(prefix+"_probability_pct", selectionProbabilities[p.Address]),
+					)
+
+					if i < len(scoreDetails) {
+						detail := scoreDetails[i]
+						logAttrs = append(logAttrs,
+							utils.LogAttr(prefix+"_availability", detail.Availability),
+							utils.LogAttr(prefix+"_latency", detail.Latency),
+							utils.LogAttr(prefix+"_sync", detail.Sync),
+							utils.LogAttr(prefix+"_stake", detail.Stake),
+							utils.LogAttr(prefix+"_composite", detail.Composite),
+						)
+					}
+				}
+
+				utils.LavaFormatDebug("Provider selection completed", logAttrs...)
+			}
 
 			stats := &SelectionStats{
 				ProviderScores:   scoreDetails,

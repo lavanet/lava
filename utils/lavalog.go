@@ -145,6 +145,13 @@ func SetLogLevelFieldName(fieldName string) {
 	zerolog.LevelFieldName = fieldName
 }
 
+// IsDebugEnabled reports whether debug-level logging is currently active.
+// Use this to guard expensive pre-call computations that are only needed when
+// a debug log will actually be emitted.
+func IsDebugEnabled() bool {
+	return defaultGlobalLogLevel <= zerolog.DebugLevel
+}
+
 func RollingLoggerSetup(rollingLogLevel string, filePath string, maxSize string, maxBackups string, maxAge string, stdFormat string) func() {
 	maxSizeNumber, err := strconv.Atoi(maxSize)
 	if err != nil {
