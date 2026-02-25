@@ -2274,3 +2274,253 @@ func TestCrossValidationRequiresNonNilParams(t *testing.T) {
 	)
 	require.NotNil(t, statelessProcessor)
 }
+
+func TestHasRequiredNodeResults_RelayRetryLimit(t *testing.T) {
+	tests := []struct {
+		name               string
+		retryLimit         int
+		nodeErrorsToSend   int
+		expectedDone       bool // true = stop retrying, false = keep retrying
+		expectedNodeErrors int
+	}{
+		{
+			name:               "under limit - keep retrying",
+			retryLimit:         3,
+			nodeErrorsToSend:   2,
+			expectedDone:       false,
+			expectedNodeErrors: 2,
+		},
+		{
+			name:               "over limit - stop retrying",
+			retryLimit:         2,
+			nodeErrorsToSend:   3,
+			expectedDone:       true,
+			expectedNodeErrors: 3,
+		},
+		{
+			name:               "disabled (0) - stop immediately",
+			retryLimit:         0,
+			nodeErrorsToSend:   1,
+			expectedDone:       true,
+			expectedNodeErrors: 1,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Save and restore global
+			originalValue := RelayRetryLimit
+			RelayRetryLimit = tc.retryLimit
+			defer func() {
+				RelayRetryLimit = originalValue
+			}()
+
+			ctx := context.Background()
+			serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			})
+			specId := "LAV1"
+			chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+			if closeServer != nil {
+				defer closeServer()
+			}
+			require.NoError(t, err)
+			chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			require.NoError(t, err)
+			protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
+			usedProviders := lavasession.NewUsedProviders(nil)
+			relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless))
+
+			// Send node errors one at a time, each in its own batch
+			for i := 0; i < tc.nodeErrorsToSend; i++ {
+				provider := fmt.Sprintf("lava@test%d", i)
+				ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
+				canUse := usedProviders.TryLockSelection(ctx)
+				require.NoError(t, ctx.Err())
+				require.Nil(t, canUse)
+				cancel()
+				consumerSessionsMap := lavasession.ConsumerSessionsMap{provider: &lavasession.SessionInfo{}}
+				usedProviders.AddUsed(consumerSessionsMap, nil)
+
+				go SendNodeError(relayProcessor, provider, 0)
+				ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*100)
+				err = relayProcessor.WaitForResults(ctx)
+				cancel()
+				require.NoError(t, err)
+			}
+
+			done, nodeErrors := relayProcessor.HasRequiredNodeResults(tc.nodeErrorsToSend)
+			require.Equal(t, tc.expectedDone, done, "HasRequiredNodeResults done mismatch")
+			require.Equal(t, tc.expectedNodeErrors, nodeErrors, "nodeErrors count mismatch")
+		})
+	}
+}
+
+func TestHasRequiredNodeResults_RelayRetryLimitProtocolError(t *testing.T) {
+	tests := []struct {
+		name                 string
+		retryLimit           int
+		protocolErrorsToSend int
+		expectedDone         bool // true = stop retrying, false = keep retrying
+		expectedNodeErrors   int
+	}{
+		{
+			name:                 "under limit - keep retrying",
+			retryLimit:           3,
+			protocolErrorsToSend: 2,
+			expectedDone:         false,
+			expectedNodeErrors:   0,
+		},
+		{
+			name:                 "over limit - stop retrying",
+			retryLimit:           2,
+			protocolErrorsToSend: 3,
+			expectedDone:         true,
+			expectedNodeErrors:   0,
+		},
+		{
+			name:                 "disabled (0) - stop immediately",
+			retryLimit:           0,
+			protocolErrorsToSend: 1,
+			expectedDone:         true,
+			expectedNodeErrors:   0,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			originalValue := RelayRetryLimit
+			RelayRetryLimit = tc.retryLimit
+			defer func() {
+				RelayRetryLimit = originalValue
+			}()
+
+			ctx := context.Background()
+			serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			})
+			specId := "LAV1"
+			chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+			if closeServer != nil {
+				defer closeServer()
+			}
+			require.NoError(t, err)
+			chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			require.NoError(t, err)
+			protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
+			usedProviders := lavasession.NewUsedProviders(nil)
+			relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless))
+
+			// Send protocol errors one at a time, each in its own batch
+			for i := 0; i < tc.protocolErrorsToSend; i++ {
+				provider := fmt.Sprintf("lava@test%d", i)
+				ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
+				canUse := usedProviders.TryLockSelection(ctx)
+				require.NoError(t, ctx.Err())
+				require.Nil(t, canUse)
+				cancel()
+				consumerSessionsMap := lavasession.ConsumerSessionsMap{provider: &lavasession.SessionInfo{}}
+				usedProviders.AddUsed(consumerSessionsMap, nil)
+
+				go SendProtocolError(relayProcessor, provider, 0, fmt.Errorf("protocol error %d", i))
+				ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*100)
+				err = relayProcessor.WaitForResults(ctx)
+				cancel()
+				require.NoError(t, err)
+			}
+
+			done, nodeErrors := relayProcessor.HasRequiredNodeResults(tc.protocolErrorsToSend)
+			require.Equal(t, tc.expectedDone, done, "HasRequiredNodeResults done mismatch")
+			require.Equal(t, tc.expectedNodeErrors, nodeErrors, "nodeErrors count mismatch")
+		})
+	}
+}
+
+func TestHasRequiredNodeResults_RelayRetryLimitMixed(t *testing.T) {
+	tests := []struct {
+		name                 string
+		relayRetryLimit      int
+		nodeErrorsToSend     int
+		protocolErrorsToSend int
+		expectedDone         bool // true = stop retrying, false = keep retrying
+		expectedNodeErrors   int
+	}{
+		{
+			name:                 "total within limit - keep retrying",
+			relayRetryLimit:      5,
+			nodeErrorsToSend:     2,
+			protocolErrorsToSend: 2,
+			expectedDone:         false,
+			expectedNodeErrors:   2,
+		},
+		{
+			name:                 "total exceeds limit - stop retrying",
+			relayRetryLimit:      3,
+			nodeErrorsToSend:     2,
+			protocolErrorsToSend: 2,
+			expectedDone:         true,
+			expectedNodeErrors:   2,
+		},
+		{
+			name:                 "total at exact limit - keep retrying",
+			relayRetryLimit:      4,
+			nodeErrorsToSend:     2,
+			protocolErrorsToSend: 2,
+			expectedDone:         false,
+			expectedNodeErrors:   2,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			originalValue := RelayRetryLimit
+			RelayRetryLimit = tc.relayRetryLimit
+			defer func() {
+				RelayRetryLimit = originalValue
+			}()
+
+			ctx := context.Background()
+			serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			})
+			specId := "LAV1"
+			chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+			if closeServer != nil {
+				defer closeServer()
+			}
+			require.NoError(t, err)
+			chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			require.NoError(t, err)
+			protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
+			usedProviders := lavasession.NewUsedProviders(nil)
+			relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless))
+
+			totalErrors := tc.nodeErrorsToSend + tc.protocolErrorsToSend
+			// Send node errors first, then protocol errors
+			for i := 0; i < totalErrors; i++ {
+				provider := fmt.Sprintf("lava@test%d", i)
+				ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
+				canUse := usedProviders.TryLockSelection(ctx)
+				require.NoError(t, ctx.Err())
+				require.Nil(t, canUse)
+				cancel()
+				consumerSessionsMap := lavasession.ConsumerSessionsMap{provider: &lavasession.SessionInfo{}}
+				usedProviders.AddUsed(consumerSessionsMap, nil)
+
+				if i < tc.nodeErrorsToSend {
+					go SendNodeError(relayProcessor, provider, 0)
+				} else {
+					go SendProtocolError(relayProcessor, provider, 0, fmt.Errorf("protocol error %d", i))
+				}
+				ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*100)
+				err = relayProcessor.WaitForResults(ctx)
+				cancel()
+				require.NoError(t, err)
+			}
+
+			done, nodeErrors := relayProcessor.HasRequiredNodeResults(totalErrors)
+			require.Equal(t, tc.expectedDone, done, "HasRequiredNodeResults done mismatch")
+			require.Equal(t, tc.expectedNodeErrors, nodeErrors, "nodeErrors count mismatch")
+		})
+	}
+}

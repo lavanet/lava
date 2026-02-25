@@ -1052,7 +1052,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().String(common.GitHubTokenFlag, "", "GitHub personal access token for accessing private repositories and higher API rate limits (5,000 requests/hour vs 60 for unauthenticated)")
 	cmdRPCSmartRouter.Flags().String(common.GitLabTokenFlag, "", "GitLab personal access token for accessing private repositories (supports gitlab.com and self-hosted instances)")
 	cmdRPCSmartRouter.Flags().Duration(common.EpochDurationFlag, 0, "duration of each epoch for time-based epoch system (e.g., 30m, 1h). If not set, epochs are disabled")
-	cmdRPCSmartRouter.Flags().IntVar(&relaycore.RelayCountOnNodeError, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
+	cmdRPCSmartRouter.Flags().IntVar(&relaycore.RelayRetryLimit, common.SetRelayRetryLimitFlag, 2, "max total relay retry attempts across all error types (node and protocol errors combined; 0 disables retries)")
 	cmdRPCSmartRouter.Flags().BoolVar(&rpcInterfaceMessages.BatchNodeErrorOnAny, common.BatchNodeErrorOnAnyFlag, false, "if true, batch requests are treated as node errors if ANY sub-request fails; if false (default), only if ALL fail")
 	// optimizer qos reports
 	cmdRPCSmartRouter.Flags().String(common.OptimizerQosServerAddressFlag, "", "address to send optimizer qos reports to")

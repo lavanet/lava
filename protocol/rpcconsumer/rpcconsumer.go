@@ -749,7 +749,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().StringArray(common.UseStaticSpecFlag, nil, "load specs from file, directory, or remote URL (GitHub/GitLab). Can be specified multiple times; later sources override earlier ones for same chain ID")
 	cmdRPCConsumer.Flags().String(common.GitHubTokenFlag, "", "GitHub personal access token for accessing private repositories and higher API rate limits (5,000 requests/hour vs 60 for unauthenticated)")
 	cmdRPCConsumer.Flags().String(common.GitLabTokenFlag, "", "GitLab personal access token for accessing private repositories (supports gitlab.com and self-hosted instances)")
-	cmdRPCConsumer.Flags().IntVar(&relaycore.RelayCountOnNodeError, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
+	cmdRPCConsumer.Flags().IntVar(&relaycore.RelayRetryLimit, common.SetRelayRetryLimitFlag, 2, "max total relay retry attempts across all error types (node and protocol errors combined; 0 disables retries)")
 	cmdRPCConsumer.Flags().BoolVar(&rpcInterfaceMessages.BatchNodeErrorOnAny, common.BatchNodeErrorOnAnyFlag, false, "if true, batch requests are treated as node errors if ANY sub-request fails; if false (default), only if ALL fail")
 	cmdRPCConsumer.Flags().Float64(common.ProbeUpdateWeightFlagName, scoreutils.DefaultProbeUpdateWeight, "weight multiplier for provider-optimizer probe updates (liveness/latency); must be > 0")
 	if err := viper.BindPFlag(common.ProbeUpdateWeightFlagName, cmdRPCConsumer.Flags().Lookup(common.ProbeUpdateWeightFlagName)); err != nil {

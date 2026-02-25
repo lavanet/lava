@@ -283,9 +283,19 @@ func (rp *RelayProcessor) HasUnsupportedMethodErrors() bool {
 	return false
 }
 
-// Deciding wether we should send a relay retry attempt based on the node error
-func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, nodeErrors int, specialNodeErrors int) bool {
-	utils.LavaFormatDebug("shouldRetryRelay called", utils.LogAttr("GUID", rp.guid), utils.LogAttr("resultsCount", resultsCount), utils.LogAttr("hashErr", hashErr), utils.LogAttr("nodeErrors", nodeErrors), utils.LogAttr("specialNodeErrors", specialNodeErrors))
+// Deciding wether we should send a relay retry attempt based on the selection mode and error counts.
+func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, nodeErrors int, specialNodeErrors int, protocolErrors int) bool {
+	utils.LavaFormatDebug("shouldRetryRelay called", utils.LogAttr("GUID", rp.guid), utils.LogAttr("selection", rp.selection), utils.LogAttr("resultsCount", resultsCount), utils.LogAttr("hashErr", hashErr), utils.LogAttr("nodeErrors", nodeErrors), utils.LogAttr("specialNodeErrors", specialNodeErrors), utils.LogAttr("protocolErrors", protocolErrors))
+
+	// Stateful mode always retries when there are no successful results
+	// (the outer ticker/timeout will eventually stop it).
+	// CrossValidation is handled separately in HasRequiredNodeResults and should never retry here.
+	if rp.selection == Stateful {
+		return true
+	}
+	if rp.selection == CrossValidation {
+		return false
+	}
 
 	// Never retry if we detect unsupported method errors
 	if rp.HasUnsupportedMethodErrors() {
@@ -298,30 +308,30 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 	}
 
 	// Check if we have epoch mismatch errors that warrant retry
-	_, _, protocolErrors := rp.GetResultsData()
+	_, _, protocolErrorResults := rp.GetResultsData()
 	hasEpochMismatchError := false
-	for _, protocolError := range protocolErrors {
+	for _, protocolError := range protocolErrorResults {
 		if lavasession.EpochMismatchError.Is(protocolError.GetError()) {
 			hasEpochMismatchError = true
 			break
 		}
 	}
 
-	// Retries will be performed based on the following scenarios:
-	// 1. If RelayCountOnNodeError > 0
-	// 2. If we have 0 successful relays and we have only node errors.
-	// 3. If we have epoch mismatch errors (temporary synchronization issues)
-	// 4. Number of retries < RelayCountOnNodeError.
+	// Retries are allowed when:
+	// 1. Epoch mismatch errors exist (always retry, regardless of limit)
+	// 2. RelayRetryLimit > 0, no successful results, no hash errors, and
+	//    the total error count across all categories is within the limit.
 	if hasEpochMismatchError && resultsCount == 0 {
-		// Allow retries for epoch mismatch errors even with higher tolerance
 		return true
 	}
 
-	if RelayCountOnNodeError > 0 && resultsCount == 0 && hashErr == nil {
-		if nodeErrors <= RelayCountOnNodeError && specialNodeErrors <= RelayCountOnNodeError {
+	if RelayRetryLimit > 0 && resultsCount == 0 && hashErr == nil {
+		totalErrors := nodeErrors + specialNodeErrors + protocolErrors
+		if totalErrors > 0 && totalErrors <= RelayRetryLimit {
 			return true
 		}
 	}
+
 	// Do not perform a retry
 	return false
 }
@@ -400,37 +410,21 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 		return true, nodeErrors
 	}
 
-	if rp.selection == Stateless {
-		// Check if we have enough results (need at least 1)
-		needsMoreRetries := resultsCount < 1
-
-		if !needsMoreRetries {
-			// Retry on node error flow:
-			shouldRetry := rp.shouldRetryRelay(resultsCount, hashErr, nodeErrors, specialNodeErrors)
-			if rp.debugRelay {
-				utils.LavaFormatDebug("HasRequiredNodeResults shouldRetry",
-					utils.LogAttr("GUID", rp.guid),
-					utils.LogAttr("shouldRetry", shouldRetry),
-					utils.LogAttr("tries", tries),
-					utils.LogAttr("resultsCount", resultsCount),
-					utils.LogAttr("nodeErrors", nodeErrors),
-					utils.LogAttr("specialNodeErrors", specialNodeErrors),
-				)
-			}
-			return !shouldRetry, nodeErrors
-		}
-	}
-	// on Stateful we want to retry if there is no success
+	// No successful results — check if we should keep retrying based on
+	// selection mode and RelayRetryLimit.
+	shouldRetry := rp.shouldRetryRelay(resultsCount, hashErr, nodeErrors, specialNodeErrors, protocolErrors)
 	if rp.debugRelay {
-		utils.LavaFormatDebug("HasRequiredNodeResults returning false",
+		utils.LavaFormatDebug("HasRequiredNodeResults shouldRetry",
 			utils.LogAttr("GUID", rp.guid),
+			utils.LogAttr("shouldRetry", shouldRetry),
 			utils.LogAttr("tries", tries),
 			utils.LogAttr("resultsCount", resultsCount),
 			utils.LogAttr("nodeErrors", nodeErrors),
 			utils.LogAttr("specialNodeErrors", specialNodeErrors),
+			utils.LogAttr("protocolErrors", protocolErrors),
 		)
 	}
-	return false, nodeErrors
+	return !shouldRetry, nodeErrors
 }
 
 func (rp *RelayProcessor) handleResponse(response *RelayResponse) {
