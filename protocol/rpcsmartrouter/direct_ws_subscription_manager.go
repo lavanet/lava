@@ -104,7 +104,7 @@ type DirectWSSubscriptionManager struct {
 	idMapper *SubscriptionIDMapper
 
 	// Dependencies
-	metricsManager *metrics.ConsumerMetricsManager
+	metricsManager metrics.ConsumerMetricsManagerInf
 	connectionType string
 	chainID        string
 	apiInterface   string
@@ -143,7 +143,7 @@ type WebSocketEndpointOptimizer interface {
 // NewDirectWSSubscriptionManager creates a new direct WebSocket subscription manager.
 // If config is nil, DefaultWebsocketConfig() will be used.
 func NewDirectWSSubscriptionManager(
-	metricsManager *metrics.ConsumerMetricsManager,
+	metricsManager metrics.ConsumerMetricsManagerInf,
 	connectionType string,
 	chainID string,
 	apiInterface string,
@@ -168,7 +168,7 @@ func NewDirectWSSubscriptionManager(
 		pendingSubscriptions: make(map[string]*pendingSubscriptionsBroadcastManager),
 		upstreamPools:        make(map[string]*UpstreamWSPool),
 		idMapper:             NewSubscriptionIDMapper(),
-		metricsManager:       metricsManager,
+		metricsManager:       metrics.SafeMetrics(metricsManager),
 		connectionType:       connectionType,
 		chainID:              chainID,
 		apiInterface:         apiInterface,

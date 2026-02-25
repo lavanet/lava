@@ -68,6 +68,9 @@ type RPCSmartRouterServer struct {
 
 	// gRPC streaming subscription manager (nil if not configured)
 	grpcSubscriptionManager *DirectGRPCSubscriptionManager
+
+	// Endpoint-scoped metrics manager (new spec)
+	smartRouterEndpointMetrics *metrics.SmartRouterMetricsManager
 }
 
 func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
@@ -83,6 +86,7 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 	cmdFlags common.ConsumerCmdFlags,
 	sharedState bool,
 	wsSubscriptionManager chainlib.WSSubscriptionManager,
+	smartRouterEndpointMetrics *metrics.SmartRouterMetricsManager,
 ) (err error) {
 	rpcss.sessionManager = sessionManager
 	rpcss.listenEndpoint = listenEndpoint
@@ -118,6 +122,8 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 				utils.LogAttr("fromBlock", fromBlock),
 				utils.LogAttr("toBlock", toBlock),
 			)
+			rpcss.smartRouterEndpointMetrics.RecordBlockFetch(listenEndpoint.ChainID, listenEndpoint.ApiInterface, endpointURL, true, true)
+			rpcss.smartRouterEndpointMetrics.SetEndpointLatestBlock(listenEndpoint.ChainID, listenEndpoint.ApiInterface, endpointURL, toBlock)
 		},
 		OnFork: func(endpointURL string, blockNum int64) {
 			utils.LavaFormatWarning("endpoint ChainTracker detected fork", nil,
@@ -125,7 +131,12 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 				utils.LogAttr("blockNum", blockNum),
 			)
 		},
+		OnFetchError: func(endpointURL string) {
+			rpcss.smartRouterEndpointMetrics.RecordBlockFetch(listenEndpoint.ChainID, listenEndpoint.ApiInterface, endpointURL, true, false)
+		},
 	})
+
+	rpcss.smartRouterEndpointMetrics = smartRouterEndpointMetrics
 
 	// NewChainListener now accepts WSSubscriptionManager interface, which is implemented
 	// by both ConsumerWSSubscriptionManager (provider-relay mode) and
@@ -396,6 +407,14 @@ func (rpcss *RPCSmartRouterServer) updateLatestBlockHeight(blockHeight uint64, p
 			break
 		}
 		if rpcss.latestBlockHeight.CompareAndSwap(current, blockHeight) {
+			// Update router-level latest block metric
+			if rpcss.smartRouterEndpointMetrics != nil {
+				rpcss.smartRouterEndpointMetrics.SetRouterLatestBlock(
+					rpcss.listenEndpoint.ChainID,
+					rpcss.listenEndpoint.ApiInterface,
+					int64(blockHeight),
+				)
+			}
 			break
 		}
 	}
@@ -768,6 +787,17 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 				goroutineCtxCancel()
 			}()
 
+			apiMethod := chainMessage.GetApi().Name
+
+			if rpcss.smartRouterEndpointMetrics != nil {
+				rpcss.smartRouterEndpointMetrics.RecordDirectRelayStart(
+					rpcss.listenEndpoint.ChainID,
+					rpcss.listenEndpoint.ApiInterface,
+					endpointAddress,
+					apiMethod,
+				)
+			}
+
 			relayLatency, err, _ := rpcss.relayInnerDirect(
 				goroutineCtx,
 				singleConsumerSession,
@@ -777,6 +807,17 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 				originalRequestData,
 				analytics,
 			)
+
+			if rpcss.smartRouterEndpointMetrics != nil {
+				rpcss.smartRouterEndpointMetrics.RecordDirectRelayEnd(
+					rpcss.listenEndpoint.ChainID,
+					rpcss.listenEndpoint.ApiInterface,
+					endpointAddress,
+					apiMethod,
+					float64(relayLatency.Milliseconds()),
+					err == nil,
+				)
+			}
 
 			// Handle response
 			if err != nil {
@@ -894,6 +935,8 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 						utils.LogAttr("GUID", goroutineCtx),
 					)
 				}
+
+	
 			} else {
 				// Failure case: err != nil OR status >= 500 OR status == 429
 				failureErr := err
@@ -1764,6 +1807,7 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 		// Apply health tracking based on error classification
 		if shouldMarkUnhealthy && targetEndpoint != nil {
 			targetEndpoint.MarkUnhealthy()
+			rpcss.smartRouterEndpointMetrics.SetEndpointOverallHealth(rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface, endpointName, false)
 		}
 
 		return relayLatency, err, needsBackoff
@@ -1778,6 +1822,7 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 
 		if shouldMarkUnhealthy && targetEndpoint != nil {
 			targetEndpoint.MarkUnhealthy()
+			rpcss.smartRouterEndpointMetrics.SetEndpointOverallHealth(rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface, endpointName, false)
 			utils.LavaFormatDebug("endpoint returned error status",
 				utils.LogAttr("status", statusCode),
 				utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
@@ -1796,6 +1841,7 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 	// Success - reset endpoint health
 	if targetEndpoint != nil && targetEndpoint.ConnectionRefusals > 0 {
 		targetEndpoint.ResetHealth()
+		rpcss.smartRouterEndpointMetrics.SetEndpointOverallHealth(rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface, endpointName, true)
 	}
 
 	// Update relayResult with the response

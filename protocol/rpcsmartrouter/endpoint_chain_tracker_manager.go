@@ -50,6 +50,7 @@ type EndpointChainTrackerManager struct {
 	onFork        func(endpointURL string, blockNum int64)
 	onNewBlock    func(endpointURL string, fromBlock, toBlock int64)
 	onConsistency func(endpointURL string, oldBlock, newBlock int64)
+	onFetchError  func(endpointURL string)
 
 	// Context for managing goroutines (parent context for all trackers)
 	ctx    context.Context
@@ -69,6 +70,7 @@ type EndpointChainTrackerConfig struct {
 	OnFork        func(endpointURL string, blockNum int64)
 	OnNewBlock    func(endpointURL string, fromBlock, toBlock int64)
 	OnConsistency func(endpointURL string, oldBlock, newBlock int64)
+	OnFetchError  func(endpointURL string)
 }
 
 // NewEndpointChainTrackerManager creates a new manager for per-endpoint ChainTrackers.
@@ -98,6 +100,7 @@ func NewEndpointChainTrackerManager(ctx context.Context, config EndpointChainTra
 		onFork:           config.OnFork,
 		onNewBlock:       config.OnNewBlock,
 		onConsistency:    config.OnConsistency,
+		onFetchError:     config.OnFetchError,
 		ctx:              ctxWithCancel,
 		cancel:           cancel,
 	}
@@ -175,6 +178,12 @@ func (m *EndpointChainTrackerManager) GetOrCreateTracker(
 	if m.onConsistency != nil {
 		config.ConsistencyCallback = func(oldBlock, newBlock int64) {
 			m.onConsistency(endpointURL, oldBlock, newBlock)
+		}
+	}
+
+	if m.onFetchError != nil {
+		config.FetchErrorCallback = func() {
+			m.onFetchError(endpointURL)
 		}
 	}
 

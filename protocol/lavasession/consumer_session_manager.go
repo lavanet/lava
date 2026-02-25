@@ -75,7 +75,7 @@ type ConsumerSessionManager struct {
 	// (if a consumer session still uses one of them or we want to report it.)
 	pairingPurge                       map[string]*ConsumerSessionsWithProvider
 	providerOptimizer                  ProviderOptimizer
-	consumerMetricsManager             *metrics.ConsumerMetricsManager
+	consumerMetricsManager             metrics.ConsumerMetricsManagerInf
 	consumerPublicAddress              string
 	activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage
 
@@ -1884,14 +1884,14 @@ func (csm *ConsumerSessionManager) checkAndUnblockHealthyReBlockedProviders(ctx 
 func NewConsumerSessionManager(
 	rpcEndpoint *RPCEndpoint,
 	providerOptimizer ProviderOptimizer,
-	consumerMetricsManager *metrics.ConsumerMetricsManager,
+	consumerMetricsManager metrics.ConsumerMetricsManagerInf,
 	reporter metrics.Reporter,
 	consumerPublicAddress string,
 	activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage,
 ) *ConsumerSessionManager {
 	csm := &ConsumerSessionManager{
 		reportedProviders:      NewReportedProviders(reporter, rpcEndpoint.ChainID),
-		consumerMetricsManager: consumerMetricsManager,
+		consumerMetricsManager: metrics.SafeMetrics(consumerMetricsManager),
 		consumerPublicAddress:  consumerPublicAddress,
 		qosManager:             qos.NewQoSManager(),
 		getLavaBlockHeight:     func() int64 { return 0 }, // default to 0, should be set by caller

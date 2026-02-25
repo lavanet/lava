@@ -225,12 +225,15 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 		smartRouterOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(smartRouterIdentifier, options.analyticsServerAddresses.OptimizerQoSAddress, options.geoLocation, metrics.OptimizerQosServerPushInterval) // start up optimizer qos client
 		smartRouterOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, metrics.OptimizerQosServerSamplingInterval)
 	}
-	smartRouterMetricsManager := metrics.NewConsumerMetricsManager(metrics.ConsumerMetricsManagerOptions{
-		NetworkAddress:             options.analyticsServerAddresses.MetricsListenAddress,
-		AddMethodsApiGauge:         options.analyticsServerAddresses.AddApiMethodCallsMetrics,
-		EnableQoSListener:          options.analyticsServerAddresses.OptimizerQoSListen,
-		ConsumerOptimizerQoSClient: smartRouterOptimizerQoSClient,
-	}) // start up prometheus metrics
+	// SmartRouterMetricsManager is the single metrics owner for the smart router.
+	// It serves its own HTTP endpoint and implements ConsumerMetricsManagerInf so it
+	// can be passed to RPCConsumerLogs, ConsumerSessionManager, etc., eliminating the
+	// need for a ConsumerMetricsManager (and all its lava_consumer_* metrics).
+	smartRouterMetricsManager := metrics.NewSmartRouterMetricsManager(metrics.SmartRouterMetricsManagerOptions{
+		NetworkAddress:  options.analyticsServerAddresses.MetricsListenAddress,
+		StartHTTPServer: true,
+	})
+
 	rpcSmartRouterMetrics, err := metrics.NewRPCConsumerLogs(smartRouterMetricsManager, smartRouterUsageServeManager, smartRouterKafkaClient, smartRouterOptimizerQoSClient)
 	if err != nil {
 		utils.LavaFormatFatal("failed creating RPCSmartRouter logs", err)
@@ -315,7 +318,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	rpcSmartRouterMetrics *metrics.RPCConsumerLogs,
 	smartRouterReportsManager *metrics.ConsumerReportsClient,
 	smartRouterOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient,
-	smartRouterMetricsManager *metrics.ConsumerMetricsManager,
+	smartRouterMetricsManager *metrics.SmartRouterMetricsManager,
 	relaysMonitorAggregator *metrics.RelaysMonitorAggregator,
 ) error {
 	chainParser, err := chainlib.NewChainParser(rpcEndpoint.ApiInterface)
@@ -547,6 +550,16 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 					Geolocation:       planstypes.Geolocation(provider.Geolocation),
 				}
 				endpoints = append(endpoints, endpoint)
+
+				// Register endpoint with metrics manager for info metric visibility
+				if smartRouterMetricsManager != nil {
+					smartRouterMetricsManager.RegisterEndpoint(
+						rpcEndpoint.ChainID,
+						rpcEndpoint.ApiInterface,
+						url.Url,       // endpoint_id — consistent with all relay/health/block metrics
+						provider.Name, // provider_name for human-readable label in info metric
+					)
+				}
 			}
 
 			// Create provider session with static configuration.
@@ -898,7 +911,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 
 	utils.LavaFormatInfo("RPCSmartRouter Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
 	// Convert smartRouterIdentifier string to empty sdk.AccAddress for smart router
-	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, chainTracker, sessionManager, options.cache, rpcSmartRouterMetrics, smartRouterConsistency, relaysMonitor, options.cmdFlags, options.stateShare, wsSubscriptionManager)
+	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, chainTracker, sessionManager, options.cache, rpcSmartRouterMetrics, smartRouterConsistency, relaysMonitor, options.cmdFlags, options.stateShare, wsSubscriptionManager, smartRouterMetricsManager)
 	if err != nil {
 		err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 		errCh <- err

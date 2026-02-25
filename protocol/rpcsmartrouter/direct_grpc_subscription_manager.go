@@ -73,7 +73,7 @@ type DirectGRPCSubscriptionManager struct {
 	idMapper *SubscriptionIDMapper
 
 	// Dependencies
-	metricsManager *metrics.ConsumerMetricsManager
+	metricsManager metrics.ConsumerMetricsManagerInf
 	chainID        string
 	apiInterface   string
 
@@ -108,7 +108,7 @@ type DirectGRPCSubscriptionManager struct {
 
 // NewDirectGRPCSubscriptionManager creates a new gRPC subscription manager
 func NewDirectGRPCSubscriptionManager(
-	metricsManager *metrics.ConsumerMetricsManager,
+	metricsManager metrics.ConsumerMetricsManagerInf,
 	chainID string,
 	apiInterface string,
 	grpcEndpoints []*common.NodeUrl,
@@ -126,7 +126,7 @@ func NewDirectGRPCSubscriptionManager(
 		pendingSubscriptions: make(map[string]*pendingSubscriptionsBroadcastManager),
 		upstreamPools:        make(map[string]*UpstreamGRPCPool),
 		idMapper:             NewSubscriptionIDMapper(),
-		metricsManager:       metricsManager,
+		metricsManager:       metrics.SafeMetrics(metricsManager),
 		chainID:              chainID,
 		apiInterface:         apiInterface,
 		grpcEndpoints:        grpcEndpoints,
