@@ -1863,10 +1863,11 @@ func (rpcss *RPCSmartRouterServer) appendHeadersToRelayResult(ctx context.Contex
 			Value: providerAddress,
 		})
 
-		// add the relay retried count (including both node errors and protocol errors)
+		// add the relay retried count: total attempts minus 1 (the initial attempt is not a retry)
 		successResults, nodeErrorResults, protocolErrorResults := relayProcessor.GetResultsData()
-		totalRetries := protocolErrors + uint64(len(nodeErrorResults))
-		if totalRetries > 0 {
+		totalAttempts := uint64(len(successResults)) + uint64(len(nodeErrorResults)) + protocolErrors
+		if totalAttempts > 1 {
+			totalRetries := totalAttempts - 1
 			metadataReply = append(metadataReply, pairingtypes.Metadata{
 				Name:  common.RETRY_COUNT_HEADER_NAME,
 				Value: strconv.FormatUint(totalRetries, 10),

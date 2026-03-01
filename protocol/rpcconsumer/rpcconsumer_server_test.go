@@ -500,6 +500,216 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 	})
 }
 
+// TestRetryCountHeader verifies that the Lava-Retries header correctly reflects
+// actual retry attempts (total attempts - 1), not raw error counts.
+func TestRetryCountHeader(t *testing.T) {
+	ctx := context.Background()
+
+	findHeader := func(metadata []pairingtypes.Metadata, name string) *pairingtypes.Metadata {
+		for i := range metadata {
+			if metadata[i].Name == name {
+				return &metadata[i]
+			}
+		}
+		return nil
+	}
+
+	t.Run("single node error no success - no retry header", func(t *testing.T) {
+		// Scenario: unsupported method like "seth_blockNumber" — 1 attempt, 0 retries
+		relayProcessor := &MockRelayProcessorForHeaders{
+			successResults: []common.RelayResult{},
+			nodeErrors: []common.RelayResult{
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider1"}},
+			},
+		}
+
+		relayResult := &common.RelayResult{
+			ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider1"},
+			Reply:        &pairingtypes.RelayReply{Metadata: []pairingtypes.Metadata{}},
+		}
+
+		rpcConsumerServer := &RPCConsumerServer{}
+		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, &MockProtocolMessage{
+			api: &spectypes.Api{Name: "seth_blockNumber"},
+		}, "seth_blockNumber")
+
+		retryHeader := findHeader(relayResult.Reply.Metadata, common.RETRY_COUNT_HEADER_NAME)
+		require.Nil(t, retryHeader, "should not set retry header when only 1 attempt was made (0 retries)")
+	})
+
+	t.Run("one node error then success - retry header is 1", func(t *testing.T) {
+		// Scenario: first provider returned node error, second succeeded — 1 retry
+		relayProcessor := &MockRelayProcessorForHeaders{
+			successResults: []common.RelayResult{
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider2"}},
+			},
+			nodeErrors: []common.RelayResult{
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider1"}},
+			},
+		}
+
+		relayResult := &common.RelayResult{
+			ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider2"},
+			Reply:        &pairingtypes.RelayReply{Metadata: []pairingtypes.Metadata{}},
+		}
+
+		rpcConsumerServer := &RPCConsumerServer{}
+		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, &MockProtocolMessage{
+			api: &spectypes.Api{Name: "eth_blockNumber"},
+		}, "eth_blockNumber")
+
+		retryHeader := findHeader(relayResult.Reply.Metadata, common.RETRY_COUNT_HEADER_NAME)
+		require.NotNil(t, retryHeader, "should set retry header when retries occurred")
+		require.Equal(t, "1", retryHeader.Value)
+	})
+
+	t.Run("two node errors then success - retry header is 2", func(t *testing.T) {
+		relayProcessor := &MockRelayProcessorForHeaders{
+			successResults: []common.RelayResult{
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider3"}},
+			},
+			nodeErrors: []common.RelayResult{
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider1"}},
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider2"}},
+			},
+		}
+
+		relayResult := &common.RelayResult{
+			ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider3"},
+			Reply:        &pairingtypes.RelayReply{Metadata: []pairingtypes.Metadata{}},
+		}
+
+		rpcConsumerServer := &RPCConsumerServer{}
+		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, &MockProtocolMessage{
+			api: &spectypes.Api{Name: "eth_blockNumber"},
+		}, "eth_blockNumber")
+
+		retryHeader := findHeader(relayResult.Reply.Metadata, common.RETRY_COUNT_HEADER_NAME)
+		require.NotNil(t, retryHeader)
+		require.Equal(t, "2", retryHeader.Value)
+	})
+
+	t.Run("single protocol error no success - no retry header", func(t *testing.T) {
+		// 1 protocol error, 0 success — 1 attempt total, 0 retries
+		relayProcessor := &MockRelayProcessorForHeaders{
+			successResults: []common.RelayResult{},
+			nodeErrors:     []common.RelayResult{},
+		}
+
+		relayResult := &common.RelayResult{
+			ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider1"},
+			Reply:        &pairingtypes.RelayReply{Metadata: []pairingtypes.Metadata{}},
+		}
+
+		rpcConsumerServer := &RPCConsumerServer{}
+		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 1, relayProcessor, &MockProtocolMessage{
+			api: &spectypes.Api{Name: "eth_blockNumber"},
+		}, "eth_blockNumber")
+
+		retryHeader := findHeader(relayResult.Reply.Metadata, common.RETRY_COUNT_HEADER_NAME)
+		require.Nil(t, retryHeader, "should not set retry header when only 1 protocol error (0 retries)")
+	})
+
+	t.Run("protocol error then success - retry header is 1", func(t *testing.T) {
+		// 1 protocol error + 1 success = 2 attempts, 1 retry
+		relayProcessor := &MockRelayProcessorForHeaders{
+			successResults: []common.RelayResult{
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider2"}},
+			},
+			nodeErrors: []common.RelayResult{},
+		}
+
+		relayResult := &common.RelayResult{
+			ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider2"},
+			Reply:        &pairingtypes.RelayReply{Metadata: []pairingtypes.Metadata{}},
+		}
+
+		rpcConsumerServer := &RPCConsumerServer{}
+		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 1, relayProcessor, &MockProtocolMessage{
+			api: &spectypes.Api{Name: "eth_blockNumber"},
+		}, "eth_blockNumber")
+
+		retryHeader := findHeader(relayResult.Reply.Metadata, common.RETRY_COUNT_HEADER_NAME)
+		require.NotNil(t, retryHeader)
+		require.Equal(t, "1", retryHeader.Value)
+	})
+
+	t.Run("mixed errors then success - retry header counts all retries", func(t *testing.T) {
+		// 1 protocol error + 2 node errors + 1 success = 4 attempts, 3 retries
+		relayProcessor := &MockRelayProcessorForHeaders{
+			successResults: []common.RelayResult{
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider4"}},
+			},
+			nodeErrors: []common.RelayResult{
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider2"}},
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider3"}},
+			},
+		}
+
+		relayResult := &common.RelayResult{
+			ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider4"},
+			Reply:        &pairingtypes.RelayReply{Metadata: []pairingtypes.Metadata{}},
+		}
+
+		rpcConsumerServer := &RPCConsumerServer{}
+		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 1, relayProcessor, &MockProtocolMessage{
+			api: &spectypes.Api{Name: "eth_blockNumber"},
+		}, "eth_blockNumber")
+
+		retryHeader := findHeader(relayResult.Reply.Metadata, common.RETRY_COUNT_HEADER_NAME)
+		require.NotNil(t, retryHeader)
+		require.Equal(t, "3", retryHeader.Value)
+	})
+
+	t.Run("no errors no retries - no retry header", func(t *testing.T) {
+		// 1 success, 0 errors — no retries
+		relayProcessor := &MockRelayProcessorForHeaders{
+			successResults: []common.RelayResult{
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider1"}},
+			},
+			nodeErrors: []common.RelayResult{},
+		}
+
+		relayResult := &common.RelayResult{
+			ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider1"},
+			Reply:        &pairingtypes.RelayReply{Metadata: []pairingtypes.Metadata{}},
+		}
+
+		rpcConsumerServer := &RPCConsumerServer{}
+		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, &MockProtocolMessage{
+			api: &spectypes.Api{Name: "eth_blockNumber"},
+		}, "eth_blockNumber")
+
+		retryHeader := findHeader(relayResult.Reply.Metadata, common.RETRY_COUNT_HEADER_NAME)
+		require.Nil(t, retryHeader, "should not set retry header when no retries occurred")
+	})
+
+	t.Run("two node errors no success - retry header is 1", func(t *testing.T) {
+		// 2 node errors, 0 success — 2 attempts, 1 retry
+		relayProcessor := &MockRelayProcessorForHeaders{
+			successResults: []common.RelayResult{},
+			nodeErrors: []common.RelayResult{
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider1"}},
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider2"}},
+			},
+		}
+
+		relayResult := &common.RelayResult{
+			ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider2"},
+			Reply:        &pairingtypes.RelayReply{Metadata: []pairingtypes.Metadata{}},
+		}
+
+		rpcConsumerServer := &RPCConsumerServer{}
+		rpcConsumerServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, &MockProtocolMessage{
+			api: &spectypes.Api{Name: "eth_blockNumber"},
+		}, "eth_blockNumber")
+
+		retryHeader := findHeader(relayResult.Reply.Metadata, common.RETRY_COUNT_HEADER_NAME)
+		require.NotNil(t, retryHeader)
+		require.Equal(t, "1", retryHeader.Value)
+	})
+}
+
 // TestStatefulRelayTargetsHeader tests the stateful API header functionality
 func TestStatefulRelayTargetsHeader(t *testing.T) {
 	ctx := context.Background()
