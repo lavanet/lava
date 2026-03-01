@@ -31,6 +31,9 @@ const (
 	// Disable relay retries when we get node errors.
 	// This feature is suppose to help with successful relays in some chains that return node errors on rare race conditions on the serviced chains.
 	SetRelayCountOnNodeErrorFlag = "set-retry-count-on-node-error"
+	// SetRelayRetryLimitFlag controls the maximum number of retry attempts on relay errors
+	// (both node errors and protocol errors) for consumers and smart routers.
+	SetRelayRetryLimitFlag = "set-relay-retry-limit"
 	// BatchNodeErrorOnAny controls batch request error detection for JSON-RPC batch requests
 	BatchNodeErrorOnAnyFlag = "batch-node-error-on-any"
 

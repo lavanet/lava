@@ -6,7 +6,7 @@ const (
 	MaxCallsPerRelay = 50
 )
 
-var RelayCountOnNodeError = 2
+var RelayRetryLimit = 2
 
 // DisableBatchRequestRetry prevents batch requests from being retried when set to true.
 // Batch requests (JSON-RPC batches) cannot be hashed for caching, so retries may be unnecessary.

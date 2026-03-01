@@ -595,6 +595,11 @@ func TestProcessingContextTimeoutEnforcement(t *testing.T) {
 // This ensures our fix doesn't break the normal retry mechanism
 func TestProcessingContextStillValidAllowsRetries(t *testing.T) {
 	t.Run("RetriesContinueWhenContextValid", func(t *testing.T) {
+		// This test expects 5+ retries, so set a high limit
+		originalValue := relaycore.RelayRetryLimit
+		relaycore.RelayRetryLimit = 10
+		defer func() { relaycore.RelayRetryLimit = originalValue }()
+
 		ctx := context.Background()
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -978,4 +983,117 @@ func TestRelayTaskChannelBuffering(t *testing.T) {
 			t.Fatal("Sender deadlocked after receiver exited")
 		}
 	})
+}
+
+// TestSmartRouterStateMachineRetryLimit verifies the full state machine stops retrying
+// when the RelayRetryLimit is reached for both node and protocol errors.
+func TestSmartRouterStateMachineRetryLimit(t *testing.T) {
+	tests := []struct {
+		name             string
+		retryLimit       int
+		expectedMaxTasks int // max tasks before Done (initial + retries)
+		sendError        func(relayProcessor *relaycore.RelayProcessor)
+		description      string
+	}{
+		{
+			name:             "node errors: limit=0 stops immediately",
+			retryLimit:       0,
+			expectedMaxTasks: 1,
+			sendError: func(rp *relaycore.RelayProcessor) {
+				relaycoretest.SendNodeError(rp, "lava@test", time.Millisecond*1)
+			},
+			description: "With limit=0, should stop after initial node error",
+		},
+		{
+			name:             "node errors: limit=2 allows retries then stops",
+			retryLimit:       2,
+			expectedMaxTasks: 4,
+			sendError: func(rp *relaycore.RelayProcessor) {
+				relaycoretest.SendNodeError(rp, "lava@test", time.Millisecond*1)
+			},
+			description: "With limit=2, should stop within a few node error retries",
+		},
+		{
+			name:             "protocol errors: limit=0 stops immediately",
+			retryLimit:       0,
+			expectedMaxTasks: 1,
+			sendError: func(rp *relaycore.RelayProcessor) {
+				relaycoretest.SendProtocolError(rp, "lava@test", time.Millisecond*1, fmt.Errorf("connection timeout"))
+			},
+			description: "With limit=0, should stop after initial protocol error",
+		},
+		{
+			name:             "protocol errors: limit=2 allows retries then stops",
+			retryLimit:       2,
+			expectedMaxTasks: 4,
+			sendError: func(rp *relaycore.RelayProcessor) {
+				relaycoretest.SendProtocolError(rp, "lava@test", time.Millisecond*1, fmt.Errorf("connection timeout"))
+			},
+			description: "With limit=2, should stop within a few protocol error retries",
+		},
+		{
+			name:             "mixed errors: alternating node and protocol errors stops when total exceeds limit",
+			retryLimit:       2,
+			expectedMaxTasks: 4,
+			sendError: func() func(rp *relaycore.RelayProcessor) {
+				callCount := 0
+				return func(rp *relaycore.RelayProcessor) {
+					callCount++
+					if callCount%2 == 1 {
+						relaycoretest.SendNodeError(rp, "lava@test", time.Millisecond*1)
+					} else {
+						relaycoretest.SendProtocolError(rp, "lava@test", time.Millisecond*1, fmt.Errorf("connection timeout"))
+					}
+				}
+			}(),
+			description: "With limit=2 and alternating errors, should stop when total errors exceed limit",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			originalValue := relaycore.RelayRetryLimit
+			relaycore.RelayRetryLimit = tc.retryLimit
+			defer func() { relaycore.RelayRetryLimit = originalValue }()
+
+			ctx := context.Background()
+			serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			})
+			specId := "LAV1"
+			chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+			if closeServer != nil {
+				defer closeServer()
+			}
+			require.NoError(t, err)
+			chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			require.NoError(t, err)
+			protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "dapp", "123.11")
+			usedProviders := lavasession.NewUsedProviders(nil)
+			// Use long ticker to prevent ticker-based retries from interfering
+			stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+			require.NoError(t, err)
+			relayProcessor := relaycore.NewRelayProcessor(ctx, nil, nil, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
+
+			consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}}
+
+			relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
+			require.NoError(t, err)
+
+			taskNumber := 0
+			for task := range relayTaskChannel {
+				if task.IsDone() {
+					require.LessOrEqual(t, taskNumber, tc.expectedMaxTasks,
+						"%s: too many tasks before Done", tc.description)
+					return
+				}
+				usedProviders.AddUsed(consumerSessionsMap, nil)
+				relayProcessor.UpdateBatch(nil)
+				tc.sendError(relayProcessor)
+				taskNumber++
+				require.Less(t, taskNumber, 15,
+					"Safety: too many iterations, retry limit not working")
+			}
+		})
+	}
 }
