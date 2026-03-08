@@ -402,6 +402,32 @@ func SimulateUnstakeProposal(ctx sdk.Context, pairingKeeper pairingkeeper.Keeper
 	return err
 }
 
+func SimulateJailProposal(ctx sdk.Context, pairingKeeper pairingkeeper.Keeper, providersInfo []pairingtypes.ProviderJailInfo) error {
+	proposal := &pairingtypes.JailProposal{
+		Title:         "mockJailProposal",
+		Description:   "mockProposal jail provider for testing",
+		ProvidersInfo: providersInfo,
+	}
+	if err := proposal.ValidateBasic(); err != nil {
+		return err
+	}
+	proposalHandler := pairing.NewPairingProposalsHandler(pairingKeeper)
+	return proposalHandler(ctx, proposal)
+}
+
+func SimulateUnjailProposal(ctx sdk.Context, pairingKeeper pairingkeeper.Keeper, providersInfo []pairingtypes.ProviderJailInfo) error {
+	proposal := &pairingtypes.UnjailProposal{
+		Title:         "mockUnjailProposal",
+		Description:   "mockProposal unjail provider for testing",
+		ProvidersInfo: providersInfo,
+	}
+	if err := proposal.ValidateBasic(); err != nil {
+		return err
+	}
+	proposalHandler := pairing.NewPairingProposalsHandler(pairingKeeper)
+	return proposalHandler(ctx, proposal)
+}
+
 func AdvanceBlock(ctx context.Context, ks *Keepers, customBlockTime ...time.Duration) context.Context {
 	unwrapedCtx := sdk.UnwrapSDKContext(ctx)
 	EndBlock(unwrapedCtx, ks)
