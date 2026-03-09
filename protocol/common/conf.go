@@ -13,8 +13,10 @@ type Test_mode_ctx_key struct{}
 const (
 	PlainTextConnection                = "allow-plaintext-connection"
 	EndpointsConfigName                = "endpoints"
-	StaticProvidersConfigName          = "static-providers"
-	BackupProvidersConfigName          = "backup-providers"
+	DirectRPCConfigName                = "direct-rpc"
+	BackupDirectRPCConfigName          = "backup-direct-rpc"
+	StaticProvidersConfigName          = "static-providers" // Deprecated: use DirectRPCConfigName
+	BackupProvidersConfigName          = "backup-providers" // Deprecated: use BackupDirectRPCConfigName
 	SaveConfigFlagName                 = "save-conf"
 	GeolocationFlag                    = "geolocation"
 	TestModeFlagName                   = "test-mode"

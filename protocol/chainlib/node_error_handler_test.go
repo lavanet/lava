@@ -17,7 +17,7 @@ func TestUnsupportedMethodError(t *testing.T) {
 		originalErr := errors.New("original error")
 		err := NewUnsupportedMethodError(originalErr, "eth_someMethod")
 
-		require.Equal(t, "unsupported method 'eth_someMethod': original error", err.Error())
+		require.Equal(t, `unsupported method "eth_someMethod": original error`, err.Error())
 	})
 
 	t.Run("Error formatting without method name", func(t *testing.T) {
@@ -33,7 +33,7 @@ func TestUnsupportedMethodError(t *testing.T) {
 		err = err.WithMethod("eth_call")
 
 		require.Equal(t, "eth_call", err.methodName)
-		require.Equal(t, "unsupported method 'eth_call': original error", err.Error())
+		require.Equal(t, `unsupported method "eth_call": original error`, err.Error())
 	})
 
 	t.Run("Unwrap returns original error", func(t *testing.T) {

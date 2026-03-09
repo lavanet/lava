@@ -34,13 +34,14 @@ type RPCConsumerLogs struct {
 	StoreMetricData            bool
 	excludeMetricsReferrers    string
 	excludedUserAgent          []string
-	consumerMetricsManager     *ConsumerMetricsManager
+	consumerMetricsManager     ConsumerMetricsManagerInf
 	consumerRelayServerClient  *ConsumerRelayServerClient
 	consumerKafkaClient        *ConsumerKafkaClient
 	consumerOptimizerQoSClient *ConsumerOptimizerQoSClient
 }
 
-func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager, consumerRelayServerClient *ConsumerRelayServerClient, consumerKafkaClient *ConsumerKafkaClient, consumerOptimizerQoSClient *ConsumerOptimizerQoSClient) (*RPCConsumerLogs, error) {
+func NewRPCConsumerLogs(consumerMetricsManager ConsumerMetricsManagerInf, consumerRelayServerClient *ConsumerRelayServerClient, consumerKafkaClient *ConsumerKafkaClient, consumerOptimizerQoSClient *ConsumerOptimizerQoSClient) (*RPCConsumerLogs, error) {
+	consumerMetricsManager = SafeMetrics(consumerMetricsManager)
 	err := godotenv.Load()
 	if err != nil {
 		utils.LavaFormatInfo("New relic missing environment file")
