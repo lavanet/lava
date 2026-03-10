@@ -21,7 +21,7 @@ sleep 5
 wait_for_lava_node_to_start
 
 GASPRICE="0.00002ulava"
-specs=$(get_all_specs)
+specs="specs/mainnet-1/specs/ibc.json,specs/mainnet-1/specs/cosmoswasm.json,specs/mainnet-1/specs/tendermint.json,specs/mainnet-1/specs/cosmossdk.json,specs/testnet-2/specs/lava.json"
 lavad tx gov submit-legacy-proposal spec-add $specs --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE &
 wait_next_block
 wait_next_block

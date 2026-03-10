@@ -140,6 +140,68 @@ func TestUnjailProposalProviderNotFound(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// TestJailProposalPairingIntegration is an end-to-end test that verifies the full pairing lifecycle:
+//
+//  1. A staked provider appears in GetPairing for a subscribed client.
+//  2. After a JailProposal, the provider is excluded from GetPairing.
+//  3. After an UnjailProposal and two epoch advances, the provider returns to GetPairing.
+//
+// This test exercises the interaction between the governance proposal handlers and the
+// FrozenProvidersFilter (StakeAppliedBlock > currentEpoch → excluded from pairing).
+func TestJailProposalPairingIntegration(t *testing.T) {
+	ts := newTester(t)
+	// 1 provider, 1 client with subscription, MaxProvidersToPair=1.
+	ts.setupForPayments(1, 1, 1)
+
+	_, provider := ts.GetAccount(common.PROVIDER, 0)
+	_, client := ts.GetAccount(common.CONSUMER, 0)
+	chainID := ts.spec.Index
+
+	providerInPairing := func(resp *types.QueryGetPairingResponse) bool {
+		for _, p := range resp.Providers {
+			if p.Address == provider {
+				return true
+			}
+		}
+		return false
+	}
+
+	// --- Step 1: provider is in GetPairing before jail ---
+	pairing, err := ts.QueryPairingGetPairing(chainID, client)
+	require.NoError(t, err)
+	require.True(t, providerInPairing(pairing), "provider should appear in GetPairing before jail")
+
+	// --- Step 2: jail the provider (permanent) ---
+	require.NoError(t, testutils.SimulateJailProposal(ts.Ctx, ts.Keepers.Pairing, []types.ProviderJailInfo{
+		{Provider: provider, ChainId: chainID, Reason: "e2e test", JailEndTime: 0},
+	}))
+
+	// The FrozenProvidersFilter evaluates StakeAppliedBlock > currentEpoch at query time.
+	// After Freeze(), StakeAppliedBlock = MaxInt64 → provider excluded immediately.
+	ts.AdvanceEpoch()
+	pairing, err = ts.QueryPairingGetPairing(chainID, client)
+	require.NoError(t, err)
+	require.False(t, providerInPairing(pairing), "provider should be absent from GetPairing after jail")
+
+	// --- Step 3: unjail the provider ---
+	require.NoError(t, testutils.SimulateUnjailProposal(ts.Ctx, ts.Keepers.Pairing, []types.ProviderJailInfo{
+		{Provider: provider, ChainId: chainID},
+	}))
+
+	// After UnjailProviderForProposal, StakeAppliedBlock = currentNextEpoch + 1.
+	// One epoch advance: currentEpoch = nextEpoch, filter sees (nextEpoch+1) > nextEpoch → still excluded.
+	ts.AdvanceEpoch()
+	pairing, err = ts.QueryPairingGetPairing(chainID, client)
+	require.NoError(t, err)
+	require.False(t, providerInPairing(pairing), "provider should still be absent one epoch after unjail")
+
+	// Two epoch advances: currentEpoch surpasses StakeAppliedBlock → provider re-enters pairing.
+	ts.AdvanceEpoch()
+	pairing, err = ts.QueryPairingGetPairing(chainID, client)
+	require.NoError(t, err)
+	require.True(t, providerInPairing(pairing), "provider should return to GetPairing after unjail + 2 epochs")
+}
+
 // TestUnjailProposalEpochBoundary verifies that after an unjail the StakeAppliedBlock is set
 // to GetCurrentNextEpoch + 1, so the provider re-enters pairing at the correct epoch boundary.
 func TestUnjailProposalEpochBoundary(t *testing.T) {
