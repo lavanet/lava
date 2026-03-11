@@ -28,10 +28,30 @@ type HealthReporter interface {
 }
 
 func NewGRPCProxy(cb ProxyCallBack, healthCheckPath string, cmdFlags common.ConsumerCmdFlags, healthReporter HealthReporter) (*grpc.Server, *http.Server, error) {
+	return NewGRPCProxyWithReflection(cb, healthCheckPath, cmdFlags, healthReporter, nil)
+}
+
+// NewGRPCProxyWithReflection creates a gRPC proxy with optional reflection support.
+// If reflectionCallback is provided, a separate gRPC server is created for reflection
+// that uses standard protobuf codec (not RawBytesCodec), allowing proper serialization.
+// This enables tools like grpcurl to work with the smart router.
+func NewGRPCProxyWithReflection(cb ProxyCallBack, healthCheckPath string, cmdFlags common.ConsumerCmdFlags, healthReporter HealthReporter, reflectionCallback ReflectionProxyCallback) (*grpc.Server, *http.Server, error) {
 	serverReceiveMaxMessageSize := grpc.MaxRecvMsgSize(MaxCallRecvMsgSize) // setting receive size to 32mb instead of 4mb default
 	s := grpc.NewServer(grpc.UnknownServiceHandler(makeProxyFunc(cb)), grpc.ForceServerCodec(RawBytesCodec{}), serverReceiveMaxMessageSize)
 	grpc_health_v1.RegisterHealthServer(s, health.NewServer())
+
 	wrappedServer := grpcweb.WrapServer(s)
+
+	// Create a separate gRPC server for reflection with standard protobuf codec
+	// This is needed because the main proxy server uses RawBytesCodec which breaks
+	// the reflection service's protobuf message serialization
+	var wrappedReflectionServer *grpcweb.WrappedGrpcServer
+	if reflectionCallback != nil {
+		reflectionGrpcServer := grpc.NewServer(serverReceiveMaxMessageSize)
+		RegisterReflectionProxy(reflectionGrpcServer, reflectionCallback)
+		wrappedReflectionServer = grpcweb.WrapServer(reflectionGrpcServer)
+	}
+
 	handler := func(resp http.ResponseWriter, req *http.Request) {
 		// Set CORS headers
 		resp.Header().Set("Access-Control-Allow-Origin", cmdFlags.OriginFlag)
@@ -57,6 +77,13 @@ func NewGRPCProxy(cb ProxyCallBack, healthCheckPath string, cmdFlags common.Cons
 
 			return
 		}
+
+		// Route reflection requests to the dedicated reflection server
+		if wrappedReflectionServer != nil && isReflectionRequest(req.URL.Path) {
+			wrappedReflectionServer.ServeHTTP(resp, req)
+			return
+		}
+
 		wrappedServer.ServeHTTP(resp, req)
 	}
 
@@ -124,4 +151,17 @@ func (RawBytesCodec) Name() string {
 
 func (RawBytesCodec) String() string {
 	return RawBytesCodec{}.Name()
+}
+
+// isReflectionRequest checks if the request path is for gRPC reflection service
+func isReflectionRequest(path string) bool {
+	// gRPC reflection v1alpha (most common)
+	if strings.HasPrefix(path, "/grpc.reflection.v1alpha.ServerReflection/") {
+		return true
+	}
+	// gRPC reflection v1 (newer version)
+	if strings.HasPrefix(path, "/grpc.reflection.v1.ServerReflection/") {
+		return true
+	}
+	return false
 }

@@ -22,6 +22,7 @@ var ( // Consumer Side Errors
 	SendRelayError                          = sdkerrors.New("SendRelay Error", 679, "Failed To Send Relay")
 	ContextDoneNoNeedToLockSelectionError   = sdkerrors.New("ContextDoneNoNeedToLockSelection Error", 687, "Context deadline exceeded while trying to lock selection")
 	BlockEndpointError                      = sdkerrors.New("BlockEndpoint Error", 688, "Block the endpoint")
+	ConsistencyPreValidationError           = sdkerrors.New("ConsistencyPreValidation Error", 699, "endpoint failed pre-request consistency validation")
 )
 
 var ( // Provider Side Errors

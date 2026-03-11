@@ -89,7 +89,12 @@ func (msg *JsonrpcMessage) isStarkNetPathfinderNotification() bool {
 }
 
 func (msg *JsonrpcMessage) isEthereumNotification() bool {
-	return msg.ID == nil && msg.Method != "" && msg.Params != nil
+	// Ethereum-style subscription notifications have method ending in _subscription
+	// and params containing {subscription, result}. Per JSON-RPC 2.0 spec they
+	// should not have ID, but some implementations add one. Identify by method
+	// suffix + params rather than relying on absent ID.
+	return msg.Method != "" && msg.Params != nil &&
+		strings.HasSuffix(msg.Method, ethereumNotificationMethodSuffix)
 }
 
 func (msg *JsonrpcMessage) isTendermintNotification() bool {

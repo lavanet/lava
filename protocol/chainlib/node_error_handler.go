@@ -29,7 +29,7 @@ type UnsupportedMethodError struct {
 
 func (e *UnsupportedMethodError) Error() string {
 	if e.methodName != "" {
-		return fmt.Sprintf("unsupported method '%s': %v", e.methodName, e.originalError)
+		return fmt.Sprintf("unsupported method %q: %v", e.methodName, e.originalError)
 	}
 	return fmt.Sprintf("unsupported method: %v", e.originalError)
 }

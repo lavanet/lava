@@ -1,6 +1,10 @@
 package metrics
 
-import "github.com/prometheus/client_golang/prometheus"
+import (
+	"errors"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
 
 // MappedLabelsCounterVec is a wrapper around prometheus.CounterVec that allows for setting labels dynamically.
 // We use if for the metrics that have a dynamic number of labels, based on flags given upon startup.
@@ -20,7 +24,16 @@ func NewMappedLabelsCounterVec(opts MappedLabelsMetricOpts) *MappedLabelsCounter
 		}, opts.Labels),
 	}
 
-	prometheus.MustRegister(metric.CounterVec)
+	if err := prometheus.Register(metric.CounterVec); err != nil {
+		are := &prometheus.AlreadyRegisteredError{}
+		if errors.As(err, are) {
+			if existing, ok := are.ExistingCollector.(*prometheus.CounterVec); ok {
+				metric.CounterVec = existing
+			}
+		} else {
+			panic(err)
+		}
+	}
 
 	return metric
 }

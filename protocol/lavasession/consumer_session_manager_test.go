@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
 	"github.com/lavanet/lava/v5/utils"
@@ -1435,4 +1436,58 @@ func TestPeriodicProbeProvidersTickerCleanup(t *testing.T) {
 			t.Fatal("Function did not exit promptly after context cancellation")
 		}
 	})
+}
+
+// TestBackupProviderOptimizerSelection verifies that when all static providers are exhausted,
+// the optimizer selects backup providers one at a time (not as a batch), and that successive
+// retries each get a different backup until the pool is exhausted.
+func TestBackupProviderOptimizerSelection(t *testing.T) {
+	ctx := context.Background()
+	csm := CreateConsumerSessionManager()
+
+	// Register two backup providers and zero static providers.
+	backupA := NewConsumerSessionWithProvider("backupA", []*Endpoint{{NetworkAddress: grpcListener, Enabled: true, Connections: []*EndpointConnection{}}}, 999999, firstEpochHeight, sdk.NewInt64Coin("ulava", 0))
+	backupA.StaticProvider = true
+	backupB := NewConsumerSessionWithProvider("backupB", []*Endpoint{{NetworkAddress: grpcListener, Enabled: true, Connections: []*EndpointConnection{}}}, 999999, firstEpochHeight, sdk.NewInt64Coin("ulava", 0))
+	backupB.StaticProvider = true
+
+	backupList := map[uint64]*ConsumerSessionsWithProvider{
+		0: backupA,
+		1: backupB,
+	}
+
+	err := csm.UpdateAllProviders(firstEpochHeight, nil, backupList)
+	require.NoError(t, err)
+
+	ignoredProv := &ignoredProviders{
+		providers:    make(map[string]struct{}),
+		currentEpoch: firstEpochHeight,
+	}
+
+	// First call: optimizer picks one backup.
+	result1, err := csm.getValidConsumerSessionsWithProviderFromBackupProviderList(ctx, ignoredProv, cuForFirstRequest, servicedBlockNumber, "", []string{}, 0, 0, NewUsedProviders(nil))
+	require.NoError(t, err)
+	require.Len(t, result1, 1, "expected exactly one backup provider returned per call")
+	var first string
+	for addr := range result1 {
+		first = addr
+	}
+	require.Contains(t, []string{"backupA", "backupB"}, first)
+	// The selected provider must now be in ignoredProviders.
+	_, firstIgnored := ignoredProv.providers[first]
+	require.True(t, firstIgnored, "selected backup should be in ignoredProviders after call")
+
+	// Second call: optimizer picks the other backup (first is now ignored).
+	result2, err := csm.getValidConsumerSessionsWithProviderFromBackupProviderList(ctx, ignoredProv, cuForFirstRequest, servicedBlockNumber, "", []string{}, 0, 0, NewUsedProviders(nil))
+	require.NoError(t, err)
+	require.Len(t, result2, 1, "expected exactly one backup provider returned per call")
+	var second string
+	for addr := range result2 {
+		second = addr
+	}
+	require.NotEqual(t, first, second, "second call should return the other backup provider")
+
+	// Third call: both backups are now ignored — expect an error.
+	_, err = csm.getValidConsumerSessionsWithProviderFromBackupProviderList(ctx, ignoredProv, cuForFirstRequest, servicedBlockNumber, "", []string{}, 0, 0, NewUsedProviders(nil))
+	require.Error(t, err, "expected error when all backup providers are exhausted")
 }

@@ -85,3 +85,20 @@ func TestCalcWeightsByStake_StaticProvider_ExplicitStake_NoBoost(t *testing.T) {
 	weights := CalcWeightsByStake(providers)
 	require.Equal(t, int64(25), weights["staticExplicit"])
 }
+
+func TestBackupProviderWeightsViaCalcWeightsByStake(t *testing.T) {
+	// Backup providers are registered using the same CalcWeightsByStake logic as static providers.
+	// Statics and backups are never in the same optimizer candidate list, so their weights only
+	// affect within-tier ranking — no artificial cap on backup weights is needed.
+	staticP := NewConsumerSessionWithProvider("static", nil, 1, 1, sdk.NewInt64Coin("ulava", 0))
+	staticP.StaticProvider = true
+	backupP := NewConsumerSessionWithProvider("backup", nil, 1, 1, sdk.NewInt64Coin("ulava", 0))
+	backupP.StaticProvider = true
+
+	staticWeights := CalcWeightsByStake(map[uint64]*ConsumerSessionsWithProvider{0: staticP})
+	backupWeights := CalcWeightsByStake(map[uint64]*ConsumerSessionsWithProvider{0: backupP})
+
+	// Both get the same treatment: zero-stake static providers receive the 10x boost.
+	require.Equal(t, int64(WeightMultiplierForStaticProviders), staticWeights["static"])
+	require.Equal(t, int64(WeightMultiplierForStaticProviders), backupWeights["backup"])
+}

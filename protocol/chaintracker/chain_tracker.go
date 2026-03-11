@@ -100,6 +100,7 @@ type ChainTracker struct {
 	newLatestCallback       func(int64, int64, string)      // a function to be called when a new block is detected, from what block to what block including gaps
 	oldBlockCallback        func(latestBlockTime time.Time) // a function to be called when an old block is detected
 	consistencyCallback     func(oldBlock int64, block int64)
+	fetchErrorCallback      func() // a function to be called when the latest-block fetch fails
 	serverBlockMemory       uint64
 	endpoint                lavasession.RPCProviderEndpoint
 	blockCheckpointDistance uint64 // used to do something every X blocks
@@ -350,6 +351,9 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 			}
 		}
 		cs.pmetrics.SetLatestBlockFetchError(cs.endpoint.ChainID)
+		if cs.fetchErrorCallback != nil {
+			cs.fetchErrorCallback()
+		}
 		return err
 	}
 	cs.pmetrics.SetLatestBlockFetchSuccess(cs.endpoint.ChainID)
@@ -646,6 +650,7 @@ func newCustomChainTracker(chainFetcher ChainFetcher, config ChainTrackerConfig)
 		forkCallback:            config.ForkCallback,
 		newLatestCallback:       config.NewLatestCallback,
 		oldBlockCallback:        config.OldBlockCallback,
+		fetchErrorCallback:      config.FetchErrorCallback,
 		blocksToSave:            config.BlocksToSave,
 		chainFetcher:            chainFetcher,
 		latestBlockNum:          0,
