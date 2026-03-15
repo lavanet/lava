@@ -84,13 +84,7 @@ type ConsumerMetricsManager struct {
 	providerLivenessMetric                         *prometheus.GaugeVec
 	blockedProviderMetric                          *MappedLabelsGaugeVec
 	crossValidationRequestsMetric                  *prometheus.CounterVec
-	// Provider selection score gauges - latest scores at time of selection
-	providerAvailabilityScoreGauge *prometheus.GaugeVec
-	providerLatencyScoreGauge      *prometheus.GaugeVec
-	providerSyncScoreGauge         *prometheus.GaugeVec
-	providerStakeScoreGauge        *prometheus.GaugeVec
-	providerCompositeScoreGauge    *prometheus.GaugeVec
-	selectionRNGValueGauge         *prometheus.GaugeVec
+	selectionRNGValueGauge                         *prometheus.GaugeVec
 }
 
 type ConsumerMetricsManagerOptions struct {
@@ -170,11 +164,11 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 
 	totalWsSubscriptionDisconnectMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_total_ws_subscription_disconnect",
-		Help: "The total number of websocket subscription disconnects over time per chain id per api interface per dissconnect reason.",
-	}, []string{"spec", "apiInterface", "dissconectReason"})
+		Help: "The total number of websocket subscription disconnects over time per chain id per api interface per disconnect reason.",
+	}, []string{"spec", "apiInterface", "disconnectReason"})
 
 	blockMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "lava_latest_block",
+		Name: "lava_consumer_latest_block",
 		Help: "The latest block measured",
 	}, []string{"spec"})
 
@@ -250,7 +244,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	}, []string{"spec", "provider_address", "apiInterface"})
 
 	virtualEpochMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "virtual_epoch",
+		Name: "lava_consumer_virtual_epoch",
 		Help: "The current virtual epoch measured",
 	}, []string{"spec"})
 
@@ -301,22 +295,22 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	}, []string{"spec", "apiInterface", "attempt"})
 
 	relayProcessingLatencyBeforeProvider := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "lava_relay_processing_latency_before_provider_in_micro_seconds",
+		Name: "lava_consumer_relay_processing_latency_before_provider_in_micro_seconds",
 		Help: "average latency of processing a successful relay before it is sent to the provider in µs (10^6)",
 	}, []string{"spec", "apiInterface"})
 
 	relayProcessingLatencyAfterProvider := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "lava_relay_processing_latency_after_provider_in_micro_seconds",
+		Name: "lava_consumer_relay_processing_latency_after_provider_in_micro_seconds",
 		Help: "average latency of processing a successful relay after it is received from the provider in µs (10^6)",
 	}, []string{"spec", "apiInterface"})
 
 	requestsPerProviderMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "lava_requests_per_provider",
+		Name: "lava_consumer_requests_per_provider",
 		Help: "The number of requests per provider and spec",
 	}, []string{"spec", "provider_address"})
 
 	protocolErrorsPerProviderMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "lava_protocol_errors_per_provider",
+		Name: "lava_consumer_protocol_errors_per_provider",
 		Help: "The number of protocol errors per provider and spec",
 	}, []string{"spec", "provider_address"})
 
@@ -338,32 +332,6 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	providerSelectionsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_provider_selections",
 		Help: "The total number of times each provider was selected for relay (before request attempt)",
-	}, []string{"spec", "provider_address"})
-
-	// Provider selection score gauges - latest scores at time of selection
-	providerAvailabilityScoreGauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "lava_consumer_provider_availability_score",
-		Help: "Latest availability score for provider at time of selection (0-1)",
-	}, []string{"spec", "provider_address"})
-
-	providerLatencyScoreGauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "lava_consumer_provider_latency_score",
-		Help: "Latest latency score for provider at time of selection (0-1)",
-	}, []string{"spec", "provider_address"})
-
-	providerSyncScoreGauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "lava_consumer_provider_sync_score",
-		Help: "Latest sync score for provider at time of selection (0-1)",
-	}, []string{"spec", "provider_address"})
-
-	providerStakeScoreGauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "lava_consumer_provider_stake_score",
-		Help: "Latest stake score for provider at time of selection (0-1)",
-	}, []string{"spec", "provider_address"})
-
-	providerCompositeScoreGauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "lava_consumer_provider_composite_score",
-		Help: "Latest composite QoS score for provider at time of selection (0-1)",
 	}, []string{"spec", "provider_address"})
 
 	selectionRNGValueGauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -419,11 +387,6 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	registerMetric(protocolErrorsPerProviderMetric)
 	registerMetric(crossValidationRequestsMetric)
 	registerMetric(providerSelectionsMetric)
-	registerMetric(providerAvailabilityScoreGauge)
-	registerMetric(providerLatencyScoreGauge)
-	registerMetric(providerSyncScoreGauge)
-	registerMetric(providerStakeScoreGauge)
-	registerMetric(providerCompositeScoreGauge)
 	registerMetric(selectionRNGValueGauge)
 
 	consumerMetricsManager := &ConsumerMetricsManager{
@@ -470,11 +433,6 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		providerLivenessMetric:                         providerLivenessMetric,
 		blockedProviderMetric:                          blockedProviderMetric,
 		crossValidationRequestsMetric:                  crossValidationRequestsMetric,
-		providerAvailabilityScoreGauge:                 providerAvailabilityScoreGauge,
-		providerLatencyScoreGauge:                      providerLatencyScoreGauge,
-		providerSyncScoreGauge:                         providerSyncScoreGauge,
-		providerStakeScoreGauge:                        providerStakeScoreGauge,
-		providerCompositeScoreGauge:                    providerCompositeScoreGauge,
 		selectionRNGValueGauge:                         selectionRNGValueGauge,
 	}
 
@@ -868,23 +826,16 @@ func (pme *ConsumerMetricsManager) SetProviderSelected(chainId string, providerA
 	}
 	// Increment selection counter for the selected provider
 	pme.providerSelectionsMetric.WithLabelValues(chainId, providerAddress).Inc()
-
-	// Update RNG value gauge for this chain
 	pme.selectionRNGValueGauge.WithLabelValues(chainId).Set(rngValue)
 
-	// Update score gauges for ALL providers (not just selected)
+	// Find the selected provider's composite score for the optimizer
 	var selectedQoSScore float64
 	foundSelectedProvider := false
 	for _, scores := range allProviderScores {
-		pme.providerAvailabilityScoreGauge.WithLabelValues(chainId, scores.ProviderAddress).Set(scores.Availability)
-		pme.providerLatencyScoreGauge.WithLabelValues(chainId, scores.ProviderAddress).Set(scores.Latency)
-		pme.providerSyncScoreGauge.WithLabelValues(chainId, scores.ProviderAddress).Set(scores.Sync)
-		pme.providerStakeScoreGauge.WithLabelValues(chainId, scores.ProviderAddress).Set(scores.Stake)
-		pme.providerCompositeScoreGauge.WithLabelValues(chainId, scores.ProviderAddress).Set(scores.Composite)
-
 		if scores.ProviderAddress == providerAddress {
 			selectedQoSScore = scores.Composite
 			foundSelectedProvider = true
+			break
 		}
 	}
 

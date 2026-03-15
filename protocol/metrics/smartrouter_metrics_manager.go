@@ -93,6 +93,7 @@ type SmartRouterMetricsManager struct {
 	endpointsHealthChecksOk uint64
 	endpointMetrics         map[string]*EndpointMetrics
 	urlToProviderName       map[string]string // maps endpoint URL → provider name for metric label resolution
+	optimizerQoSClient      *ConsumerOptimizerQoSClient
 }
 
 // EndpointMetrics holds per-endpoint metrics state for function-level tracking
@@ -105,8 +106,9 @@ type EndpointMetrics struct {
 
 // SmartRouterMetricsManagerOptions contains configuration for the metrics manager
 type SmartRouterMetricsManagerOptions struct {
-	NetworkAddress  string
-	StartHTTPServer bool // If false, only register metrics (for use alongside ConsumerMetricsManager)
+	NetworkAddress      string
+	StartHTTPServer     bool // If false, only register metrics (for use alongside ConsumerMetricsManager)
+	OptimizerQoSClient *ConsumerOptimizerQoSClient
 }
 
 // NewSmartRouterMetricsManager creates a new SmartRouterMetricsManager instance
@@ -345,6 +347,7 @@ func NewSmartRouterMetricsManager(options SmartRouterMetricsManagerOptions) *Sma
 		endpointsHealthChecksOk: 1,
 		endpointMetrics:         make(map[string]*EndpointMetrics),
 		urlToProviderName:       make(map[string]string),
+		optimizerQoSClient:      options.OptimizerQoSClient,
 	}
 
 	// Only start HTTP server if requested (to avoid conflicts with ConsumerMetricsManager)
@@ -816,4 +819,27 @@ func (m *SmartRouterMetricsManager) SetWebSocketConnectionActive(chainId, apiInt
 
 func (m *SmartRouterMetricsManager) SetLoLResponse(bool) {}
 
-func (m *SmartRouterMetricsManager) StartSelectionStatsUpdater(context.Context, time.Duration) {}
+func (m *SmartRouterMetricsManager) StartSelectionStatsUpdater(ctx context.Context, updateInterval time.Duration) {
+	if m == nil || m.optimizerQoSClient == nil {
+		return
+	}
+	go func() {
+		ticker := time.NewTicker(updateInterval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				for _, report := range m.optimizerQoSClient.GetReportsToSend() {
+					endpointID := report.ProviderAddress
+					m.endpointSelectionScore.WithLabelValues(report.ChainId, endpointID, "availability").Set(report.SelectionAvailability)
+					m.endpointSelectionScore.WithLabelValues(report.ChainId, endpointID, "latency").Set(report.SelectionLatency)
+					m.endpointSelectionScore.WithLabelValues(report.ChainId, endpointID, "sync").Set(report.SelectionSync)
+					m.endpointSelectionScore.WithLabelValues(report.ChainId, endpointID, "stake").Set(report.SelectionStake)
+					m.endpointSelectionScore.WithLabelValues(report.ChainId, endpointID, "composite").Set(report.SelectionComposite)
+				}
+			}
+		}
+	}()
+}
