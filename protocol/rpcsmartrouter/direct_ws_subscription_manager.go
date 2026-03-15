@@ -818,7 +818,7 @@ func (dwsm *DirectWSSubscriptionManager) Unsubscribe(
 		if activeSub.upstreamConnection != nil {
 			activeSub.upstreamPool.NotifySubscriptionRemoved(activeSub.upstreamConnection)
 		}
-		go dwsm.metricsManager.SetWsSubscriptioDisconnectRequestMetric(dwsm.chainID, dwsm.apiInterface, metrics.WsDisconnectionReasonUser)
+		go dwsm.metricsManager.SetWsSubscriptionDisconnectRequestMetric(dwsm.chainID, dwsm.apiInterface, metrics.WsDisconnectionReasonUser)
 	}
 
 	return nodeResp, nil
@@ -903,7 +903,7 @@ func (dwsm *DirectWSSubscriptionManager) UnsubscribeAll(
 			if activeSub.upstreamConnection != nil {
 				activeSub.upstreamPool.NotifySubscriptionRemoved(activeSub.upstreamConnection)
 			}
-			go dwsm.metricsManager.SetWsSubscriptioDisconnectRequestMetric(dwsm.chainID, dwsm.apiInterface, metrics.WsDisconnectionReasonUser)
+			go dwsm.metricsManager.SetWsSubscriptionDisconnectRequestMetric(dwsm.chainID, dwsm.apiInterface, metrics.WsDisconnectionReasonUser)
 		}
 	}
 
@@ -1381,7 +1381,7 @@ func (dwsm *DirectWSSubscriptionManager) handleClientDisconnect(
 		if upstreamConn != nil {
 			upstreamPool.NotifySubscriptionRemoved(upstreamConn)
 		}
-		go dwsm.metricsManager.SetWsSubscriptioDisconnectRequestMetric(dwsm.chainID, dwsm.apiInterface, metrics.WsDisconnectionReasonConsumer)
+		go dwsm.metricsManager.SetWsSubscriptionDisconnectRequestMetric(dwsm.chainID, dwsm.apiInterface, metrics.WsDisconnectionReasonConsumer)
 	}
 }
 
@@ -1419,7 +1419,7 @@ func (dwsm *DirectWSSubscriptionManager) cleanupSubscription(hashedParams string
 		activeSub.upstreamPool.NotifySubscriptionRemoved(activeSub.upstreamConnection)
 	}
 
-	go dwsm.metricsManager.SetWsSubscriptioDisconnectRequestMetric(dwsm.chainID, dwsm.apiInterface, metrics.WsDisconnectionReasonProvider)
+	go dwsm.metricsManager.SetWsSubscriptionDisconnectRequestMetric(dwsm.chainID, dwsm.apiInterface, metrics.WsDisconnectionReasonProvider)
 
 	utils.LavaFormatTrace("DirectWS: subscription cleaned up",
 		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),

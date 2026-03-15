@@ -526,14 +526,14 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 				utils.LogAttr("GUID", webSocketCtx),
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			)
-			go cwsm.consumerMetricsManager.SetWsSubscriptioDisconnectRequestMetric(metricsData.ChainID, metricsData.APIType, metrics.WsDisconnectionReasonUser)
+			go cwsm.consumerMetricsManager.SetWsSubscriptionDisconnectRequestMetric(metricsData.ChainID, metricsData.APIType, metrics.WsDisconnectionReasonUser)
 			return
 		case <-replyServer.Context().Done():
 			utils.LavaFormatTrace("reply server context canceled",
 				utils.LogAttr("GUID", webSocketCtx),
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			)
-			go cwsm.consumerMetricsManager.SetWsSubscriptioDisconnectRequestMetric(metricsData.ChainID, metricsData.APIType, metrics.WsDisconnectionReasonConsumer)
+			go cwsm.consumerMetricsManager.SetWsSubscriptionDisconnectRequestMetric(metricsData.ChainID, metricsData.APIType, metrics.WsDisconnectionReasonConsumer)
 			return
 		default:
 			var reply pairingtypes.RelayReply
@@ -541,7 +541,7 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 			if err != nil {
 				// The connection was closed by the provider
 				utils.LavaFormatTrace("error reading from subscription stream", utils.LogAttr("original error", err.Error()))
-				go cwsm.consumerMetricsManager.SetWsSubscriptioDisconnectRequestMetric(metricsData.ChainID, metricsData.APIType, metrics.WsDisconnectionReasonProvider)
+				go cwsm.consumerMetricsManager.SetWsSubscriptionDisconnectRequestMetric(metricsData.ChainID, metricsData.APIType, metrics.WsDisconnectionReasonProvider)
 				return
 			}
 			err = cwsm.handleIncomingSubscriptionNodeMessage(hashedParams, &reply, providerAddr)
