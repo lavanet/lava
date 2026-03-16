@@ -37,10 +37,6 @@ type SmartRouterRelaySender interface {
 	) (protocolMessage chainlib.ProtocolMessage, err error)
 }
 
-type tickerMetricSetterInf interface {
-	RecordHedgeRelaySent(chainId string, apiInterface string, method string)
-}
-
 type SmartRouterRelayStateMachine struct {
 	ctx                      context.Context // same context as user context.
 	relaySender              SmartRouterRelaySender
@@ -49,7 +45,6 @@ type SmartRouterRelayStateMachine struct {
 	selection                relaycore.Selection
 	crossValidationParams    *common.CrossValidationParams // nil for Stateless/Stateful, non-nil for CrossValidation
 	debugRelays              bool
-	tickerMetricSetter       tickerMetricSetterInf
 	batchUpdate              chan error
 	usedProviders            *lavasession.UsedProviders
 	relayRetriesManager      *lavaprotocol.RelayRetriesManager
@@ -66,7 +61,6 @@ func NewSmartRouterRelayStateMachine(
 	protocolMessage chainlib.ProtocolMessage,
 	analytics *metrics.RelayMetrics,
 	debugRelays bool,
-	tickerMetricSetter tickerMetricSetterInf,
 ) (RelayStateMachine, error) {
 	// Check cross-validation headers FIRST (highest priority)
 	// This is the SINGLE SOURCE OF TRUTH for determining if cross-validation is enabled
@@ -102,7 +96,6 @@ func NewSmartRouterRelayStateMachine(
 		selection:             selection,
 		crossValidationParams: cvParams,
 		debugRelays:           debugRelays,
-		tickerMetricSetter:    tickerMetricSetter,
 		batchUpdate:           make(chan error, MaximumNumberOfTickerRelayRetries),
 		relayState:            make([]*relaycore.RelayState, 0),
 	}, nil
@@ -433,9 +426,9 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 				if srsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
 					utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
 					relayTaskChannel <- RelayStateSendInstructions{RelayState: srsm.getLatestState(), NumOfProviders: 1}
-					// Add ticker launch metrics
-					chainId, apiInterface := srsm.relaySender.GetChainIdAndApiInterface()
-					go srsm.tickerMetricSetter.RecordHedgeRelaySent(chainId, apiInterface, srsm.protocolMessage.GetApi().GetName())
+					if srsm.analytics != nil {
+						srsm.analytics.HedgeCount++
+					}
 				}
 			case returnErr := <-returnCondition:
 				utils.LavaFormatTrace("[StateMachine] returnErr := <-returnCondition", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))

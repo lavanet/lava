@@ -126,7 +126,7 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
 		consistency := relaycore.NewConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil}, protocolMessage, nil, false)
 		require.NoError(t, err)
 		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
@@ -199,7 +199,7 @@ func TestConsumerStateMachineExhaustRetries(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
 		consistency := relaycore.NewConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false)
 		require.NoError(t, err)
 		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
@@ -276,7 +276,6 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 			protocolMessage,
 			nil,
 			false,
-			relaycoretest.RelayProcessorMetrics,
 		)
 		require.NoError(t, err)
 		relayProcessor := relaycore.NewRelayProcessor(
@@ -353,7 +352,7 @@ func TestSmartRouterStateMachineCircuitBreakerOnPairingErrors(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
 		consistency := relaycore.NewConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil}, protocolMessage, nil, false)
 		require.NoError(t, err)
 		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
@@ -403,7 +402,7 @@ func TestSmartRouterStateMachineCircuitBreakerResetsOnSuccess(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
 		consistency := relaycore.NewConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil}, protocolMessage, nil, false)
 		require.NoError(t, err)
 		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
@@ -460,7 +459,7 @@ func TestSmartRouterStateMachineCircuitBreakerResetsOnDifferentError(t *testing.
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
 		consistency := relaycore.NewConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil}, protocolMessage, nil, false)
 		require.NoError(t, err)
 		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
@@ -526,7 +525,7 @@ func TestProcessingContextTimeoutEnforcement(t *testing.T) {
 			processingTimeout: 100 * time.Millisecond, // 100ms processing timeout
 		}
 
-		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, mockSender, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, mockSender, protocolMessage, nil, false)
 		require.NoError(t, err)
 		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
@@ -619,7 +618,7 @@ func TestProcessingContextStillValidAllowsRetries(t *testing.T) {
 		usedProviders := lavasession.NewUsedProviders(nil)
 
 		// LONG processing timeout (10 seconds) - retries should continue
-		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false)
 		require.NoError(t, err)
 		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
@@ -702,7 +701,7 @@ func TestProcessingContextRaceCondition(t *testing.T) {
 			processingTimeout: 200 * time.Millisecond,
 		}
 
-		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, mockSender, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, mockSender, protocolMessage, nil, false)
 		require.NoError(t, err)
 		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
@@ -792,7 +791,7 @@ func TestSmartRouterStateMachineBatchRequestRetryCondition(t *testing.T) {
 		usedProviders := lavasession.NewUsedProviders(nil)
 
 		// Create the state machine
-		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false)
 		require.NoError(t, err)
 		smartRouterStateMachine, ok := stateMachine.(*SmartRouterRelayStateMachine)
 		require.True(t, ok, "expected SmartRouterRelayStateMachine")
@@ -1071,7 +1070,7 @@ func TestSmartRouterStateMachineRetryLimit(t *testing.T) {
 			protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "dapp", "123.11")
 			usedProviders := lavasession.NewUsedProviders(nil)
 			// Use long ticker to prevent ticker-based retries from interfering
-			stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+			stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false)
 			require.NoError(t, err)
 			relayProcessor := relaycore.NewRelayProcessor(ctx, nil, nil, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 

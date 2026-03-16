@@ -71,15 +71,15 @@ func TestConsumerRecordCacheResult_TotalEqualsSuccessPlusFailedAfterMixed(t *tes
 	require.Equal(t, total, success+failed)
 }
 
-func TestConsumerRecordCacheResult_LatencyObserved(t *testing.T) {
+func TestConsumerRecordCacheResult_LatencyObservedOnHitOnly(t *testing.T) {
 	cmm := newConsumerForCacheTest()
 
-	// Verify latency observations do not panic and the histogram is populated.
-	require.NotPanics(t, func() {
-		cmm.RecordCacheResult("ETH1", "jsonrpc", "eth_blockNumber", true, 10.0)
-		cmm.RecordCacheResult("ETH1", "jsonrpc", "eth_blockNumber", false, 20.0)
-	})
-	// The histogram vec itself (as a Collector) should have collected observations.
+	// Hit — should be observed in the histogram.
+	cmm.RecordCacheResult("ETH1", "jsonrpc", "eth_blockNumber", true, 10.0)
+	// Miss — should NOT be observed (different latency population).
+	cmm.RecordCacheResult("ETH1", "jsonrpc", "eth_blockNumber", false, 20.0)
+
+	// Exactly one time-series should be populated (the hit observation).
 	require.Equal(t, 1, testutil.CollectAndCount(cmm.cacheLatencyHistogram))
 }
 

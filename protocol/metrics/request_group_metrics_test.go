@@ -144,13 +144,45 @@ func TestConsumerSetRelayMetrics_NilManager(t *testing.T) {
 	})
 }
 
+// TestConsumerSetRelayMetrics_PartitionInvariant asserts the documented counting
+// invariants: batch+read+write==total and success+failed==total across a mixed
+// workload. debug_trace and archive are orthogonal sub-categories and are NOT
+// expected to sum to total.
+func TestConsumerSetRelayMetrics_PartitionInvariant(t *testing.T) {
+	cmm := newConsumerForRequestGroupTest()
+	l := []string{"ETH1", "jsonrpc", "p1", "m"}
+
+	send := func(rm RelayMetrics, err error) {
+		rm.ChainID, rm.APIType, rm.ProviderAddress, rm.ApiMethod = "ETH1", "jsonrpc", "p1", "m"
+		cmm.SetRelayMetrics(&rm, err)
+	}
+
+	send(RelayMetrics{IsWrite: false}, nil)                 // read, success
+	send(RelayMetrics{IsWrite: true}, nil)                  // write, success
+	send(RelayMetrics{IsBatch: true}, nil)                  // batch, success
+	send(RelayMetrics{IsArchive: true}, errors.New("e"))    // read+archive, failed
+	send(RelayMetrics{IsDebugTrace: true}, nil)             // read+debug, success
+	send(RelayMetrics{IsWrite: true, IsArchive: true}, nil) // write+archive, success
+
+	total := testutil.ToFloat64(cmm.requestsTotalMetric.WithLabelValues(l...))
+	read := testutil.ToFloat64(cmm.requestsReadMetric.WithLabelValues(l...))
+	write := testutil.ToFloat64(cmm.requestsWriteMetric.WithLabelValues(l...))
+	batch := testutil.ToFloat64(cmm.requestsBatchMetric.WithLabelValues(l...))
+	success := testutil.ToFloat64(cmm.requestsSuccessMetric.WithLabelValues(l...))
+	failed := testutil.ToFloat64(cmm.requestsFailedMetric.WithLabelValues(l...))
+
+	require.Equal(t, float64(6), total)
+	require.Equal(t, total, batch+read+write, "batch+read+write must equal total")
+	require.Equal(t, total, success+failed, "success+failed must equal total")
+}
+
 // ---- SmartRouter tests ----
 
 func TestSmartRouterRecordDirectRelayEnd_SuccessCounters(t *testing.T) {
 	m := newSmartRouterForRequestGroupTest()
 	labels := []string{"ETH1", "jsonrpc", "ep1", "eth_blockNumber"}
 
-	m.RecordDirectRelayEnd("ETH1", "jsonrpc", "ep1", "eth_blockNumber", 10, true, RequestProperties{})
+	m.RecordDirectRelayEnd("ETH1", "jsonrpc", "ep1", "eth_blockNumber", 10, true, &RelayMetrics{})
 
 	require.Equal(t, float64(1), testutil.ToFloat64(m.routerRequestsTotal.WithLabelValues(labels...)))
 	require.Equal(t, float64(1), testutil.ToFloat64(m.routerRequestsSuccess.WithLabelValues(labels...)))
@@ -161,7 +193,7 @@ func TestSmartRouterRecordDirectRelayEnd_FailureCounters(t *testing.T) {
 	m := newSmartRouterForRequestGroupTest()
 	labels := []string{"ETH1", "jsonrpc", "ep1", "eth_blockNumber"}
 
-	m.RecordDirectRelayEnd("ETH1", "jsonrpc", "ep1", "eth_blockNumber", 10, false, RequestProperties{})
+	m.RecordDirectRelayEnd("ETH1", "jsonrpc", "ep1", "eth_blockNumber", 10, false, &RelayMetrics{})
 
 	require.Equal(t, float64(1), testutil.ToFloat64(m.routerRequestsTotal.WithLabelValues(labels...)))
 	require.Equal(t, float64(0), testutil.ToFloat64(m.routerRequestsSuccess.WithLabelValues(labels...)))
@@ -172,7 +204,7 @@ func TestSmartRouterRecordDirectRelayEnd_ReadRequest(t *testing.T) {
 	m := newSmartRouterForRequestGroupTest()
 	labels := []string{"ETH1", "jsonrpc", "ep1", "eth_blockNumber"}
 
-	m.RecordDirectRelayEnd("ETH1", "jsonrpc", "ep1", "eth_blockNumber", 10, true, RequestProperties{IsWrite: false})
+	m.RecordDirectRelayEnd("ETH1", "jsonrpc", "ep1", "eth_blockNumber", 10, true, &RelayMetrics{IsWrite: false})
 
 	require.Equal(t, float64(1), testutil.ToFloat64(m.routerRequestsRead.WithLabelValues(labels...)))
 	require.Equal(t, float64(0), testutil.ToFloat64(m.routerRequestsWrite.WithLabelValues(labels...)))
@@ -182,7 +214,7 @@ func TestSmartRouterRecordDirectRelayEnd_WriteRequest(t *testing.T) {
 	m := newSmartRouterForRequestGroupTest()
 	labels := []string{"ETH1", "jsonrpc", "ep1", "eth_sendRawTransaction"}
 
-	m.RecordDirectRelayEnd("ETH1", "jsonrpc", "ep1", "eth_sendRawTransaction", 10, true, RequestProperties{IsWrite: true})
+	m.RecordDirectRelayEnd("ETH1", "jsonrpc", "ep1", "eth_sendRawTransaction", 10, true, &RelayMetrics{IsWrite: true})
 
 	require.Equal(t, float64(1), testutil.ToFloat64(m.routerRequestsWrite.WithLabelValues(labels...)))
 	require.Equal(t, float64(0), testutil.ToFloat64(m.routerRequestsRead.WithLabelValues(labels...)))
@@ -192,7 +224,7 @@ func TestSmartRouterRecordDirectRelayEnd_ArchiveRequest(t *testing.T) {
 	m := newSmartRouterForRequestGroupTest()
 	labels := []string{"ETH1", "jsonrpc", "ep1", "eth_getBlockByNumber"}
 
-	m.RecordDirectRelayEnd("ETH1", "jsonrpc", "ep1", "eth_getBlockByNumber", 10, true, RequestProperties{IsArchive: true})
+	m.RecordDirectRelayEnd("ETH1", "jsonrpc", "ep1", "eth_getBlockByNumber", 10, true, &RelayMetrics{IsArchive: true})
 
 	require.Equal(t, float64(1), testutil.ToFloat64(m.routerRequestsArchive.WithLabelValues(labels...)))
 	require.Equal(t, float64(1), testutil.ToFloat64(m.routerRequestsRead.WithLabelValues(labels...)))
@@ -203,7 +235,7 @@ func TestSmartRouterRecordDirectRelayEnd_DebugTraceRequest(t *testing.T) {
 	m := newSmartRouterForRequestGroupTest()
 	labels := []string{"ETH1", "jsonrpc", "ep1", "debug_traceTransaction"}
 
-	m.RecordDirectRelayEnd("ETH1", "jsonrpc", "ep1", "debug_traceTransaction", 10, true, RequestProperties{IsDebugTrace: true})
+	m.RecordDirectRelayEnd("ETH1", "jsonrpc", "ep1", "debug_traceTransaction", 10, true, &RelayMetrics{IsDebugTrace: true})
 
 	require.Equal(t, float64(1), testutil.ToFloat64(m.routerRequestsDebugTrace.WithLabelValues(labels...)))
 	require.Equal(t, float64(0), testutil.ToFloat64(m.routerRequestsBatch.WithLabelValues(labels...)))
@@ -213,7 +245,7 @@ func TestSmartRouterRecordDirectRelayEnd_BatchRequest_MutuallyExclusive(t *testi
 	m := newSmartRouterForRequestGroupTest()
 	labels := []string{"ETH1", "jsonrpc", "ep1", "batch"}
 
-	m.RecordDirectRelayEnd("ETH1", "jsonrpc", "ep1", "batch", 10, true, RequestProperties{
+	m.RecordDirectRelayEnd("ETH1", "jsonrpc", "ep1", "batch", 10, true, &RelayMetrics{
 		IsBatch: true, IsWrite: true, IsArchive: true, IsDebugTrace: true,
 	})
 
@@ -227,6 +259,6 @@ func TestSmartRouterRecordDirectRelayEnd_BatchRequest_MutuallyExclusive(t *testi
 func TestSmartRouterRecordDirectRelayEnd_NilManager(t *testing.T) {
 	var m *SmartRouterMetricsManager
 	require.NotPanics(t, func() {
-		m.RecordDirectRelayEnd("ETH1", "jsonrpc", "ep1", "method", 10, true, RequestProperties{})
+		m.RecordDirectRelayEnd("ETH1", "jsonrpc", "ep1", "method", 10, true, &RelayMetrics{})
 	})
 }

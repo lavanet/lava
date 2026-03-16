@@ -17,7 +17,7 @@ import (
 // RelayProcessorMetricsMock is a mock implementation of metrics interfaces for testing
 type RelayProcessorMetricsMock struct{}
 
-func (romm *RelayProcessorMetricsMock) SetRelayNodeErrorMetric(providerAddress, chainId, apiInterface, method string) {
+func (romm *RelayProcessorMetricsMock) SetRelayNodeErrorMetric(chainId, apiInterface, providerAddress, method string) {
 }
 
 func (romm *RelayProcessorMetricsMock) RecordHedgeRelaySent(chainId string, apiInterface string, method string) {

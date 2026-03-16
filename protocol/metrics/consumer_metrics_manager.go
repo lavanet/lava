@@ -3,7 +3,6 @@ package metrics
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -25,44 +24,42 @@ const (
 
 var ShowProviderEndpointInMetrics = false
 
-
 type ConsumerMetricsManager struct {
-	totalCURequestedMetric *prometheus.CounterVec
-	totalWsSubscriptionRequestsMetric              *prometheus.CounterVec
-	totalFailedWsSubscriptionRequestsMetric        *prometheus.CounterVec
-	totalWsSubscriptionDisconnectMetric            *prometheus.CounterVec
-	totalDuplicatedWsSubscriptionRequestsMetric    *prometheus.CounterVec
-	totalLoLSuccessMetric                          prometheus.Counter
-	totalLoLErrorsMetric                           prometheus.Counter
-	totalWebSocketConnectionsActive                *prometheus.GaugeVec
-	blockMetric                                    *prometheus.GaugeVec
-	qosMetric                                      *MappedLabelsGaugeVec
-	providerReputationMetric                       *MappedLabelsGaugeVec
-	selectionStatsMetric                           *MappedLabelsGaugeVec
-	LatestBlockMetric                              *MappedLabelsGaugeVec
-	LatestProviderRelay                            *prometheus.GaugeVec
-	virtualEpochMetric                             *prometheus.GaugeVec
-	apiMethodCalls                                 *prometheus.GaugeVec
-	endpointsHealthChecksOkMetric                  prometheus.Gauge
-	endpointsHealthChecksOk                        uint64
-	endpointsHealthChecksBreakdownMetric           *prometheus.GaugeVec
-	lock                                           sync.Mutex
-	protocolVersionMetric                          *prometheus.GaugeVec
-	protocolErrorsPerProviderMetric                *prometheus.CounterVec
-	providerSelectionsMetric                       *prometheus.CounterVec
-	providerRelays                                 map[string]uint64
-	addMethodsApiGauge                             bool
-	consumerOptimizerQoSClient                     *ConsumerOptimizerQoSClient
-	providerLivenessMetric                         *prometheus.GaugeVec
-	blockedProviderMetric                          *MappedLabelsGaugeVec
+	totalCURequestedMetric                      *prometheus.CounterVec
+	totalWsSubscriptionRequestsMetric           *prometheus.CounterVec
+	totalFailedWsSubscriptionRequestsMetric     *prometheus.CounterVec
+	totalWsSubscriptionDisconnectMetric         *prometheus.CounterVec
+	totalDuplicatedWsSubscriptionRequestsMetric *prometheus.CounterVec
+	totalLoLSuccessMetric                       prometheus.Counter
+	totalLoLErrorsMetric                        prometheus.Counter
+	totalWebSocketConnectionsActive             *prometheus.GaugeVec
+	blockMetric                                 *prometheus.GaugeVec
+	qosMetric                                   *MappedLabelsGaugeVec
+	providerReputationMetric                    *MappedLabelsGaugeVec
+	selectionStatsMetric                        *MappedLabelsGaugeVec
+	LatestBlockMetric                           *MappedLabelsGaugeVec
+	LatestProviderRelay                         *prometheus.GaugeVec
+	virtualEpochMetric                          *prometheus.GaugeVec
+	apiMethodCalls                              *prometheus.GaugeVec
+	endpointsHealthChecksOkMetric               prometheus.Gauge
+	endpointsHealthChecksOk                     uint64
+	endpointsHealthChecksBreakdownMetric        *prometheus.GaugeVec
+	lock                                        sync.Mutex
+	protocolVersionMetric                       *prometheus.GaugeVec
+	providerSelectionsMetric                    *prometheus.CounterVec
+	providerRelays                              map[string]uint64
+	addMethodsApiGauge                          bool
+	consumerOptimizerQoSClient                  *ConsumerOptimizerQoSClient
+	providerLivenessMetric                      *prometheus.GaugeVec
+	blockedProviderMetric                       *MappedLabelsGaugeVec
 	// Cross-validation group metrics
 	crossValidationRequestsTotalMetric              *prometheus.CounterVec // lava_consumer_cross_validation_requests_total        {spec, apiInterface, method}
 	crossValidationSuccessTotalMetric               *prometheus.CounterVec // lava_consumer_cross_validation_success_total         {spec, apiInterface, method}
 	crossValidationFailedTotalMetric                *prometheus.CounterVec // lava_consumer_cross_validation_failed_total          {spec, apiInterface, method}
 	crossValidationProviderAgreementsTotalMetric    *prometheus.CounterVec // lava_consumer_cross_validation_provider_agreements_total    {spec, apiInterface, method, provider_address}
 	crossValidationProviderDisagreementsTotalMetric *prometheus.CounterVec // lava_consumer_cross_validation_provider_disagreements_total {spec, apiInterface, method, provider_address}
-	selectionRNGValueGauge                         *prometheus.GaugeVec
-	// Request group metrics (labels: spec, provider_address, method)
+	selectionRNGValueGauge                          *prometheus.GaugeVec
+	// Request group metrics (labels: spec, apiInterface, provider_address, method)
 	requestsTotalMetric      *prometheus.CounterVec
 	requestsSuccessMetric    *prometheus.CounterVec
 	requestsFailedMetric     *prometheus.CounterVec
@@ -72,25 +69,27 @@ type ConsumerMetricsManager struct {
 	requestsArchiveMetric    *prometheus.CounterVec
 	requestsBatchMetric      *prometheus.CounterVec
 	// Latency group metrics
-	latencyEndToEndHistogram  *prometheus.HistogramVec // lava_consumer_end_to_end_latency_milliseconds {spec, apiInterface, method}
-	latencyProviderHistogram  *prometheus.HistogramVec // lava_consumer_provider_latency_milliseconds   {spec, apiInterface, provider_address, method}
+	latencyEndToEndHistogram *prometheus.HistogramVec // lava_consumer_end_to_end_latency_milliseconds {spec, apiInterface, method}
+	latencyProviderHistogram *prometheus.HistogramVec // lava_consumer_provider_latency_milliseconds   {spec, apiInterface, provider_address, method}
 	// Cache group metrics (labels: spec, apiInterface, method)
-	cacheRequestsTotalMetric *prometheus.CounterVec  // lava_consumer_cache_requests_total
-	cacheSuccessTotalMetric  *prometheus.CounterVec  // lava_consumer_cache_success_total
-	cacheFailedTotalMetric   *prometheus.CounterVec  // lava_consumer_cache_failed_total
+	cacheRequestsTotalMetric *prometheus.CounterVec   // lava_consumer_cache_requests_total
+	cacheSuccessTotalMetric  *prometheus.CounterVec   // lava_consumer_cache_success_total
+	cacheFailedTotalMetric   *prometheus.CounterVec   // lava_consumer_cache_failed_total
 	cacheLatencyHistogram    *prometheus.HistogramVec // lava_consumer_cache_latency_milliseconds
 	// Incident group metrics
-	incidentNodeErrorsTotalMetric     *prometheus.CounterVec // labels: spec, apiInterface, provider_address, method
-	incidentProtocolErrorsTotalMetric *prometheus.CounterVec // labels: spec, apiInterface, provider_address, method
-	incidentRetriesTotalMetric        *prometheus.CounterVec // labels: spec, apiInterface, method
-	incidentRetriesSuccessMetric      *prometheus.CounterVec // labels: spec, apiInterface, method
-	incidentRetriesFailedMetric       *prometheus.CounterVec // labels: spec, apiInterface, method
-	incidentConsistencyTotalMetric    *prometheus.CounterVec // labels: spec, apiInterface, method
-	incidentConsistencySuccessMetric  *prometheus.CounterVec // labels: spec, apiInterface, method
-	incidentConsistencyFailedMetric   *prometheus.CounterVec // labels: spec, apiInterface, method
-	incidentHedgeTotalMetric          *prometheus.CounterVec // labels: spec, apiInterface, method
-	incidentHedgeSuccessMetric        *prometheus.CounterVec // labels: spec, apiInterface, method
-	incidentHedgeFailedMetric         *prometheus.CounterVec // labels: spec, apiInterface, method
+	incidentNodeErrorsTotalMetric     *prometheus.CounterVec   // labels: spec, apiInterface, provider_address, method
+	incidentProtocolErrorsTotalMetric *prometheus.CounterVec   // labels: spec, apiInterface, provider_address, method
+	incidentRetriesTotalMetric        *prometheus.CounterVec   // labels: spec, apiInterface, method
+	incidentRetriesSuccessMetric      *prometheus.CounterVec   // labels: spec, apiInterface, method
+	incidentRetriesFailedMetric       *prometheus.CounterVec   // labels: spec, apiInterface, method
+	incidentRetryAttemptsHistogram    *prometheus.HistogramVec // lava_consumer_retry_attempts {spec, apiInterface, method}
+	incidentConsistencyTotalMetric    *prometheus.CounterVec   // labels: spec, apiInterface, method
+	incidentConsistencySuccessMetric  *prometheus.CounterVec   // labels: spec, apiInterface, method
+	incidentConsistencyFailedMetric   *prometheus.CounterVec   // labels: spec, apiInterface, method
+	incidentHedgeTotalMetric          *prometheus.CounterVec   // labels: spec, apiInterface, method
+	incidentHedgeSuccessMetric        *prometheus.CounterVec   // labels: spec, apiInterface, method
+	incidentHedgeFailedMetric         *prometheus.CounterVec   // labels: spec, apiInterface, method
+	incidentHedgeAttemptsHistogram    *prometheus.HistogramVec // lava_consumer_hedge_attempts {spec, apiInterface, method}
 }
 
 type ConsumerMetricsManagerOptions struct {
@@ -116,56 +115,55 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		return nil
 	}
 
-	totalCURequestedMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	totalCURequestedMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_total_cu_requested",
 		Help: "The total number of CUs requested by the consumer over time.",
-	}, []string{"spec", "apiInterface"})
+	}, []string{"spec", "apiInterface"}))
 
-
-	totalWsSubscriptionRequestsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	totalWsSubscriptionRequestsMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_total_ws_subscription_requests",
 		Help: "The total number of websocket subscription requests over time per chain id per api interface.",
-	}, []string{"spec", "apiInterface"})
+	}, []string{"spec", "apiInterface"}))
 
-	totalFailedWsSubscriptionRequestsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	totalFailedWsSubscriptionRequestsMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_total_failed_ws_subscription_requests",
 		Help: "The total number of failed websocket subscription requests over time per chain id per api interface.",
-	}, []string{"spec", "apiInterface"})
+	}, []string{"spec", "apiInterface"}))
 
-	totalDuplicatedWsSubscriptionRequestsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	totalDuplicatedWsSubscriptionRequestsMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_total_duplicated_ws_subscription_requests",
 		Help: "The total number of duplicated webscket subscription requests over time per chain id per api interface.",
-	}, []string{"spec", "apiInterface"})
+	}, []string{"spec", "apiInterface"}))
 
-	totalLoLSuccessMetric := prometheus.NewCounter(prometheus.CounterOpts{
+	totalLoLSuccessMetric := registerOrReuse(prometheus.NewCounter(prometheus.CounterOpts{
 		Name: "lava_consumer_total_lol_successes",
 		Help: "The total number of requests sent to lava over lava successfully",
-	})
+	}))
 
-	totalLoLErrorsMetric := prometheus.NewCounter(prometheus.CounterOpts{
+	totalLoLErrorsMetric := registerOrReuse(prometheus.NewCounter(prometheus.CounterOpts{
 		Name: "lava_consumer_total_lol_errors",
 		Help: "The total number of requests sent to lava over lava and failed",
-	})
+	}))
 
-	totalWebSocketConnectionsActive := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	totalWebSocketConnectionsActive := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_total_websocket_connections_active",
 		Help: "The total number of currently active websocket connections with users",
-	}, []string{"spec", "apiInterface"})
+	}, []string{"spec", "apiInterface"}))
 
-	totalWsSubscriptionDisconnectMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	totalWsSubscriptionDisconnectMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_total_ws_subscription_disconnect",
 		Help: "The total number of websocket subscription disconnects over time per chain id per api interface per disconnect reason.",
-	}, []string{"spec", "apiInterface", "disconnectReason"})
+	}, []string{"spec", "apiInterface", "disconnectReason"}))
 
-	blockMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	blockMetric := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_latest_block",
 		Help: "The latest block measured",
-	}, []string{"spec"})
+	}, []string{"spec"}))
 
-	providerLivenessMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	providerLivenessMetric := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_provider_liveness",
 		Help: "The liveness of connected provider based on probe",
-	}, []string{"spec", "provider_address", "provider_endpoint"})
+	}, []string{"spec", "provider_address", "provider_endpoint"}))
 
 	blockedProviderMetricLabels := []string{"spec", "apiInterface", "provider_address"}
 	if ShowProviderEndpointInMetrics {
@@ -218,315 +216,256 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Labels: latestBlockMetricLabels,
 	})
 
-	latestProviderRelay := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	latestProviderRelay := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_latest_provider_relay_time",
 		Help: "The latest time we sent a relay to provider",
-	}, []string{"spec", "provider_address", "apiInterface"})
+	}, []string{"spec", "provider_address", "apiInterface"}))
 
-	virtualEpochMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	virtualEpochMetric := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_virtual_epoch",
 		Help: "The current virtual epoch measured",
-	}, []string{"spec"})
+	}, []string{"spec"}))
 
-	endpointsHealthChecksOkMetric := prometheus.NewGauge(prometheus.GaugeOpts{
+	endpointsHealthChecksOkMetric := registerOrReuse(prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "lava_consumer_overall_health",
 		Help: "At least one endpoint is healthy",
-	})
+	}))
 
-	endpointsHealthChecksBreakdownMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	endpointsHealthChecksBreakdownMetric := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_overall_health_breakdown",
 		Help: "Health check status per chain. At least one endpoint is healthy",
-	}, []string{"spec", "apiInterface"})
+	}, []string{"spec", "apiInterface"}))
 
-	apiSpecificsMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	apiSpecificsMetric := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_api_specifics",
 		Help: "api usage specifics",
-	}, []string{"spec", "apiInterface", "method"})
+	}, []string{"spec", "apiInterface", "method"}))
 
 	endpointsHealthChecksOkMetric.Set(1)
-	protocolVersionMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	protocolVersionMetric := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_protocol_version",
 		Help: "The current running lavap version for the process. major := version / 1000000, minor := (version / 1000) % 1000, patch := version % 1000",
-	}, []string{"version"})
-
-	protocolErrorsPerProviderMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "lava_consumer_protocol_errors_per_provider",
-		Help: "The number of protocol errors per provider and spec",
-	}, []string{"spec", "provider_address"})
+	}, []string{"version"}))
 
 	crossValidationLabels := []string{"spec", "apiInterface", "method"}
 	crossValidationProviderLabels := []string{"spec", "apiInterface", "method", "provider_address"}
-	crossValidationRequestsTotalMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	crossValidationRequestsTotalMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_cross_validation_requests_total",
 		Help: "Total number of cross-validated requests.",
-	}, crossValidationLabels)
-	crossValidationSuccessTotalMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	}, crossValidationLabels))
+	crossValidationSuccessTotalMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_cross_validation_success_total",
 		Help: "Total number of cross-validated requests that reached consensus.",
-	}, crossValidationLabels)
-	crossValidationFailedTotalMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	}, crossValidationLabels))
+	crossValidationFailedTotalMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_cross_validation_failed_total",
 		Help: "Total number of cross-validated requests that failed to reach consensus.",
-	}, crossValidationLabels)
-	crossValidationProviderAgreementsTotalMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	}, crossValidationLabels))
+	crossValidationProviderAgreementsTotalMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_cross_validation_provider_agreements_total",
 		Help: "Total number of times a provider agreed with the cross-validation consensus.",
-	}, crossValidationProviderLabels)
-	crossValidationProviderDisagreementsTotalMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	}, crossValidationProviderLabels))
+	crossValidationProviderDisagreementsTotalMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_cross_validation_provider_disagreements_total",
 		Help: "Total number of times a provider's response disagreed with the cross-validation consensus.",
-	}, crossValidationProviderLabels)
+	}, crossValidationProviderLabels))
 
-	providerSelectionsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	providerSelectionsMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_provider_selections",
 		Help: "The total number of times each provider was selected for relay (before request attempt)",
-	}, []string{"spec", "provider_address"})
+	}, []string{"spec", "provider_address"}))
 
-	selectionRNGValueGauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	selectionRNGValueGauge := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_selection_rng_value",
 		Help: "Last RNG value used for provider selection",
-	}, []string{"spec"})
+	}, []string{"spec"}))
 
 	requestLabels := []string{"spec", "apiInterface", "provider_address", "method"}
-	requestsTotalMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	requestsTotalMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_requests_total",
 		Help: "Total number of requests made by the consumer.",
-	}, requestLabels)
-	requestsSuccessMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	}, requestLabels))
+	requestsSuccessMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_requests_success_total",
 		Help: "Total number of successful requests made by the consumer.",
-	}, requestLabels)
-	requestsFailedMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	}, requestLabels))
+	requestsFailedMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_requests_failed_total",
 		Help: "Total number of failed requests made by the consumer.",
-	}, requestLabels)
-	requestsReadMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	}, requestLabels))
+	requestsReadMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_requests_read_total",
 		Help: "Total number of read (stateful=0) requests made by the consumer.",
-	}, requestLabels)
-	requestsWriteMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	}, requestLabels))
+	requestsWriteMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_requests_write_total",
 		Help: "Total number of write (stateful=1) requests made by the consumer.",
-	}, requestLabels)
-	requestsDebugTraceMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	}, requestLabels))
+	requestsDebugTraceMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_requests_debug_trace_total",
 		Help: "Total number of debug/trace addon requests made by the consumer.",
-	}, requestLabels)
-	requestsArchiveMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	}, requestLabels))
+	requestsArchiveMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_requests_archive_total",
 		Help: "Total number of archive requests made by the consumer.",
-	}, requestLabels)
-	requestsBatchMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	}, requestLabels))
+	requestsBatchMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_requests_batch_total",
 		Help: "Total number of batch requests made by the consumer.",
-	}, requestLabels)
+	}, requestLabels))
 
 	// Incident group metrics
 	incidentLabels := []string{"spec", "apiInterface", "provider_address", "method"}
 	incidentShortLabels := []string{"spec", "apiInterface", "method"}
-	incidentNodeErrorsTotalMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	incidentNodeErrorsTotalMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_node_errors_total",
 		Help: "Total number of node errors received from providers.",
-	}, incidentLabels)
-	incidentProtocolErrorsTotalMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	}, incidentLabels))
+	incidentProtocolErrorsTotalMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_protocol_errors_total",
 		Help: "Total number of protocol errors (connection/session failures) per provider.",
-	}, incidentLabels)
-	incidentRetriesTotalMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	}, incidentLabels))
+	incidentRetriesTotalMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_retries_total",
 		Help: "Total number of retry attempts triggered by the consumer.",
-	}, incidentShortLabels)
-	incidentRetriesSuccessMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	}, incidentShortLabels))
+	incidentRetriesSuccessMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_retries_success_total",
 		Help: "Total number of retry attempts that eventually led to a successful response.",
-	}, incidentShortLabels)
-	incidentRetriesFailedMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	}, incidentShortLabels))
+	incidentRetriesFailedMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_retries_failed_total",
 		Help: "Total number of retry attempts that did not lead to a successful response.",
-	}, incidentShortLabels)
-	incidentConsistencyTotalMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	}, incidentShortLabels))
+	incidentRetryAttemptsHistogram := registerOrReuse(prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "lava_consumer_retry_attempts",
+		Help:    "Distribution of how many provider attempts were needed per retried request.",
+		Buckets: []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+	}, incidentShortLabels))
+	incidentConsistencyTotalMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_consistency_total",
 		Help: "Total number of requests that triggered consistency (seenBlock) enforcement.",
-	}, incidentShortLabels)
-	incidentConsistencySuccessMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	}, incidentShortLabels))
+	incidentConsistencySuccessMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_consistency_success_total",
 		Help: "Total number of consistency-enforced requests that succeeded.",
-	}, incidentShortLabels)
-	incidentConsistencyFailedMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	}, incidentShortLabels))
+	incidentConsistencyFailedMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_consistency_failed_total",
 		Help: "Total number of consistency-enforced requests that failed.",
-	}, incidentShortLabels)
-	incidentHedgeTotalMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	}, incidentShortLabels))
+	incidentHedgeTotalMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_hedge_total",
 		Help: "Total number of hedge (batch-ticker) relays sent.",
-	}, incidentShortLabels)
-	incidentHedgeSuccessMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	}, incidentShortLabels))
+	incidentHedgeSuccessMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_hedge_success_total",
 		Help: "Total number of hedged requests that ultimately succeeded.",
-	}, incidentShortLabels)
-	incidentHedgeFailedMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	}, incidentShortLabels))
+	incidentHedgeFailedMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_hedge_failed_total",
 		Help: "Total number of hedged requests that ultimately failed.",
-	}, incidentShortLabels)
+	}, incidentShortLabels))
+	incidentHedgeAttemptsHistogram := registerOrReuse(prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "lava_consumer_hedge_attempts",
+		Help:    "Distribution of how many hedge relays were sent per hedged request.",
+		Buckets: []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+	}, incidentShortLabels))
 
-	var consumerLatencyBuckets = []float64{10, 25, 50, 75, 100, 150, 200, 350, 500, 750, 1000, 1500, 2000, 5000, 10000, 30000}
-
-	latencyEndToEndHistogram := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+	latencyEndToEndHistogram := registerOrReuse(prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "lava_consumer_end_to_end_latency_milliseconds",
 		Help:    "Distribution of end-to-end relay latency seen by the consumer, from relay start to result, in milliseconds.",
-		Buckets: consumerLatencyBuckets,
-	}, []string{"spec", "apiInterface", "method"})
+		Buckets: LatencyBuckets,
+	}, []string{"spec", "apiInterface", "method"}))
 
-	latencyProviderHistogram := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+	latencyProviderHistogram := registerOrReuse(prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "lava_consumer_provider_latency_milliseconds",
 		Help:    "Distribution of network round-trip latency to each provider, in milliseconds.",
-		Buckets: consumerLatencyBuckets,
-	}, []string{"spec", "apiInterface", "provider_address", "method"})
+		Buckets: LatencyBuckets,
+	}, []string{"spec", "apiInterface", "provider_address", "method"}))
 
 	cacheLabels := []string{"spec", "apiInterface", "method"}
-	cacheRequestsTotalMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	cacheRequestsTotalMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_cache_requests_total",
 		Help: "Total number of cache lookup attempts.",
-	}, cacheLabels)
-	cacheSuccessTotalMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	}, cacheLabels))
+	cacheSuccessTotalMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_cache_success_total",
 		Help: "Total number of cache lookups that returned a cached response (hits).",
-	}, cacheLabels)
-	cacheFailedTotalMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+	}, cacheLabels))
+	cacheFailedTotalMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_cache_failed_total",
 		Help: "Total number of cache lookups that did not find a cached response (misses).",
-	}, cacheLabels)
-	cacheLatencyHistogram := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+	}, cacheLabels))
+	cacheLatencyHistogram := registerOrReuse(prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "lava_consumer_cache_latency_milliseconds",
 		Help:    "Distribution of cache lookup latency in milliseconds.",
-		Buckets: consumerLatencyBuckets,
-	}, cacheLabels)
+		Buckets: LatencyBuckets,
+	}, cacheLabels))
 
-	// Register the metrics with the Prometheus registry.
-	// Use a helper function to handle AlreadyRegisteredError gracefully
-	registerMetric := func(c prometheus.Collector) {
-		if err := prometheus.Register(c); err != nil {
-			are := &prometheus.AlreadyRegisteredError{}
-			if !errors.As(err, are) {
-				// Only panic if it's not an "already registered" error
-				panic(err)
-			}
-			// Metric already registered, which can happen on restart - this is fine
-			utils.LavaFormatDebug("Prometheus metric already registered, reusing existing collector", utils.LogAttr("error", err))
-		}
-	}
-
-	registerMetric(totalCURequestedMetric)
-	registerMetric(blockMetric)
-	registerMetric(latencyEndToEndHistogram)
-	registerMetric(latencyProviderHistogram)
-	registerMetric(providerLivenessMetric)
 	// qosMetric, providerReputationMetric, blockedProviderMetric, selectionStatsMetric,
 	// and latestBlockMetric are already registered inside NewMappedLabelsGaugeVec.
-	registerMetric(latestProviderRelay)
-	registerMetric(virtualEpochMetric)
-	registerMetric(endpointsHealthChecksOkMetric)
-	registerMetric(endpointsHealthChecksBreakdownMetric)
-	registerMetric(protocolVersionMetric)
-	registerMetric(totalWebSocketConnectionsActive)
-	registerMetric(apiSpecificsMetric)
-	registerMetric(totalWsSubscriptionRequestsMetric)
-	registerMetric(totalFailedWsSubscriptionRequestsMetric)
-	registerMetric(totalDuplicatedWsSubscriptionRequestsMetric)
-	registerMetric(totalWsSubscriptionDisconnectMetric)
-	registerMetric(totalLoLSuccessMetric)
-	registerMetric(totalLoLErrorsMetric)
-	registerMetric(protocolErrorsPerProviderMetric)
-	registerMetric(crossValidationRequestsTotalMetric)
-	registerMetric(crossValidationSuccessTotalMetric)
-	registerMetric(crossValidationFailedTotalMetric)
-	registerMetric(crossValidationProviderAgreementsTotalMetric)
-	registerMetric(crossValidationProviderDisagreementsTotalMetric)
-	registerMetric(providerSelectionsMetric)
-	registerMetric(selectionRNGValueGauge)
-	registerMetric(requestsTotalMetric)
-	registerMetric(requestsSuccessMetric)
-	registerMetric(requestsFailedMetric)
-	registerMetric(requestsReadMetric)
-	registerMetric(requestsWriteMetric)
-	registerMetric(requestsDebugTraceMetric)
-	registerMetric(requestsArchiveMetric)
-	registerMetric(requestsBatchMetric)
-	registerMetric(cacheRequestsTotalMetric)
-	registerMetric(cacheSuccessTotalMetric)
-	registerMetric(cacheFailedTotalMetric)
-	registerMetric(cacheLatencyHistogram)
-	registerMetric(incidentNodeErrorsTotalMetric)
-	registerMetric(incidentProtocolErrorsTotalMetric)
-	registerMetric(incidentRetriesTotalMetric)
-	registerMetric(incidentRetriesSuccessMetric)
-	registerMetric(incidentRetriesFailedMetric)
-	registerMetric(incidentConsistencyTotalMetric)
-	registerMetric(incidentConsistencySuccessMetric)
-	registerMetric(incidentConsistencyFailedMetric)
-	registerMetric(incidentHedgeTotalMetric)
-	registerMetric(incidentHedgeSuccessMetric)
-	registerMetric(incidentHedgeFailedMetric)
 
 	consumerMetricsManager := &ConsumerMetricsManager{
-		totalCURequestedMetric:                         totalCURequestedMetric,
-		totalWsSubscriptionRequestsMetric:              totalWsSubscriptionRequestsMetric,
-		totalFailedWsSubscriptionRequestsMetric:        totalFailedWsSubscriptionRequestsMetric,
-		totalDuplicatedWsSubscriptionRequestsMetric:    totalDuplicatedWsSubscriptionRequestsMetric,
-		totalWsSubscriptionDisconnectMetric:            totalWsSubscriptionDisconnectMetric,
-		totalWebSocketConnectionsActive:                totalWebSocketConnectionsActive,
-		blockMetric:                                    blockMetric,
-		latencyEndToEndHistogram:                       latencyEndToEndHistogram,
-		latencyProviderHistogram:                       latencyProviderHistogram,
-		qosMetric:                                      qosMetric,
-		providerReputationMetric:                       providerReputationMetric,
-		selectionStatsMetric:                           selectionStatsMetric,
-		LatestBlockMetric:                              latestBlockMetric,
-		LatestProviderRelay:                            latestProviderRelay,
-		providerRelays:                                 map[string]uint64{},
-		virtualEpochMetric:                             virtualEpochMetric,
-		endpointsHealthChecksOkMetric:                  endpointsHealthChecksOkMetric,
-		endpointsHealthChecksOk:                        1,
-		endpointsHealthChecksBreakdownMetric:           endpointsHealthChecksBreakdownMetric,
-		protocolVersionMetric:                protocolVersionMetric,
-		apiMethodCalls:                       apiSpecificsMetric,
-		addMethodsApiGauge:                   options.AddMethodsApiGauge,
-		totalLoLSuccessMetric:                          totalLoLSuccessMetric,
-		totalLoLErrorsMetric:                           totalLoLErrorsMetric,
-		consumerOptimizerQoSClient:                     options.ConsumerOptimizerQoSClient,
-		protocolErrorsPerProviderMetric:                protocolErrorsPerProviderMetric,
-		providerSelectionsMetric:                       providerSelectionsMetric,
-		providerLivenessMetric:                         providerLivenessMetric,
-		blockedProviderMetric:                          blockedProviderMetric,
+		totalCURequestedMetric:                          totalCURequestedMetric,
+		totalWsSubscriptionRequestsMetric:               totalWsSubscriptionRequestsMetric,
+		totalFailedWsSubscriptionRequestsMetric:         totalFailedWsSubscriptionRequestsMetric,
+		totalDuplicatedWsSubscriptionRequestsMetric:     totalDuplicatedWsSubscriptionRequestsMetric,
+		totalWsSubscriptionDisconnectMetric:             totalWsSubscriptionDisconnectMetric,
+		totalWebSocketConnectionsActive:                 totalWebSocketConnectionsActive,
+		blockMetric:                                     blockMetric,
+		latencyEndToEndHistogram:                        latencyEndToEndHistogram,
+		latencyProviderHistogram:                        latencyProviderHistogram,
+		qosMetric:                                       qosMetric,
+		providerReputationMetric:                        providerReputationMetric,
+		selectionStatsMetric:                            selectionStatsMetric,
+		LatestBlockMetric:                               latestBlockMetric,
+		LatestProviderRelay:                             latestProviderRelay,
+		providerRelays:                                  map[string]uint64{},
+		virtualEpochMetric:                              virtualEpochMetric,
+		endpointsHealthChecksOkMetric:                   endpointsHealthChecksOkMetric,
+		endpointsHealthChecksOk:                         1,
+		endpointsHealthChecksBreakdownMetric:            endpointsHealthChecksBreakdownMetric,
+		protocolVersionMetric:                           protocolVersionMetric,
+		apiMethodCalls:                                  apiSpecificsMetric,
+		addMethodsApiGauge:                              options.AddMethodsApiGauge,
+		totalLoLSuccessMetric:                           totalLoLSuccessMetric,
+		totalLoLErrorsMetric:                            totalLoLErrorsMetric,
+		consumerOptimizerQoSClient:                      options.ConsumerOptimizerQoSClient,
+		providerSelectionsMetric:                        providerSelectionsMetric,
+		providerLivenessMetric:                          providerLivenessMetric,
+		blockedProviderMetric:                           blockedProviderMetric,
 		crossValidationRequestsTotalMetric:              crossValidationRequestsTotalMetric,
 		crossValidationSuccessTotalMetric:               crossValidationSuccessTotalMetric,
 		crossValidationFailedTotalMetric:                crossValidationFailedTotalMetric,
 		crossValidationProviderAgreementsTotalMetric:    crossValidationProviderAgreementsTotalMetric,
 		crossValidationProviderDisagreementsTotalMetric: crossValidationProviderDisagreementsTotalMetric,
-		selectionRNGValueGauge:                         selectionRNGValueGauge,
-		requestsTotalMetric:                            requestsTotalMetric,
-		requestsSuccessMetric:                          requestsSuccessMetric,
-		requestsFailedMetric:                           requestsFailedMetric,
-		requestsReadMetric:                             requestsReadMetric,
-		requestsWriteMetric:                            requestsWriteMetric,
-		requestsDebugTraceMetric:                       requestsDebugTraceMetric,
-		requestsArchiveMetric:                          requestsArchiveMetric,
-		requestsBatchMetric:                            requestsBatchMetric,
-		cacheRequestsTotalMetric:                       cacheRequestsTotalMetric,
-		cacheSuccessTotalMetric:                        cacheSuccessTotalMetric,
-		cacheFailedTotalMetric:                         cacheFailedTotalMetric,
-		cacheLatencyHistogram:                          cacheLatencyHistogram,
-		incidentNodeErrorsTotalMetric:                  incidentNodeErrorsTotalMetric,
-		incidentProtocolErrorsTotalMetric:              incidentProtocolErrorsTotalMetric,
-		incidentRetriesTotalMetric:                     incidentRetriesTotalMetric,
-		incidentRetriesSuccessMetric:                   incidentRetriesSuccessMetric,
-		incidentRetriesFailedMetric:                    incidentRetriesFailedMetric,
-		incidentConsistencyTotalMetric:                 incidentConsistencyTotalMetric,
-		incidentConsistencySuccessMetric:               incidentConsistencySuccessMetric,
-		incidentConsistencyFailedMetric:                incidentConsistencyFailedMetric,
-		incidentHedgeTotalMetric:                       incidentHedgeTotalMetric,
-		incidentHedgeSuccessMetric:                     incidentHedgeSuccessMetric,
-		incidentHedgeFailedMetric:                      incidentHedgeFailedMetric,
+		selectionRNGValueGauge:                          selectionRNGValueGauge,
+		requestsTotalMetric:                             requestsTotalMetric,
+		requestsSuccessMetric:                           requestsSuccessMetric,
+		requestsFailedMetric:                            requestsFailedMetric,
+		requestsReadMetric:                              requestsReadMetric,
+		requestsWriteMetric:                             requestsWriteMetric,
+		requestsDebugTraceMetric:                        requestsDebugTraceMetric,
+		requestsArchiveMetric:                           requestsArchiveMetric,
+		requestsBatchMetric:                             requestsBatchMetric,
+		cacheRequestsTotalMetric:                        cacheRequestsTotalMetric,
+		cacheSuccessTotalMetric:                         cacheSuccessTotalMetric,
+		cacheFailedTotalMetric:                          cacheFailedTotalMetric,
+		cacheLatencyHistogram:                           cacheLatencyHistogram,
+		incidentNodeErrorsTotalMetric:                   incidentNodeErrorsTotalMetric,
+		incidentProtocolErrorsTotalMetric:               incidentProtocolErrorsTotalMetric,
+		incidentRetriesTotalMetric:                      incidentRetriesTotalMetric,
+		incidentRetriesSuccessMetric:                    incidentRetriesSuccessMetric,
+		incidentRetriesFailedMetric:                     incidentRetriesFailedMetric,
+		incidentRetryAttemptsHistogram:                  incidentRetryAttemptsHistogram,
+		incidentConsistencyTotalMetric:                  incidentConsistencyTotalMetric,
+		incidentConsistencySuccessMetric:                incidentConsistencySuccessMetric,
+		incidentConsistencyFailedMetric:                 incidentConsistencyFailedMetric,
+		incidentHedgeTotalMetric:                        incidentHedgeTotalMetric,
+		incidentHedgeSuccessMetric:                      incidentHedgeSuccessMetric,
+		incidentHedgeFailedMetric:                       incidentHedgeFailedMetric,
+		incidentHedgeAttemptsHistogram:                  incidentHedgeAttemptsHistogram,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -646,7 +585,9 @@ func (pme *ConsumerMetricsManager) RecordCacheResult(chainId, apiInterface, meth
 	} else {
 		pme.cacheFailedTotalMetric.WithLabelValues(chainId, apiInterface, method).Inc()
 	}
-	pme.cacheLatencyHistogram.WithLabelValues(chainId, apiInterface, method).Observe(latencyMs)
+	if hit {
+		pme.cacheLatencyHistogram.WithLabelValues(chainId, apiInterface, method).Observe(latencyMs)
+	}
 }
 
 func (pme *ConsumerMetricsManager) SetBlock(block int64) {
@@ -665,7 +606,14 @@ func (pme *ConsumerMetricsManager) SetRelayMetrics(relayMetric *RelayMetrics, er
 	if pme.addMethodsApiGauge && relayMetric.ApiMethod != "" { // pme.addMethodsApiGauge never changes so its safe to read concurrently
 		pme.apiMethodCalls.WithLabelValues(relayMetric.ChainID, relayMetric.APIType, relayMetric.ApiMethod).Add(1)
 	}
-	// Request group metrics
+	// Request group metrics.
+	//
+	// Counting invariants (intentional design):
+	//   batch + read + write == total          — batch is mutually exclusive with read/write
+	//   success + failed     == total          — every request is one or the other
+	//   debug_trace, archive are orthogonal    — they are sub-categories of read/write, not
+	//                                            a separate partition, so they can overlap and
+	//                                            their sum is NOT expected to equal total.
 	reqLabels := []string{relayMetric.ChainID, relayMetric.APIType, relayMetric.ProviderAddress, relayMetric.ApiMethod}
 	pme.requestsTotalMetric.WithLabelValues(reqLabels...).Inc()
 	if relayMetric.Success {
@@ -690,7 +638,6 @@ func (pme *ConsumerMetricsManager) SetRelayMetrics(relayMetric *RelayMetrics, er
 	}
 }
 
-
 func (pme *ConsumerMetricsManager) RecordEndToEndLatency(chainId string, apiInterface string, method string, latencyMs float64) {
 	if pme == nil {
 		return
@@ -704,14 +651,6 @@ func (pme *ConsumerMetricsManager) RecordProviderLatency(chainId string, apiInte
 	}
 	pme.latencyProviderHistogram.WithLabelValues(chainId, apiInterface, providerAddress, method).Observe(latencyMs)
 }
-
-func (pme *ConsumerMetricsManager) RecordHedgeRelaySent(chainId string, apiInterface string, method string) {
-	if pme == nil {
-		return
-	}
-	pme.incidentHedgeTotalMetric.WithLabelValues(chainId, apiInterface, method).Inc()
-}
-
 
 func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface string, providerAddress string, providerEndpoint string, qos *pairingtypes.QualityOfServiceReport, reputation *pairingtypes.QualityOfServiceReport, latestBlock int64, relays uint64, relayLatency time.Duration, sessionSuccessful bool) {
 	if pme == nil {
@@ -874,7 +813,6 @@ func (pme *ConsumerMetricsManager) SetProtocolError(chainId string, apiInterface
 	if pme == nil {
 		return
 	}
-	pme.protocolErrorsPerProviderMetric.WithLabelValues(chainId, providerAddress).Inc()
 	pme.incidentProtocolErrorsTotalMetric.WithLabelValues(chainId, apiInterface, providerAddress, method).Inc()
 }
 
@@ -882,7 +820,8 @@ func (pme *ConsumerMetricsManager) RecordIncidentRetry(chainId string, apiInterf
 	if pme == nil {
 		return
 	}
-	pme.incidentRetriesTotalMetric.WithLabelValues(chainId, apiInterface, method).Add(float64(count))
+	pme.incidentRetriesTotalMetric.WithLabelValues(chainId, apiInterface, method).Inc()
+	pme.incidentRetryAttemptsHistogram.WithLabelValues(chainId, apiInterface, method).Observe(float64(count))
 	if success {
 		pme.incidentRetriesSuccessMetric.WithLabelValues(chainId, apiInterface, method).Inc()
 	} else {
@@ -902,10 +841,12 @@ func (pme *ConsumerMetricsManager) RecordIncidentConsistency(chainId string, api
 	}
 }
 
-func (pme *ConsumerMetricsManager) RecordIncidentHedgeResult(chainId string, apiInterface string, method string, success bool) {
+func (pme *ConsumerMetricsManager) RecordIncidentHedgeResult(chainId string, apiInterface string, method string, count uint64, success bool) {
 	if pme == nil {
 		return
 	}
+	pme.incidentHedgeTotalMetric.WithLabelValues(chainId, apiInterface, method).Inc()
+	pme.incidentHedgeAttemptsHistogram.WithLabelValues(chainId, apiInterface, method).Observe(float64(count))
 	if success {
 		pme.incidentHedgeSuccessMetric.WithLabelValues(chainId, apiInterface, method).Inc()
 	} else {
@@ -914,7 +855,7 @@ func (pme *ConsumerMetricsManager) RecordIncidentHedgeResult(chainId string, api
 }
 
 // SetProviderSelected records when a provider is selected and updates score gauges for all providers
-func (pme *ConsumerMetricsManager) SetProviderSelected(chainId string, providerAddress string, allProviderScores []ProviderSelectionScores, rngValue float64) {
+func (pme *ConsumerMetricsManager) SetProviderSelected(chainId string, _ string, providerAddress string, allProviderScores []ProviderSelectionScores, rngValue float64) {
 	if pme == nil {
 		return
 	}

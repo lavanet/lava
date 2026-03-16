@@ -264,7 +264,7 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 	usedProviders := lavasession.NewUsedProviders(nil)
 
 	// Create state machine first - it determines Selection type based on cross-validation headers
-	stateMachine, err := NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, nil, rpccs.debugRelays, rpccs.rpcConsumerLogs)
+	stateMachine, err := NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, nil, rpccs.debugRelays)
 	if err != nil {
 		return false, err
 	}
@@ -509,7 +509,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 	usedProviders := lavasession.NewUsedProviders(protocolMessage)
 
 	// Create state machine first - it determines Selection type based on cross-validation headers
-	stateMachine, err := NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, analytics, rpccs.debugRelays, rpccs.rpcConsumerLogs)
+	stateMachine, err := NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, analytics, rpccs.debugRelays)
 	if err != nil {
 		return nil, err
 	}
@@ -1853,7 +1853,7 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 
 	if selection == relaycore.CrossValidation {
 		// For cross-validation mode: show all participating providers and status
-		successResults, _, _ := relayProcessor.GetResultsData()
+		successResults, nodeErrorResults, protocolErrorResultsCV := relayProcessor.GetResultsData()
 		cvParams := relayProcessor.GetCrossValidationParams()
 
 		// Determine cross-validation status and agreeing/disagreeing providers
@@ -1900,8 +1900,20 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 				Value: cvStatus,
 			})
 
-			// Add all providers header (comma-separated for easy parsing)
-			allForHeader := append(agreeingProvidersList, disagreeingProvidersList...)
+			// Add all providers header — include error providers so the caller sees every participant
+			allForHeader := make([]string, 0, len(agreeingProvidersList)+len(disagreeingProvidersList))
+			allForHeader = append(allForHeader, agreeingProvidersList...)
+			allForHeader = append(allForHeader, disagreeingProvidersList...)
+			for _, result := range nodeErrorResults {
+				if result.ProviderInfo.ProviderAddress != "" {
+					allForHeader = append(allForHeader, result.ProviderInfo.ProviderAddress)
+				}
+			}
+			for _, result := range protocolErrorResultsCV {
+				if result.ProviderInfo.ProviderAddress != "" {
+					allForHeader = append(allForHeader, result.ProviderInfo.ProviderAddress)
+				}
+			}
 			sort.Strings(allForHeader)
 			metadataReply = append(metadataReply, pairingtypes.Metadata{
 				Name:  common.CROSS_VALIDATION_ALL_PROVIDERS_HEADER_NAME,
@@ -1999,8 +2011,8 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 			go rpccs.rpcConsumerLogs.RecordIncidentConsistency(chainId, apiInterface, apiName, success)
 		}
 		// Hedge: triggered when the batch ticker fired during this relay
-		if analytics != nil && analytics.HedgeSent {
-			go rpccs.rpcConsumerLogs.RecordIncidentHedgeResult(chainId, apiInterface, apiName, success)
+		if analytics != nil && analytics.HedgeCount > 0 {
+			go rpccs.rpcConsumerLogs.RecordIncidentHedgeResult(chainId, apiInterface, apiName, analytics.HedgeCount, success)
 		}
 	}
 

@@ -122,7 +122,7 @@ func (rpccl *RPCConsumerLogs) SetRelaySentToProviderMetric(providerAddress, chai
 	rpccl.consumerOptimizerQoSClient.SetRelaySentToProvider(providerAddress, chainId)
 }
 
-func (rpccl *RPCConsumerLogs) SetRelayNodeErrorMetric(providerAddress, chainId, apiInterface, method string) {
+func (rpccl *RPCConsumerLogs) SetRelayNodeErrorMetric(chainId, apiInterface, providerAddress, method string) {
 	if providerAddress == "" {
 		// skip if provider address is empty
 		return
@@ -159,8 +159,8 @@ func (rpccl *RPCConsumerLogs) RecordIncidentConsistency(chainId string, apiInter
 	rpccl.consumerMetricsManager.RecordIncidentConsistency(chainId, apiInterface, method, success)
 }
 
-func (rpccl *RPCConsumerLogs) RecordIncidentHedgeResult(chainId string, apiInterface string, method string, success bool) {
-	rpccl.consumerMetricsManager.RecordIncidentHedgeResult(chainId, apiInterface, method, success)
+func (rpccl *RPCConsumerLogs) RecordIncidentHedgeResult(chainId string, apiInterface string, method string, count uint64, success bool) {
+	rpccl.consumerMetricsManager.RecordIncidentHedgeResult(chainId, apiInterface, method, count, success)
 }
 
 // Input will be masked with a random GUID if returnMaskedErrors is set to true
@@ -230,15 +230,15 @@ func (rpccl *RPCConsumerLogs) LogStartTransaction(name string) func() {
 }
 
 func (rpccl *RPCConsumerLogs) RecordEndToEndLatency(chainId string, apiInterface string, method string, latencyMs float64) {
-	go rpccl.consumerMetricsManager.RecordEndToEndLatency(chainId, apiInterface, method, latencyMs)
+	rpccl.consumerMetricsManager.RecordEndToEndLatency(chainId, apiInterface, method, latencyMs)
 }
 
 func (rpccl *RPCConsumerLogs) RecordCacheResult(chainId, apiInterface, method string, hit bool, latencyMs float64) {
-	go rpccl.consumerMetricsManager.RecordCacheResult(chainId, apiInterface, method, hit, latencyMs)
+	rpccl.consumerMetricsManager.RecordCacheResult(chainId, apiInterface, method, hit, latencyMs)
 }
 
 func (rpccl *RPCConsumerLogs) RecordProviderLatency(chainId string, apiInterface string, providerAddress string, method string, latencyMs float64) {
-	go rpccl.consumerMetricsManager.RecordProviderLatency(chainId, apiInterface, providerAddress, method, latencyMs)
+	rpccl.consumerMetricsManager.RecordProviderLatency(chainId, apiInterface, providerAddress, method, latencyMs)
 }
 
 func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, headers map[string][]string) {
@@ -300,10 +300,6 @@ func (rpccl *RPCConsumerLogs) shouldCountMetrics(refererHeaderValue string, user
 		}
 	}
 	return true
-}
-
-func (rpccl *RPCConsumerLogs) RecordHedgeRelaySent(chainId string, apiInterface string, method string) {
-	rpccl.consumerMetricsManager.RecordHedgeRelaySent(chainId, apiInterface, method)
 }
 
 func (rpccl *RPCConsumerLogs) SendMetrics(data *RelayMetrics, err error, origin string) {

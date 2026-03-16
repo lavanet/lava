@@ -37,10 +37,6 @@ type ConsumerRelaySender interface {
 	) (protocolMessage chainlib.ProtocolMessage, err error)
 }
 
-type tickerMetricSetterInf interface {
-	RecordHedgeRelaySent(chainId string, apiInterface string, method string)
-}
-
 type ConsumerRelayStateMachine struct {
 	ctx                   context.Context // same context as user context.
 	relaySender           ConsumerRelaySender
@@ -49,7 +45,6 @@ type ConsumerRelayStateMachine struct {
 	selection             relaycore.Selection
 	crossValidationParams *common.CrossValidationParams // nil for Stateless/Stateful, non-nil for CrossValidation
 	debugRelays           bool
-	tickerMetricSetter    tickerMetricSetterInf
 	batchUpdate           chan error
 	usedProviders         *lavasession.UsedProviders
 	relayRetriesManager   *lavaprotocol.RelayRetriesManager
@@ -65,7 +60,6 @@ func NewRelayStateMachine(
 	protocolMessage chainlib.ProtocolMessage,
 	analytics *metrics.RelayMetrics,
 	debugRelays bool,
-	tickerMetricSetter tickerMetricSetterInf,
 ) (RelayStateMachine, error) {
 	// Check cross-validation headers FIRST (highest priority)
 	// This is the SINGLE SOURCE OF TRUTH for determining if cross-validation is enabled
@@ -101,7 +95,6 @@ func NewRelayStateMachine(
 		selection:             selection,
 		crossValidationParams: cvParams,
 		debugRelays:           debugRelays,
-		tickerMetricSetter:    tickerMetricSetter,
 		batchUpdate:           make(chan error, MaximumNumberOfTickerRelayRetries),
 		relayState:            make([]*relaycore.RelayState, 0),
 	}, nil
@@ -363,13 +356,9 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 				if crsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
 					utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", crsm.ctx))
 					relayTaskChannel <- RelayStateSendInstructions{RelayState: crsm.getLatestState(), NumOfProviders: 1}
-					// Mark the analytics so appendHeadersToRelayResult can record hedge outcome
 					if crsm.analytics != nil {
-						crsm.analytics.HedgeSent = true
+						crsm.analytics.HedgeCount++
 					}
-					// Add ticker launch metrics
-					chainId, apiInterface := crsm.relaySender.GetChainIdAndApiInterface()
-					go crsm.tickerMetricSetter.RecordHedgeRelaySent(chainId, apiInterface, crsm.protocolMessage.GetApi().GetName())
 				}
 			case returnErr := <-returnCondition:
 				utils.LavaFormatTrace("[StateMachine] returnErr := <-returnCondition", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", crsm.ctx))

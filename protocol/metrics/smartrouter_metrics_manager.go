@@ -14,18 +14,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-// Default latency histogram buckets in milliseconds
-// Covers range from 1ms to 30s with good granularity for RPC latencies
-var defaultLatencyBuckets = []float64{1, 2, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000}
-
-// RequestProperties carries the classification of a relay request for metrics recording.
-type RequestProperties struct {
-	IsWrite      bool // stateful == 1 (CONSISTENCY_SELECT_ALL_PROVIDERS); false means read
-	IsArchive    bool
-	IsDebugTrace bool
-	IsBatch      bool
-}
-
 // registerOrReuse registers a Prometheus collector, returning the existing
 // collector on AlreadyRegisteredError so callers always hold the instance
 // that Prometheus actually exposes.
@@ -62,7 +50,7 @@ type SmartRouterMetricsManager struct {
 
 	// Endpoint-scoped metrics (labels: spec, apiInterface, endpoint_id)
 	endpointOverallHealth      *MappedLabelsGaugeVec   // lava_rpc_endpoint_overall_health
-	endpointSelectionScore     *prometheus.GaugeVec    // lava_rpc_endpoint_selection_score {spec, endpoint_id, score_type}
+	endpointSelectionScore     *prometheus.GaugeVec    // lava_rpc_endpoint_selection_score {spec, apiInterface, endpoint_id, score_type}
 	endpointLatestBlock        *MappedLabelsGaugeVec   // lava_rpc_endpoint_latest_block
 	endpointFetchLatestFails   *MappedLabelsCounterVec // lava_rpc_endpoint_fetch_latest_fails
 	endpointFetchBlockFails    *MappedLabelsCounterVec // lava_rpc_endpoint_fetch_block_fails
@@ -93,22 +81,24 @@ type SmartRouterMetricsManager struct {
 	crossValidationProviderDisagreementsTotalMetric *prometheus.CounterVec // lava_rpcsmartrouter_cross_validation_provider_disagreements_total {spec, apiInterface, method, provider_address}
 
 	// Incident group metrics
-	incidentNodeErrorsTotalMetric     *prometheus.CounterVec // lava_rpcsmartrouter_node_errors_total         {spec, apiInterface, provider_address, method}
-	incidentProtocolErrorsTotalMetric *prometheus.CounterVec // lava_rpcsmartrouter_protocol_errors_total     {spec, apiInterface, provider_address, method}
-	incidentRetriesTotalMetric        *prometheus.CounterVec // lava_rpcsmartrouter_retries_total             {spec, apiInterface, method}
-	incidentRetriesSuccessMetric      *prometheus.CounterVec // lava_rpcsmartrouter_retries_success_total     {spec, apiInterface, method}
-	incidentRetriesFailedMetric       *prometheus.CounterVec // lava_rpcsmartrouter_retries_failed_total      {spec, apiInterface, method}
-	incidentConsistencyTotalMetric    *prometheus.CounterVec // lava_rpcsmartrouter_consistency_total         {spec, apiInterface, method}
-	incidentConsistencySuccessMetric  *prometheus.CounterVec // lava_rpcsmartrouter_consistency_success_total {spec, apiInterface, method}
-	incidentConsistencyFailedMetric   *prometheus.CounterVec // lava_rpcsmartrouter_consistency_failed_total  {spec, apiInterface, method}
-	incidentHedgeTotalMetric          *prometheus.CounterVec // lava_rpcsmartrouter_hedge_total               {spec, apiInterface, method}
-	incidentHedgeSuccessMetric        *prometheus.CounterVec // lava_rpcsmartrouter_hedge_success_total       {spec, apiInterface, method}
-	incidentHedgeFailedMetric         *prometheus.CounterVec // lava_rpcsmartrouter_hedge_failed_total        {spec, apiInterface, method}
+	incidentNodeErrorsTotalMetric     *prometheus.CounterVec   // lava_rpcsmartrouter_node_errors_total         {spec, apiInterface, provider_address, method}
+	incidentProtocolErrorsTotalMetric *prometheus.CounterVec   // lava_rpcsmartrouter_protocol_errors_total     {spec, apiInterface, provider_address, method}
+	incidentRetriesTotalMetric        *prometheus.CounterVec   // lava_rpcsmartrouter_retries_total             {spec, apiInterface, method}
+	incidentRetriesSuccessMetric      *prometheus.CounterVec   // lava_rpcsmartrouter_retries_success_total     {spec, apiInterface, method}
+	incidentRetriesFailedMetric       *prometheus.CounterVec   // lava_rpcsmartrouter_retries_failed_total      {spec, apiInterface, method}
+	incidentRetryAttemptsHistogram    *prometheus.HistogramVec // lava_rpcsmartrouter_retry_attempts            {spec, apiInterface, method}
+	incidentConsistencyTotalMetric    *prometheus.CounterVec   // lava_rpcsmartrouter_consistency_total         {spec, apiInterface, method}
+	incidentConsistencySuccessMetric  *prometheus.CounterVec   // lava_rpcsmartrouter_consistency_success_total {spec, apiInterface, method}
+	incidentConsistencyFailedMetric   *prometheus.CounterVec   // lava_rpcsmartrouter_consistency_failed_total  {spec, apiInterface, method}
+	incidentHedgeTotalMetric          *prometheus.CounterVec   // lava_rpcsmartrouter_hedge_total               {spec, apiInterface, method}
+	incidentHedgeSuccessMetric        *prometheus.CounterVec   // lava_rpcsmartrouter_hedge_success_total       {spec, apiInterface, method}
+	incidentHedgeFailedMetric         *prometheus.CounterVec   // lava_rpcsmartrouter_hedge_failed_total        {spec, apiInterface, method}
+	incidentHedgeAttemptsHistogram    *prometheus.HistogramVec // lava_rpcsmartrouter_hedge_attempts            {spec, apiInterface, method}
 
 	// Cache group metrics (labels: spec, apiInterface, method)
-	cacheRequestsTotalMetric *prometheus.CounterVec  // lava_rpcsmartrouter_cache_requests_total
-	cacheSuccessTotalMetric  *prometheus.CounterVec  // lava_rpcsmartrouter_cache_success_total
-	cacheFailedTotalMetric   *prometheus.CounterVec  // lava_rpcsmartrouter_cache_failed_total
+	cacheRequestsTotalMetric *prometheus.CounterVec   // lava_rpcsmartrouter_cache_requests_total
+	cacheSuccessTotalMetric  *prometheus.CounterVec   // lava_rpcsmartrouter_cache_success_total
+	cacheFailedTotalMetric   *prometheus.CounterVec   // lava_rpcsmartrouter_cache_failed_total
 	cacheLatencyHistogram    *prometheus.HistogramVec // lava_rpcsmartrouter_cache_latency_milliseconds
 
 	// Router-scoped request group metrics (labels: spec, apiInterface, provider_address, method)
@@ -187,7 +177,7 @@ func NewSmartRouterMetricsManager(options SmartRouterMetricsManagerOptions) *Sma
 	endpointSelectionScore := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_rpc_endpoint_selection_score",
 		Help: "Latest selection score for each RPC endpoint by score type (availability/latency/sync/stake/composite).",
-	}, []string{"spec", "endpoint_id", "score_type"}))
+	}, []string{"spec", "apiInterface", "endpoint_id", "score_type"}))
 
 	endpointLatestBlock := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
 		Name:   "lava_rpc_endpoint_latest_block",
@@ -233,7 +223,7 @@ func NewSmartRouterMetricsManager(options SmartRouterMetricsManagerOptions) *Sma
 	endpointEndToEndLatency := prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "lava_rpc_endpoint_end_to_end_latency_milliseconds",
 		Help:    "Distribution of end-to-end relay latency for this RPC endpoint by function in milliseconds. Use histogram_quantile() for percentiles.",
-		Buckets: defaultLatencyBuckets,
+		Buckets: LatencyBuckets,
 	}, endpointFunctionLabels)
 
 	// =========================================================================
@@ -246,7 +236,7 @@ func NewSmartRouterMetricsManager(options SmartRouterMetricsManagerOptions) *Sma
 	routerEndToEndLatency := prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "lava_rpcsmartrouter_end_to_end_latency_milliseconds",
 		Help:    "Distribution of end-to-end relay latency across all endpoints on the smart router by function in milliseconds. Use histogram_quantile() for percentiles.",
-		Buckets: defaultLatencyBuckets,
+		Buckets: LatencyBuckets,
 	}, routerFunctionLabels)
 
 	routerOverallHealth := prometheus.NewGauge(prometheus.GaugeOpts{
@@ -340,6 +330,11 @@ func NewSmartRouterMetricsManager(options SmartRouterMetricsManagerOptions) *Sma
 		Name: "lava_rpcsmartrouter_retries_failed_total",
 		Help: "Retried relay requests on the smart router that ultimately failed.",
 	}, incidentMethodLabels)
+	incidentRetryAttemptsHistogram := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "lava_rpcsmartrouter_retry_attempts",
+		Help:    "Distribution of how many provider attempts were needed per retried request.",
+		Buckets: []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+	}, incidentMethodLabels)
 	incidentConsistencyTotalMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_rpcsmartrouter_consistency_total",
 		Help: "Total relay requests on the smart router that enforced a minimum seen block (consistency).",
@@ -363,6 +358,11 @@ func NewSmartRouterMetricsManager(options SmartRouterMetricsManagerOptions) *Sma
 	incidentHedgeFailedMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_rpcsmartrouter_hedge_failed_total",
 		Help: "Hedged relay requests on the smart router that failed.",
+	}, incidentMethodLabels)
+	incidentHedgeAttemptsHistogram := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "lava_rpcsmartrouter_hedge_attempts",
+		Help:    "Distribution of how many hedge relays were sent per hedged request.",
+		Buckets: []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 	}, incidentMethodLabels)
 
 	// =========================================================================
@@ -419,7 +419,7 @@ func NewSmartRouterMetricsManager(options SmartRouterMetricsManagerOptions) *Sma
 	cacheLatencyHistogram := prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "lava_rpcsmartrouter_cache_latency_milliseconds",
 		Help:    "Distribution of cache lookup latency in milliseconds.",
-		Buckets: defaultLatencyBuckets,
+		Buckets: LatencyBuckets,
 	}, cacheLabels)
 
 	// Register router-scoped and histogram metrics.
@@ -444,12 +444,14 @@ func NewSmartRouterMetricsManager(options SmartRouterMetricsManagerOptions) *Sma
 	incidentRetriesTotalMetric = registerOrReuse(incidentRetriesTotalMetric)
 	incidentRetriesSuccessMetric = registerOrReuse(incidentRetriesSuccessMetric)
 	incidentRetriesFailedMetric = registerOrReuse(incidentRetriesFailedMetric)
+	incidentRetryAttemptsHistogram = registerOrReuse(incidentRetryAttemptsHistogram)
 	incidentConsistencyTotalMetric = registerOrReuse(incidentConsistencyTotalMetric)
 	incidentConsistencySuccessMetric = registerOrReuse(incidentConsistencySuccessMetric)
 	incidentConsistencyFailedMetric = registerOrReuse(incidentConsistencyFailedMetric)
 	incidentHedgeTotalMetric = registerOrReuse(incidentHedgeTotalMetric)
 	incidentHedgeSuccessMetric = registerOrReuse(incidentHedgeSuccessMetric)
 	incidentHedgeFailedMetric = registerOrReuse(incidentHedgeFailedMetric)
+	incidentHedgeAttemptsHistogram = registerOrReuse(incidentHedgeAttemptsHistogram)
 	routerRequestsTotal = registerOrReuse(routerRequestsTotal)
 	routerRequestsSuccess = registerOrReuse(routerRequestsSuccess)
 	routerRequestsFailed = registerOrReuse(routerRequestsFailed)
@@ -508,12 +510,14 @@ func NewSmartRouterMetricsManager(options SmartRouterMetricsManagerOptions) *Sma
 		incidentRetriesTotalMetric:        incidentRetriesTotalMetric,
 		incidentRetriesSuccessMetric:      incidentRetriesSuccessMetric,
 		incidentRetriesFailedMetric:       incidentRetriesFailedMetric,
+		incidentRetryAttemptsHistogram:    incidentRetryAttemptsHistogram,
 		incidentConsistencyTotalMetric:    incidentConsistencyTotalMetric,
 		incidentConsistencySuccessMetric:  incidentConsistencySuccessMetric,
 		incidentConsistencyFailedMetric:   incidentConsistencyFailedMetric,
 		incidentHedgeTotalMetric:          incidentHedgeTotalMetric,
 		incidentHedgeSuccessMetric:        incidentHedgeSuccessMetric,
 		incidentHedgeFailedMetric:         incidentHedgeFailedMetric,
+		incidentHedgeAttemptsHistogram:    incidentHedgeAttemptsHistogram,
 
 		// Router-scoped request group
 		routerRequestsTotal:      routerRequestsTotal,
@@ -734,9 +738,8 @@ func (m *SmartRouterMetricsManager) RegisterEndpoint(spec, apiInterface, endpoin
 	if m == nil {
 		return
 	}
-	m.lock.Lock()
-	defer m.lock.Unlock()
 
+	m.lock.Lock()
 	key := spec + "|" + apiInterface + "|" + endpointID
 	if _, exists := m.endpointMetrics[key]; !exists {
 		m.endpointMetrics[key] = &EndpointMetrics{
@@ -745,8 +748,12 @@ func (m *SmartRouterMetricsManager) RegisterEndpoint(spec, apiInterface, endpoin
 			endpointID:   endpointID,
 		}
 	}
-
 	m.urlToProviderName[endpointID] = providerName
+	m.lock.Unlock()
+
+	// Call metric setters outside the lock: they touch Prometheus state only,
+	// not m's own maps, so holding m.lock is unnecessary and would be a
+	// re-entrancy hazard if either method ever acquires m.lock in the future.
 	m.SetEndpointInfo(spec, apiInterface, endpointID, providerName)
 	// Initialize health to healthy so always-healthy endpoints appear in Prometheus from startup.
 	// The relay code only calls SetEndpointOverallHealth on state transitions (unhealthy→healthy),
@@ -827,8 +834,10 @@ func (m *SmartRouterMetricsManager) RecordDirectRelayStart(spec, apiInterface, e
 	m.AddEndpointInFlightRequest(spec, apiInterface, endpointID, function)
 }
 
-// RecordDirectRelayEnd records the end of an in-flight request and updates metrics
-func (m *SmartRouterMetricsManager) RecordDirectRelayEnd(spec, apiInterface, endpointID, function string, latencyMs float64, success bool, props RequestProperties) {
+// RecordDirectRelayEnd records the end of an in-flight request and updates metrics.
+// relay carries the request classification (IsWrite/IsArchive/IsDebugTrace/IsBatch)
+// that the call site should populate on the shared RelayMetrics before calling here.
+func (m *SmartRouterMetricsManager) RecordDirectRelayEnd(spec, apiInterface, endpointID, function string, latencyMs float64, success bool, relay *RelayMetrics) {
 	if m == nil {
 		return
 	}
@@ -849,18 +858,18 @@ func (m *SmartRouterMetricsManager) RecordDirectRelayEnd(spec, apiInterface, end
 	} else {
 		m.routerRequestsFailed.WithLabelValues(routerLabels...).Inc()
 	}
-	if props.IsBatch {
+	if relay != nil && relay.IsBatch {
 		m.routerRequestsBatch.WithLabelValues(routerLabels...).Inc()
 	} else {
-		if props.IsWrite {
+		if relay != nil && relay.IsWrite {
 			m.routerRequestsWrite.WithLabelValues(routerLabels...).Inc()
 		} else {
 			m.routerRequestsRead.WithLabelValues(routerLabels...).Inc()
 		}
-		if props.IsDebugTrace {
+		if relay != nil && relay.IsDebugTrace {
 			m.routerRequestsDebugTrace.WithLabelValues(routerLabels...).Inc()
 		}
-		if props.IsArchive {
+		if relay != nil && relay.IsArchive {
 			m.routerRequestsArchive.WithLabelValues(routerLabels...).Inc()
 		}
 	}
@@ -892,10 +901,6 @@ func (m *SmartRouterMetricsManager) RecordBlockFetch(spec, apiInterface, endpoin
 // ConsumerMetricsManagerInf implementation
 // =============================================================================
 
-func (m *SmartRouterMetricsManager) SetRelaySentToProviderMetric(string, string) {}
-
-func (m *SmartRouterMetricsManager) SetRequestPerProvider(string, string) {}
-
 // RecordEndToEndLatency is a no-op for SmartRouter — end-to-end latency is
 // recorded via RecordRouterEndToEndLatency in SendParsedRelay.
 func (m *SmartRouterMetricsManager) RecordEndToEndLatency(string, string, string, float64) {}
@@ -921,7 +926,9 @@ func (m *SmartRouterMetricsManager) RecordCacheResult(chainId, apiInterface, met
 	} else {
 		m.cacheFailedTotalMetric.WithLabelValues(chainId, apiInterface, method).Inc()
 	}
-	m.cacheLatencyHistogram.WithLabelValues(chainId, apiInterface, method).Observe(latencyMs)
+	if hit {
+		m.cacheLatencyHistogram.WithLabelValues(chainId, apiInterface, method).Observe(latencyMs)
+	}
 }
 
 func (m *SmartRouterMetricsManager) SetProtocolError(chainId string, apiInterface string, providerAddress string, method string) {
@@ -935,7 +942,8 @@ func (m *SmartRouterMetricsManager) RecordIncidentRetry(chainId string, apiInter
 	if m == nil {
 		return
 	}
-	m.incidentRetriesTotalMetric.WithLabelValues(chainId, apiInterface, method).Add(float64(count))
+	m.incidentRetriesTotalMetric.WithLabelValues(chainId, apiInterface, method).Inc()
+	m.incidentRetryAttemptsHistogram.WithLabelValues(chainId, apiInterface, method).Observe(float64(count))
 	if success {
 		m.incidentRetriesSuccessMetric.WithLabelValues(chainId, apiInterface, method).Inc()
 	} else {
@@ -955,23 +963,17 @@ func (m *SmartRouterMetricsManager) RecordIncidentConsistency(chainId string, ap
 	}
 }
 
-func (m *SmartRouterMetricsManager) RecordIncidentHedgeResult(chainId string, apiInterface string, method string, success bool) {
+func (m *SmartRouterMetricsManager) RecordIncidentHedgeResult(chainId string, apiInterface string, method string, count uint64, success bool) {
 	if m == nil {
 		return
 	}
+	m.incidentHedgeTotalMetric.WithLabelValues(chainId, apiInterface, method).Inc()
+	m.incidentHedgeAttemptsHistogram.WithLabelValues(chainId, apiInterface, method).Observe(float64(count))
 	if success {
 		m.incidentHedgeSuccessMetric.WithLabelValues(chainId, apiInterface, method).Inc()
 	} else {
 		m.incidentHedgeFailedMetric.WithLabelValues(chainId, apiInterface, method).Inc()
 	}
-}
-
-// RecordHedgeRelaySent records a hedge relay triggered by the batch ticker.
-func (m *SmartRouterMetricsManager) RecordHedgeRelaySent(chainId string, apiInterface string, method string) {
-	if m == nil {
-		return
-	}
-	m.incidentHedgeTotalMetric.WithLabelValues(chainId, apiInterface, method).Inc()
 }
 
 func (m *SmartRouterMetricsManager) SetCrossValidationMetric(chainId, apiInterface, method string, success bool, agreeingProviders, disagreeingProviders []string) {
@@ -996,22 +998,27 @@ func (m *SmartRouterMetricsManager) UpdateHealthCheckStatus(status bool) {
 	m.UpdateOverallHealthStatus(status)
 }
 
+// UpdateHealthcheckStatusBreakdown is a no-op for SmartRouter.
+// The smart router tracks endpoint health via SetEndpointOverallHealth
+// (lava_rpc_endpoint_overall_health), which already provides per-chain/
+// per-apiInterface breakdowns. The consumer-side lava_consumer_overall_health_breakdown
+// gauge is redundant here and would conflict with the endpoint-level metric.
 func (m *SmartRouterMetricsManager) UpdateHealthcheckStatusBreakdown(chainId, apiInterface string, status bool) {
 }
 
 func (m *SmartRouterMetricsManager) SetProviderLiveness(string, string, string, bool) {}
 
-func (m *SmartRouterMetricsManager) SetProviderSelected(chainId string, _ string, allProviderScores []ProviderSelectionScores, _ float64) {
+func (m *SmartRouterMetricsManager) SetProviderSelected(chainId string, apiInterface string, _ string, allProviderScores []ProviderSelectionScores, _ float64) {
 	if m == nil {
 		return
 	}
 	for _, scores := range allProviderScores {
 		endpointID := scores.ProviderAddress
-		m.endpointSelectionScore.WithLabelValues(chainId, endpointID, "availability").Set(scores.Availability)
-		m.endpointSelectionScore.WithLabelValues(chainId, endpointID, "latency").Set(scores.Latency)
-		m.endpointSelectionScore.WithLabelValues(chainId, endpointID, "sync").Set(scores.Sync)
-		m.endpointSelectionScore.WithLabelValues(chainId, endpointID, "stake").Set(scores.Stake)
-		m.endpointSelectionScore.WithLabelValues(chainId, endpointID, "composite").Set(scores.Composite)
+		m.endpointSelectionScore.WithLabelValues(chainId, apiInterface, endpointID, "availability").Set(scores.Availability)
+		m.endpointSelectionScore.WithLabelValues(chainId, apiInterface, endpointID, "latency").Set(scores.Latency)
+		m.endpointSelectionScore.WithLabelValues(chainId, apiInterface, endpointID, "sync").Set(scores.Sync)
+		m.endpointSelectionScore.WithLabelValues(chainId, apiInterface, endpointID, "stake").Set(scores.Stake)
+		m.endpointSelectionScore.WithLabelValues(chainId, apiInterface, endpointID, "composite").Set(scores.Composite)
 	}
 }
 
@@ -1094,11 +1101,12 @@ func (m *SmartRouterMetricsManager) StartSelectionStatsUpdater(ctx context.Conte
 			case <-ticker.C:
 				for _, report := range m.optimizerQoSClient.GetReportsToSend() {
 					endpointID := report.ProviderAddress
-					m.endpointSelectionScore.WithLabelValues(report.ChainId, endpointID, "availability").Set(report.SelectionAvailability)
-					m.endpointSelectionScore.WithLabelValues(report.ChainId, endpointID, "latency").Set(report.SelectionLatency)
-					m.endpointSelectionScore.WithLabelValues(report.ChainId, endpointID, "sync").Set(report.SelectionSync)
-					m.endpointSelectionScore.WithLabelValues(report.ChainId, endpointID, "stake").Set(report.SelectionStake)
-					m.endpointSelectionScore.WithLabelValues(report.ChainId, endpointID, "composite").Set(report.SelectionComposite)
+					// API interface not available in optimizer reports; use "" as a catch-all bucket.
+					m.endpointSelectionScore.WithLabelValues(report.ChainId, "", endpointID, "availability").Set(report.SelectionAvailability)
+					m.endpointSelectionScore.WithLabelValues(report.ChainId, "", endpointID, "latency").Set(report.SelectionLatency)
+					m.endpointSelectionScore.WithLabelValues(report.ChainId, "", endpointID, "sync").Set(report.SelectionSync)
+					m.endpointSelectionScore.WithLabelValues(report.ChainId, "", endpointID, "stake").Set(report.SelectionStake)
+					m.endpointSelectionScore.WithLabelValues(report.ChainId, "", endpointID, "composite").Set(report.SelectionComposite)
 				}
 			}
 		}

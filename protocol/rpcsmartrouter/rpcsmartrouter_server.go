@@ -280,7 +280,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayWithRetries(ctx context.Context, ret
 	usedProviders := lavasession.NewUsedProviders(nil)
 
 	// Create state machine first - it determines Selection type based on cross-validation headers
-	stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, rpcss, protocolMessage, nil, rpcss.debugRelays, rpcss.rpcSmartRouterLogs)
+	stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, rpcss, protocolMessage, nil, rpcss.debugRelays)
 	if err != nil {
 		return false, err
 	}
@@ -555,7 +555,7 @@ func (rpcss *RPCSmartRouterServer) ProcessRelaySend(ctx context.Context, protoco
 	usedProviders := lavasession.NewUsedProviders(protocolMessage)
 
 	// Create state machine first - it determines Selection type based on cross-validation headers
-	stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, rpcss, protocolMessage, analytics, rpcss.debugRelays, rpcss.rpcSmartRouterLogs)
+	stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, rpcss, protocolMessage, analytics, rpcss.debugRelays)
 	if err != nil {
 		return nil, err
 	}
@@ -817,6 +817,12 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 			)
 
 			if rpcss.smartRouterEndpointMetrics != nil {
+				if analytics != nil {
+					analytics.IsWrite = chainlib.GetStateful(chainMessage) != common.NO_STATE
+					analytics.IsArchive = chainlib.IsArchiveRequest(chainMessage)
+					analytics.IsDebugTrace = chainlib.IsDebugOrTraceRequest(chainMessage)
+					analytics.IsBatch = chainlib.IsBatchRequest(chainMessage)
+				}
 				rpcss.smartRouterEndpointMetrics.RecordDirectRelayEnd(
 					rpcss.listenEndpoint.ChainID,
 					rpcss.listenEndpoint.ApiInterface,
@@ -824,12 +830,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 					apiMethod,
 					float64(relayLatency.Milliseconds()),
 					err == nil,
-					metrics.RequestProperties{
-						IsWrite:      chainlib.GetStateful(chainMessage) != common.NO_STATE,
-						IsArchive:    chainlib.IsArchiveRequest(chainMessage),
-						IsDebugTrace: chainlib.IsDebugOrTraceRequest(chainMessage),
-						IsBatch:      chainlib.IsBatchRequest(chainMessage),
-					},
+					analytics,
 				)
 			}
 
@@ -2134,8 +2135,8 @@ func (rpcss *RPCSmartRouterServer) appendHeadersToRelayResult(ctx context.Contex
 			go rpcss.rpcSmartRouterLogs.RecordIncidentConsistency(chainId, apiInterface, apiName, success)
 		}
 		// Hedge: triggered when the batch ticker fired during this relay
-		if analytics != nil && analytics.HedgeSent {
-			go rpcss.rpcSmartRouterLogs.RecordIncidentHedgeResult(chainId, apiInterface, apiName, success)
+		if analytics != nil && analytics.HedgeCount > 0 {
+			go rpcss.rpcSmartRouterLogs.RecordIncidentHedgeResult(chainId, apiInterface, apiName, analytics.HedgeCount, success)
 		}
 	}
 

@@ -8,8 +8,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var cvLabels = []string{"spec", "apiInterface", "method"}
-var cvProviderLabels = []string{"spec", "apiInterface", "method", "provider_address"}
+var (
+	cvLabels         = []string{"spec", "apiInterface", "method"}
+	cvProviderLabels = []string{"spec", "apiInterface", "method", "provider_address"}
+)
 
 func newConsumerForCVTest() *ConsumerMetricsManager {
 	return &ConsumerMetricsManager{
