@@ -34,79 +34,133 @@ func newSmartRouterForCVTest() *SmartRouterMetricsManager {
 	}
 }
 
-// ---- Consumer tests ----
-
-func TestConsumerSetCrossValidationMetric_Success(t *testing.T) {
-	cmm := newConsumerForCVTest()
-	agreeing := []string{"prov-A", "prov-B"}
-	disagreeing := []string{"prov-C"}
-
-	cmm.SetCrossValidationMetric("ETH1", "jsonrpc", "eth_blockNumber", true, agreeing, disagreeing)
-
-	require.Equal(t, float64(1), testutil.ToFloat64(cmm.crossValidationRequestsTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber")))
-	require.Equal(t, float64(1), testutil.ToFloat64(cmm.crossValidationSuccessTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber")))
-	require.Equal(t, float64(1), testutil.ToFloat64(cmm.crossValidationProviderAgreementsTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber", "prov-A")))
-	require.Equal(t, float64(1), testutil.ToFloat64(cmm.crossValidationProviderAgreementsTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber", "prov-B")))
-	require.Equal(t, float64(1), testutil.ToFloat64(cmm.crossValidationProviderDisagreementsTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber", "prov-C")))
+// cvRunner is a thin adapter that lets the shared test case table drive both
+// ConsumerMetricsManager and SmartRouterMetricsManager cross-validation logic.
+type cvRunner struct {
+	invoke        func(chainId, apiInterface, method string, success bool, agreeing, disagreeing []string)
+	total         *prometheus.CounterVec
+	successC      *prometheus.CounterVec
+	failedC       *prometheus.CounterVec
+	agreements    *prometheus.CounterVec
+	disagreements *prometheus.CounterVec
 }
 
-func TestConsumerSetCrossValidationMetric_Failure(t *testing.T) {
+func newConsumerCVRunner() *cvRunner {
 	cmm := newConsumerForCVTest()
-	disagreeing := []string{"prov-X", "prov-Y"}
-
-	cmm.SetCrossValidationMetric("ETH1", "jsonrpc", "eth_blockNumber", false, nil, disagreeing)
-
-	require.Equal(t, float64(1), testutil.ToFloat64(cmm.crossValidationRequestsTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber")))
-	require.Equal(t, float64(0), testutil.ToFloat64(cmm.crossValidationSuccessTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber")))
-	require.Equal(t, float64(1), testutil.ToFloat64(cmm.crossValidationProviderDisagreementsTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber", "prov-X")))
-	require.Equal(t, float64(1), testutil.ToFloat64(cmm.crossValidationProviderDisagreementsTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber", "prov-Y")))
+	return &cvRunner{
+		invoke:        cmm.SetCrossValidationMetric,
+		total:         cmm.crossValidationRequestsTotalMetric,
+		successC:      cmm.crossValidationSuccessTotalMetric,
+		failedC:       cmm.crossValidationFailedTotalMetric,
+		agreements:    cmm.crossValidationProviderAgreementsTotalMetric,
+		disagreements: cmm.crossValidationProviderDisagreementsTotalMetric,
+	}
 }
 
-func TestConsumerSetCrossValidationMetric_RequestCountsEveryCall(t *testing.T) {
-	cmm := newConsumerForCVTest()
-
-	cmm.SetCrossValidationMetric("ETH1", "jsonrpc", "eth_blockNumber", true, []string{"prov-A"}, nil)
-	cmm.SetCrossValidationMetric("ETH1", "jsonrpc", "eth_blockNumber", false, nil, []string{"prov-B"})
-	cmm.SetCrossValidationMetric("ETH1", "jsonrpc", "eth_blockNumber", true, []string{"prov-A"}, nil)
-
-	require.Equal(t, float64(3), testutil.ToFloat64(cmm.crossValidationRequestsTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber")))
-	require.Equal(t, float64(2), testutil.ToFloat64(cmm.crossValidationSuccessTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber")))
+func newSmartRouterCVRunner() *cvRunner {
+	m := newSmartRouterForCVTest()
+	return &cvRunner{
+		invoke:        m.SetCrossValidationMetric,
+		total:         m.crossValidationRequestsTotalMetric,
+		successC:      m.crossValidationSuccessTotalMetric,
+		failedC:       m.crossValidationFailedTotalMetric,
+		agreements:    m.crossValidationProviderAgreementsTotalMetric,
+		disagreements: m.crossValidationProviderDisagreementsTotalMetric,
+	}
 }
 
-func TestConsumerSetCrossValidationMetric_NoProvidersOnFailure(t *testing.T) {
-	cmm := newConsumerForCVTest()
+// TestSetCrossValidationMetric covers the cross-validation counter logic for
+// both ConsumerMetricsManager and SmartRouterMetricsManager using the same
+// table of cases.
+func TestSetCrossValidationMetric(t *testing.T) {
+	type cvCall struct {
+		success               bool
+		agreeing, disagreeing []string
+	}
 
-	cmm.SetCrossValidationMetric("ETH1", "jsonrpc", "eth_blockNumber", false, nil, nil)
+	cases := []struct {
+		name              string
+		calls             []cvCall
+		wantTotal         float64
+		wantSuccess       float64
+		wantFailed        float64
+		wantAgreements    map[string]float64
+		wantDisagreements map[string]float64
+	}{
+		{
+			name:      "success with agreeing and disagreeing providers",
+			calls:     []cvCall{{success: true, agreeing: []string{"prov-A", "prov-B"}, disagreeing: []string{"prov-C"}}},
+			wantTotal: 1, wantSuccess: 1,
+			wantAgreements:    map[string]float64{"prov-A": 1, "prov-B": 1},
+			wantDisagreements: map[string]float64{"prov-C": 1},
+		},
+		{
+			name:      "failure with disagreeing providers",
+			calls:     []cvCall{{success: false, disagreeing: []string{"prov-X", "prov-Y"}}},
+			wantTotal: 1, wantFailed: 1,
+			wantDisagreements: map[string]float64{"prov-X": 1, "prov-Y": 1},
+		},
+		{
+			name:      "failure with no providers",
+			calls:     []cvCall{{success: false}},
+			wantTotal: 1, wantFailed: 1,
+		},
+		{
+			// Verifies both that the request counter accumulates across calls and
+			// that success+failed==total (partition invariant).
+			name: "multi-call accumulates; success+failed==total",
+			calls: []cvCall{
+				{success: true, agreeing: []string{"prov-A"}},
+				{success: false, disagreeing: []string{"prov-B"}},
+				{success: true, agreeing: []string{"prov-A"}},
+			},
+			wantTotal: 3, wantSuccess: 2, wantFailed: 1,
+		},
+	}
 
-	require.Equal(t, float64(1), testutil.ToFloat64(cmm.crossValidationRequestsTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber")))
-	require.Equal(t, float64(0), testutil.ToFloat64(cmm.crossValidationSuccessTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber")))
-}
+	runners := []struct {
+		name string
+		new  func() *cvRunner
+	}{
+		{"consumer", newConsumerCVRunner},
+		{"smart_router", newSmartRouterCVRunner},
+	}
 
-func TestConsumerSetCrossValidationMetric_FailedIncrementedOnFailure(t *testing.T) {
-	cmm := newConsumerForCVTest()
+	const (
+		spec   = "ETH1"
+		api    = "jsonrpc"
+		method = "eth_blockNumber"
+	)
 
-	cmm.SetCrossValidationMetric("ETH1", "jsonrpc", "eth_blockNumber", false, nil, nil)
+	for _, r := range runners {
+		t.Run(r.name, func(t *testing.T) {
+			for _, tc := range cases {
+				t.Run(tc.name, func(t *testing.T) {
+					runner := r.new()
 
-	require.Equal(t, float64(1), testutil.ToFloat64(cmm.crossValidationFailedTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber")))
-	require.Equal(t, float64(0), testutil.ToFloat64(cmm.crossValidationSuccessTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber")))
-}
+					for _, c := range tc.calls {
+						runner.invoke(spec, api, method, c.success, c.agreeing, c.disagreeing)
+					}
 
-func TestConsumerSetCrossValidationMetric_SuccessPlusFailedEqualsRequests(t *testing.T) {
-	cmm := newConsumerForCVTest()
+					l := []string{spec, api, method}
+					require.Equal(t, tc.wantTotal, testutil.ToFloat64(runner.total.WithLabelValues(l...)), "total")
+					require.Equal(t, tc.wantSuccess, testutil.ToFloat64(runner.successC.WithLabelValues(l...)), "success")
+					require.Equal(t, tc.wantFailed, testutil.ToFloat64(runner.failedC.WithLabelValues(l...)), "failed")
 
-	cmm.SetCrossValidationMetric("ETH1", "jsonrpc", "eth_blockNumber", true, []string{"prov-A"}, nil)
-	cmm.SetCrossValidationMetric("ETH1", "jsonrpc", "eth_blockNumber", false, nil, []string{"prov-B"})
-	cmm.SetCrossValidationMetric("ETH1", "jsonrpc", "eth_blockNumber", true, []string{"prov-A"}, nil)
-
-	labels := []string{"ETH1", "jsonrpc", "eth_blockNumber"}
-	total := testutil.ToFloat64(cmm.crossValidationRequestsTotalMetric.WithLabelValues(labels...))
-	success := testutil.ToFloat64(cmm.crossValidationSuccessTotalMetric.WithLabelValues(labels...))
-	failed := testutil.ToFloat64(cmm.crossValidationFailedTotalMetric.WithLabelValues(labels...))
-
-	require.Equal(t, float64(3), total)
-	require.Equal(t, float64(2), success)
-	require.Equal(t, float64(1), failed)
-	require.Equal(t, total, success+failed)
+					for prov, want := range tc.wantAgreements {
+						require.Equal(t, want,
+							testutil.ToFloat64(runner.agreements.WithLabelValues(spec, api, method, prov)),
+							"agreement[%s]", prov)
+					}
+					for prov, want := range tc.wantDisagreements {
+						require.Equal(t, want,
+							testutil.ToFloat64(runner.disagreements.WithLabelValues(spec, api, method, prov)),
+							"disagreement[%s]", prov)
+					}
+				})
+			}
+		})
+	}
 }
 
 func TestConsumerSetCrossValidationMetric_NilManager(t *testing.T) {
@@ -114,81 +168,6 @@ func TestConsumerSetCrossValidationMetric_NilManager(t *testing.T) {
 	require.NotPanics(t, func() {
 		cmm.SetCrossValidationMetric("ETH1", "jsonrpc", "eth_blockNumber", true, []string{"prov-A"}, nil)
 	})
-}
-
-// ---- SmartRouter tests ----
-
-func TestSmartRouterSetCrossValidationMetric_Success(t *testing.T) {
-	m := newSmartRouterForCVTest()
-	agreeing := []string{"prov-A", "prov-B"}
-	disagreeing := []string{"prov-C"}
-
-	m.SetCrossValidationMetric("ETH1", "jsonrpc", "eth_blockNumber", true, agreeing, disagreeing)
-
-	require.Equal(t, float64(1), testutil.ToFloat64(m.crossValidationRequestsTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber")))
-	require.Equal(t, float64(1), testutil.ToFloat64(m.crossValidationSuccessTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber")))
-	require.Equal(t, float64(1), testutil.ToFloat64(m.crossValidationProviderAgreementsTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber", "prov-A")))
-	require.Equal(t, float64(1), testutil.ToFloat64(m.crossValidationProviderAgreementsTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber", "prov-B")))
-	require.Equal(t, float64(1), testutil.ToFloat64(m.crossValidationProviderDisagreementsTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber", "prov-C")))
-}
-
-func TestSmartRouterSetCrossValidationMetric_Failure(t *testing.T) {
-	m := newSmartRouterForCVTest()
-	disagreeing := []string{"prov-X", "prov-Y"}
-
-	m.SetCrossValidationMetric("ETH1", "jsonrpc", "eth_blockNumber", false, nil, disagreeing)
-
-	require.Equal(t, float64(1), testutil.ToFloat64(m.crossValidationRequestsTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber")))
-	require.Equal(t, float64(0), testutil.ToFloat64(m.crossValidationSuccessTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber")))
-	require.Equal(t, float64(1), testutil.ToFloat64(m.crossValidationProviderDisagreementsTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber", "prov-X")))
-	require.Equal(t, float64(1), testutil.ToFloat64(m.crossValidationProviderDisagreementsTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber", "prov-Y")))
-}
-
-func TestSmartRouterSetCrossValidationMetric_RequestCountsEveryCall(t *testing.T) {
-	m := newSmartRouterForCVTest()
-
-	m.SetCrossValidationMetric("ETH1", "jsonrpc", "eth_blockNumber", true, []string{"prov-A"}, nil)
-	m.SetCrossValidationMetric("ETH1", "jsonrpc", "eth_blockNumber", false, nil, []string{"prov-B"})
-	m.SetCrossValidationMetric("ETH1", "jsonrpc", "eth_blockNumber", true, []string{"prov-A"}, nil)
-
-	require.Equal(t, float64(3), testutil.ToFloat64(m.crossValidationRequestsTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber")))
-	require.Equal(t, float64(2), testutil.ToFloat64(m.crossValidationSuccessTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber")))
-}
-
-func TestSmartRouterSetCrossValidationMetric_NoProvidersOnFailure(t *testing.T) {
-	m := newSmartRouterForCVTest()
-
-	m.SetCrossValidationMetric("ETH1", "jsonrpc", "eth_blockNumber", false, nil, nil)
-
-	require.Equal(t, float64(1), testutil.ToFloat64(m.crossValidationRequestsTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber")))
-	require.Equal(t, float64(0), testutil.ToFloat64(m.crossValidationSuccessTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber")))
-}
-
-func TestSmartRouterSetCrossValidationMetric_FailedIncrementedOnFailure(t *testing.T) {
-	m := newSmartRouterForCVTest()
-
-	m.SetCrossValidationMetric("ETH1", "jsonrpc", "eth_blockNumber", false, nil, nil)
-
-	require.Equal(t, float64(1), testutil.ToFloat64(m.crossValidationFailedTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber")))
-	require.Equal(t, float64(0), testutil.ToFloat64(m.crossValidationSuccessTotalMetric.WithLabelValues("ETH1", "jsonrpc", "eth_blockNumber")))
-}
-
-func TestSmartRouterSetCrossValidationMetric_SuccessPlusFailedEqualsRequests(t *testing.T) {
-	m := newSmartRouterForCVTest()
-
-	m.SetCrossValidationMetric("ETH1", "jsonrpc", "eth_blockNumber", true, []string{"prov-A"}, nil)
-	m.SetCrossValidationMetric("ETH1", "jsonrpc", "eth_blockNumber", false, nil, []string{"prov-B"})
-	m.SetCrossValidationMetric("ETH1", "jsonrpc", "eth_blockNumber", true, []string{"prov-A"}, nil)
-
-	labels := []string{"ETH1", "jsonrpc", "eth_blockNumber"}
-	total := testutil.ToFloat64(m.crossValidationRequestsTotalMetric.WithLabelValues(labels...))
-	success := testutil.ToFloat64(m.crossValidationSuccessTotalMetric.WithLabelValues(labels...))
-	failed := testutil.ToFloat64(m.crossValidationFailedTotalMetric.WithLabelValues(labels...))
-
-	require.Equal(t, float64(3), total)
-	require.Equal(t, float64(2), success)
-	require.Equal(t, float64(1), failed)
-	require.Equal(t, total, success+failed)
 }
 
 func TestSmartRouterSetCrossValidationMetric_NilManager(t *testing.T) {
