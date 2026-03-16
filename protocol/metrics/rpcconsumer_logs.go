@@ -119,50 +119,48 @@ func (rpccl *RPCConsumerLogs) SetWebSocketConnectionActive(chainId string, apiIn
 }
 
 func (rpccl *RPCConsumerLogs) SetRelaySentToProviderMetric(providerAddress, chainId, apiInterface string) {
-	rpccl.consumerMetricsManager.SetRelaySentToProviderMetric(chainId, apiInterface)
 	rpccl.consumerOptimizerQoSClient.SetRelaySentToProvider(providerAddress, chainId)
-	rpccl.consumerMetricsManager.SetRequestPerProvider(chainId, providerAddress)
 }
 
-func (rpccl *RPCConsumerLogs) SetRelayNodeErrorMetric(providerAddress, chainId, apiInterface string) {
+func (rpccl *RPCConsumerLogs) SetRelayNodeErrorMetric(providerAddress, chainId, apiInterface, method string) {
 	if providerAddress == "" {
 		// skip if provider address is empty
 		return
 	}
 
-	rpccl.consumerMetricsManager.SetRelayNodeErrorMetric(chainId, apiInterface)
+	rpccl.consumerMetricsManager.SetRelayNodeErrorMetric(chainId, apiInterface, providerAddress, method)
 	rpccl.consumerOptimizerQoSClient.SetNodeErrorToProvider(providerAddress, chainId)
 }
 
-func (rpccl *RPCConsumerLogs) SetNodeErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string) {
-	rpccl.consumerMetricsManager.SetNodeErrorRecoveredSuccessfullyMetric(chainId, apiInterface, attempt)
-}
-
 func (rpccl *RPCConsumerLogs) SetCrossValidationMetric(
-	chainId, apiInterface, method, status string,
-	maxParticipants, agreementThreshold int,
-	allProviders, agreeingProviders []string,
+	chainId, apiInterface, method string,
+	success bool,
+	agreeingProviders, disagreeingProviders []string,
 ) {
 	if rpccl == nil {
 		return
 	}
-	rpccl.consumerMetricsManager.SetCrossValidationMetric(
-		chainId, apiInterface, method, status,
-		maxParticipants, agreementThreshold,
-		allProviders, agreeingProviders,
-	)
-}
-
-func (rpccl *RPCConsumerLogs) SetProtocolErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string) {
-	rpccl.consumerMetricsManager.SetProtocolErrorRecoveredSuccessfullyMetric(chainId, apiInterface, attempt)
+	rpccl.consumerMetricsManager.SetCrossValidationMetric(chainId, apiInterface, method, success, agreeingProviders, disagreeingProviders)
 }
 
 func (rpccl *RPCConsumerLogs) GetMessageSeed() string {
 	return "GUID_" + strconv.Itoa(rand.Intn(10000000000))
 }
 
-func (rpccl *RPCConsumerLogs) SetProtocolError(chainId string, providerAddress string) {
-	rpccl.consumerMetricsManager.SetProtocolError(chainId, providerAddress)
+func (rpccl *RPCConsumerLogs) SetProtocolError(chainId string, apiInterface string, providerAddress string, method string) {
+	rpccl.consumerMetricsManager.SetProtocolError(chainId, apiInterface, providerAddress, method)
+}
+
+func (rpccl *RPCConsumerLogs) RecordIncidentRetry(chainId string, apiInterface string, method string, count uint64, success bool) {
+	rpccl.consumerMetricsManager.RecordIncidentRetry(chainId, apiInterface, method, count, success)
+}
+
+func (rpccl *RPCConsumerLogs) RecordIncidentConsistency(chainId string, apiInterface string, method string, success bool) {
+	rpccl.consumerMetricsManager.RecordIncidentConsistency(chainId, apiInterface, method, success)
+}
+
+func (rpccl *RPCConsumerLogs) RecordIncidentHedgeResult(chainId string, apiInterface string, method string, success bool) {
+	rpccl.consumerMetricsManager.RecordIncidentHedgeResult(chainId, apiInterface, method, success)
 }
 
 // Input will be masked with a random GUID if returnMaskedErrors is set to true
@@ -231,25 +229,16 @@ func (rpccl *RPCConsumerLogs) LogStartTransaction(name string) func() {
 	}
 }
 
-// AddMetricForProcessingLatencyBeforeProvider adds a time calculation metric for the consumer's processing time before sending a relay to a provider
-// it returns whether the latency was added or not
-func (rpccl *RPCConsumerLogs) AddMetricForProcessingLatencyBeforeProvider(analytics *RelayMetrics, chainId string, apiInterface string) {
-	if analytics != nil && analytics.ProcessingTimestamp.Before(time.Now()) {
-		go rpccl.consumerMetricsManager.SetRelayProcessingLatencyBeforeProvider(time.Since(analytics.ProcessingTimestamp), chainId, apiInterface)
-	}
+func (rpccl *RPCConsumerLogs) RecordEndToEndLatency(chainId string, apiInterface string, method string, latencyMs float64) {
+	go rpccl.consumerMetricsManager.RecordEndToEndLatency(chainId, apiInterface, method, latencyMs)
 }
 
-func (rpccl *RPCConsumerLogs) AddMetricForProcessingLatencyAfterProvider(analytics *RelayMetrics, chainId string, apiInterface string) {
-	if analytics != nil && analytics.MeasureAfterProviderProcessingTime && analytics.ProcessingTimestamp.Before(time.Now()) {
-		go rpccl.consumerMetricsManager.SetRelayProcessingLatencyAfterProvider(time.Since(analytics.ProcessingTimestamp), chainId, apiInterface)
-	}
+func (rpccl *RPCConsumerLogs) RecordCacheResult(chainId, apiInterface, method string, hit bool, latencyMs float64) {
+	go rpccl.consumerMetricsManager.RecordCacheResult(chainId, apiInterface, method, hit, latencyMs)
 }
 
-func (rpccl *RPCConsumerLogs) SetEndToEndLatency(chainId string, apiInterface string, latency time.Duration) {
-	if rpccl == nil {
-		return
-	}
-	go rpccl.consumerMetricsManager.SetEndToEndLatency(chainId, apiInterface, latency)
+func (rpccl *RPCConsumerLogs) RecordProviderLatency(chainId string, apiInterface string, providerAddress string, method string, latencyMs float64) {
+	go rpccl.consumerMetricsManager.RecordProviderLatency(chainId, apiInterface, providerAddress, method, latencyMs)
 }
 
 func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, headers map[string][]string) {
@@ -313,8 +302,8 @@ func (rpccl *RPCConsumerLogs) shouldCountMetrics(refererHeaderValue string, user
 	return true
 }
 
-func (rpccl *RPCConsumerLogs) SetRelaySentByNewBatchTickerMetric(chainId string, apiInterface string) {
-	rpccl.consumerMetricsManager.SetRelaySentByNewBatchTickerMetric(chainId, apiInterface)
+func (rpccl *RPCConsumerLogs) RecordHedgeRelaySent(chainId string, apiInterface string, method string) {
+	rpccl.consumerMetricsManager.RecordHedgeRelaySent(chainId, apiInterface, method)
 }
 
 func (rpccl *RPCConsumerLogs) SendMetrics(data *RelayMetrics, err error, origin string) {

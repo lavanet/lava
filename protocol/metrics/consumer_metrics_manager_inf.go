@@ -14,24 +14,16 @@ var _ ConsumerMetricsManagerInf = NoOpConsumerMetrics{}
 type NoOpConsumerMetrics struct{}
 
 func (NoOpConsumerMetrics) SetRelayMetrics(*RelayMetrics, error)              {}
-func (NoOpConsumerMetrics) SetRelaySentToProviderMetric(string, string)       {}
-func (NoOpConsumerMetrics) SetRelaySentByNewBatchTickerMetric(string, string) {}
-func (NoOpConsumerMetrics) SetRequestPerProvider(string, string)              {}
-func (NoOpConsumerMetrics) SetRelayProcessingLatencyBeforeProvider(time.Duration, string, string) {
-}
-
-func (NoOpConsumerMetrics) SetRelayProcessingLatencyAfterProvider(time.Duration, string, string) {
-}
-func (NoOpConsumerMetrics) SetEndToEndLatency(string, string, time.Duration) {}
-func (NoOpConsumerMetrics) SetRelayNodeErrorMetric(string, string)           {}
-func (NoOpConsumerMetrics) SetNodeErrorRecoveredSuccessfullyMetric(string, string, string) {
-}
-
-func (NoOpConsumerMetrics) SetProtocolErrorRecoveredSuccessfullyMetric(string, string, string) {
-}
-func (NoOpConsumerMetrics) SetProtocolError(string, string) {}
-func (NoOpConsumerMetrics) SetCrossValidationMetric(string, string, string, string, int, int, []string, []string) {
-}
+func (NoOpConsumerMetrics) RecordHedgeRelaySent(string, string, string) {}
+func (NoOpConsumerMetrics) RecordEndToEndLatency(string, string, string, float64)         {}
+func (NoOpConsumerMetrics) RecordProviderLatency(string, string, string, string, float64) {}
+func (NoOpConsumerMetrics) RecordCacheResult(string, string, string, bool, float64)       {}
+func (NoOpConsumerMetrics) SetRelayNodeErrorMetric(string, string, string, string) {}
+func (NoOpConsumerMetrics) SetProtocolError(string, string, string, string)            {}
+func (NoOpConsumerMetrics) RecordIncidentRetry(string, string, string, uint64, bool)   {}
+func (NoOpConsumerMetrics) RecordIncidentConsistency(string, string, string, bool)     {}
+func (NoOpConsumerMetrics) RecordIncidentHedgeResult(string, string, string, bool)     {}
+func (NoOpConsumerMetrics) SetCrossValidationMetric(string, string, string, bool, []string, []string) {}
 func (NoOpConsumerMetrics) UpdateHealthCheckStatus(bool)                          {}
 func (NoOpConsumerMetrics) UpdateHealthcheckStatusBreakdown(string, string, bool) {}
 func (NoOpConsumerMetrics) SetProviderLiveness(string, string, string, bool)      {}
@@ -69,23 +61,26 @@ func SafeMetrics(m ConsumerMetricsManagerInf) ConsumerMetricsManagerInf {
 type ConsumerMetricsManagerInf interface {
 	// --- Relay tracking (RPCConsumerLogs) ---
 	SetRelayMetrics(relayMetric *RelayMetrics, err error)
-	SetRelaySentToProviderMetric(chainId string, apiInterface string)
-	SetRelaySentByNewBatchTickerMetric(chainId string, apiInterface string)
-	SetRequestPerProvider(chainId string, providerAddress string)
+	RecordHedgeRelaySent(chainId string, apiInterface string, method string)
 
-	// --- Latency (RPCConsumerLogs) ---
-	SetRelayProcessingLatencyBeforeProvider(latency time.Duration, chainId string, apiInterface string)
-	SetRelayProcessingLatencyAfterProvider(latency time.Duration, chainId string, apiInterface string)
-	SetEndToEndLatency(chainId string, apiInterface string, latency time.Duration)
+	// --- Latency ---
+	RecordEndToEndLatency(chainId string, apiInterface string, method string, latencyMs float64)
+	RecordProviderLatency(chainId string, apiInterface string, providerAddress string, method string, latencyMs float64)
+
+	// --- Cache ---
+	RecordCacheResult(chainId, apiInterface, method string, hit bool, latencyMs float64)
 
 	// --- Errors (RPCConsumerLogs) ---
-	SetRelayNodeErrorMetric(chainId string, apiInterface string)
-	SetNodeErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string)
-	SetProtocolErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string)
-	SetProtocolError(chainId string, providerAddress string)
+	SetRelayNodeErrorMetric(chainId string, apiInterface string, providerAddress string, method string)
+	SetProtocolError(chainId string, apiInterface string, providerAddress string, method string)
+
+	// --- Incidents (appendHeadersToRelayResult / RPCConsumerLogs) ---
+	RecordIncidentRetry(chainId string, apiInterface string, method string, count uint64, success bool)
+	RecordIncidentConsistency(chainId string, apiInterface string, method string, success bool)
+	RecordIncidentHedgeResult(chainId string, apiInterface string, method string, success bool)
 
 	// --- Cross-validation (RPCConsumerLogs) ---
-	SetCrossValidationMetric(chainId, apiInterface, method, status string, maxParticipants, agreementThreshold int, allProvidersSorted, agreeingProvidersSorted []string)
+	SetCrossValidationMetric(chainId, apiInterface, method string, success bool, agreeingProviders, disagreeingProviders []string)
 
 	// --- Health (RelaysMonitorAggregator) ---
 	UpdateHealthCheckStatus(status bool)

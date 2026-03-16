@@ -510,10 +510,8 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		if relayResult.GetStatusCode() != 0 {
 			fiberCtx.Status(relayResult.StatusCode)
 		}
-		// Return json response and add metric for after provider processing
+		// Return json response
 		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
-		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, chainID, apiInterface)
-		apil.logger.SetEndToEndLatency(chainID, apiInterface, time.Since(startTime))
 		return err
 	}
 	app.Post("/*", handlerPost)

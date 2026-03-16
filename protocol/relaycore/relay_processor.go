@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -384,20 +383,6 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 			// Use a routine to run it in parallel
 			go rp.relayRetriesManager.RemoveHashFromCache(hash)
 		}
-		// Check if we need to add node errors retry metrics
-		if rp.selection == Stateless {
-			// If nodeErrors length is larger than 0, our retry mechanism was activated. we add our metrics now.
-			if nodeErrors > 0 {
-				chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
-				go rp.metricsInf.SetNodeErrorRecoveredSuccessfullyMetric(chainId, apiInterface, strconv.Itoa(nodeErrors))
-			}
-
-			// Check if we need to add protocol errors retry metrics
-			if protocolErrors > 0 {
-				chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
-				go rp.metricsInf.SetProtocolErrorRecoveredSuccessfullyMetric(chainId, apiInterface, strconv.Itoa(protocolErrors))
-			}
-		}
 		if rp.debugRelay {
 			utils.LavaFormatDebug("HasRequiredNodeResults requirements met",
 				utils.LogAttr("GUID", rp.guid),
@@ -435,7 +420,7 @@ func (rp *RelayProcessor) handleResponse(response *RelayResponse) {
 	// send relay error metrics only on non stateful queries, as stateful queries always return X-1/X errors.
 	if nodeError != nil && rp.selection != Stateful {
 		chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
-		go rp.metricsInf.SetRelayNodeErrorMetric(response.RelayResult.ProviderInfo.ProviderAddress, chainId, apiInterface)
+		go rp.metricsInf.SetRelayNodeErrorMetric(response.RelayResult.ProviderInfo.ProviderAddress, chainId, apiInterface, rp.RelayStateMachine.GetProtocolMessage().GetApi().Name)
 		utils.LavaFormatInfo("Relay received a node error", utils.LogAttr("GUID", rp.guid), utils.LogAttr("Error", nodeError), utils.LogAttr("provider", response.RelayResult.ProviderInfo), utils.LogAttr("Request", rp.RelayStateMachine.GetProtocolMessage().GetApi().Name))
 	}
 

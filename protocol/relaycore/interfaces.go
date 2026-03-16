@@ -32,9 +32,7 @@ type ResultsCheckerInf interface {
 
 // MetricsInterface for relay processor metrics
 type MetricsInterface interface {
-	SetRelayNodeErrorMetric(providerAddress string, chainId string, apiInterface string)
-	SetNodeErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string)
-	SetProtocolErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string)
+	SetRelayNodeErrorMetric(providerAddress string, chainId string, apiInterface string, method string)
 }
 
 // ChainIdAndApiInterfaceGetter interface

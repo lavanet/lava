@@ -38,7 +38,7 @@ type SmartRouterRelaySender interface {
 }
 
 type tickerMetricSetterInf interface {
-	SetRelaySentByNewBatchTickerMetric(chainId string, apiInterface string)
+	RecordHedgeRelaySent(chainId string, apiInterface string, method string)
 }
 
 type SmartRouterRelayStateMachine struct {
@@ -434,7 +434,8 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 					utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
 					relayTaskChannel <- RelayStateSendInstructions{RelayState: srsm.getLatestState(), NumOfProviders: 1}
 					// Add ticker launch metrics
-					go srsm.tickerMetricSetter.SetRelaySentByNewBatchTickerMetric(srsm.relaySender.GetChainIdAndApiInterface())
+					chainId, apiInterface := srsm.relaySender.GetChainIdAndApiInterface()
+					go srsm.tickerMetricSetter.RecordHedgeRelaySent(chainId, apiInterface, srsm.protocolMessage.GetApi().GetName())
 				}
 			case returnErr := <-returnCondition:
 				utils.LavaFormatTrace("[StateMachine] returnErr := <-returnCondition", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))

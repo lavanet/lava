@@ -23,6 +23,14 @@ type RelayMetrics struct {
 	ApiMethod                          string
 	ProcessingTimestamp                time.Time
 	MeasureAfterProviderProcessingTime bool // we measure processing time only on first relay success so we use this to indicate that the after provider measurement should occur (not true for all code flows)
+	// Request classification fields — populated at relay call sites
+	ProviderAddress string
+	IsWrite         bool // stateful != 0; false means read
+	IsArchive       bool
+	IsDebugTrace    bool
+	IsBatch         bool
+	// Incident tracking flags — set during relay processing
+	HedgeSent bool // true when the batch ticker fired and sent a hedge relay
 }
 
 type RelayAnalyticsDTO struct {

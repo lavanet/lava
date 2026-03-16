@@ -92,7 +92,7 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 		rpcSmartRouterServer := &RPCSmartRouterServer{}
 
 		// Call the function
-		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api")
+		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api", nil)
 
 		// Verify the result - should have single provider header + user request type header
 		require.Len(t, relayResult.Reply.Metadata, 2)
@@ -139,7 +139,7 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 		rpcSmartRouterServer := &RPCSmartRouterServer{}
 
 		// Call the function
-		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api")
+		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api", nil)
 
 		// Verify the result - should have status, all-providers, agreeing-providers, and user request type headers
 		require.Len(t, relayResult.Reply.Metadata, 4)
@@ -202,7 +202,7 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 		rpcSmartRouterServer := &RPCSmartRouterServer{}
 
 		// Call the function
-		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api")
+		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api", nil)
 
 		// Verify the result - should have 4 headers: status, all-providers, agreeing-providers, user-request-type
 		require.Len(t, relayResult.Reply.Metadata, 4)
@@ -265,7 +265,7 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 		rpcSmartRouterServer := &RPCSmartRouterServer{}
 
 		// Call the function
-		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api")
+		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api", nil)
 
 		// Verify the result - should have 4 headers (status, all-providers, agreeing-providers, user-request-type)
 		require.Len(t, relayResult.Reply.Metadata, 4)
@@ -307,7 +307,7 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 
 		// This should not panic
 		require.NotPanics(t, func() {
-			rpcSmartRouterServer.appendHeadersToRelayResult(ctx, nil, 0, relayProcessor, mockProtocolMessage, "test-api")
+			rpcSmartRouterServer.appendHeadersToRelayResult(ctx, nil, 0, relayProcessor, mockProtocolMessage, "test-api", nil)
 		})
 	})
 }
@@ -343,7 +343,7 @@ func TestRetryCountHeader(t *testing.T) {
 		rpcSmartRouterServer := &RPCSmartRouterServer{}
 		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, &MockProtocolMessage{
 			api: &spectypes.Api{Name: "seth_blockNumber"},
-		}, "seth_blockNumber")
+		}, "seth_blockNumber", nil)
 
 		retryHeader := findHeader(relayResult.Reply.Metadata, common.RETRY_COUNT_HEADER_NAME)
 		require.Nil(t, retryHeader, "should not set retry header when only 1 attempt was made (0 retries)")
@@ -368,7 +368,7 @@ func TestRetryCountHeader(t *testing.T) {
 		rpcSmartRouterServer := &RPCSmartRouterServer{}
 		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, &MockProtocolMessage{
 			api: &spectypes.Api{Name: "eth_blockNumber"},
-		}, "eth_blockNumber")
+		}, "eth_blockNumber", nil)
 
 		retryHeader := findHeader(relayResult.Reply.Metadata, common.RETRY_COUNT_HEADER_NAME)
 		require.NotNil(t, retryHeader, "should set retry header when retries occurred")
@@ -394,7 +394,7 @@ func TestRetryCountHeader(t *testing.T) {
 		rpcSmartRouterServer := &RPCSmartRouterServer{}
 		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, &MockProtocolMessage{
 			api: &spectypes.Api{Name: "eth_blockNumber"},
-		}, "eth_blockNumber")
+		}, "eth_blockNumber", nil)
 
 		retryHeader := findHeader(relayResult.Reply.Metadata, common.RETRY_COUNT_HEADER_NAME)
 		require.NotNil(t, retryHeader)
@@ -415,7 +415,7 @@ func TestRetryCountHeader(t *testing.T) {
 		rpcSmartRouterServer := &RPCSmartRouterServer{}
 		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 1, relayProcessor, &MockProtocolMessage{
 			api: &spectypes.Api{Name: "eth_blockNumber"},
-		}, "eth_blockNumber")
+		}, "eth_blockNumber", nil)
 
 		retryHeader := findHeader(relayResult.Reply.Metadata, common.RETRY_COUNT_HEADER_NAME)
 		require.Nil(t, retryHeader, "should not set retry header when only 1 protocol error (0 retries)")
@@ -437,7 +437,7 @@ func TestRetryCountHeader(t *testing.T) {
 		rpcSmartRouterServer := &RPCSmartRouterServer{}
 		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 1, relayProcessor, &MockProtocolMessage{
 			api: &spectypes.Api{Name: "eth_blockNumber"},
-		}, "eth_blockNumber")
+		}, "eth_blockNumber", nil)
 
 		retryHeader := findHeader(relayResult.Reply.Metadata, common.RETRY_COUNT_HEADER_NAME)
 		require.NotNil(t, retryHeader)
@@ -464,7 +464,7 @@ func TestRetryCountHeader(t *testing.T) {
 		rpcSmartRouterServer := &RPCSmartRouterServer{}
 		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 1, relayProcessor, &MockProtocolMessage{
 			api: &spectypes.Api{Name: "eth_blockNumber"},
-		}, "eth_blockNumber")
+		}, "eth_blockNumber", nil)
 
 		retryHeader := findHeader(relayResult.Reply.Metadata, common.RETRY_COUNT_HEADER_NAME)
 		require.NotNil(t, retryHeader)
@@ -487,7 +487,7 @@ func TestRetryCountHeader(t *testing.T) {
 		rpcSmartRouterServer := &RPCSmartRouterServer{}
 		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, &MockProtocolMessage{
 			api: &spectypes.Api{Name: "eth_blockNumber"},
-		}, "eth_blockNumber")
+		}, "eth_blockNumber", nil)
 
 		retryHeader := findHeader(relayResult.Reply.Metadata, common.RETRY_COUNT_HEADER_NAME)
 		require.Nil(t, retryHeader, "should not set retry header when no retries occurred")
@@ -511,7 +511,7 @@ func TestRetryCountHeader(t *testing.T) {
 		rpcSmartRouterServer := &RPCSmartRouterServer{}
 		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, &MockProtocolMessage{
 			api: &spectypes.Api{Name: "eth_blockNumber"},
-		}, "eth_blockNumber")
+		}, "eth_blockNumber", nil)
 
 		retryHeader := findHeader(relayResult.Reply.Metadata, common.RETRY_COUNT_HEADER_NAME)
 		require.NotNil(t, retryHeader)
@@ -559,7 +559,7 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 		rpcSmartRouterServer := &RPCSmartRouterServer{}
 
 		// Call the function
-		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_sendTransaction")
+		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_sendTransaction", nil)
 
 		// Verify the result - should have:
 		// 1. Single provider header (winning provider)
@@ -629,7 +629,7 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 		rpcSmartRouterServer := &RPCSmartRouterServer{}
 
 		// Call the function
-		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_sendRawTransaction")
+		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_sendRawTransaction", nil)
 
 		// Verify the result
 		require.Len(t, relayResult.Reply.Metadata, 4)
@@ -679,7 +679,7 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 		rpcSmartRouterServer := &RPCSmartRouterServer{}
 
 		// Call the function
-		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_sendTransaction")
+		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_sendTransaction", nil)
 
 		// Verify the result - should NOT have stateful all providers header (empty list)
 		// Should have: single provider header, stateful API header, user request type header
@@ -735,7 +735,7 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 		rpcSmartRouterServer := &RPCSmartRouterServer{}
 
 		// Call the function
-		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_getBlockByNumber")
+		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_getBlockByNumber", nil)
 
 		// Verify the result - should only have: single provider header + user request type header
 		require.Len(t, relayResult.Reply.Metadata, 2)
@@ -793,7 +793,7 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 		rpcSmartRouterServer := &RPCSmartRouterServer{}
 
 		// Call the function
-		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_sendTransaction")
+		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_sendTransaction", nil)
 
 		// Verify both cross-validation and stateful headers are present
 		// (even though this is an unusual scenario)

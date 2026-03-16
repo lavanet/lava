@@ -1,6 +1,7 @@
 package chainlib
 
 import (
+	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/x/spec/types"
 )
@@ -41,4 +42,26 @@ func IsFunctionTagOfType(chainMessage ChainMessageForSend, functionTag types.FUN
 		return parseDirective.FunctionTag == functionTag
 	}
 	return false
+}
+
+// IsArchiveRequest returns true if the chain message carries the archive extension.
+func IsArchiveRequest(chainMessage ChainMessage) bool {
+	for _, ext := range chainMessage.GetExtensions() {
+		if ext.Name == extensionslib.ArchiveExtension {
+			return true
+		}
+	}
+	return false
+}
+
+// IsDebugOrTraceRequest returns true if the request belongs to a debug or trace addon,
+// as classified by the chain spec (AddOn = "debug" or "trace").
+func IsDebugOrTraceRequest(chainMessage ChainMessageForSend) bool {
+	addon := GetAddon(chainMessage)
+	return addon == "debug" || addon == "trace"
+}
+
+// IsBatchRequest returns true if the chain message is a batch request (e.g., JSON-RPC batch).
+func IsBatchRequest(chainMessage ChainMessage) bool {
+	return chainMessage.IsBatch()
 }

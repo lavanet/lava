@@ -38,7 +38,7 @@ type ConsumerRelaySender interface {
 }
 
 type tickerMetricSetterInf interface {
-	SetRelaySentByNewBatchTickerMetric(chainId string, apiInterface string)
+	RecordHedgeRelaySent(chainId string, apiInterface string, method string)
 }
 
 type ConsumerRelayStateMachine struct {
@@ -363,8 +363,13 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 				if crsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
 					utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", crsm.ctx))
 					relayTaskChannel <- RelayStateSendInstructions{RelayState: crsm.getLatestState(), NumOfProviders: 1}
+					// Mark the analytics so appendHeadersToRelayResult can record hedge outcome
+					if crsm.analytics != nil {
+						crsm.analytics.HedgeSent = true
+					}
 					// Add ticker launch metrics
-					go crsm.tickerMetricSetter.SetRelaySentByNewBatchTickerMetric(crsm.relaySender.GetChainIdAndApiInterface())
+					chainId, apiInterface := crsm.relaySender.GetChainIdAndApiInterface()
+					go crsm.tickerMetricSetter.RecordHedgeRelaySent(chainId, apiInterface, crsm.protocolMessage.GetApi().GetName())
 				}
 			case returnErr := <-returnCondition:
 				utils.LavaFormatTrace("[StateMachine] returnErr := <-returnCondition", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", crsm.ctx))
