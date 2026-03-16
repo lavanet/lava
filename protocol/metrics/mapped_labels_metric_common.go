@@ -1,9 +1,15 @@
 package metrics
 
+import "github.com/prometheus/client_golang/prometheus"
+
+// MappedLabelsMetricOpts configures a MappedLabels metric.
+// Set Registerer to prometheus.DefaultRegisterer for production use.
+// Leave it nil to skip registration (useful in unit tests).
 type MappedLabelsMetricOpts struct {
-	Name   string
-	Help   string
-	Labels []string
+	Name       string
+	Help       string
+	Labels     []string
+	Registerer prometheus.Registerer
 }
 
 type MappedLabelsMetricBase struct {

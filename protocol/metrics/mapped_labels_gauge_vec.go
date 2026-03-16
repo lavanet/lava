@@ -24,14 +24,16 @@ func NewMappedLabelsGaugeVec(opts MappedLabelsMetricOpts) *MappedLabelsGaugeVec 
 		}, opts.Labels),
 	}
 
-	if err := prometheus.Register(metric.GaugeVec); err != nil {
-		are := &prometheus.AlreadyRegisteredError{}
-		if errors.As(err, are) {
-			if existing, ok := are.ExistingCollector.(*prometheus.GaugeVec); ok {
-				metric.GaugeVec = existing
+	if opts.Registerer != nil {
+		if err := opts.Registerer.Register(metric.GaugeVec); err != nil {
+			are := &prometheus.AlreadyRegisteredError{}
+			if errors.As(err, are) {
+				if existing, ok := are.ExistingCollector.(*prometheus.GaugeVec); ok {
+					metric.GaugeVec = existing
+				}
+			} else {
+				panic(err)
 			}
-		} else {
-			panic(err)
 		}
 	}
 

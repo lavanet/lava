@@ -151,27 +151,31 @@ func NewSmartRouterMetricsManager(options SmartRouterMetricsManagerOptions) *Sma
 	endpointLabels := []string{"spec", "apiInterface", "endpoint_id"}
 
 	endpointTotalRelaysServiced := NewMappedLabelsCounterVec(MappedLabelsMetricOpts{
-		Name:   "lava_rpc_endpoint_total_relays_serviced",
-		Help:   "Total relays successfully serviced by this RPC endpoint, by function.",
-		Labels: endpointFunctionLabels,
+		Name:       "lava_rpc_endpoint_total_relays_serviced",
+		Help:       "Total relays successfully serviced by this RPC endpoint, by function.",
+		Labels:     endpointFunctionLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	endpointTotalErrored := NewMappedLabelsCounterVec(MappedLabelsMetricOpts{
-		Name:   "lava_rpc_endpoint_total_errored",
-		Help:   "Total errored relays for this RPC endpoint, by function.",
-		Labels: endpointFunctionLabels,
+		Name:       "lava_rpc_endpoint_total_errored",
+		Help:       "Total errored relays for this RPC endpoint, by function.",
+		Labels:     endpointFunctionLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	endpointInFlight := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_rpc_endpoint_requests_in_flight",
-		Help:   "Current number of in-flight relays for this RPC endpoint, by function.",
-		Labels: endpointFunctionLabels,
+		Name:       "lava_rpc_endpoint_requests_in_flight",
+		Help:       "Current number of in-flight relays for this RPC endpoint, by function.",
+		Labels:     endpointFunctionLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	endpointOverallHealth := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_rpc_endpoint_overall_health",
-		Help:   "Health status of this RPC endpoint (1=healthy, 0=unhealthy).",
-		Labels: endpointLabels,
+		Name:       "lava_rpc_endpoint_overall_health",
+		Help:       "Health status of this RPC endpoint (1=healthy, 0=unhealthy).",
+		Labels:     endpointLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	endpointSelectionScore := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -180,40 +184,46 @@ func NewSmartRouterMetricsManager(options SmartRouterMetricsManagerOptions) *Sma
 	}, []string{"spec", "apiInterface", "endpoint_id", "score_type"}))
 
 	endpointLatestBlock := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_rpc_endpoint_latest_block",
-		Help:   "Latest block known by this RPC endpoint.",
-		Labels: endpointLabels,
+		Name:       "lava_rpc_endpoint_latest_block",
+		Help:       "Latest block known by this RPC endpoint.",
+		Labels:     endpointLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	endpointFetchLatestFails := NewMappedLabelsCounterVec(MappedLabelsMetricOpts{
-		Name:   "lava_rpc_endpoint_fetch_latest_fails",
-		Help:   "Total failed latest-block fetch operations for this RPC endpoint.",
-		Labels: endpointLabels,
+		Name:       "lava_rpc_endpoint_fetch_latest_fails",
+		Help:       "Total failed latest-block fetch operations for this RPC endpoint.",
+		Labels:     endpointLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	endpointFetchBlockFails := NewMappedLabelsCounterVec(MappedLabelsMetricOpts{
-		Name:   "lava_rpc_endpoint_fetch_block_fails",
-		Help:   "Total failed specific-block fetch operations for this RPC endpoint.",
-		Labels: endpointLabels,
+		Name:       "lava_rpc_endpoint_fetch_block_fails",
+		Help:       "Total failed specific-block fetch operations for this RPC endpoint.",
+		Labels:     endpointLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	endpointFetchLatestSuccess := NewMappedLabelsCounterVec(MappedLabelsMetricOpts{
-		Name:   "lava_rpc_endpoint_fetch_latest_success",
-		Help:   "Total successful latest-block fetch operations for this RPC endpoint.",
-		Labels: endpointLabels,
+		Name:       "lava_rpc_endpoint_fetch_latest_success",
+		Help:       "Total successful latest-block fetch operations for this RPC endpoint.",
+		Labels:     endpointLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	endpointFetchBlockSuccess := NewMappedLabelsCounterVec(MappedLabelsMetricOpts{
-		Name:   "lava_rpc_endpoint_fetch_block_success",
-		Help:   "Total successful specific-block fetch operations for this RPC endpoint.",
-		Labels: endpointLabels,
+		Name:       "lava_rpc_endpoint_fetch_block_success",
+		Help:       "Total successful specific-block fetch operations for this RPC endpoint.",
+		Labels:     endpointLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	// Info metric — endpoint_id is the provider name; endpoint_url carries the raw URL for reference
 	endpointInfo := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_rpc_endpoint_info",
-		Help:   "Static metadata mapping for RPC endpoint identity.",
-		Labels: []string{"spec", "apiInterface", "endpoint_id", "endpoint_url"},
+		Name:       "lava_rpc_endpoint_info",
+		Help:       "Static metadata mapping for RPC endpoint identity.",
+		Labels:     []string{"spec", "apiInterface", "endpoint_id", "endpoint_url"},
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	// =========================================================================

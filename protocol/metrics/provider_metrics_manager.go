@@ -79,33 +79,38 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		totalRelaysServicedLabels = append(totalRelaysServicedLabels, "provider_endpoint")
 	}
 	totalRelaysServicedMetric := NewMappedLabelsCounterVec(MappedLabelsMetricOpts{
-		Name:   "lava_provider_total_relays_serviced",
-		Help:   "The total number of relays serviced by the provider over time.",
-		Labels: totalRelaysServicedLabels,
+		Name:       "lava_provider_total_relays_serviced",
+		Help:       "The total number of relays serviced by the provider over time.",
+		Labels:     totalRelaysServicedLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	totalRequestsPerFunctionMetric := NewMappedLabelsCounterVec(MappedLabelsMetricOpts{
-		Name:   "lava_provider_total_relays_serviced_per_function",
-		Help:   "The total number of relays serviced by the provider over time for a given function.",
-		Labels: []string{"spec", "apiInterface", "function"},
+		Name:       "lava_provider_total_relays_serviced_per_function",
+		Help:       "The total number of relays serviced by the provider over time for a given function.",
+		Labels:     []string{"spec", "apiInterface", "function"},
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	totalErrorsPerFunctionMetric := NewMappedLabelsCounterVec(MappedLabelsMetricOpts{
-		Name:   "lava_provider_total_relays_errored_per_function",
-		Help:   "The total number of relays that ended in error over time for a given function.",
-		Labels: []string{"spec", "apiInterface", "function"},
+		Name:       "lava_provider_total_relays_errored_per_function",
+		Help:       "The total number of relays that ended in error over time for a given function.",
+		Labels:     []string{"spec", "apiInterface", "function"},
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	totalInFlightPerFunctionMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_provider_requests_in_flight_per_function",
-		Help:   "The number of relays currently being handled for a given function.",
-		Labels: []string{"spec", "apiInterface", "function"},
+		Name:       "lava_provider_requests_in_flight_per_function",
+		Help:       "The number of relays currently being handled for a given function.",
+		Labels:     []string{"spec", "apiInterface", "function"},
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	requestLatencyPerFunctionMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_provider_request_latency_per_function",
-		Help:   "The latency of relays for a given function.",
-		Labels: []string{"spec", "apiInterface", "function"},
+		Name:       "lava_provider_request_latency_per_function",
+		Help:       "The latency of relays for a given function.",
+		Labels:     []string{"spec", "apiInterface", "function"},
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	// Create a new GaugeVec metric to represent the TotalErrored over time.
@@ -125,9 +130,10 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 	}
 
 	blockMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_provider_latest_block",
-		Help:   "The latest block measured",
-		Labels: blockMetricLabels,
+		Name:       "lava_provider_latest_block",
+		Help:       "The latest block measured",
+		Labels:     blockMetricLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	// Create a new GaugeVec metric to represent the TotalCUPaid over time.

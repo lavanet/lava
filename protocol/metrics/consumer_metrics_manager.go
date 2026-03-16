@@ -171,9 +171,10 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	}
 
 	blockedProviderMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_consumer_provider_blocked",
-		Help:   "Is provider blocked. 1-blocked, 0-not blocked",
-		Labels: blockedProviderMetricLabels,
+		Name:       "lava_consumer_provider_blocked",
+		Help:       "Is provider blocked. 1-blocked, 0-not blocked",
+		Labels:     blockedProviderMetricLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	qosMetricLabels := []string{"spec", "apiInterface", "provider_address", "qos_metric"}
@@ -181,9 +182,10 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		qosMetricLabels = append(qosMetricLabels, "provider_endpoint")
 	}
 	qosMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_consumer_qos_metrics",
-		Help:   "The QOS metrics per provider for current epoch for the session with the most relays.",
-		Labels: qosMetricLabels,
+		Name:       "lava_consumer_qos_metrics",
+		Help:       "The QOS metrics per provider for current epoch for the session with the most relays.",
+		Labels:     qosMetricLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	selectionStatsMetricLabels := []string{"spec", "apiInterface", "provider_address", "selection_metric"}
@@ -191,9 +193,10 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		selectionStatsMetricLabels = append(selectionStatsMetricLabels, "provider_endpoint")
 	}
 	selectionStatsMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_consumer_selection_stats",
-		Help:   "The provider selection statistics showing normalized scores used in provider selection algorithm.",
-		Labels: selectionStatsMetricLabels,
+		Name:       "lava_consumer_selection_stats",
+		Help:       "The provider selection statistics showing normalized scores used in provider selection algorithm.",
+		Labels:     selectionStatsMetricLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	providerReputationMetricLabels := []string{"spec", "provider_address", "qos_metric"}
@@ -201,9 +204,10 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		providerReputationMetricLabels = append(providerReputationMetricLabels, "provider_endpoint")
 	}
 	providerReputationMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_consumer_provider_reputation_metrics",
-		Help:   "The provider reputation metrics per provider",
-		Labels: providerReputationMetricLabels,
+		Name:       "lava_consumer_provider_reputation_metrics",
+		Help:       "The provider reputation metrics per provider",
+		Labels:     providerReputationMetricLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	latestBlockMetricLabels := []string{"spec", "provider_address", "apiInterface"}
@@ -211,9 +215,10 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		latestBlockMetricLabels = append(latestBlockMetricLabels, "provider_endpoint")
 	}
 	latestBlockMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_consumer_latest_provider_block",
-		Help:   "The latest block reported by provider",
-		Labels: latestBlockMetricLabels,
+		Name:       "lava_consumer_latest_provider_block",
+		Help:       "The latest block reported by provider",
+		Labels:     latestBlockMetricLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	latestProviderRelay := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -404,7 +409,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	}, cacheLabels))
 
 	// qosMetric, providerReputationMetric, blockedProviderMetric, selectionStatsMetric,
-	// and latestBlockMetric are already registered inside NewMappedLabelsGaugeVec.
+	// and latestBlockMetric are registered via prometheus.DefaultRegisterer in their opts.
 
 	consumerMetricsManager := &ConsumerMetricsManager{
 		totalCURequestedMetric:                          totalCURequestedMetric,

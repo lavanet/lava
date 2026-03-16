@@ -115,14 +115,23 @@ func (rpccl *RPCConsumerLogs) SetLoLResponse(success bool) {
 }
 
 func (rpccl *RPCConsumerLogs) SetWebSocketConnectionActive(chainId string, apiInterface string, add bool) {
+	if rpccl == nil {
+		return
+	}
 	rpccl.consumerMetricsManager.SetWebSocketConnectionActive(chainId, apiInterface, add)
 }
 
 func (rpccl *RPCConsumerLogs) SetRelaySentToProviderMetric(providerAddress, chainId, apiInterface string) {
+	if rpccl == nil {
+		return
+	}
 	rpccl.consumerOptimizerQoSClient.SetRelaySentToProvider(providerAddress, chainId)
 }
 
 func (rpccl *RPCConsumerLogs) SetRelayNodeErrorMetric(chainId, apiInterface, providerAddress, method string) {
+	if rpccl == nil {
+		return
+	}
 	if providerAddress == "" {
 		// skip if provider address is empty
 		return
@@ -148,18 +157,30 @@ func (rpccl *RPCConsumerLogs) GetMessageSeed() string {
 }
 
 func (rpccl *RPCConsumerLogs) SetProtocolError(chainId string, apiInterface string, providerAddress string, method string) {
+	if rpccl == nil {
+		return
+	}
 	rpccl.consumerMetricsManager.SetProtocolError(chainId, apiInterface, providerAddress, method)
 }
 
 func (rpccl *RPCConsumerLogs) RecordIncidentRetry(chainId string, apiInterface string, method string, count uint64, success bool) {
+	if rpccl == nil {
+		return
+	}
 	rpccl.consumerMetricsManager.RecordIncidentRetry(chainId, apiInterface, method, count, success)
 }
 
 func (rpccl *RPCConsumerLogs) RecordIncidentConsistency(chainId string, apiInterface string, method string, success bool) {
+	if rpccl == nil {
+		return
+	}
 	rpccl.consumerMetricsManager.RecordIncidentConsistency(chainId, apiInterface, method, success)
 }
 
 func (rpccl *RPCConsumerLogs) RecordIncidentHedgeResult(chainId string, apiInterface string, method string, count uint64, success bool) {
+	if rpccl == nil {
+		return
+	}
 	rpccl.consumerMetricsManager.RecordIncidentHedgeResult(chainId, apiInterface, method, count, success)
 }
 
@@ -230,14 +251,23 @@ func (rpccl *RPCConsumerLogs) LogStartTransaction(name string) func() {
 }
 
 func (rpccl *RPCConsumerLogs) RecordEndToEndLatency(chainId string, apiInterface string, method string, latencyMs float64) {
+	if rpccl == nil {
+		return
+	}
 	rpccl.consumerMetricsManager.RecordEndToEndLatency(chainId, apiInterface, method, latencyMs)
 }
 
 func (rpccl *RPCConsumerLogs) RecordCacheResult(chainId, apiInterface, method string, hit bool, latencyMs float64) {
+	if rpccl == nil {
+		return
+	}
 	rpccl.consumerMetricsManager.RecordCacheResult(chainId, apiInterface, method, hit, latencyMs)
 }
 
 func (rpccl *RPCConsumerLogs) RecordProviderLatency(chainId string, apiInterface string, providerAddress string, method string, latencyMs float64) {
+	if rpccl == nil {
+		return
+	}
 	rpccl.consumerMetricsManager.RecordProviderLatency(chainId, apiInterface, providerAddress, method, latencyMs)
 }
 

@@ -79,8 +79,16 @@ func TestConsumerRecordCacheResult_LatencyObservedOnHitOnly(t *testing.T) {
 	// Miss — should NOT be observed (different latency population).
 	cmm.RecordCacheResult("ETH1", "jsonrpc", "eth_blockNumber", false, 20.0)
 
-	// Exactly one time-series should be populated (the hit observation).
-	require.Equal(t, 1, testutil.CollectAndCount(cmm.cacheLatencyHistogram))
+	// Verify via _count/_sum that exactly 1 observation was recorded (the hit only).
+	reg := prometheus.NewRegistry()
+	require.NoError(t, reg.Register(cmm.cacheLatencyHistogram))
+	families, err := reg.Gather()
+	require.NoError(t, err)
+	require.Len(t, families, 1)
+	m := families[0].GetMetric()
+	require.Len(t, m, 1)
+	require.Equal(t, uint64(1), m[0].GetHistogram().GetSampleCount())
+	require.InDelta(t, 10.0, m[0].GetHistogram().GetSampleSum(), 0.001)
 }
 
 func TestConsumerRecordCacheResult_NilManager(t *testing.T) {
@@ -135,11 +143,19 @@ func TestSmartRouterRecordCacheResult_TotalEqualsSuccessPlusFailedAfterMixed(t *
 func TestSmartRouterRecordCacheResult_LatencyObserved(t *testing.T) {
 	m := newSmartRouterForCacheTest()
 
-	require.NotPanics(t, func() {
-		m.RecordCacheResult("ETH1", "jsonrpc", "eth_blockNumber", true, 10.0)
-		m.RecordCacheResult("ETH1", "jsonrpc", "eth_blockNumber", false, 20.0)
-	})
-	require.Equal(t, 1, testutil.CollectAndCount(m.cacheLatencyHistogram))
+	m.RecordCacheResult("ETH1", "jsonrpc", "eth_blockNumber", true, 10.0)
+	m.RecordCacheResult("ETH1", "jsonrpc", "eth_blockNumber", false, 20.0)
+
+	// Verify via _count/_sum that exactly 1 observation was recorded (the hit only).
+	reg := prometheus.NewRegistry()
+	require.NoError(t, reg.Register(m.cacheLatencyHistogram))
+	families, err := reg.Gather()
+	require.NoError(t, err)
+	require.Len(t, families, 1)
+	ms := families[0].GetMetric()
+	require.Len(t, ms, 1)
+	require.Equal(t, uint64(1), ms[0].GetHistogram().GetSampleCount())
+	require.InDelta(t, 10.0, ms[0].GetHistogram().GetSampleSum(), 0.001)
 }
 
 func TestSmartRouterRecordCacheResult_NilManager(t *testing.T) {
