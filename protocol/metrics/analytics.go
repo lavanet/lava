@@ -11,18 +11,25 @@ const (
 )
 
 type RelayMetrics struct {
-	ProjectHash                        string
-	Timestamp                          time.Time
-	ChainID                            string
-	APIType                            string
-	Latency                            int64
-	Success                            bool
-	ComputeUnits                       uint64
-	Source                             RelaySource
-	Origin                             string
-	ApiMethod                          string
-	ProcessingTimestamp                time.Time
-	MeasureAfterProviderProcessingTime bool // we measure processing time only on first relay success so we use this to indicate that the after provider measurement should occur (not true for all code flows)
+	ProjectHash         string
+	Timestamp           time.Time
+	ChainID             string
+	APIType             string
+	Latency             int64
+	Success             bool
+	ComputeUnits        uint64
+	Source              RelaySource
+	Origin              string
+	ApiMethod           string
+	ProcessingTimestamp time.Time
+	// Request classification fields — populated at relay call sites
+	ProviderAddress string
+	IsWrite         bool // stateful != 0; false means read
+	IsArchive       bool
+	IsDebugTrace    bool
+	IsBatch         bool
+	// Incident tracking fields — set during relay processing
+	HedgeCount uint64 // number of hedge relays sent by the batch ticker for this request
 }
 
 type RelayAnalyticsDTO struct {
@@ -59,7 +66,5 @@ func (rm *RelayMetrics) SetProcessingTimestampAfterRelay(timestamp time.Time) {
 	if rm == nil {
 		return
 	}
-	// we use this flag to make sure the relay passed successfully. (only the first relay has the RelayMetrics)
-	rm.MeasureAfterProviderProcessingTime = true
 	rm.ProcessingTimestamp = timestamp
 }

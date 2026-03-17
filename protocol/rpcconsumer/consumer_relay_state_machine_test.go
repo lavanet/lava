@@ -118,7 +118,7 @@ func TestNewRelayStateMachineSelectionType(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "dapp", "127.0.0.1")
 		usedProviders := lavasession.NewUsedProviders(nil)
 
-		sm, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		sm, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{}, protocolMessage, nil, false)
 		require.NoError(t, err)
 
 		require.Equal(t, relaycore.Stateless, sm.GetSelection())
@@ -139,7 +139,7 @@ func TestNewRelayStateMachineSelectionType(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, directiveHeaders, nil, "dapp", "127.0.0.1")
 		usedProviders := lavasession.NewUsedProviders(nil)
 
-		sm, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		sm, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{}, protocolMessage, nil, false)
 		require.NoError(t, err)
 
 		require.Equal(t, relaycore.CrossValidation, sm.GetSelection())
@@ -162,7 +162,7 @@ func TestNewRelayStateMachineSelectionType(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, directiveHeaders, nil, "dapp", "127.0.0.1")
 		usedProviders := lavasession.NewUsedProviders(nil)
 
-		sm, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		sm, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{}, protocolMessage, nil, false)
 
 		// Invalid headers should return error
 		require.Error(t, err)
@@ -196,7 +196,7 @@ func TestCrossValidationRetryCondition(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, directiveHeaders, nil, "dapp", "127.0.0.1")
 		usedProviders := lavasession.NewUsedProviders(nil)
 
-		sm, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		sm, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{}, protocolMessage, nil, false)
 		require.NoError(t, err)
 		crsm, ok := sm.(*ConsumerRelayStateMachine)
 		require.True(t, ok, "expected *ConsumerRelayStateMachine")
@@ -216,7 +216,7 @@ func TestCrossValidationRetryCondition(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "dapp", "127.0.0.1")
 		usedProviders := lavasession.NewUsedProviders(nil)
 
-		sm, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		sm, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{}, protocolMessage, nil, false)
 		require.NoError(t, err)
 		crsm, ok := sm.(*ConsumerRelayStateMachine)
 		require.True(t, ok, "expected *ConsumerRelayStateMachine")
@@ -252,7 +252,7 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
 		consistency := relaycore.NewConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		stateMachine, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		stateMachine, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil}, protocolMessage, nil, false)
 		require.NoError(t, err)
 		relayProcessor := relaycore.NewRelayProcessor(ctx, nil, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
@@ -325,7 +325,7 @@ func TestConsumerStateMachineExhaustRetries(t *testing.T) {
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
 		consistency := relaycore.NewConsistency(specId)
 		usedProviders := lavasession.NewUsedProviders(nil)
-		stateMachine, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		stateMachine, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false)
 		require.NoError(t, err)
 		relayProcessor := relaycore.NewRelayProcessor(ctx, nil, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
@@ -402,7 +402,6 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 			protocolMessage,
 			nil,
 			false,
-			relaycoretest.RelayProcessorMetrics,
 		)
 		require.NoError(t, err)
 		relayProcessor := relaycore.NewRelayProcessor(
@@ -494,7 +493,7 @@ func TestConsumerStateMachineBatchRequestRetryCondition(t *testing.T) {
 		usedProviders := lavasession.NewUsedProviders(nil)
 
 		// Create the state machine
-		stateMachine, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+		stateMachine, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false)
 		require.NoError(t, err)
 		consumerStateMachine, ok := stateMachine.(*ConsumerRelayStateMachine)
 		require.True(t, ok, "expected ConsumerRelayStateMachine")
@@ -779,7 +778,7 @@ func TestConsumerStateMachineRetryLimit(t *testing.T) {
 			protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "dapp", "123.11")
 			usedProviders := lavasession.NewUsedProviders(nil)
 			// Use long ticker to prevent ticker-based retries from interfering
-			stateMachine, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false, relaycoretest.RelayProcessorMetrics)
+			stateMachine, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false)
 			require.NoError(t, err)
 			relayProcessor := relaycore.NewRelayProcessor(ctx, nil, nil, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 

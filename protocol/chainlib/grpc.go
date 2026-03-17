@@ -297,8 +297,6 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			return nil, nil, utils.LavaFormatError("Failed to SendRelay", fmt.Errorf("%s", errMasking))
 		}
 		apil.logger.LogRequestAndResponse("grpc in/out", false, method, string(reqBody), "", "", msgSeed, time.Since(startTime), nil)
-		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, apil.endpoint.ChainID, apiInterface)
-		apil.logger.SetEndToEndLatency(apil.endpoint.ChainID, apiInterface, time.Since(startTime))
 
 		// try checking for node errors.
 		nodeError := &GrpcNodeErrorResponse{}
