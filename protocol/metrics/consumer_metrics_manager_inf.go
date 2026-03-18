@@ -36,13 +36,9 @@ func (NoOpConsumerMetrics) ResetSessionRelatedMetrics()                         
 func (NoOpConsumerMetrics) ResetBlockedProvidersMetrics(string, string, map[string]string) {}
 func (NoOpConsumerMetrics) SetWsSubscriptionRequestMetric(string, string)                  {}
 func (NoOpConsumerMetrics) SetFailedWsSubscriptionRequestMetric(string, string)            {}
-func (NoOpConsumerMetrics) SetDuplicatedWsSubscriptionRequestMetric(string, string)        {}
-func (NoOpConsumerMetrics) SetWsSubscriptionDisconnectRequestMetric(string, string, string) {
-}
-func (NoOpConsumerMetrics) SetWebSocketConnectionActive(string, string, bool)         {}
-func (NoOpConsumerMetrics) SetLoLResponse(bool)                                       {}
-func (NoOpConsumerMetrics) SetVersion(string)                                         {}
-func (NoOpConsumerMetrics) StartSelectionStatsUpdater(context.Context, time.Duration) {}
+func (NoOpConsumerMetrics) SetWebSocketConnectionActive(string, string, bool)              {}
+func (NoOpConsumerMetrics) SetVersion(string)                                              {}
+func (NoOpConsumerMetrics) StartSelectionStatsUpdater(context.Context, time.Duration)      {}
 
 // SafeMetrics returns m if non-nil, otherwise a NoOpConsumerMetrics.
 // Use this in constructors to avoid storing a nil interface.
@@ -98,12 +94,9 @@ type ConsumerMetricsManagerInf interface {
 	// --- WebSocket (DirectWSSubscriptionManager) ---
 	SetWsSubscriptionRequestMetric(chainId string, apiInterface string)
 	SetFailedWsSubscriptionRequestMetric(chainId string, apiInterface string)
-	SetDuplicatedWsSubscriptionRequestMetric(chainId string, apiInterface string)
-	SetWsSubscriptionDisconnectRequestMetric(chainId string, apiInterface string, disconnectReason string)
 	SetWebSocketConnectionActive(chainId string, apiInterface string, add bool)
 
 	// --- Misc (RPCConsumerLogs / rpcsmartrouter.go) ---
-	SetLoLResponse(success bool)
 	SetVersion(version string)
 	StartSelectionStatsUpdater(ctx context.Context, updateInterval time.Duration)
 }

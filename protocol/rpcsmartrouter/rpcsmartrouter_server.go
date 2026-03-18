@@ -110,6 +110,10 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 		averageBlockTime,
 	)
 
+	// Assign before creating the manager so that goroutines spawned by
+	// initializeChainTrackers always observe the field on their first callback.
+	rpcss.smartRouterEndpointMetrics = smartRouterEndpointMetrics
+
 	// Initialize per-endpoint ChainTracker manager for continuous block polling
 	rpcss.endpointChainTrackerManager = NewEndpointChainTrackerManager(ctx, EndpointChainTrackerConfig{
 		ChainParser:      chainParser,
@@ -136,8 +140,6 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 			rpcss.smartRouterEndpointMetrics.RecordBlockFetch(listenEndpoint.ChainID, listenEndpoint.ApiInterface, endpointURL, true, false)
 		},
 	})
-
-	rpcss.smartRouterEndpointMetrics = smartRouterEndpointMetrics
 
 	// NewChainListener now accepts WSSubscriptionManager interface, which is implemented
 	// by both ConsumerWSSubscriptionManager (provider-relay mode) and
@@ -2347,7 +2349,6 @@ func (rpcss *RPCSmartRouterServer) RoundTrip(req *http.Request) (*http.Response,
 		return nil, err
 	}
 	resp, err := rpcss.chainParser.SetResponseFromRelayResult(relayResult)
-	rpcss.rpcSmartRouterLogs.SetLoLResponse(err == nil)
 	return resp, err
 }
 

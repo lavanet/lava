@@ -99,19 +99,18 @@ type ConsumerStateTrackerInf interface {
 }
 
 type AnalyticsServerAddresses struct {
-	AddApiMethodCallsMetrics bool
-	MetricsListenAddress     string
-	RelayServerAddress       string
-	RelayKafkaAddress        string
-	RelayKafkaTopic          string
-	RelayKafkaUsername       string
-	RelayKafkaPassword       string
-	RelayKafkaMechanism      string
-	RelayKafkaTLSEnabled     bool
-	RelayKafkaTLSInsecure    bool
-	ReportsAddressFlag       string
-	OptimizerQoSAddress      string
-	OptimizerQoSListen       bool
+	MetricsListenAddress  string
+	RelayServerAddress    string
+	RelayKafkaAddress     string
+	RelayKafkaTopic       string
+	RelayKafkaUsername    string
+	RelayKafkaPassword    string
+	RelayKafkaMechanism   string
+	RelayKafkaTLSEnabled  bool
+	RelayKafkaTLSInsecure bool
+	ReportsAddressFlag    string
+	OptimizerQoSAddress   string
+	OptimizerQoSListen    bool
 }
 type RPCConsumer struct {
 	consumerStateTracker ConsumerStateTrackerInf
@@ -180,7 +179,6 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	}
 	consumerMetricsManager := metrics.NewConsumerMetricsManager(metrics.ConsumerMetricsManagerOptions{
 		NetworkAddress:             options.analyticsServerAddresses.MetricsListenAddress,
-		AddMethodsApiGauge:         options.analyticsServerAddresses.AddApiMethodCallsMetrics,
 		EnableQoSListener:          options.analyticsServerAddresses.OptimizerQoSListen,
 		ConsumerOptimizerQoSClient: consumerOptimizerQoSClient,
 	}) // start up prometheus metrics
@@ -622,19 +620,18 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			}
 
 			analyticsServerAddresses := AnalyticsServerAddresses{
-				AddApiMethodCallsMetrics: viper.GetBool(metrics.AddApiMethodCallsMetrics),
-				MetricsListenAddress:     viper.GetString(metrics.MetricsListenFlagName),
-				RelayServerAddress:       viper.GetString(metrics.RelayServerFlagName),
-				RelayKafkaAddress:        viper.GetString(metrics.RelayKafkaFlagName),
-				RelayKafkaTopic:          viper.GetString(metrics.RelayKafkaTopicFlagName),
-				RelayKafkaUsername:       viper.GetString(metrics.RelayKafkaUsernameFlagName),
-				RelayKafkaPassword:       viper.GetString(metrics.RelayKafkaPasswordFlagName),
-				RelayKafkaMechanism:      viper.GetString(metrics.RelayKafkaMechanismFlagName),
-				RelayKafkaTLSEnabled:     viper.GetBool(metrics.RelayKafkaTLSEnabledFlagName),
-				RelayKafkaTLSInsecure:    viper.GetBool(metrics.RelayKafkaTLSInsecureFlagName),
-				ReportsAddressFlag:       viper.GetString(reportsSendBEAddress),
-				OptimizerQoSAddress:      viper.GetString(common.OptimizerQosServerAddressFlag),
-				OptimizerQoSListen:       viper.GetBool(common.OptimizerQosListenFlag),
+				MetricsListenAddress:  viper.GetString(metrics.MetricsListenFlagName),
+				RelayServerAddress:    viper.GetString(metrics.RelayServerFlagName),
+				RelayKafkaAddress:     viper.GetString(metrics.RelayKafkaFlagName),
+				RelayKafkaTopic:       viper.GetString(metrics.RelayKafkaTopicFlagName),
+				RelayKafkaUsername:    viper.GetString(metrics.RelayKafkaUsernameFlagName),
+				RelayKafkaPassword:    viper.GetString(metrics.RelayKafkaPasswordFlagName),
+				RelayKafkaMechanism:   viper.GetString(metrics.RelayKafkaMechanismFlagName),
+				RelayKafkaTLSEnabled:  viper.GetBool(metrics.RelayKafkaTLSEnabledFlagName),
+				RelayKafkaTLSInsecure: viper.GetBool(metrics.RelayKafkaTLSInsecureFlagName),
+				ReportsAddressFlag:    viper.GetString(reportsSendBEAddress),
+				OptimizerQoSAddress:   viper.GetString(common.OptimizerQosServerAddressFlag),
+				OptimizerQoSListen:    viper.GetBool(common.OptimizerQosListenFlag),
 			}
 
 			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)
@@ -722,7 +719,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 		utils.LavaFormatFatal("failed binding min selection chance flag", err)
 	}
 	cmdRPCConsumer.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
-	cmdRPCConsumer.Flags().Bool(metrics.AddApiMethodCallsMetrics, false, "adding a counter gauge for each method called per chain per api interface")
 	cmdRPCConsumer.Flags().String(metrics.RelayServerFlagName, metrics.DisabledFlagOption, "the http address of the relay usage server api endpoint (example http://127.0.0.1:8080)")
 	cmdRPCConsumer.Flags().String(metrics.RelayKafkaFlagName, metrics.DisabledFlagOption, "the kafka address for sending relay metrics (example localhost:9092)")
 	cmdRPCConsumer.Flags().String(metrics.RelayKafkaTopicFlagName, "lava-relay-metrics", "the kafka topic for sending relay metrics")

@@ -49,14 +49,15 @@ type SmartRouterMetricsManager struct {
 	endpointInFlight            *MappedLabelsGaugeVec    // lava_rpc_endpoint_requests_in_flight
 
 	// Endpoint-scoped metrics (labels: spec, apiInterface, endpoint_id)
-	endpointOverallHealth      *MappedLabelsGaugeVec   // lava_rpc_endpoint_overall_health
-	endpointSelectionScore     *prometheus.GaugeVec    // lava_rpc_endpoint_selection_score {spec, apiInterface, endpoint_id, score_type}
-	endpointLatestBlock        *MappedLabelsGaugeVec   // lava_rpc_endpoint_latest_block
-	endpointFetchLatestFails   *MappedLabelsCounterVec // lava_rpc_endpoint_fetch_latest_fails
-	endpointFetchBlockFails    *MappedLabelsCounterVec // lava_rpc_endpoint_fetch_block_fails
-	endpointFetchLatestSuccess *MappedLabelsCounterVec // lava_rpc_endpoint_fetch_latest_success
-	endpointFetchBlockSuccess  *MappedLabelsCounterVec // lava_rpc_endpoint_fetch_block_success
-	endpointInfo               *MappedLabelsGaugeVec   // lava_rpc_endpoint_info (+endpoint_url label)
+	endpointOverallHealth          *MappedLabelsGaugeVec   // lava_rpc_endpoint_overall_health
+	endpointOverallHealthBreakdown *prometheus.GaugeVec    // lava_rpc_endpoint_overall_health_breakdown {spec, apiInterface}
+	endpointSelectionScore         *prometheus.GaugeVec    // lava_rpc_endpoint_selection_score {spec, apiInterface, endpoint_id, score_type}
+	optimizerSelectionScore        *prometheus.GaugeVec    // lava_rpc_optimizer_selection_score {spec, endpoint_id, score_type}
+	endpointLatestBlock            *MappedLabelsGaugeVec   // lava_rpc_endpoint_latest_block
+	endpointFetchLatestFails       *MappedLabelsCounterVec // lava_rpc_endpoint_fetch_latest_fails
+	endpointFetchBlockFails        *MappedLabelsCounterVec // lava_rpc_endpoint_fetch_block_fails
+	endpointFetchLatestSuccess     *MappedLabelsCounterVec // lava_rpc_endpoint_fetch_latest_success
+	endpointFetchBlockSuccess      *MappedLabelsCounterVec // lava_rpc_endpoint_fetch_block_success
 
 	// Router-scoped metrics (labels: spec, apiInterface, function)
 	routerTotalRelaysServiced *prometheus.CounterVec   // lava_rpcsmartrouter_total_relays_serviced
@@ -64,16 +65,15 @@ type SmartRouterMetricsManager struct {
 	routerEndToEndLatency     *prometheus.HistogramVec // lava_rpcsmartrouter_end_to_end_latency_milliseconds
 
 	// Router-scoped scalar metrics (no labels)
-	routerOverallHealth prometheus.Gauge
+	routerOverallHealth          prometheus.Gauge
+	routerOverallHealthBreakdown *prometheus.GaugeVec // lava_rpcsmartrouter_overall_health_breakdown {spec, apiInterface}
 
 	// Router-scoped metrics (labels: spec, apiInterface)
-	routerLatestBlock               *prometheus.GaugeVec
-	routerProtocolVersion           *prometheus.GaugeVec
-	routerWsConnectionsActive       *prometheus.GaugeVec
-	routerWsSubscriptionsTotal      *prometheus.CounterVec
-	routerWsSubscriptionErrors      *prometheus.CounterVec
-	routerWsSubscriptionDuplicates  *prometheus.CounterVec
-	routerWsSubscriptionDisconnects *prometheus.CounterVec
+	routerLatestBlock          *prometheus.GaugeVec
+	routerProtocolVersion      *prometheus.GaugeVec
+	routerWsConnectionsActive  *prometheus.GaugeVec
+	routerWsSubscriptionsTotal *prometheus.CounterVec
+	routerWsSubscriptionErrors *prometheus.CounterVec
 
 	// Cross-validation group metrics
 	crossValidationRequestsTotalMetric              *prometheus.CounterVec // lava_rpcsmartrouter_cross_validation_requests_total        {spec, apiInterface, method}
@@ -153,69 +153,81 @@ func NewSmartRouterMetricsManager(options SmartRouterMetricsManagerOptions) *Sma
 	endpointLabels := []string{"spec", "apiInterface", "endpoint_id"}
 
 	endpointTotalRelaysServiced := NewMappedLabelsCounterVec(MappedLabelsMetricOpts{
-		Name:   "lava_rpc_endpoint_total_relays_serviced",
-		Help:   "Total relays successfully serviced by this RPC endpoint, by function.",
-		Labels: endpointFunctionLabels,
+		Name:       "lava_rpc_endpoint_total_relays_serviced",
+		Help:       "Total relays successfully serviced by this RPC endpoint, by function.",
+		Labels:     endpointFunctionLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	endpointTotalErrored := NewMappedLabelsCounterVec(MappedLabelsMetricOpts{
-		Name:   "lava_rpc_endpoint_total_errored",
-		Help:   "Total errored relays for this RPC endpoint, by function.",
-		Labels: endpointFunctionLabels,
+		Name:       "lava_rpc_endpoint_total_errored",
+		Help:       "Total errored relays for this RPC endpoint, by function.",
+		Labels:     endpointFunctionLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	endpointInFlight := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_rpc_endpoint_requests_in_flight",
-		Help:   "Current number of in-flight relays for this RPC endpoint, by function.",
-		Labels: endpointFunctionLabels,
+		Name:       "lava_rpc_endpoint_requests_in_flight",
+		Help:       "Current number of in-flight relays for this RPC endpoint, by function.",
+		Labels:     endpointFunctionLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	endpointOverallHealth := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_rpc_endpoint_overall_health",
-		Help:   "Health status of this RPC endpoint (1=healthy, 0=unhealthy).",
-		Labels: endpointLabels,
+		Name:       "lava_rpc_endpoint_overall_health",
+		Help:       "Health status of this RPC endpoint (1=healthy, 0=unhealthy).",
+		Labels:     endpointLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
+
+	endpointOverallHealthBreakdown := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_rpc_endpoint_overall_health_breakdown",
+		Help: "Health check status per chain for RPC endpoints (1=healthy, 0=unhealthy).",
+	}, []string{"spec", "apiInterface"}))
 
 	endpointSelectionScore := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_rpc_endpoint_selection_score",
 		Help: "Latest selection score for each RPC endpoint by score type (availability/latency/sync/stake/composite).",
 	}, []string{"spec", "apiInterface", "endpoint_id", "score_type"}))
 
+	optimizerSelectionScore := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_rpc_optimizer_selection_score",
+		Help: "Periodic optimizer selection score per provider by score type (availability/latency/sync/stake/composite). Chain-level, not scoped to apiInterface.",
+	}, []string{"spec", "endpoint_id", "score_type"}))
+
 	endpointLatestBlock := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_rpc_endpoint_latest_block",
-		Help:   "Latest block known by this RPC endpoint.",
-		Labels: endpointLabels,
+		Name:       "lava_rpc_endpoint_latest_block",
+		Help:       "Latest block known by this RPC endpoint.",
+		Labels:     endpointLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	endpointFetchLatestFails := NewMappedLabelsCounterVec(MappedLabelsMetricOpts{
-		Name:   "lava_rpc_endpoint_fetch_latest_fails",
-		Help:   "Total failed latest-block fetch operations for this RPC endpoint.",
-		Labels: endpointLabels,
+		Name:       "lava_rpc_endpoint_fetch_latest_fails",
+		Help:       "Total failed latest-block fetch operations for this RPC endpoint.",
+		Labels:     endpointLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	endpointFetchBlockFails := NewMappedLabelsCounterVec(MappedLabelsMetricOpts{
-		Name:   "lava_rpc_endpoint_fetch_block_fails",
-		Help:   "Total failed specific-block fetch operations for this RPC endpoint.",
-		Labels: endpointLabels,
+		Name:       "lava_rpc_endpoint_fetch_block_fails",
+		Help:       "Total failed specific-block fetch operations for this RPC endpoint.",
+		Labels:     endpointLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	endpointFetchLatestSuccess := NewMappedLabelsCounterVec(MappedLabelsMetricOpts{
-		Name:   "lava_rpc_endpoint_fetch_latest_success",
-		Help:   "Total successful latest-block fetch operations for this RPC endpoint.",
-		Labels: endpointLabels,
+		Name:       "lava_rpc_endpoint_fetch_latest_success",
+		Help:       "Total successful latest-block fetch operations for this RPC endpoint.",
+		Labels:     endpointLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	endpointFetchBlockSuccess := NewMappedLabelsCounterVec(MappedLabelsMetricOpts{
-		Name:   "lava_rpc_endpoint_fetch_block_success",
-		Help:   "Total successful specific-block fetch operations for this RPC endpoint.",
-		Labels: endpointLabels,
-	})
-
-	// Info metric — endpoint_id is the provider name; endpoint_url carries the raw URL for reference
-	endpointInfo := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_rpc_endpoint_info",
-		Help:   "Static metadata mapping for RPC endpoint identity.",
-		Labels: []string{"spec", "apiInterface", "endpoint_id", "endpoint_url"},
+		Name:       "lava_rpc_endpoint_fetch_block_success",
+		Help:       "Total successful specific-block fetch operations for this RPC endpoint.",
+		Labels:     endpointLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	// =========================================================================
@@ -225,7 +237,7 @@ func NewSmartRouterMetricsManager(options SmartRouterMetricsManagerOptions) *Sma
 	endpointEndToEndLatency := prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "lava_rpc_endpoint_end_to_end_latency_milliseconds",
 		Help:    "Distribution of end-to-end relay latency for this RPC endpoint by function in milliseconds. Use histogram_quantile() for percentiles.",
-		Buckets: LatencyBuckets,
+		Buckets: latencyBuckets,
 	}, endpointFunctionLabels)
 
 	// =========================================================================
@@ -248,7 +260,7 @@ func NewSmartRouterMetricsManager(options SmartRouterMetricsManagerOptions) *Sma
 	routerEndToEndLatency := prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "lava_rpcsmartrouter_end_to_end_latency_milliseconds",
 		Help:    "Distribution of end-to-end relay latency across all endpoints on the smart router by function in milliseconds. Use histogram_quantile() for percentiles.",
-		Buckets: LatencyBuckets,
+		Buckets: latencyBuckets,
 	}, routerFunctionLabels)
 
 	routerOverallHealth := prometheus.NewGauge(prometheus.GaugeOpts{
@@ -257,6 +269,11 @@ func NewSmartRouterMetricsManager(options SmartRouterMetricsManagerOptions) *Sma
 	})
 	routerOverallHealth = registerOrReuse(routerOverallHealth)
 	routerOverallHealth.Set(1)
+
+	routerOverallHealthBreakdown := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_rpcsmartrouter_overall_health_breakdown",
+		Help: "Health check status per chain on the smart router (1=healthy, 0=unhealthy).",
+	}, []string{"spec", "apiInterface"}))
 
 	routerLatestBlock := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_rpcsmartrouter_latest_block",
@@ -282,16 +299,6 @@ func NewSmartRouterMetricsManager(options SmartRouterMetricsManagerOptions) *Sma
 		Name: "lava_rpcsmartrouter_ws_subscription_errors_total",
 		Help: "Total failed WebSocket subscription requests on the smart router.",
 	}, []string{"spec", "apiInterface"})
-
-	routerWsSubscriptionDuplicates := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "lava_rpcsmartrouter_ws_subscription_duplicates_total",
-		Help: "Total duplicated WebSocket subscription requests on the smart router.",
-	}, []string{"spec", "apiInterface"})
-
-	routerWsSubscriptionDisconnects := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "lava_rpcsmartrouter_ws_subscription_disconnects_total",
-		Help: "Total WebSocket subscription disconnects on the smart router.",
-	}, []string{"spec", "apiInterface", "reason"})
 
 	crossValidationLabels := []string{"spec", "apiInterface", "method"}
 	crossValidationProviderLabels := []string{"spec", "apiInterface", "method", "provider_address"}
@@ -431,7 +438,7 @@ func NewSmartRouterMetricsManager(options SmartRouterMetricsManagerOptions) *Sma
 	cacheLatencyHistogram := prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "lava_rpcsmartrouter_cache_latency_milliseconds",
 		Help:    "Distribution of cache lookup latency in milliseconds.",
-		Buckets: LatencyBuckets,
+		Buckets: latencyBuckets,
 	}, cacheLabels)
 
 	// Register router-scoped and histogram metrics.
@@ -445,8 +452,6 @@ func NewSmartRouterMetricsManager(options SmartRouterMetricsManagerOptions) *Sma
 	routerWsConnectionsActive = registerOrReuse(routerWsConnectionsActive)
 	routerWsSubscriptionsTotal = registerOrReuse(routerWsSubscriptionsTotal)
 	routerWsSubscriptionErrors = registerOrReuse(routerWsSubscriptionErrors)
-	routerWsSubscriptionDuplicates = registerOrReuse(routerWsSubscriptionDuplicates)
-	routerWsSubscriptionDisconnects = registerOrReuse(routerWsSubscriptionDisconnects)
 	endpointEndToEndLatency = registerOrReuse(endpointEndToEndLatency)
 	crossValidationRequestsTotalMetric = registerOrReuse(crossValidationRequestsTotalMetric)
 	crossValidationSuccessTotalMetric = registerOrReuse(crossValidationSuccessTotalMetric)
@@ -487,14 +492,15 @@ func NewSmartRouterMetricsManager(options SmartRouterMetricsManagerOptions) *Sma
 		endpointInFlight:            endpointInFlight,
 
 		// Endpoint-scoped (without function)
-		endpointOverallHealth:      endpointOverallHealth,
-		endpointSelectionScore:     endpointSelectionScore,
-		endpointLatestBlock:        endpointLatestBlock,
-		endpointFetchLatestFails:   endpointFetchLatestFails,
-		endpointFetchBlockFails:    endpointFetchBlockFails,
-		endpointFetchLatestSuccess: endpointFetchLatestSuccess,
-		endpointFetchBlockSuccess:  endpointFetchBlockSuccess,
-		endpointInfo:               endpointInfo,
+		endpointOverallHealth:          endpointOverallHealth,
+		endpointOverallHealthBreakdown: endpointOverallHealthBreakdown,
+		endpointSelectionScore:         endpointSelectionScore,
+		optimizerSelectionScore:        optimizerSelectionScore,
+		endpointLatestBlock:            endpointLatestBlock,
+		endpointFetchLatestFails:       endpointFetchLatestFails,
+		endpointFetchBlockFails:        endpointFetchBlockFails,
+		endpointFetchLatestSuccess:     endpointFetchLatestSuccess,
+		endpointFetchBlockSuccess:      endpointFetchBlockSuccess,
 
 		// Router-scoped (with function)
 		routerTotalRelaysServiced: routerTotalRelaysServiced,
@@ -502,16 +508,15 @@ func NewSmartRouterMetricsManager(options SmartRouterMetricsManagerOptions) *Sma
 		routerEndToEndLatency:     routerEndToEndLatency,
 
 		// Router-scoped scalar
-		routerOverallHealth: routerOverallHealth,
+		routerOverallHealth:          routerOverallHealth,
+		routerOverallHealthBreakdown: routerOverallHealthBreakdown,
 
 		// Router-scoped (without function)
-		routerLatestBlock:               routerLatestBlock,
-		routerProtocolVersion:           routerProtocolVersion,
-		routerWsConnectionsActive:       routerWsConnectionsActive,
-		routerWsSubscriptionsTotal:      routerWsSubscriptionsTotal,
-		routerWsSubscriptionErrors:      routerWsSubscriptionErrors,
-		routerWsSubscriptionDuplicates:  routerWsSubscriptionDuplicates,
-		routerWsSubscriptionDisconnects: routerWsSubscriptionDisconnects,
+		routerLatestBlock:          routerLatestBlock,
+		routerProtocolVersion:      routerProtocolVersion,
+		routerWsConnectionsActive:  routerWsConnectionsActive,
+		routerWsSubscriptionsTotal: routerWsSubscriptionsTotal,
+		routerWsSubscriptionErrors: routerWsSubscriptionErrors,
 
 		// Cross-validation group
 		crossValidationRequestsTotalMetric:              crossValidationRequestsTotalMetric,
@@ -605,6 +610,18 @@ func (m *SmartRouterMetricsManager) SetEndpointOverallHealth(spec, apiInterface,
 	m.endpointOverallHealth.WithLabelValues(labels).Set(value)
 }
 
+// SetEndpointOverallHealthBreakdown sets the aggregate health for a spec/apiInterface across endpoints
+func (m *SmartRouterMetricsManager) SetEndpointOverallHealthBreakdown(spec, apiInterface string, healthy bool) {
+	if m == nil {
+		return
+	}
+	value := 0.0
+	if healthy {
+		value = 1.0
+	}
+	m.endpointOverallHealthBreakdown.WithLabelValues(spec, apiInterface).Set(value)
+}
+
 // SetEndpointLatestBlock sets the latest block known by an RPC endpoint
 func (m *SmartRouterMetricsManager) SetEndpointLatestBlock(spec, apiInterface, endpointID string, block int64) {
 	if m == nil {
@@ -694,16 +711,6 @@ func (m *SmartRouterMetricsManager) AddEndpointFetchBlockSuccess(spec, apiInterf
 	m.endpointFetchBlockSuccess.WithLabelValues(labels).Inc()
 }
 
-// SetEndpointInfo sets the static metadata mapping for an endpoint.
-// endpoint_id is the provider name; endpoint_url carries the raw URL for reference.
-func (m *SmartRouterMetricsManager) SetEndpointInfo(spec, apiInterface, endpointURL, providerName string) {
-	if m == nil {
-		return
-	}
-	labels := map[string]string{"spec": spec, "apiInterface": apiInterface, "endpoint_id": providerName, "endpoint_url": endpointURL}
-	m.endpointInfo.WithLabelValues(labels).Set(1)
-}
-
 // =============================================================================
 // Router-scoped metric setters
 // =============================================================================
@@ -749,7 +756,7 @@ func (m *SmartRouterMetricsManager) IsHealthy() bool {
 
 // RegisterEndpoint registers an endpoint and sets its info metric.
 // endpointID is the raw URL (used internally for URL→name resolution via the chain tracker callbacks).
-// providerName is used as endpoint_id in all Prometheus metrics; the URL is stored as endpoint_url in the info metric only.
+// providerName is used as endpoint_id in all Prometheus metrics.
 func (m *SmartRouterMetricsManager) RegisterEndpoint(spec, apiInterface, endpointID, providerName string) {
 	if m == nil {
 		return
@@ -767,10 +774,6 @@ func (m *SmartRouterMetricsManager) RegisterEndpoint(spec, apiInterface, endpoin
 	m.urlToProviderName[endpointID] = providerName
 	m.lock.Unlock()
 
-	// Call metric setters outside the lock: they touch Prometheus state only,
-	// not m's own maps, so holding m.lock is unnecessary and would be a
-	// re-entrancy hazard if either method ever acquires m.lock in the future.
-	m.SetEndpointInfo(spec, apiInterface, endpointID, providerName)
 	// Initialize health to healthy so always-healthy endpoints appear in Prometheus from startup.
 	// The relay code only calls SetEndpointOverallHealth on state transitions (unhealthy→healthy),
 	// so without this initialization, endpoints that never fail would have no health metric at all.
@@ -1048,12 +1051,15 @@ func (m *SmartRouterMetricsManager) UpdateHealthCheckStatus(status bool) {
 	m.UpdateOverallHealthStatus(status)
 }
 
-// UpdateHealthcheckStatusBreakdown is a no-op for SmartRouter.
-// The smart router tracks endpoint health via SetEndpointOverallHealth
-// (lava_rpc_endpoint_overall_health), which already provides per-chain/
-// per-apiInterface breakdowns. The consumer-side lava_consumer_overall_health_breakdown
-// gauge is redundant here and would conflict with the endpoint-level metric.
 func (m *SmartRouterMetricsManager) UpdateHealthcheckStatusBreakdown(chainId, apiInterface string, status bool) {
+	if m == nil {
+		return
+	}
+	value := 0.0
+	if status {
+		value = 1.0
+	}
+	m.routerOverallHealthBreakdown.WithLabelValues(chainId, apiInterface).Set(value)
 }
 
 func (m *SmartRouterMetricsManager) SetProviderLiveness(string, string, string, bool) {}
@@ -1110,20 +1116,6 @@ func (m *SmartRouterMetricsManager) SetFailedWsSubscriptionRequestMetric(chainId
 	m.routerWsSubscriptionErrors.WithLabelValues(chainId, apiInterface).Inc()
 }
 
-func (m *SmartRouterMetricsManager) SetDuplicatedWsSubscriptionRequestMetric(chainId, apiInterface string) {
-	if m == nil {
-		return
-	}
-	m.routerWsSubscriptionDuplicates.WithLabelValues(chainId, apiInterface).Inc()
-}
-
-func (m *SmartRouterMetricsManager) SetWsSubscriptionDisconnectRequestMetric(chainId, apiInterface, disconnectReason string) {
-	if m == nil {
-		return
-	}
-	m.routerWsSubscriptionDisconnects.WithLabelValues(chainId, apiInterface, disconnectReason).Inc()
-}
-
 func (m *SmartRouterMetricsManager) SetWebSocketConnectionActive(chainId, apiInterface string, add bool) {
 	if m == nil {
 		return
@@ -1134,8 +1126,6 @@ func (m *SmartRouterMetricsManager) SetWebSocketConnectionActive(chainId, apiInt
 		m.routerWsConnectionsActive.WithLabelValues(chainId, apiInterface).Sub(1)
 	}
 }
-
-func (m *SmartRouterMetricsManager) SetLoLResponse(bool) {}
 
 func (m *SmartRouterMetricsManager) StartSelectionStatsUpdater(ctx context.Context, updateInterval time.Duration) {
 	if m == nil || m.optimizerQoSClient == nil {
@@ -1156,12 +1146,11 @@ func (m *SmartRouterMetricsManager) StartSelectionStatsUpdater(ctx context.Conte
 			case <-ticker.C:
 				for _, report := range m.optimizerQoSClient.GetReportsToSend() {
 					endpointID := report.ProviderAddress
-					// API interface not available in optimizer reports; use "" as a catch-all bucket.
-					m.endpointSelectionScore.WithLabelValues(report.ChainId, "", endpointID, "availability").Set(report.SelectionAvailability)
-					m.endpointSelectionScore.WithLabelValues(report.ChainId, "", endpointID, "latency").Set(report.SelectionLatency)
-					m.endpointSelectionScore.WithLabelValues(report.ChainId, "", endpointID, "sync").Set(report.SelectionSync)
-					m.endpointSelectionScore.WithLabelValues(report.ChainId, "", endpointID, "stake").Set(report.SelectionStake)
-					m.endpointSelectionScore.WithLabelValues(report.ChainId, "", endpointID, "composite").Set(report.SelectionComposite)
+					m.optimizerSelectionScore.WithLabelValues(report.ChainId, endpointID, "availability").Set(report.SelectionAvailability)
+					m.optimizerSelectionScore.WithLabelValues(report.ChainId, endpointID, "latency").Set(report.SelectionLatency)
+					m.optimizerSelectionScore.WithLabelValues(report.ChainId, endpointID, "sync").Set(report.SelectionSync)
+					m.optimizerSelectionScore.WithLabelValues(report.ChainId, endpointID, "stake").Set(report.SelectionStake)
+					m.optimizerSelectionScore.WithLabelValues(report.ChainId, endpointID, "composite").Set(report.SelectionComposite)
 				}
 			}
 		}

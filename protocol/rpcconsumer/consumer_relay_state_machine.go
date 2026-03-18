@@ -345,7 +345,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 				}
 				// If should retry == true, send a new batch. (success == false)
 				if crsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
-					utils.LavaFormatTrace("[StateMachine] LavaFormatTrace success := <-gotResults - crsm.ShouldRetry(batchNumber)", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", crsm.ctx))
+					utils.LavaFormatInfo("[StateMachine] relay failed, retrying", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", crsm.ctx))
 					relayTaskChannel <- RelayStateSendInstructions{RelayState: crsm.getLatestState(), NumOfProviders: 1}
 				} else {
 					go validateReturnCondition(nil)
@@ -354,7 +354,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 			case <-startNewBatchTicker.C:
 				// Only trigger another batch for non Stateful relays or if we didn't pass the retry limit.
 				if crsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
-					utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", crsm.ctx))
+					utils.LavaFormatInfo("[StateMachine] hedge triggered", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", crsm.ctx))
 					relayTaskChannel <- RelayStateSendInstructions{RelayState: crsm.getLatestState(), NumOfProviders: 1}
 					if crsm.analytics != nil {
 						crsm.analytics.HedgeCount++
