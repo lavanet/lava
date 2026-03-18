@@ -395,6 +395,65 @@ func TestGetServiceApis(t *testing.T) {
 	}
 }
 
+func TestCheckUTXOResponseAndFixReply(t *testing.T) {
+	t.Run("single_response_preserves_error_null", func(t *testing.T) {
+		// BTC-family nodes return "error":null; the relay pipeline uses omitempty which strips it
+		input := `{"jsonrpc":"2.0","id":"1","result":"abc","error":null}`
+		result := checkUTXOResponseAndFixReply("DOGE", []byte(input))
+		// Should preserve error:null and strip jsonrpc (BTC uses JSON-RPC 1.0)
+		var parsed map[string]interface{}
+		require.NoError(t, json.Unmarshal([]byte(result), &parsed))
+		_, hasError := parsed["error"]
+		require.True(t, hasError, "error field must be present (even when null)")
+		_, hasJsonrpc := parsed["jsonrpc"]
+		require.False(t, hasJsonrpc, "jsonrpc field should be stripped for BTC-family chains")
+	})
+
+	t.Run("batch_response_preserves_error_null", func(t *testing.T) {
+		// Multi-element batch: relay pipeline reconstructs with jsonrpc:"2.0" and omitempty on error
+		input := `[{"jsonrpc":"2.0","id":"1","result":"hash1"},{"jsonrpc":"2.0","id":"2","result":"hash2"}]`
+		result := checkUTXOResponseAndFixReply("DOGE", []byte(input))
+		var parsed []map[string]interface{}
+		require.NoError(t, json.Unmarshal([]byte(result), &parsed))
+		require.Len(t, parsed, 2)
+		for i, elem := range parsed {
+			_, hasError := elem["error"]
+			require.True(t, hasError, "batch element %d must have error field", i)
+			_, hasJsonrpc := elem["jsonrpc"]
+			require.False(t, hasJsonrpc, "batch element %d should not have jsonrpc field", i)
+		}
+	})
+
+	t.Run("single_element_batch_response", func(t *testing.T) {
+		// Single-element batch must stay as array
+		input := `[{"jsonrpc":"2.0","id":"1773768178254-0","result":"23699c7e"}]`
+		result := checkUTXOResponseAndFixReply("DOGE", []byte(input))
+		var parsed []map[string]interface{}
+		require.NoError(t, json.Unmarshal([]byte(result), &parsed), "single-element batch must remain an array")
+		require.Len(t, parsed, 1)
+		require.Equal(t, "1773768178254-0", parsed[0]["id"])
+		_, hasError := parsed[0]["error"]
+		require.True(t, hasError, "error field must be present")
+		_, hasJsonrpc := parsed[0]["jsonrpc"]
+		require.False(t, hasJsonrpc, "jsonrpc field should be stripped")
+	})
+
+	t.Run("non_btc_chain_passthrough", func(t *testing.T) {
+		input := `{"jsonrpc":"2.0","id":1,"result":"abc"}`
+		result := checkUTXOResponseAndFixReply("ETH1", []byte(input))
+		require.Equal(t, input, result, "non-BTC chains should pass through unchanged")
+	})
+
+	t.Run("btc_with_actual_error", func(t *testing.T) {
+		input := `{"id":"1","error":{"code":-8,"message":"Block height out of range"},"result":null}`
+		result := checkUTXOResponseAndFixReply("BTC", []byte(input))
+		var parsed map[string]interface{}
+		require.NoError(t, json.Unmarshal([]byte(result), &parsed))
+		errorField := parsed["error"]
+		require.NotNil(t, errorField, "error field must be preserved when not null")
+	})
+}
+
 func TestCompareRequestedBlockInBatch(t *testing.T) {
 	playbook := []struct {
 		latest           int64

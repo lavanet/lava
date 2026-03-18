@@ -105,7 +105,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 
 	// connectionType is currently only used in rest API.
 	// Unmarshal request
-	msgs, err := rpcInterfaceMessages.ParseJsonRPCMsg(data)
+	msgs, isBatch, err := rpcInterfaceMessages.ParseJsonRPCMsgWithBatchFlag(data)
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +229,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	}
 
 	var nodeMsg *baseChainMessageContainer
-	if len(msgs) == 1 {
+	if len(msgs) == 1 && !isBatch {
 		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, blockHashes, &msgs[0], apiCollection, parsedDefault)
 	} else {
 		nodeMsg, err = apip.newBatchChainMessage(api, latestRequestedBlock, earliestRequestedBlock, blockHashes, msgs, apiCollection, parsedDefault)
@@ -495,7 +495,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		}
 
-		response := checkBTCResponseAndFixReply(chainID, reply.Data)
+		response := checkUTXOResponseAndFixReply(chainID, reply.Data)
 		// Log request and response
 		apil.logger.LogRequestAndResponse("jsonrpc http",
 			false,

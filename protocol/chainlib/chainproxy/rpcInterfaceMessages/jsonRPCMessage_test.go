@@ -157,6 +157,67 @@ func TestParseJsonRPCBatch(t *testing.T) {
 	}
 }
 
+func TestParseJsonRPCMsgWithBatchFlag(t *testing.T) {
+	t.Run("single_object_not_batch", func(t *testing.T) {
+		data := []byte(`{"jsonrpc":"2.0","id":1,"method":"getblockhash","params":[100]}`)
+		msgs, isBatch, err := ParseJsonRPCMsgWithBatchFlag(data)
+		require.NoError(t, err)
+		require.False(t, isBatch, "single object should not be a batch")
+		require.Len(t, msgs, 1)
+		require.Equal(t, "getblockhash", msgs[0].Method)
+		require.Equal(t, json.RawMessage("1"), msgs[0].ID)
+	})
+
+	t.Run("single_element_array_is_batch", func(t *testing.T) {
+		// This is the critical case: a batch request with a single element
+		// must be detected as a batch so the response is wrapped in an array
+		data := []byte(`[{"jsonrpc":"2.0","id":"1773768178254-0","method":"getblockhash","params":[6127543]}]`)
+		msgs, isBatch, err := ParseJsonRPCMsgWithBatchFlag(data)
+		require.NoError(t, err)
+		require.True(t, isBatch, "single-element array must be detected as batch")
+		require.Len(t, msgs, 1)
+		require.Equal(t, "getblockhash", msgs[0].Method)
+		require.Equal(t, json.RawMessage(`"1773768178254-0"`), msgs[0].ID)
+	})
+
+	t.Run("multi_element_array_is_batch", func(t *testing.T) {
+		data := []byte(`[{"method":"eth_chainId","params":[],"id":1,"jsonrpc":"2.0"},{"method":"eth_blockNumber","params":[],"id":2,"jsonrpc":"2.0"}]`)
+		msgs, isBatch, err := ParseJsonRPCMsgWithBatchFlag(data)
+		require.NoError(t, err)
+		require.True(t, isBatch, "multi-element array should be a batch")
+		require.Len(t, msgs, 2)
+	})
+
+	t.Run("empty_array_is_batch", func(t *testing.T) {
+		data := []byte(`[]`)
+		msgs, isBatch, err := ParseJsonRPCMsgWithBatchFlag(data)
+		require.NoError(t, err)
+		require.True(t, isBatch, "empty array should be detected as batch")
+		require.Len(t, msgs, 0)
+	})
+
+	t.Run("missing_id_gets_null", func(t *testing.T) {
+		data := []byte(`{"jsonrpc":"2.0","method":"getblock","params":[]}`)
+		msgs, isBatch, err := ParseJsonRPCMsgWithBatchFlag(data)
+		require.NoError(t, err)
+		require.False(t, isBatch)
+		require.Len(t, msgs, 1)
+		require.Equal(t, json.RawMessage("null"), msgs[0].ID)
+	})
+
+	t.Run("invalid_json_returns_error", func(t *testing.T) {
+		data := []byte(`not valid json`)
+		_, _, err := ParseJsonRPCMsgWithBatchFlag(data)
+		require.Error(t, err)
+	})
+
+	t.Run("invalid_batch_json_returns_error", func(t *testing.T) {
+		data := []byte(`[not valid json]`)
+		_, _, err := ParseJsonRPCMsgWithBatchFlag(data)
+		require.Error(t, err)
+	})
+}
+
 func TestCheckResponseErrorForJsonRpcBatch(t *testing.T) {
 	t.Run("all_success_no_error", func(t *testing.T) {
 		// All sub-requests succeeded

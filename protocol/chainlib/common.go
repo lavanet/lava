@@ -157,24 +157,55 @@ func constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled f
 	return handler
 }
 
-func checkBTCResponseAndFixReply(chainID string, replyData []byte) string {
+func isUTXOFamily(chainID string) bool {
+	return chainID == "BTC" || chainID == "BTCT" || chainID == "LTC" || chainID == "LTCT" || chainID == "DOGE" || chainID == "DOGET" || chainID == "BCH" || chainID == "BCHT"
+}
+
+func checkUTXOResponseAndFixReply(chainID string, replyData []byte) string {
 	response := string(replyData)
-	if chainID == "BTC" || chainID == "BTCT" || chainID == "LTC" || chainID == "LTCT" || chainID == "DOGE" || chainID == "DOGET" {
-		var jsonMsg *rpcclient.JsonrpcMessage
-		if err := json.Unmarshal(replyData, &jsonMsg); err == nil {
-			btcResponse := &rpcclient.BTCResponse{
-				Version: jsonMsg.Version,
-				ID:      jsonMsg.ID,
-				Method:  jsonMsg.Method,
-				Error:   jsonMsg.Error,
-				Result:  jsonMsg.Result,
-			}
-			if marshaledRes, err := json.Marshal(btcResponse); err == nil {
-				response = string(marshaledRes)
-			}
+	if !isUTXOFamily(chainID) {
+		return response
+	}
+
+	// Try single response first
+	var jsonMsg *rpcclient.JsonrpcMessage
+	if err := json.Unmarshal(replyData, &jsonMsg); err == nil {
+		btcResponse := convertToUTXOResponse(jsonMsg)
+		if marshaledRes, err := json.Marshal(btcResponse); err == nil {
+			response = string(marshaledRes)
+		}
+		return response
+	}
+
+	// Try batch response (JSON array)
+	var jsonMsgs []rpcclient.JsonrpcMessage
+	if err := json.Unmarshal(replyData, &jsonMsgs); err == nil && len(jsonMsgs) > 0 {
+		btcBatch := make([]*rpcclient.BTCResponse, len(jsonMsgs))
+		for i := range jsonMsgs {
+			btcBatch[i] = convertToUTXOResponse(&jsonMsgs[i])
+		}
+		if marshaledRes, err := json.Marshal(btcBatch); err == nil {
+			response = string(marshaledRes)
 		}
 	}
+
 	return response
+}
+
+// convertToUTXOResponse converts a JsonrpcMessage to BTCResponse format.
+// UTXO-family chains use JSON-RPC 1.0 which omits the "jsonrpc" field and always
+// includes the "error" field (even when null). The relay pipeline may add "jsonrpc":"2.0"
+// and strip null errors during response reconstruction — this undoes those changes.
+func convertToUTXOResponse(msg *rpcclient.JsonrpcMessage) *rpcclient.BTCResponse {
+	return &rpcclient.BTCResponse{
+		// Omit Version: UTXO-family nodes use JSON-RPC 1.0 which doesn't include the "jsonrpc" field.
+		// The relay pipeline may inject "2.0" during reconstruction; leaving Version empty strips it
+		// (BTCResponse.Version has omitempty).
+		ID:     msg.ID,
+		Method: msg.Method,
+		Error:  msg.Error,
+		Result: msg.Result,
+	}
 }
 
 func addHeadersAndSendString(c *fiber.Ctx, metaData []pairingtypes.Metadata, data string) error {
