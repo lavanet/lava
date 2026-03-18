@@ -11,6 +11,12 @@ type HealthCheckUpdatable interface {
 	UpdateHealthcheckStatusBreakdown(chainId string, apiInterface string, status bool)
 }
 
+// endpointHealthBreakdownUpdatable is an optional extension of HealthCheckUpdatable
+// for managers that also track per-chain health at the endpoint level.
+type endpointHealthBreakdownUpdatable interface {
+	SetEndpointOverallHealthBreakdown(spec, apiInterface string, healthy bool)
+}
+
 type RelaysMonitorAggregator struct {
 	relaysMonitors       map[string]*RelaysMonitor // key is endpoint: chainID+apiInterface
 	ticker               *time.Ticker
@@ -53,13 +59,17 @@ func (rma *RelaysMonitorAggregator) runHealthCheck() {
 
 	overallHealth := false
 
+	ehu, hasEndpointBreakdown := rma.healthCheckUpdatable.(endpointHealthBreakdownUpdatable)
+
 	// If at least one of the relays monitors is healthy, we set the status to TRUE, otherwise we set it to FALSE.
 	for _, relaysMonitor := range rma.relaysMonitors {
-		if relaysMonitor.IsHealthy() {
-			rma.healthCheckUpdatable.UpdateHealthcheckStatusBreakdown(relaysMonitor.chainID, relaysMonitor.apiInterface, true)
+		status := relaysMonitor.IsHealthy()
+		rma.healthCheckUpdatable.UpdateHealthcheckStatusBreakdown(relaysMonitor.chainID, relaysMonitor.apiInterface, status)
+		if hasEndpointBreakdown {
+			ehu.SetEndpointOverallHealthBreakdown(relaysMonitor.chainID, relaysMonitor.apiInterface, status)
+		}
+		if status {
 			overallHealth = true
-		} else {
-			rma.healthCheckUpdatable.UpdateHealthcheckStatusBreakdown(relaysMonitor.chainID, relaysMonitor.apiInterface, false)
 		}
 	}
 

@@ -754,7 +754,7 @@ func (m *SmartRouterMetricsManager) IsHealthy() bool {
 // Endpoint registration and management
 // =============================================================================
 
-// RegisterEndpoint registers an endpoint and sets its info metric.
+// RegisterEndpoint registers an endpoint with the metrics manager.
 // endpointID is the raw URL (used internally for URL→name resolution via the chain tracker callbacks).
 // providerName is used as endpoint_id in all Prometheus metrics.
 func (m *SmartRouterMetricsManager) RegisterEndpoint(spec, apiInterface, endpointID, providerName string) {

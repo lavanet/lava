@@ -518,7 +518,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 					utils.LogAttr("block", block),
 					utils.LogAttr("provider_endpoint", rpcProviderEndpoint.NetworkAddress.Address),
 				)
-				rpcp.providerMetricsManager.SetLatestBlock(chainID, rpcProviderEndpoint.NetworkAddress.Address, uint64(block))
+				rpcp.providerMetricsManager.SetLatestBlock(chainID, apiInterface, rpcProviderEndpoint.NetworkAddress.Address, uint64(block))
 			}
 			utils.LavaFormatDebug("ChainTracker callback completed",
 				utils.LogAttr("chainID", chainID),

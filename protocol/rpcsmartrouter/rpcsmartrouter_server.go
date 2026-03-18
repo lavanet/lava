@@ -1583,12 +1583,13 @@ func (rpcss *RPCSmartRouterServer) sendRelayToEndpoint(
 							RelayResult: relayResult,
 							Err:         nil,
 						})
-						if analytics != nil {
-							analytics.IsWrite = chainlib.GetStateful(protocolMessage) != 0
-							analytics.IsArchive = chainqueries.IsArchiveRequest(protocolMessage)
-							analytics.IsDebugTrace = chainqueries.IsDebugOrTraceRequest(protocolMessage)
-							analytics.IsBatch = chainqueries.IsBatchRequest(protocolMessage)
+						if analytics == nil {
+							analytics = &metrics.RelayMetrics{}
 						}
+						analytics.IsWrite = chainlib.GetStateful(protocolMessage) != 0
+						analytics.IsArchive = chainqueries.IsArchiveRequest(protocolMessage)
+						analytics.IsDebugTrace = chainqueries.IsDebugOrTraceRequest(protocolMessage)
+						analytics.IsBatch = chainqueries.IsBatchRequest(protocolMessage)
 						go rpcss.smartRouterEndpointMetrics.RecordCacheHitRequest(chainId, apiInterface, protocolMessage.GetApi().GetName(), analytics)
 						go rpcss.smartRouterEndpointMetrics.RecordCacheResult(chainId, apiInterface, protocolMessage.GetApi().GetName(), true, cacheLatencyMs)
 						return nil
@@ -2012,6 +2013,18 @@ func (rpcss *RPCSmartRouterServer) appendHeadersToRelayResult(ctx context.Contex
 		cvStatus := "failed"
 		var agreeingProvidersList, disagreeingProvidersList []string
 
+		// Error providers always disagree regardless of consensus outcome
+		for _, result := range nodeErrorResults {
+			if result.ProviderInfo.ProviderAddress != "" {
+				disagreeingProvidersList = append(disagreeingProvidersList, result.ProviderInfo.ProviderAddress)
+			}
+		}
+		for _, result := range protocolErrorResults {
+			if result.ProviderInfo.ProviderAddress != "" {
+				disagreeingProvidersList = append(disagreeingProvidersList, result.ProviderInfo.ProviderAddress)
+			}
+		}
+
 		if cvSuccess {
 			cvStatus = "success"
 			winningHash := relayResult.ResponseHash
@@ -2025,30 +2038,9 @@ func (rpcss *RPCSmartRouterServer) appendHeadersToRelayResult(ctx context.Contex
 					disagreeingProvidersList = append(disagreeingProvidersList, result.ProviderInfo.ProviderAddress)
 				}
 			}
-			// Providers that returned errors always disagree with the winning response
-			for _, result := range nodeErrorResults {
-				if result.ProviderInfo.ProviderAddress != "" {
-					disagreeingProvidersList = append(disagreeingProvidersList, result.ProviderInfo.ProviderAddress)
-				}
-			}
-			for _, result := range protocolErrorResults {
-				if result.ProviderInfo.ProviderAddress != "" {
-					disagreeingProvidersList = append(disagreeingProvidersList, result.ProviderInfo.ProviderAddress)
-				}
-			}
 		} else {
-			// No consensus — every provider that responded (success or error) is in conflict
+			// No consensus — every successful provider is also in conflict
 			for _, result := range successResults {
-				if result.ProviderInfo.ProviderAddress != "" {
-					disagreeingProvidersList = append(disagreeingProvidersList, result.ProviderInfo.ProviderAddress)
-				}
-			}
-			for _, result := range nodeErrorResults {
-				if result.ProviderInfo.ProviderAddress != "" {
-					disagreeingProvidersList = append(disagreeingProvidersList, result.ProviderInfo.ProviderAddress)
-				}
-			}
-			for _, result := range protocolErrorResults {
 				if result.ProviderInfo.ProviderAddress != "" {
 					disagreeingProvidersList = append(disagreeingProvidersList, result.ProviderInfo.ProviderAddress)
 				}

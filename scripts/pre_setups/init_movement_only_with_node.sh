@@ -56,7 +56,7 @@ wait_next_block
 
 screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcconsumer \
 127.0.0.1:3360 MOVEMENT rest \
-$EXTRA_PORTAL_FLAGS --geolocation 1 --optimizer-qos-listen --log_level debug --from user1 --chain-id lava --add-api-method-metrics --limit-parallel-websocket-connections-per-ip 1 --allow-insecure-provider-dialing --metrics-listen-address ":7779" 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
+$EXTRA_PORTAL_FLAGS --geolocation 1 --optimizer-qos-listen --log_level debug --from user1 --chain-id lava --limit-parallel-websocket-connections-per-ip 1 --allow-insecure-provider-dialing --metrics-listen-address ":7779" 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
 
 echo "--- setting up screens done ---"
 screen -ls

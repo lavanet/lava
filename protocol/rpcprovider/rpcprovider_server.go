@@ -375,7 +375,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 			if relaySession != nil {
 				latestRelayCu = relaySession.LatestRelayCu
 			}
-			go rpcps.metrics.AddRelay(consumerAddress.String(), latestRelayCu, request.RelaySession.QosReport, apiName)
+			go rpcps.metrics.AddRelay(latestRelayCu, apiName)
 		} else {
 			go rpcps.metrics.AddFunctionError(apiName)
 		}
