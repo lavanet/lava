@@ -216,6 +216,32 @@ func TestParseJsonRPCMsgWithBatchFlag(t *testing.T) {
 		_, _, err := ParseJsonRPCMsgWithBatchFlag(data)
 		require.Error(t, err)
 	})
+
+	t.Run("leading_whitespace_batch", func(t *testing.T) {
+		data := []byte("\n  \t [{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"getblockhash\",\"params\":[100]}]")
+		msgs, isBatch, err := ParseJsonRPCMsgWithBatchFlag(data)
+		require.NoError(t, err)
+		require.True(t, isBatch, "leading whitespace before [ must still be detected as batch")
+		require.Len(t, msgs, 1)
+		require.Equal(t, "getblockhash", msgs[0].Method)
+	})
+
+	t.Run("leading_whitespace_single", func(t *testing.T) {
+		data := []byte("  \n{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_blockNumber\"}")
+		msgs, isBatch, err := ParseJsonRPCMsgWithBatchFlag(data)
+		require.NoError(t, err)
+		require.False(t, isBatch, "leading whitespace before { must not be detected as batch")
+		require.Len(t, msgs, 1)
+	})
+
+	t.Run("utf8_bom_batch", func(t *testing.T) {
+		// UTF-8 BOM (0xEF 0xBB 0xBF) followed by a batch
+		data := append([]byte{0xEF, 0xBB, 0xBF}, []byte(`[{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}]`)...)
+		msgs, isBatch, err := ParseJsonRPCMsgWithBatchFlag(data)
+		require.NoError(t, err)
+		require.True(t, isBatch, "UTF-8 BOM before [ must still be detected as batch")
+		require.Len(t, msgs, 1)
+	})
 }
 
 func TestCheckResponseErrorForJsonRpcBatch(t *testing.T) {
