@@ -232,6 +232,12 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	if len(msgs) == 1 && !isBatch {
 		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, blockHashes, &msgs[0], apiCollection, parsedDefault)
 	} else {
+		// For single-element batches, earliestRequestedBlock was never updated by
+		// CompareRequestedBlockInBatch (which only runs for idx > 0). With one message,
+		// earliest == latest.
+		if len(msgs) == 1 {
+			earliestRequestedBlock = latestRequestedBlock
+		}
 		nodeMsg, err = apip.newBatchChainMessage(api, latestRequestedBlock, earliestRequestedBlock, blockHashes, msgs, apiCollection, parsedDefault)
 		if err != nil {
 			return nil, err

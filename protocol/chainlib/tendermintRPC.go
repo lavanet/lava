@@ -254,6 +254,12 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 		}
 		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, blockHashes, &tenderMsg, apiCollection, parsedDefault)
 	} else {
+		// For single-element batches, earliestRequestedBlock was never updated by
+		// CompareRequestedBlockInBatch (which only runs for idx > 0). With one message,
+		// earliest == latest.
+		if msgsLength == 1 {
+			earliestRequestedBlock = latestRequestedBlock
+		}
 		var err error
 		nodeMsg, err = apip.newBatchChainMessage(api, latestRequestedBlock, earliestRequestedBlock, blockHashes, msgs, apiCollection, parsedDefault)
 		if err != nil {
