@@ -173,10 +173,16 @@ func ParseJsonRPCMsg(data []byte) (msgRet []JsonrpcMessage, err error) {
 // like [{"id":1,"method":"getblockhash","params":[100]}] which must be treated as batch
 // requests and receive array responses per the JSON-RPC spec.
 func ParseJsonRPCMsgWithBatchFlag(data []byte) (msgRet []JsonrpcMessage, isBatch bool, err error) {
+	// Strip UTF-8 BOM if present — some clients/proxies prepend it.
+	if len(data) >= 3 && data[0] == 0xEF && data[1] == 0xBB && data[2] == 0xBF {
+		data = data[3:]
+	}
+
 	// Check if the data is a JSON array (batch request) by looking at the first non-whitespace byte.
 	// This must be done before unmarshaling because json.Unmarshal into a single struct may
 	// silently succeed on a single-element array, losing the batch context.
-	isBatch = len(data) > 0 && data[0] == '['
+	firstByte := firstNonWhitespaceByte(data)
+	isBatch = firstByte == '['
 	if isBatch {
 		var batch []JsonrpcMessage
 		err = json.Unmarshal(data, &batch)
@@ -189,12 +195,33 @@ func ParseJsonRPCMsgWithBatchFlag(data []byte) (msgRet []JsonrpcMessage, isBatch
 	var msg JsonrpcMessage
 	err = json.Unmarshal(data, &msg)
 	if err != nil {
+		// Single-object unmarshal failed — try batch as a fallback in case our
+		// first-byte heuristic was wrong (e.g. unexpected leading bytes).
+		var batch []JsonrpcMessage
+		if errBatch := json.Unmarshal(data, &batch); errBatch == nil {
+			return batch, true, nil
+		}
 		return nil, false, err
 	}
 	if msg.ID == nil {
 		msg.ID = []byte("null")
 	}
 	return []JsonrpcMessage{msg}, false, nil
+}
+
+// firstNonWhitespaceByte returns the first byte in data that is not
+// a JSON whitespace character (space, tab, newline, carriage return).
+// Returns 0 if data is empty or all whitespace.
+func firstNonWhitespaceByte(data []byte) byte {
+	for _, b := range data {
+		switch b {
+		case ' ', '\t', '\n', '\r':
+			continue
+		default:
+			return b
+		}
+	}
+	return 0
 }
 
 type JsonrpcBatchMessage struct {
