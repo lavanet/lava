@@ -51,7 +51,7 @@ func (r *relayerCacheClientStore) getClient() pairingtypes.RelayerCacheClient {
 	return r.client // might be nil
 }
 
-func (r *relayerCacheClientStore) connectGRPCConnectionToRelayerCacheService() (*pairingtypes.RelayerCacheClient, *grpc.ClientConn, error) {
+func (r *relayerCacheClientStore) connectGRPCConnectionToRelayerCacheService() (pairingtypes.RelayerCacheClient, *grpc.ClientConn, error) {
 	connectCtx, cancel := context.WithTimeout(r.ctx, 3*time.Second)
 	defer cancel()
 
@@ -61,7 +61,7 @@ func (r *relayerCacheClientStore) connectGRPCConnectionToRelayerCacheService() (
 	}
 
 	c := pairingtypes.NewRelayerCacheClient(conn)
-	return &c, conn, nil
+	return c, conn, nil
 }
 
 func (r *relayerCacheClientStore) connectClient() error {
@@ -76,9 +76,11 @@ func (r *relayerCacheClientStore) connectClient() error {
 			// that only exit when conn.Close() is called.
 			if r.conn != nil {
 				utils.LavaFormatDebug("closing previous cache gRPC connection before replacing", utils.LogAttr("address", r.address))
-				r.conn.Close()
+				if err := r.conn.Close(); err != nil {
+					utils.LavaFormatWarning("failed to close previous cache gRPC connection", err, utils.LogAttr("address", r.address))
+				}
 			}
-			r.client = *relayerCacheClient
+			r.client = relayerCacheClient
 			r.conn = conn
 		}()
 
