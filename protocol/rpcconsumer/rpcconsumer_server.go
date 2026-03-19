@@ -23,6 +23,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/internal/chainqueries"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol/protocolerrors"
@@ -264,7 +265,7 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 	usedProviders := lavasession.NewUsedProviders(nil)
 
 	// Create state machine first - it determines Selection type based on cross-validation headers
-	stateMachine, err := NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, nil, rpccs.debugRelays, rpccs.rpcConsumerLogs)
+	stateMachine, err := NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, nil, rpccs.debugRelays)
 	if err != nil {
 		return false, err
 	}
@@ -474,7 +475,8 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 	}
 
 	returnedResult, err := relayProcessor.ProcessingResult()
-	rpccs.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, protocolMessage, protocolMessage.GetApi().GetName())
+	consistencyEnforced := protocolMessage.RelayPrivateData().SeenBlock > 0
+	rpccs.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, protocolMessage, protocolMessage.GetApi().GetName(), analytics, err == nil, consistencyEnforced)
 	if err != nil {
 		return returnedResult, utils.LavaFormatError("failed processing responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()))
 	}
@@ -485,6 +487,14 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 		api := protocolMessage.GetApi()
 		analytics.ComputeUnits = api.ComputeUnits
 		analytics.ApiMethod = api.Name
+		analytics.IsWrite = chainlib.GetStateful(protocolMessage) != 0
+		analytics.IsArchive = chainqueries.IsArchiveRequest(protocolMessage)
+		analytics.IsDebugTrace = chainqueries.IsDebugOrTraceRequest(protocolMessage)
+		analytics.IsBatch = chainqueries.IsBatchRequest(protocolMessage)
+		if returnedResult != nil {
+			analytics.ProviderAddress = returnedResult.ProviderInfo.ProviderAddress
+		}
+		go rpccs.rpcConsumerLogs.RecordEndToEndLatency(rpccs.listenEndpoint.ChainID, rpccs.listenEndpoint.ApiInterface, api.Name, float64(currentLatency.Milliseconds()))
 	}
 	rpccs.relaysMonitor.LogRelay()
 	return returnedResult, nil
@@ -501,7 +511,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 	usedProviders := lavasession.NewUsedProviders(protocolMessage)
 
 	// Create state machine first - it determines Selection type based on cross-validation headers
-	stateMachine, err := NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, analytics, rpccs.debugRelays, rpccs.rpcConsumerLogs)
+	stateMachine, err := NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, analytics, rpccs.debugRelays)
 	if err != nil {
 		return nil, err
 	}
@@ -880,6 +890,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						utils.LogAttr("lookupFinalized", lookupFinalized),
 					)
 
+					cacheStart := time.Now()
 					cacheReply, cacheError = rpccs.cache.GetEntry(cacheCtx, &pairingtypes.RelayCacheGet{
 						RequestHash:           hashKey,
 						RequestedBlock:        requestedBlockForCache,
@@ -891,6 +902,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						BlocksHashesToHeights: rpccs.newBlocksHashesToHeightsSliceFromRequestedBlockHashes(protocolMessage.GetRequestedBlocksHashes()),
 					}) // caching in the consumer doesn't care about hashes, and we don't have data on finalization yet
 					cancel()
+					cacheLatencyMs := float64(time.Since(cacheStart).Milliseconds())
 
 					// Generate the actual cache key that will be used for lookup
 					actualLookupCacheKey := make([]byte, len(hashKey))
@@ -954,8 +966,10 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 							RelayResult: relayResult,
 							Err:         nil,
 						})
+						go rpccs.rpcConsumerLogs.RecordCacheResult(chainId, apiInterface, protocolMessage.GetApi().GetName(), true, cacheLatencyMs)
 						return nil
 					}
+					go rpccs.rpcConsumerLogs.RecordCacheResult(chainId, apiInterface, protocolMessage.GetApi().GetName(), false, cacheLatencyMs)
 					latestBlockHashRequested, earliestBlockHashRequested = rpccs.getEarliestBlockHashRequestedFromCacheReply(cacheReply)
 					utils.LavaFormatTrace("[Archive Debug] Reading block hashes from cache", utils.LogAttr("latestBlockHashRequested", latestBlockHashRequested), utils.LogAttr("earliestBlockHashRequested", earliestBlockHashRequested), utils.LogAttr("GUID", ctx))
 					// cache failed, move on to regular relay
@@ -1138,9 +1152,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			localRelayResult.Request = relayRequest
 			endpointClient := singleConsumerSession.EndpointConnection.Client
 
-			// set relay sent metric
-			go rpccs.rpcConsumerLogs.SetRelaySentToProviderMetric(providerPublicAddress, chainId, apiInterface)
-
 			if chainlib.IsFunctionTagOfType(protocolMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
 				utils.LavaFormatTrace("inside sendRelayToProvider, relay is subscription", utils.LogAttr("requestData", localRelayRequestData.Data), utils.LogAttr("GUID", ctx))
 
@@ -1208,11 +1219,12 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				if errReport != nil {
 					utils.LavaFormatError("failed relay onSessionFailure errored", errReport, utils.Attribute{Key: "GUID", Value: goroutineCtx}, utils.Attribute{Key: "original error", Value: errResponse.Error()})
 				}
-				go rpccs.rpcConsumerLogs.SetProtocolError(chainId, providerPublicAddress)
+				go rpccs.rpcConsumerLogs.SetProtocolError(chainId, apiInterface, providerPublicAddress, protocolMessage.GetApi().GetName())
 				return
 			}
 
 			// get here only if performed a regular relay successfully
+			go rpccs.rpcConsumerLogs.RecordProviderLatency(chainId, apiInterface, providerPublicAddress, protocolMessage.GetApi().GetName(), float64(relayLatency.Milliseconds()))
 			expectedBH := int64(math.MaxInt64) // Default to max since we don't track expected block height anymore
 			pairingAddressesLen := rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()
 			latestBlock := localRelayResult.Reply.LatestBlock
@@ -1429,9 +1441,6 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		)
 		connectCtx = metadata.NewOutgoingContext(connectCtx, metadataAdd)
 		defer connectCtxCancel()
-
-		// add consumer processing timestamp before provider metric and start measuring time after the provider replied
-		rpccs.rpcConsumerLogs.AddMetricForProcessingLatencyBeforeProvider(analytics, rpccs.listenEndpoint.ChainID, rpccs.listenEndpoint.ApiInterface)
 
 		if relayResult.ProviderTrailer == nil {
 			// if the provider trailer is nil, we need to initialize it
@@ -1838,7 +1847,7 @@ type RelayProcessorForHeaders interface {
 	NodeErrors() (ret []common.RelayResult)
 }
 
-func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, relayResult *common.RelayResult, protocolErrors uint64, relayProcessor RelayProcessorForHeaders, protocolMessage chainlib.ProtocolMessage, apiName string) {
+func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, relayResult *common.RelayResult, protocolErrors uint64, relayProcessor RelayProcessorForHeaders, protocolMessage chainlib.ProtocolMessage, apiName string, analytics *metrics.RelayMetrics, success bool, consistencyEnforced bool) {
 	metadataReply := []pairingtypes.Metadata{}
 
 	// Check if cross-validation is enabled via Selection type
@@ -1846,72 +1855,42 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 
 	if selection == relaycore.CrossValidation {
 		// For cross-validation mode: show all participating providers and status
-		successResults, nodeErrors, protocolErrorResults := relayProcessor.GetResultsData()
+		successResults, nodeErrorResults, protocolErrorResultsCV := relayProcessor.GetResultsData()
 		cvParams := relayProcessor.GetCrossValidationParams()
 
-		// Collect all providers we sent requests to
-		allProvidersMap := make(map[string]bool)
+		// Determine cross-validation status and agreeing/disagreeing providers
+		cvSuccess := relayResult != nil && cvParams != nil && relayResult.CrossValidation >= cvParams.AgreementThreshold
+		cvStatus := "failed"
+		var agreeingProvidersList, disagreeingProvidersList []string
 
-		// Add successful providers
-		for _, result := range successResults {
-			if result.ProviderInfo.ProviderAddress != "" {
-				allProvidersMap[result.ProviderInfo.ProviderAddress] = true
-			}
-		}
-
-		// Add providers that had node errors (they still participated)
-		for _, result := range nodeErrors {
-			if result.ProviderInfo.ProviderAddress != "" {
-				allProvidersMap[result.ProviderInfo.ProviderAddress] = true
-			}
-		}
-
-		// Add providers from protocol errors (they also participated)
-		for _, result := range protocolErrorResults {
-			if result.ProviderInfo.ProviderAddress != "" {
-				allProvidersMap[result.ProviderInfo.ProviderAddress] = true
-			}
-		}
-
-		// Convert to slice and sort for consistent ordering
-		allProvidersList := make([]string, 0, len(allProvidersMap))
-		for provider := range allProvidersMap {
-			allProvidersList = append(allProvidersList, provider)
-		}
-		sort.Strings(allProvidersList)
-
-		// Determine cross-validation status and agreeing providers
-		var cvStatus string
-		var agreeingProvidersList []string
-
-		// Check if we have a successful result with enough agreements
-		if relayResult != nil && cvParams != nil && relayResult.CrossValidation >= cvParams.AgreementThreshold {
+		if cvSuccess {
 			cvStatus = "success"
-			// Find providers whose responses matched the winning consensus
 			winningHash := relayResult.ResponseHash
-			agreeingProvidersMap := make(map[string]bool)
 			for _, result := range successResults {
-				if result.ResponseHash == winningHash && result.ProviderInfo.ProviderAddress != "" {
-					agreeingProvidersMap[result.ProviderInfo.ProviderAddress] = true
+				if result.ProviderInfo.ProviderAddress == "" {
+					continue
+				}
+				if result.ResponseHash == winningHash {
+					agreeingProvidersList = append(agreeingProvidersList, result.ProviderInfo.ProviderAddress)
+				} else {
+					disagreeingProvidersList = append(disagreeingProvidersList, result.ProviderInfo.ProviderAddress)
 				}
 			}
-			agreeingProvidersList = make([]string, 0, len(agreeingProvidersMap))
-			for provider := range agreeingProvidersMap {
-				agreeingProvidersList = append(agreeingProvidersList, provider)
-			}
-			sort.Strings(agreeingProvidersList)
 		} else {
-			cvStatus = "failed"
-			agreeingProvidersList = []string{} // Empty on failure - no consensus reached
+			// No consensus — every provider with a valid response is in conflict
+			for _, result := range successResults {
+				if result.ProviderInfo.ProviderAddress != "" {
+					disagreeingProvidersList = append(disagreeingProvidersList, result.ProviderInfo.ProviderAddress)
+				}
+			}
 		}
 
 		// Emit cross-validation metric (even on failure)
 		if cvParams != nil && rpccs.listenEndpoint != nil && rpccs.rpcConsumerLogs != nil {
 			chainId, apiInterface := rpccs.listenEndpoint.ChainID, rpccs.listenEndpoint.ApiInterface
 			go rpccs.rpcConsumerLogs.SetCrossValidationMetric(
-				chainId, apiInterface, apiName, cvStatus,
-				cvParams.MaxParticipants, cvParams.AgreementThreshold,
-				allProvidersList, agreeingProvidersList,
+				chainId, apiInterface, apiName, cvSuccess,
+				agreeingProvidersList, disagreeingProvidersList,
 			)
 		}
 
@@ -1923,10 +1902,24 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 				Value: cvStatus,
 			})
 
-			// Add all providers header (comma-separated for easy parsing)
+			// Add all providers header — include error providers so the caller sees every participant
+			allForHeader := make([]string, 0, len(agreeingProvidersList)+len(disagreeingProvidersList))
+			allForHeader = append(allForHeader, agreeingProvidersList...)
+			allForHeader = append(allForHeader, disagreeingProvidersList...)
+			for _, result := range nodeErrorResults {
+				if result.ProviderInfo.ProviderAddress != "" {
+					allForHeader = append(allForHeader, result.ProviderInfo.ProviderAddress)
+				}
+			}
+			for _, result := range protocolErrorResultsCV {
+				if result.ProviderInfo.ProviderAddress != "" {
+					allForHeader = append(allForHeader, result.ProviderInfo.ProviderAddress)
+				}
+			}
+			sort.Strings(allForHeader)
 			metadataReply = append(metadataReply, pairingtypes.Metadata{
 				Name:  common.CROSS_VALIDATION_ALL_PROVIDERS_HEADER_NAME,
-				Value: strings.Join(allProvidersList, ","),
+				Value: strings.Join(allForHeader, ","),
 			})
 
 			// Add agreeing providers header (comma-separated for easy parsing)
@@ -1955,6 +1948,12 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 				Name:  common.RETRY_COUNT_HEADER_NAME,
 				Value: strconv.FormatUint(totalRetries, 10),
 			})
+			// Record retry incident metrics
+			if rpccs.listenEndpoint != nil && rpccs.rpcConsumerLogs != nil {
+				chainId := rpccs.listenEndpoint.ChainID
+				apiInterface := rpccs.listenEndpoint.ApiInterface
+				go rpccs.rpcConsumerLogs.RecordIncidentRetry(chainId, apiInterface, apiName, totalRetries, success)
+			}
 
 			// When there are retries, show all attempted providers (similar to REST behavior)
 			allProvidersMap := make(map[string]bool)
@@ -2001,6 +2000,20 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 					}
 				}
 			}
+		}
+	}
+
+	// Record consistency and hedge incident metrics (only for non-cross-validation mode)
+	if selection != relaycore.CrossValidation && rpccs.listenEndpoint != nil && rpccs.rpcConsumerLogs != nil {
+		chainId := rpccs.listenEndpoint.ChainID
+		apiInterface := rpccs.listenEndpoint.ApiInterface
+		// Consistency: triggered when the consumer explicitly enforced a minimum seen block height
+		if consistencyEnforced {
+			go rpccs.rpcConsumerLogs.RecordIncidentConsistency(chainId, apiInterface, apiName, success)
+		}
+		// Hedge: triggered when the batch ticker fired during this relay
+		if analytics != nil && analytics.HedgeCount > 0 {
+			go rpccs.rpcConsumerLogs.RecordIncidentHedgeResult(chainId, apiInterface, apiName, analytics.HedgeCount, success)
 		}
 	}
 
