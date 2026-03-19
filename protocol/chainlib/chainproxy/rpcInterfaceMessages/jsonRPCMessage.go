@@ -164,28 +164,37 @@ func (jm JsonrpcMessage) ParseBlock(inp string) (int64, error) {
 }
 
 func ParseJsonRPCMsg(data []byte) (msgRet []JsonrpcMessage, err error) {
-	// connectionType is currently only used in rest API.
-	// Unmarshal request
+	msgs, _, err := ParseJsonRPCMsgWithBatchFlag(data)
+	return msgs, err
+}
+
+// ParseJsonRPCMsgWithBatchFlag parses JSON-RPC message(s) and returns whether the input
+// was a batch request (JSON array). This distinction matters for single-element batches
+// like [{"id":1,"method":"getblockhash","params":[100]}] which must be treated as batch
+// requests and receive array responses per the JSON-RPC spec.
+func ParseJsonRPCMsgWithBatchFlag(data []byte) (msgRet []JsonrpcMessage, isBatch bool, err error) {
+	// Check if the data is a JSON array (batch request) by looking at the first non-whitespace byte.
+	// This must be done before unmarshaling because json.Unmarshal into a single struct may
+	// silently succeed on a single-element array, losing the batch context.
+	isBatch = len(data) > 0 && data[0] == '['
+	if isBatch {
+		var batch []JsonrpcMessage
+		err = json.Unmarshal(data, &batch)
+		if err != nil {
+			return nil, true, err
+		}
+		return batch, true, nil
+	}
+
 	var msg JsonrpcMessage
 	err = json.Unmarshal(data, &msg)
 	if err != nil {
-		// we failed unmarshaling
-		// try to parse a batch
-		var batch []JsonrpcMessage
-		errBatch := json.Unmarshal(data, &batch)
-		if errBatch != nil {
-			// failed parsing both as batch and jsonrpc return the first unmarshal error, unless the first character is "["
-			if len(data) > 0 && data[0] == '[' {
-				return nil, errBatch
-			}
-			return nil, err
-		}
-		return batch, nil
+		return nil, false, err
 	}
 	if msg.ID == nil {
 		msg.ID = []byte("null")
 	}
-	return []JsonrpcMessage{msg}, nil
+	return []JsonrpcMessage{msg}, false, nil
 }
 
 type JsonrpcBatchMessage struct {

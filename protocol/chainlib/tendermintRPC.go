@@ -104,11 +104,12 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 	// connectionType is currently only used in rest api
 	// Unmarshal request
 	var msgs []rpcInterfaceMessages.JsonrpcMessage
+	var isBatch bool
 	isJsonrpc := string(data) != ""
 	if isJsonrpc {
 		// Fetch pointer to message and error
 		var err error
-		msgs, err = rpcInterfaceMessages.ParseJsonRPCMsg(data)
+		msgs, isBatch, err = rpcInterfaceMessages.ParseJsonRPCMsgWithBatchFlag(data)
 		if err != nil {
 			return nil, err
 		}
@@ -246,7 +247,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 	}
 
 	var nodeMsg *baseChainMessageContainer
-	if msgsLength == 1 {
+	if msgsLength == 1 && !isBatch {
 		tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msgs[0], Path: ""}
 		if !isJsonrpc {
 			tenderMsg.Path = urlPath // add path
