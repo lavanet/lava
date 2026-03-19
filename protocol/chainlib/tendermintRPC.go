@@ -104,11 +104,12 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 	// connectionType is currently only used in rest api
 	// Unmarshal request
 	var msgs []rpcInterfaceMessages.JsonrpcMessage
+	var isBatch bool
 	isJsonrpc := string(data) != ""
 	if isJsonrpc {
 		// Fetch pointer to message and error
 		var err error
-		msgs, err = rpcInterfaceMessages.ParseJsonRPCMsg(data)
+		msgs, isBatch, err = rpcInterfaceMessages.ParseJsonRPCMsgWithBatchFlag(data)
 		if err != nil {
 			return nil, err
 		}
@@ -246,13 +247,19 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 	}
 
 	var nodeMsg *baseChainMessageContainer
-	if msgsLength == 1 {
+	if msgsLength == 1 && !isBatch {
 		tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msgs[0], Path: ""}
 		if !isJsonrpc {
 			tenderMsg.Path = urlPath // add path
 		}
 		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, blockHashes, &tenderMsg, apiCollection, parsedDefault)
 	} else {
+		// For single-element batches, earliestRequestedBlock was never updated by
+		// CompareRequestedBlockInBatch (which only runs for idx > 0). With one message,
+		// earliest == latest.
+		if msgsLength == 1 {
+			earliestRequestedBlock = latestRequestedBlock
+		}
 		var err error
 		nodeMsg, err = apip.newBatchChainMessage(api, latestRequestedBlock, earliestRequestedBlock, blockHashes, msgs, apiCollection, parsedDefault)
 		if err != nil {
