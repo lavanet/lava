@@ -9,6 +9,7 @@ on:
     branches:
       - main
       - smart-router-v1.1
+      - upgrade-v6.0.1
   workflow_dispatch:
 
 permissions:
