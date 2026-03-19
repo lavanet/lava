@@ -45,7 +45,7 @@ func (NoOpConsumerMetrics) ResetBlockedProvidersMetrics(string, string, map[stri
 func (NoOpConsumerMetrics) SetWsSubscriptionRequestMetric(string, string)                  {}
 func (NoOpConsumerMetrics) SetFailedWsSubscriptionRequestMetric(string, string)            {}
 func (NoOpConsumerMetrics) SetDuplicatedWsSubscriptionRequestMetric(string, string)        {}
-func (NoOpConsumerMetrics) SetWsSubscriptioDisconnectRequestMetric(string, string, string) {
+func (NoOpConsumerMetrics) SetWsSubscriptionDisconnectRequestMetric(string, string, string) {
 }
 func (NoOpConsumerMetrics) SetWebSocketConnectionActive(string, string, bool)         {}
 func (NoOpConsumerMetrics) SetLoLResponse(bool)                                       {}
@@ -105,7 +105,7 @@ type ConsumerMetricsManagerInf interface {
 	SetWsSubscriptionRequestMetric(chainId string, apiInterface string)
 	SetFailedWsSubscriptionRequestMetric(chainId string, apiInterface string)
 	SetDuplicatedWsSubscriptionRequestMetric(chainId string, apiInterface string)
-	SetWsSubscriptioDisconnectRequestMetric(chainId string, apiInterface string, disconnectReason string)
+	SetWsSubscriptionDisconnectRequestMetric(chainId string, apiInterface string, disconnectReason string)
 	SetWebSocketConnectionActive(chainId string, apiInterface string, add bool)
 
 	// --- Misc (RPCConsumerLogs / rpcsmartrouter.go) ---

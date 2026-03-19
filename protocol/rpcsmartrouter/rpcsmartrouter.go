@@ -231,8 +231,9 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 	// can be passed to RPCConsumerLogs, ConsumerSessionManager, etc., eliminating the
 	// need for a ConsumerMetricsManager (and all its lava_consumer_* metrics).
 	smartRouterMetricsManager := metrics.NewSmartRouterMetricsManager(metrics.SmartRouterMetricsManagerOptions{
-		NetworkAddress:  options.analyticsServerAddresses.MetricsListenAddress,
-		StartHTTPServer: true,
+		NetworkAddress:     options.analyticsServerAddresses.MetricsListenAddress,
+		StartHTTPServer:    true,
+		OptimizerQoSClient: smartRouterOptimizerQoSClient,
 	})
 
 	rpcSmartRouterMetrics, err := metrics.NewRPCConsumerLogs(smartRouterMetricsManager, smartRouterUsageServeManager, smartRouterKafkaClient, smartRouterOptimizerQoSClient)
@@ -241,11 +242,7 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 	}
 
 	smartRouterMetricsManager.SetVersion(upgrade.GetCurrentVersion().ConsumerVersion)
-
-	// Start periodic selection stats metrics updates
-	if smartRouterOptimizerQoSClient != nil {
-		smartRouterMetricsManager.StartSelectionStatsUpdater(ctx, metrics.OptimizerQosServerSamplingInterval)
-	}
+	smartRouterMetricsManager.StartSelectionStatsUpdater(ctx, metrics.OptimizerQosServerSamplingInterval)
 
 	// we want one provider optimizer per chain so we will store them for reuse across rpcEndpoints
 	chainMutexes := map[string]*sync.Mutex{}
