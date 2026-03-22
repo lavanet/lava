@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source "$__dir"/../useful_commands.sh
 . "${__dir}"/../vars/variables.sh
@@ -11,7 +11,7 @@ killall screen
 screen -wipe
 
 echo "[Test Setup] installing all binaries"
-make install-all 
+make install-all
 
 echo "[Test Setup] setting up a new lava node"
 screen -d -m -S node bash -c "./scripts/start_env_dev.sh"
@@ -21,7 +21,7 @@ sleep 5
 wait_for_lava_node_to_start
 
 GASPRICE="0.00002ulava"
-specs="specs/mainnet-1/specs/ibc.json,specs/mainnet-1/specs/tendermint.json,specs/mainnet-1/specs/cosmossdk.json,specs/testnet-2/specs/lava.json,specs/mainnet-1/specs/ethereum.json,specs/testnet-2/specs/avalanche_c.json"
+specs="specs/mainnet-1/specs/ibc.json,specs/mainnet-1/specs/tendermint.json,specs/mainnet-1/specs/cosmossdk.json,specs/testnet-2/specs/lava.json,specs/testnet-2/specs/avalanche_p.json"
 lavad tx gov submit-legacy-proposal spec-add $specs --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE &
 wait_next_block
 wait_next_block
@@ -39,45 +39,41 @@ sleep 4
 CLIENTSTAKE="500000000000ulava"
 PROVIDERSTAKE="500000000000ulava"
 
-PROVIDER1_LISTENER="127.0.0.1:2220"
+PROVIDER1_LISTENER="127.0.0.1:2221"
 
 if [ -z "$AVA_BASE_URL" ]; then
-  echo "ERROR: Avalanche C-Chain endpoint is empty. Set AVA_BASE_URL in scripts/vars/variables.sh or environment. for example, 'api.avax-test.network/ext/bc'"
+  echo "ERROR: Avalanche P-Chain endpoint is empty. Set AVA_BASE_URL in scripts/vars/variables.sh or environment. for example, 'api.avax-test.network/ext/bc'"
   exit 1
 fi
 
 lavad tx subscription buy DefaultPlan $(lavad keys show user1 -a) -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
-lavad tx pairing stake-provider "AVAXCT" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) -y --from servicer1 --provider-moniker "dummyMoniker"  --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "AVAXPT" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) -y --from servicer1 --provider-moniker "dummyMoniker"  --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 sleep_until_next_epoch
 
 # Generate provider YAML config with explicit internal-path mapping.
-# The AVAXC spec requires internal-path "/C/rpc" for its API collections.
+# The AVAXP spec requires internal-path "/P" for its API collections.
 # CLI args format doesn't support internal-path, so we use a YAML config.
-# Viper searches for configs relative to CWD and ./config, so we write there.
-PROVIDER1_YAML="config/provider1_avaxc.yml"
+PROVIDER1_YAML="config/provider1_avaxp.yml"
+mkdir -p config
 cat > "$PROVIDER1_YAML" <<EOF
 endpoints:
   - api-interface: jsonrpc
-    chain-id: AVAXCT
+    chain-id: AVAXPT
     network-address:
       address: $PROVIDER1_LISTENER
     node-urls:
-      - url: https://${AVA_BASE_URL}/C/rpc
-        internal-path: "/C/rpc"
-      - url: wss://${AVA_BASE_URL}/C/ws
-        internal-path: "/C/rpc"
-      - url: https://${AVA_BASE_URL}/C/avax
-        internal-path: "/C/avax"
+      - url: https://${AVA_BASE_URL}/P
+        internal-path: "/P"
 EOF
 
 screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
 $PROVIDER1_YAML \
-$EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 --chain-id lava --skip-websocket-verification --metrics-listen-address \":7776\" 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
+$EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 --chain-id lava --metrics-listen-address \":7776\" 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 
 screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcconsumer \
-127.0.0.1:3360 AVAXCT jsonrpc \
+127.0.0.1:3360 AVAXPT jsonrpc \
 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing --metrics-listen-address \":7779\" 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
 
 echo "--- setting up screens done ---"
