@@ -22,7 +22,6 @@ import (
 )
 
 var (
-	SkipPolicyVerification    = false
 	SkipWebsocketVerification = false
 	DefaultApiName            = "Default-"
 )
@@ -49,9 +48,10 @@ type BaseChainParser struct {
 	apiCollections  map[CollectionKey]*spectypes.ApiCollection
 	headers         map[ApiKey]*spectypes.Header
 	verifications   map[VerificationKey]map[string][]VerificationContainer // map[VerificationKey]map[InternalPath][]VerificationContainer
-	allowedAddons   map[string]bool
-	extensionParser extensionslib.ExtensionParser
-	active          bool
+	allowedAddons          map[string]bool
+	extensionParser        extensionslib.ExtensionParser
+	active                 bool
+	skipPolicyVerification bool
 }
 
 func (bcp *BaseChainParser) Activate() {
@@ -113,14 +113,18 @@ func (bcp *BaseChainParser) isAddon(addon string) bool {
 	return ok
 }
 
+func (bcp *BaseChainParser) SetSkipPolicyVerification() {
+	bcp.skipPolicyVerification = true
+}
+
 func (bcp *BaseChainParser) isExtension(extension string) bool {
-	return bcp.extensionParser.AllowedExtension(extension, SkipPolicyVerification)
+	return bcp.extensionParser.AllowedExtension(extension, bcp.skipPolicyVerification)
 }
 
 // use while bcp locked.
 func (bcp *BaseChainParser) validateAddons(nodeMessage *baseChainMessageContainer) error {
 	var addon string
-	if SkipPolicyVerification {
+	if bcp.skipPolicyVerification {
 		return nil
 	}
 	if addon = GetAddon(nodeMessage); addon != "" { // check we have an addon

@@ -220,6 +220,18 @@ func (mr *MockChainParserMockRecorder) SetPolicy(policy, chainId, apiInterface i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPolicy", reflect.TypeOf((*MockChainParser)(nil).SetPolicy), policy, chainId, apiInterface)
 }
 
+// SetSkipPolicyVerification mocks base method.
+func (m *MockChainParser) SetSkipPolicyVerification() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetSkipPolicyVerification")
+}
+
+// SetSkipPolicyVerification indicates an expected call of SetSkipPolicyVerification.
+func (mr *MockChainParserMockRecorder) SetSkipPolicyVerification() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSkipPolicyVerification", reflect.TypeOf((*MockChainParser)(nil).SetSkipPolicyVerification))
+}
+
 // SetSpec mocks base method.
 func (m *MockChainParser) SetSpec(spec types0.Spec) {
 	m.ctrl.T.Helper()

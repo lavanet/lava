@@ -204,6 +204,7 @@ func (fcp *fakeChainParser) ExtractDataFromRequest(*http.Request) (string, strin
 func (fcp *fakeChainParser) SetResponseFromRelayResult(*common.RelayResult) (*http.Response, error) {
 	return &http.Response{}, nil
 }
+func (fcp *fakeChainParser) SetSkipPolicyVerification()  {}
 func (fcp *fakeChainParser) ParseDirectiveEnabled() bool { return true }
 
 type fakeChainRouter struct{}
