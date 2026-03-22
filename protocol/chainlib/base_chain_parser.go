@@ -48,9 +48,10 @@ type BaseChainParser struct {
 	apiCollections  map[CollectionKey]*spectypes.ApiCollection
 	headers         map[ApiKey]*spectypes.Header
 	verifications   map[VerificationKey]map[string][]VerificationContainer // map[VerificationKey]map[InternalPath][]VerificationContainer
-	allowedAddons   map[string]bool
-	extensionParser extensionslib.ExtensionParser
-	active          bool
+	allowedAddons      map[string]bool
+	allowedExtensions  map[string]struct{}
+	extensionParser    extensionslib.ExtensionParser
+	active             bool
 }
 
 func (bcp *BaseChainParser) Activate() {
@@ -113,7 +114,8 @@ func (bcp *BaseChainParser) isAddon(addon string) bool {
 }
 
 func (bcp *BaseChainParser) isExtension(extension string) bool {
-	return bcp.extensionParser.AllowedExtension(extension)
+	_, ok := bcp.allowedExtensions[extension]
+	return ok
 }
 
 // ValidateMessage validates the chain message against the consumer's policy (allowed addons).
@@ -281,8 +283,8 @@ func (bcp *BaseChainParser) Construct(spec spectypes.Spec, internalPaths map[str
 		allowedAddons[apiCollection.CollectionData.AddOn] = bcp.allowedAddons[apiCollection.CollectionData.AddOn]
 	}
 	bcp.allowedAddons = allowedAddons
-
-	bcp.extensionParser = extensionslib.NewExtensionParser(allowedExtensions, bcp.extensionParser.GetConfiguredExtensions())
+	bcp.allowedExtensions = allowedExtensions
+	bcp.extensionParser = extensionslib.NewExtensionParser(bcp.extensionParser.GetConfiguredExtensions())
 }
 
 func (bcp *BaseChainParser) ParseDirectiveEnabled() bool {
