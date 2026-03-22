@@ -205,7 +205,7 @@ func (fcp *fakeChainParser) SetResponseFromRelayResult(*common.RelayResult) (*ht
 	return &http.Response{}, nil
 }
 func (fcp *fakeChainParser) ValidateMessage(chainlib.ChainMessage) error { return nil }
-func (fcp *fakeChainParser) ParseDirectiveEnabled() bool { return true }
+func (fcp *fakeChainParser) ParseDirectiveEnabled() bool                 { return true }
 
 type fakeChainRouter struct{}
 

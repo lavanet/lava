@@ -40,18 +40,18 @@ type InternalPath struct {
 }
 
 type BaseChainParser struct {
-	internalPaths   map[string]InternalPath
-	taggedApis      map[spectypes.FUNCTION_TAG]TaggedContainer
-	spec            spectypes.Spec
-	rwLock          sync.RWMutex
-	serverApis      map[ApiKey]ApiContainer
-	apiCollections  map[CollectionKey]*spectypes.ApiCollection
-	headers         map[ApiKey]*spectypes.Header
-	verifications   map[VerificationKey]map[string][]VerificationContainer // map[VerificationKey]map[InternalPath][]VerificationContainer
-	allowedAddons      map[string]bool
-	allowedExtensions  map[string]struct{}
-	extensionParser    extensionslib.ExtensionParser
-	active             bool
+	internalPaths     map[string]InternalPath
+	taggedApis        map[spectypes.FUNCTION_TAG]TaggedContainer
+	spec              spectypes.Spec
+	rwLock            sync.RWMutex
+	serverApis        map[ApiKey]ApiContainer
+	apiCollections    map[CollectionKey]*spectypes.ApiCollection
+	headers           map[ApiKey]*spectypes.Header
+	verifications     map[VerificationKey]map[string][]VerificationContainer // map[VerificationKey]map[InternalPath][]VerificationContainer
+	allowedAddons     map[string]bool
+	allowedExtensions map[string]struct{}
+	extensionParser   extensionslib.ExtensionParser
+	active            bool
 }
 
 func (bcp *BaseChainParser) Activate() {
