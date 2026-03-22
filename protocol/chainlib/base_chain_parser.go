@@ -113,7 +113,7 @@ func (bcp *BaseChainParser) isAddon(addon string) bool {
 }
 
 func (bcp *BaseChainParser) isExtension(extension string) bool {
-	return bcp.extensionParser.AllowedExtension(extension, false)
+	return bcp.extensionParser.AllowedExtension(extension)
 }
 
 // ValidateMessage validates the chain message against the consumer's policy (allowed addons).
