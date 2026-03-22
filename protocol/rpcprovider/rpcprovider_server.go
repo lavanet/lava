@@ -552,6 +552,9 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 	if err != nil {
 		return nil, nil, nil, err
 	}
+	if err := rpcps.chainParser.ValidateMessage(chainMessage); err != nil {
+		return nil, nil, nil, err
+	}
 	relayCU := chainMessage.GetApi().ComputeUnits
 	virtualEpoch := rpcps.stateTracker.GetVirtualEpoch(uint64(request.RelaySession.Epoch))
 	err = relaySession.PrepareSessionForUsage(ctx, relayCU, request.RelaySession.CuSum, rpcps.allowedMissingCUThreshold, virtualEpoch)

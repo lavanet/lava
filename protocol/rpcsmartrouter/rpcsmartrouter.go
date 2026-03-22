@@ -324,8 +324,6 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 		errCh <- err
 		return err
 	}
-	// Smart router uses static providers without on-chain pairing, so policy verification is not applicable
-	chainParser.SetSkipPolicyVerification()
 	chainID := rpcEndpoint.ChainID
 
 	// Load spec from static file or query from blockchain

@@ -439,6 +439,9 @@ func (rpccs *RPCConsumerServer) ParseRelay(
 	if err != nil {
 		return nil, err
 	}
+	if err := rpccs.chainParser.ValidateMessage(chainMessage); err != nil {
+		return nil, err
+	}
 
 	rpccs.HandleDirectiveHeadersForMessage(chainMessage, directiveHeaders)
 

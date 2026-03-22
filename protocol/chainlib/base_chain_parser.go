@@ -48,10 +48,9 @@ type BaseChainParser struct {
 	apiCollections  map[CollectionKey]*spectypes.ApiCollection
 	headers         map[ApiKey]*spectypes.Header
 	verifications   map[VerificationKey]map[string][]VerificationContainer // map[VerificationKey]map[InternalPath][]VerificationContainer
-	allowedAddons          map[string]bool
-	extensionParser        extensionslib.ExtensionParser
-	active                 bool
-	skipPolicyVerification bool
+	allowedAddons   map[string]bool
+	extensionParser extensionslib.ExtensionParser
+	active          bool
 }
 
 func (bcp *BaseChainParser) Activate() {
@@ -113,37 +112,28 @@ func (bcp *BaseChainParser) isAddon(addon string) bool {
 	return ok
 }
 
-func (bcp *BaseChainParser) SetSkipPolicyVerification() {
-	bcp.skipPolicyVerification = true
-}
-
 func (bcp *BaseChainParser) isExtension(extension string) bool {
-	return bcp.extensionParser.AllowedExtension(extension, bcp.skipPolicyVerification)
+	return bcp.extensionParser.AllowedExtension(extension, false)
 }
 
-// use while bcp locked.
-func (bcp *BaseChainParser) validateAddons(nodeMessage *baseChainMessageContainer) error {
-	var addon string
-	if bcp.skipPolicyVerification {
+// ValidateMessage validates the chain message against the consumer's policy (allowed addons).
+// Should be called after ParseMsg by consumers/providers that enforce policy.
+// Smart-router does not call this since it uses static providers without on-chain policy.
+func (bcp *BaseChainParser) ValidateMessage(chainMsg ChainMessage) error {
+	nodeMessage, ok := chainMsg.(*baseChainMessageContainer)
+	if !ok {
 		return nil
 	}
-	if addon = GetAddon(nodeMessage); addon != "" { // check we have an addon
-		if allowed := bcp.allowedAddons[addon]; !allowed { // check addon is allowed
+	bcp.rwLock.RLock()
+	defer bcp.rwLock.RUnlock()
+	if addon := GetAddon(nodeMessage); addon != "" {
+		if allowed := bcp.allowedAddons[addon]; !allowed {
 			return utils.LavaFormatError("consumer policy does not allow addon", nil,
 				utils.LogAttr("addon", addon),
 			)
 		}
 	}
-	// no addons to validate or validation completed successfully
 	return nil
-}
-
-func (bcp *BaseChainParser) Validate(nodeMessage *baseChainMessageContainer) error {
-	bcp.rwLock.RLock()
-	defer bcp.rwLock.RUnlock()
-	err := bcp.validateAddons(nodeMessage)
-	// add more validations in the future here.
-	return err
 }
 
 func (bcp *BaseChainParser) BuildMapFromPolicyQuery(policy PolicyInf, chainId string, apiInterface string) (map[string]struct{}, error) {

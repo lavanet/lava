@@ -76,7 +76,7 @@ type ChainParser interface {
 	GetVerifications(supported []string, internalPath string, apiInterface string) ([]VerificationContainer, error)
 	SeparateAddonsExtensions(ctx context.Context, supported []string) (addons, extensions []string, err error)
 	SetPolicy(policy PolicyInf, chainId string, apiInterface string) error
-	SetSkipPolicyVerification()
+	ValidateMessage(ChainMessage) error
 	Active() bool
 	Activate()
 	UpdateBlockTime(newBlockTime time.Duration)
