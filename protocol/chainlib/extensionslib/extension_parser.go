@@ -29,13 +29,11 @@ type ExtensionParserRule interface {
 }
 
 type ExtensionParser struct {
-	allowedExtensions    map[string]struct{}
 	configuredExtensions map[ExtensionKey]*spectypes.Extension
 }
 
-func NewExtensionParser(allowedExtensions map[string]struct{}, configuredExtensions map[ExtensionKey]*spectypes.Extension) ExtensionParser {
+func NewExtensionParser(configuredExtensions map[ExtensionKey]*spectypes.Extension) ExtensionParser {
 	return ExtensionParser{
-		allowedExtensions:    allowedExtensions,
 		configuredExtensions: configuredExtensions,
 	}
 }
@@ -53,14 +51,6 @@ func (ep *ExtensionParser) GetExtension(extension ExtensionKey) *spectypes.Exten
 
 func (ep *ExtensionParser) GetConfiguredExtensions() map[ExtensionKey]*spectypes.Extension {
 	return ep.configuredExtensions
-}
-
-func (ep *ExtensionParser) AllowedExtension(extension string, skip bool) bool {
-	if extension == "" || skip {
-		return true
-	}
-	_, ok := ep.allowedExtensions[extension]
-	return ok
 }
 
 func (ep *ExtensionParser) SetConfiguredExtensions(configuredExtensions map[ExtensionKey]*spectypes.Extension) {

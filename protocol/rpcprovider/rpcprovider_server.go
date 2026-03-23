@@ -548,7 +548,7 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 	if extensionInfo.ExtensionOverride == nil {
 		extensionInfo.ExtensionOverride = []string{}
 	}
-	chainMessage, err = rpcps.chainParser.ParseMsg(request.RelayData.ApiUrl, request.RelayData.Data, request.RelayData.ConnectionType, request.RelayData.GetMetadata(), extensionInfo)
+	chainMessage, err = chainlib.ParseAndValidateMessage(rpcps.chainParser, request.RelayData.ApiUrl, request.RelayData.Data, request.RelayData.ConnectionType, request.RelayData.GetMetadata(), extensionInfo)
 	if err != nil {
 		return nil, nil, nil, err
 	}

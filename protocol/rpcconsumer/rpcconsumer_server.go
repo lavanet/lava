@@ -435,7 +435,7 @@ func (rpccs *RPCConsumerServer) ParseRelay(
 		utils.LogAttr("extensions", extensions),
 		utils.LogAttr("GUID", ctx))
 	utils.LavaFormatTrace("[Archive Debug] Calling chainParser.ParseMsg", utils.LogAttr("url", url), utils.LogAttr("req", req), utils.LogAttr("extensions", extensions), utils.LogAttr("chainParserType", rpccs.chainParser), utils.LogAttr("GUID", ctx))
-	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType, metadata, extensions)
+	chainMessage, err := chainlib.ParseAndValidateMessage(rpccs.chainParser, url, []byte(req), connectionType, metadata, extensions)
 	if err != nil {
 		return nil, err
 	}

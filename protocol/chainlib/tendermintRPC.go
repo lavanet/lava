@@ -269,7 +269,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 
 	utils.LavaFormatTrace("[Archive Debug] TendermintRPC ParseMsg calling ExtensionParsing", utils.LogAttr("addon", apiCollection.CollectionData.AddOn), utils.LogAttr("extensionInfo", extensionInfo), utils.LogAttr("urlPath", urlPath))
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, extensionInfo)
-	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
+	return nodeMsg, nil
 }
 
 func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, requestedHashes []string, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection, usedDefaultValue bool) (*baseChainMessageContainer, error) {

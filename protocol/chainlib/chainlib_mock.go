@@ -220,6 +220,20 @@ func (mr *MockChainParserMockRecorder) SetPolicy(policy, chainId, apiInterface i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPolicy", reflect.TypeOf((*MockChainParser)(nil).SetPolicy), policy, chainId, apiInterface)
 }
 
+// ValidateMessage mocks base method.
+func (m *MockChainParser) ValidateMessage(chainMsg ChainMessage) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ValidateMessage", chainMsg)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ValidateMessage indicates an expected call of ValidateMessage.
+func (mr *MockChainParserMockRecorder) ValidateMessage(chainMsg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateMessage", reflect.TypeOf((*MockChainParser)(nil).ValidateMessage), chainMsg)
+}
+
 // SetSpec mocks base method.
 func (m *MockChainParser) SetSpec(spec types0.Spec) {
 	m.ctrl.T.Helper()
