@@ -1149,9 +1149,9 @@
                                 "name": "/genesis",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "latest"
+                                        ""
                                     ],
-                                    "parser_func": "DEFAULT"
+                                    "parser_func": "EMPTY"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -1887,11 +1887,83 @@
                                 "name": "/utils/addresses/xpub/{xpub}/{role}/{index}",
                                 "block_parsing": {
                                     "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/nutlink/{address}",
+                                "block_parsing": {
+                                    "parser_arg": [
                                         "latest"
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/nutlink/{address}/tickers",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/nutlink/{address}/tickers/{ticker}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/nutlink/tickers/{ticker}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -1933,6 +2005,18 @@
                                     "parser_func": "PARSE_CANONICAL"
                                 },
                                 "api_name": "/blocks/{hash_or_number}"
+                            },
+                            {
+                                "function_tag": "GET_EARLIEST_BLOCK",
+                                "function_template": "/blocks/1",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "height"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
+                                },
+                                "api_name": "/blocks/{hash_or_number}"
                             }
                         ],
                         "verifications": [
@@ -1953,6 +2037,21 @@
                                 "values": [
                                     {
                                         "expected_value": "764824073"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "pruning",
+                                "parse_directive": {
+                                    "function_tag": "GET_EARLIEST_BLOCK"
+                                },
+                                "values": [
+                                    {
+                                        "latest_distance": 8193
+                                    },
+                                    {
+                                        "extension": "archive",
+                                        "expected_value": "1"
                                     }
                                 ]
                             }
@@ -2003,7 +2102,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 100,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -2021,7 +2120,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 100,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -2083,81 +2182,10 @@
                                 ]
                             }
                         ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "rest",
-                            "internal_path": "",
-                            "type": "POST",
-                            "add_on": ""
-                        },
-                        "apis": [],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parse_directives": [],
-                        "verifications": [],
-                        "extensions": []
-                    }
-                ]
-            },
-            {
-                "index": "ADAPRE",
-                "name": "cardano preview testnet",
-                "enabled": true,
-                "reliability_threshold": 268435455,
-                "data_reliability_enabled": true,
-                "block_distance_for_finalized_data": 15,
-                "blocks_in_finalization_proof": 3,
-                "average_block_time": 20000,
-                "allowed_block_lag_for_qos_sync": 2,
-                "imports": [
-                    "ADA"
-                ],
-                "shares": 1,
-                "min_stake_provider": {
-                    "denom": "ulava",
-                    "amount": "5000000000"
-                },
-                "api_collections": [
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "rest",
-                            "internal_path": "",
-                            "type": "GET",
-                            "add_on": ""
-                        },
-                        "apis": [],
-                        "verifications": [
-                            {
-                                "name": "chain-id",
-                                "values": [
-                                    {
-                                        "expected_value": "2"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "enabled": true,
-                        "collection_data": {
-                            "api_interface": "rest",
-                            "internal_path": "",
-                            "type": "POST",
-                            "add_on": ""
-                        },
-                        "apis": [],
-                        "headers": [],
-                        "inheritance_apis": [],
-                        "parse_directives": [],
-                        "verifications": [],
-                        "extensions": []
                     }
                 ]
             }
         ]
     },
-    "deposit": "10001000ulava"
+    "deposit": "10000000ulava"
 }
