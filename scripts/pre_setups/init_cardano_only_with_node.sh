@@ -48,6 +48,16 @@ lavad tx pairing stake-provider "ADAT" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 
 sleep_until_next_epoch
 wait_next_block
 
+# Validate required Blockfrost variables before generating provider config
+if [ -z "$CARDANO_REST" ]; then
+    echo "Error: CARDANO_REST is not set. Set it to your Blockfrost API URL (e.g. https://cardano-preprod.blockfrost.io/api/v0)."
+    exit 1
+fi
+if [ -z "$CARDANO_PROJECT_ID" ]; then
+    echo "Error: CARDANO_PROJECT_ID is not set. Set it to your Blockfrost project ID from https://blockfrost.io."
+    exit 1
+fi
+
 # Generate provider config with auth-headers for Blockfrost API
 cat > cardano_provider.yml <<EOF
 endpoints:
