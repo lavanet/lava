@@ -823,18 +823,6 @@ func (rpcps *RPCProviderServer) verifyRelaySession(ctx context.Context, request 
 }
 
 func (rpcps *RPCProviderServer) ExtractConsumerAddress(ctx context.Context, relaySession *pairingtypes.RelaySession) (extractedConsumerAddress sdk.AccAddress, err error) {
-	// When signing is skipped, we cannot extract address from signature
-	// For static providers, use a placeholder address (only used for metrics/logging, not rewards)
-	if lavaprotocol.SkipRelaySigning {
-		// Use a placeholder address when signing is skipped
-		// This is safe for static providers since they don't claim rewards
-		placeholderAddr, err := sdk.AccAddressFromHexUnsafe("0000000000000000000000000000000000000000")
-		if err != nil {
-			return nil, utils.LavaFormatError("failed to create placeholder address", err, utils.LogAttr("GUID", ctx))
-		}
-		return placeholderAddr, nil
-	}
-
 	extractedConsumerAddress, err = sigs.ExtractSignerAddress(relaySession)
 	if err != nil {
 		return nil, utils.LavaFormatWarning("failed to extract signer address from relay session", err, utils.LogAttr("GUID", ctx))
@@ -919,7 +907,7 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 
 func (rpcps *RPCProviderServer) verifyRelayRequestMetaData(ctx context.Context, requestSession *pairingtypes.RelaySession, relayData *pairingtypes.RelayPrivateData) error {
 	providerAddress := rpcps.providerAddress.String()
-	if !lavaprotocol.SkipRelaySigning && requestSession.Provider != providerAddress {
+	if requestSession.Provider != providerAddress {
 		return utils.LavaFormatError("request had the wrong provider", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "providerAddress", Value: providerAddress}, utils.Attribute{Key: "request_provider", Value: requestSession.Provider})
 	}
 	if requestSession.SpecId != rpcps.rpcProviderEndpoint.ChainID {

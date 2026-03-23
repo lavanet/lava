@@ -26,7 +26,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/common"
-	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
@@ -1290,7 +1289,7 @@ func TestConsumerProviderStatic(t *testing.T) {
 	// provider is static
 	for i := 0; i < numProviders; i++ {
 		pairingList[uint64(i)] = &lavasession.ConsumerSessionsWithProvider{
-			PublicLavaAddress: "BANANA" + strconv.Itoa(i),
+			PublicLavaAddress: providers[i].account.Addr.String(),
 			Endpoints: []*lavasession.Endpoint{
 				{
 					NetworkAddress: providers[i].endpoint.NetworkAddress.Address,
@@ -1319,16 +1318,8 @@ func TestConsumerProviderStatic(t *testing.T) {
 	rpcConsumerOut := createRpcConsumer(t, ctx, rpcConsumerOptions)
 	require.NotNil(t, rpcConsumerOut.rpcConsumerServer)
 	client := http.Client{}
-	// consumer sends the relay to a provider with an address BANANA+%d so the provider needs to skip validations for this to work
 	resp, err := client.Get("http://" + consumerListenAddress + "/status")
 	require.NoError(t, err)
-	// we expect provider to fail the request on a verification
-	require.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-	lavaprotocol.SkipRelaySigning = true
-	defer func() { lavaprotocol.SkipRelaySigning = false }()
-	resp, err = client.Get("http://" + consumerListenAddress + "/status")
-	require.NoError(t, err)
-	// we expect provider to fail the request on a verification
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	bodyBytes, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
