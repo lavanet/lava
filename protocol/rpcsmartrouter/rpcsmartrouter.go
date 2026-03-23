@@ -142,19 +142,18 @@ func (s *strategyValue) Type() string {
 }
 
 type AnalyticsServerAddresses struct {
-	AddApiMethodCallsMetrics bool
-	MetricsListenAddress     string
-	RelayServerAddress       string
-	RelayKafkaAddress        string
-	RelayKafkaTopic          string
-	RelayKafkaUsername       string
-	RelayKafkaPassword       string
-	RelayKafkaMechanism      string
-	RelayKafkaTLSEnabled     bool
-	RelayKafkaTLSInsecure    bool
-	ReportsAddressFlag       string
-	OptimizerQoSAddress      string
-	OptimizerQoSListen       bool
+	MetricsListenAddress  string
+	RelayServerAddress    string
+	RelayKafkaAddress     string
+	RelayKafkaTopic       string
+	RelayKafkaUsername    string
+	RelayKafkaPassword    string
+	RelayKafkaMechanism   string
+	RelayKafkaTLSEnabled  bool
+	RelayKafkaTLSInsecure bool
+	ReportsAddressFlag    string
+	OptimizerQoSAddress   string
+	OptimizerQoSListen    bool
 }
 type RPCSmartRouter struct {
 	// Smart router doesn't need blockchain state tracking
@@ -1298,19 +1297,18 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			}
 
 			analyticsServerAddresses := AnalyticsServerAddresses{
-				AddApiMethodCallsMetrics: viper.GetBool(metrics.AddApiMethodCallsMetrics),
-				MetricsListenAddress:     viper.GetString(metrics.MetricsListenFlagName),
-				RelayServerAddress:       viper.GetString(metrics.RelayServerFlagName),
-				RelayKafkaAddress:        viper.GetString(metrics.RelayKafkaFlagName),
-				RelayKafkaTopic:          viper.GetString(metrics.RelayKafkaTopicFlagName),
-				RelayKafkaUsername:       viper.GetString(metrics.RelayKafkaUsernameFlagName),
-				RelayKafkaPassword:       viper.GetString(metrics.RelayKafkaPasswordFlagName),
-				RelayKafkaMechanism:      viper.GetString(metrics.RelayKafkaMechanismFlagName),
-				RelayKafkaTLSEnabled:     viper.GetBool(metrics.RelayKafkaTLSEnabledFlagName),
-				RelayKafkaTLSInsecure:    viper.GetBool(metrics.RelayKafkaTLSInsecureFlagName),
-				ReportsAddressFlag:       viper.GetString(reportsSendBEAddress),
-				OptimizerQoSAddress:      viper.GetString(common.OptimizerQosServerAddressFlag),
-				OptimizerQoSListen:       viper.GetBool(common.OptimizerQosListenFlag),
+				MetricsListenAddress:  viper.GetString(metrics.MetricsListenFlagName),
+				RelayServerAddress:    viper.GetString(metrics.RelayServerFlagName),
+				RelayKafkaAddress:     viper.GetString(metrics.RelayKafkaFlagName),
+				RelayKafkaTopic:       viper.GetString(metrics.RelayKafkaTopicFlagName),
+				RelayKafkaUsername:    viper.GetString(metrics.RelayKafkaUsernameFlagName),
+				RelayKafkaPassword:    viper.GetString(metrics.RelayKafkaPasswordFlagName),
+				RelayKafkaMechanism:   viper.GetString(metrics.RelayKafkaMechanismFlagName),
+				RelayKafkaTLSEnabled:  viper.GetBool(metrics.RelayKafkaTLSEnabledFlagName),
+				RelayKafkaTLSInsecure: viper.GetBool(metrics.RelayKafkaTLSInsecureFlagName),
+				ReportsAddressFlag:    viper.GetString(reportsSendBEAddress),
+				OptimizerQoSAddress:   viper.GetString(common.OptimizerQosServerAddressFlag),
+				OptimizerQoSListen:    viper.GetBool(common.OptimizerQosListenFlag),
 			}
 
 			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)
@@ -1407,7 +1405,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 		utils.LavaFormatFatal("failed binding min selection chance flag", err)
 	}
 	cmdRPCSmartRouter.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
-	cmdRPCSmartRouter.Flags().Bool(metrics.AddApiMethodCallsMetrics, false, "adding a counter gauge for each method called per chain per api interface")
 	cmdRPCSmartRouter.Flags().String(metrics.RelayServerFlagName, metrics.DisabledFlagOption, "the http address of the relay usage server api endpoint (example http://127.0.0.1:8080)")
 	cmdRPCSmartRouter.Flags().String(metrics.RelayKafkaFlagName, metrics.DisabledFlagOption, "the kafka address for sending relay metrics (example localhost:9092)")
 	cmdRPCSmartRouter.Flags().String(metrics.RelayKafkaTopicFlagName, "lava-relay-metrics", "the kafka topic for sending relay metrics")

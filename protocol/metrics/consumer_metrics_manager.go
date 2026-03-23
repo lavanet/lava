@@ -16,43 +16,29 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-const (
-	WsDisconnectionReasonConsumer = "consumer-disconnect"
-	WsDisconnectionReasonProvider = "provider-disconnect"
-	WsDisconnectionReasonUser     = "user-disconnect"
-)
-
 var ShowProviderEndpointInMetrics = false
 
 type ConsumerMetricsManager struct {
-	totalCURequestedMetric                      *prometheus.CounterVec
-	totalWsSubscriptionRequestsMetric           *prometheus.CounterVec
-	totalFailedWsSubscriptionRequestsMetric     *prometheus.CounterVec
-	totalWsSubscriptionDisconnectMetric         *prometheus.CounterVec
-	totalDuplicatedWsSubscriptionRequestsMetric *prometheus.CounterVec
-	totalLoLSuccessMetric                       prometheus.Counter
-	totalLoLErrorsMetric                        prometheus.Counter
-	totalWebSocketConnectionsActive             *prometheus.GaugeVec
-	blockMetric                                 *prometheus.GaugeVec
-	qosMetric                                   *MappedLabelsGaugeVec
-	providerReputationMetric                    *MappedLabelsGaugeVec
-	selectionStatsMetric                        *MappedLabelsGaugeVec
-	LatestBlockMetric                           *MappedLabelsGaugeVec
-	LatestProviderRelay                         *prometheus.GaugeVec
-	virtualEpochMetric                          *prometheus.GaugeVec
-	apiMethodCalls                              *prometheus.GaugeVec
-	endpointsHealthChecksOkMetric               prometheus.Gauge
-	endpointsHealthChecksOk                     uint64
-	endpointsHealthChecksBreakdownMetric        *prometheus.GaugeVec
-	lock                                        sync.Mutex
-	protocolVersionMetric                       *prometheus.GaugeVec
-	providerSelectionsMetric                    *prometheus.CounterVec
-	providerRelays                              map[string]uint64
-	addMethodsApiGauge                          bool
-	consumerOptimizerQoSClient                  *ConsumerOptimizerQoSClient
-	providerLivenessMetric                      *prometheus.GaugeVec
-	blockedProviderMetric                       *MappedLabelsGaugeVec
-	selectionRNGValueGauge                      *prometheus.GaugeVec
+	totalCURequestedMetric                  *prometheus.CounterVec
+	totalWsSubscriptionRequestsMetric       *prometheus.CounterVec
+	totalFailedWsSubscriptionRequestsMetric *prometheus.CounterVec
+	totalWebSocketConnectionsActive         *prometheus.GaugeVec
+	blockMetric                             *prometheus.GaugeVec
+	selectionStatsMetric                    *MappedLabelsGaugeVec
+	LatestBlockMetric                       *MappedLabelsGaugeVec
+	LatestProviderRelay                     *prometheus.GaugeVec
+	virtualEpochMetric                      *prometheus.GaugeVec
+	endpointsHealthChecksOkMetric           prometheus.Gauge
+	endpointsHealthChecksOk                 uint64
+	endpointsHealthChecksBreakdownMetric    *prometheus.GaugeVec
+	lock                                    sync.Mutex
+	protocolVersionMetric                   *prometheus.GaugeVec
+	providerSelectionsMetric                *prometheus.CounterVec
+	providerRelays                          map[string]uint64
+	consumerOptimizerQoSClient              *ConsumerOptimizerQoSClient
+	providerLivenessMetric                  *prometheus.GaugeVec
+	blockedProviderMetric                   *MappedLabelsGaugeVec
+	selectionRNGValueGauge                  *prometheus.GaugeVec
 	// Cross-validation group metrics
 	crossValidationRequestsTotalMetric              *prometheus.CounterVec // lava_consumer_cross_validation_requests_total        {spec, apiInterface, method}
 	crossValidationSuccessTotalMetric               *prometheus.CounterVec // lava_consumer_cross_validation_success_total         {spec, apiInterface, method}
@@ -94,7 +80,6 @@ type ConsumerMetricsManager struct {
 
 type ConsumerMetricsManagerOptions struct {
 	NetworkAddress             string
-	AddMethodsApiGauge         bool
 	EnableQoSListener          bool
 	ConsumerOptimizerQoSClient *ConsumerOptimizerQoSClient
 }
@@ -130,30 +115,10 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Help: "The total number of failed websocket subscription requests over time per chain id per api interface.",
 	}, []string{"spec", "apiInterface"}))
 
-	totalDuplicatedWsSubscriptionRequestsMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "lava_consumer_total_duplicated_ws_subscription_requests",
-		Help: "The total number of duplicated webscket subscription requests over time per chain id per api interface.",
-	}, []string{"spec", "apiInterface"}))
-
-	totalLoLSuccessMetric := registerOrReuse(prometheus.NewCounter(prometheus.CounterOpts{
-		Name: "lava_consumer_total_lol_successes",
-		Help: "The total number of requests sent to lava over lava successfully",
-	}))
-
-	totalLoLErrorsMetric := registerOrReuse(prometheus.NewCounter(prometheus.CounterOpts{
-		Name: "lava_consumer_total_lol_errors",
-		Help: "The total number of requests sent to lava over lava and failed",
-	}))
-
 	totalWebSocketConnectionsActive := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_total_websocket_connections_active",
 		Help: "The total number of currently active websocket connections with users",
 	}, []string{"spec", "apiInterface"}))
-
-	totalWsSubscriptionDisconnectMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "lava_consumer_total_ws_subscription_disconnect",
-		Help: "The total number of websocket subscription disconnects over time per chain id per api interface per disconnect reason.",
-	}, []string{"spec", "apiInterface", "disconnectReason"}))
 
 	blockMetric := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_latest_block",
@@ -171,19 +136,10 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	}
 
 	blockedProviderMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_consumer_provider_blocked",
-		Help:   "Is provider blocked. 1-blocked, 0-not blocked",
-		Labels: blockedProviderMetricLabels,
-	})
-
-	qosMetricLabels := []string{"spec", "apiInterface", "provider_address", "qos_metric"}
-	if ShowProviderEndpointInMetrics {
-		qosMetricLabels = append(qosMetricLabels, "provider_endpoint")
-	}
-	qosMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_consumer_qos_metrics",
-		Help:   "The QOS metrics per provider for current epoch for the session with the most relays.",
-		Labels: qosMetricLabels,
+		Name:       "lava_consumer_provider_blocked",
+		Help:       "Is provider blocked. 1-blocked, 0-not blocked",
+		Labels:     blockedProviderMetricLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	selectionStatsMetricLabels := []string{"spec", "apiInterface", "provider_address", "selection_metric"}
@@ -191,19 +147,10 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		selectionStatsMetricLabels = append(selectionStatsMetricLabels, "provider_endpoint")
 	}
 	selectionStatsMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_consumer_selection_stats",
-		Help:   "The provider selection statistics showing normalized scores used in provider selection algorithm.",
-		Labels: selectionStatsMetricLabels,
-	})
-
-	providerReputationMetricLabels := []string{"spec", "provider_address", "qos_metric"}
-	if ShowProviderEndpointInMetrics {
-		providerReputationMetricLabels = append(providerReputationMetricLabels, "provider_endpoint")
-	}
-	providerReputationMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_consumer_provider_reputation_metrics",
-		Help:   "The provider reputation metrics per provider",
-		Labels: providerReputationMetricLabels,
+		Name:       "lava_consumer_selection_stats",
+		Help:       "The provider selection statistics showing normalized scores used in provider selection algorithm.",
+		Labels:     selectionStatsMetricLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	latestBlockMetricLabels := []string{"spec", "provider_address", "apiInterface"}
@@ -211,9 +158,10 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		latestBlockMetricLabels = append(latestBlockMetricLabels, "provider_endpoint")
 	}
 	latestBlockMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_consumer_latest_provider_block",
-		Help:   "The latest block reported by provider",
-		Labels: latestBlockMetricLabels,
+		Name:       "lava_consumer_latest_provider_block",
+		Help:       "The latest block reported by provider",
+		Labels:     latestBlockMetricLabels,
+		Registerer: prometheus.DefaultRegisterer,
 	})
 
 	latestProviderRelay := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -235,11 +183,6 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Name: "lava_consumer_overall_health_breakdown",
 		Help: "Health check status per chain. At least one endpoint is healthy",
 	}, []string{"spec", "apiInterface"}))
-
-	apiSpecificsMetric := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "lava_consumer_api_specifics",
-		Help: "api usage specifics",
-	}, []string{"spec", "apiInterface", "method"}))
 
 	endpointsHealthChecksOkMetric.Set(1)
 	protocolVersionMetric := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -375,13 +318,13 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	latencyEndToEndHistogram := registerOrReuse(prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "lava_consumer_end_to_end_latency_milliseconds",
 		Help:    "Distribution of end-to-end relay latency seen by the consumer, from relay start to result, in milliseconds.",
-		Buckets: LatencyBuckets,
+		Buckets: latencyBuckets,
 	}, []string{"spec", "apiInterface", "method"}))
 
 	latencyProviderHistogram := registerOrReuse(prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "lava_consumer_provider_latency_milliseconds",
 		Help:    "Distribution of network round-trip latency to each provider, in milliseconds.",
-		Buckets: LatencyBuckets,
+		Buckets: latencyBuckets,
 	}, []string{"spec", "apiInterface", "provider_address", "method"}))
 
 	cacheLabels := []string{"spec", "apiInterface", "method"}
@@ -400,24 +343,17 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	cacheLatencyHistogram := registerOrReuse(prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "lava_consumer_cache_latency_milliseconds",
 		Help:    "Distribution of cache lookup latency in milliseconds.",
-		Buckets: LatencyBuckets,
+		Buckets: latencyBuckets,
 	}, cacheLabels))
-
-	// qosMetric, providerReputationMetric, blockedProviderMetric, selectionStatsMetric,
-	// and latestBlockMetric are already registered inside NewMappedLabelsGaugeVec.
 
 	consumerMetricsManager := &ConsumerMetricsManager{
 		totalCURequestedMetric:                          totalCURequestedMetric,
 		totalWsSubscriptionRequestsMetric:               totalWsSubscriptionRequestsMetric,
 		totalFailedWsSubscriptionRequestsMetric:         totalFailedWsSubscriptionRequestsMetric,
-		totalDuplicatedWsSubscriptionRequestsMetric:     totalDuplicatedWsSubscriptionRequestsMetric,
-		totalWsSubscriptionDisconnectMetric:             totalWsSubscriptionDisconnectMetric,
 		totalWebSocketConnectionsActive:                 totalWebSocketConnectionsActive,
 		blockMetric:                                     blockMetric,
 		latencyEndToEndHistogram:                        latencyEndToEndHistogram,
 		latencyProviderHistogram:                        latencyProviderHistogram,
-		qosMetric:                                       qosMetric,
-		providerReputationMetric:                        providerReputationMetric,
 		selectionStatsMetric:                            selectionStatsMetric,
 		LatestBlockMetric:                               latestBlockMetric,
 		LatestProviderRelay:                             latestProviderRelay,
@@ -427,10 +363,6 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		endpointsHealthChecksOk:                         1,
 		endpointsHealthChecksBreakdownMetric:            endpointsHealthChecksBreakdownMetric,
 		protocolVersionMetric:                           protocolVersionMetric,
-		apiMethodCalls:                                  apiSpecificsMetric,
-		addMethodsApiGauge:                              options.AddMethodsApiGauge,
-		totalLoLSuccessMetric:                           totalLoLSuccessMetric,
-		totalLoLErrorsMetric:                            totalLoLErrorsMetric,
 		consumerOptimizerQoSClient:                      options.ConsumerOptimizerQoSClient,
 		providerSelectionsMetric:                        providerSelectionsMetric,
 		providerLivenessMetric:                          providerLivenessMetric,
@@ -507,9 +439,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 
 	go func() {
 		utils.LavaFormatInfo("prometheus endpoint listening", utils.Attribute{Key: "Listen Address", Value: options.NetworkAddress})
-		if err := http.ListenAndServe(options.NetworkAddress, nil); err != nil {
-			utils.LavaFormatError("consumer metrics endpoint failed", err)
-		}
+		http.ListenAndServe(options.NetworkAddress, nil)
 	}()
 
 	return consumerMetricsManager
@@ -605,9 +535,6 @@ func (pme *ConsumerMetricsManager) SetRelayMetrics(relayMetric *RelayMetrics, er
 	}
 	relayMetric.Success = err == nil
 	pme.totalCURequestedMetric.WithLabelValues(relayMetric.ChainID, relayMetric.APIType).Add(float64(relayMetric.ComputeUnits))
-	if pme.addMethodsApiGauge && relayMetric.ApiMethod != "" { // pme.addMethodsApiGauge never changes so its safe to read concurrently
-		pme.apiMethodCalls.WithLabelValues(relayMetric.ChainID, relayMetric.APIType, relayMetric.ApiMethod).Add(1)
-	}
 	// Request group metrics.
 	//
 	// Counting invariants (intentional design):
@@ -674,38 +601,6 @@ func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface st
 	pme.LatestProviderRelay.WithLabelValues(chainId, providerAddress, apiInterface).SetToCurrentTime()
 	// update existing relays
 	pme.providerRelays[providerRelaysKey] = relays
-	setMetricsForQos := func(qosArg *pairingtypes.QualityOfServiceReport, metric *MappedLabelsGaugeVec, apiInterfaceArg string, providerEndpoint string) {
-		if qosArg == nil {
-			return
-		}
-		availability, err := qosArg.Availability.Float64()
-		if err == nil {
-			labels := map[string]string{"spec": chainId, "provider_address": providerAddress, "provider_endpoint": providerEndpoint, "qos_metric": AvailabilityLabel}
-			if apiInterfaceArg != "" {
-				labels["apiInterface"] = apiInterface
-			}
-			metric.WithLabelValues(labels).Set(availability)
-		}
-		sync, err := qosArg.Sync.Float64()
-		if err == nil {
-			labels := map[string]string{"spec": chainId, "provider_address": providerAddress, "provider_endpoint": providerEndpoint, "qos_metric": SyncLabel}
-			if apiInterfaceArg != "" {
-				labels["apiInterface"] = apiInterface
-			}
-			metric.WithLabelValues(labels).Set(sync)
-		}
-		latency, err := qosArg.Latency.Float64()
-		if err == nil {
-			labels := map[string]string{"spec": chainId, "provider_address": providerAddress, "provider_endpoint": providerEndpoint, "qos_metric": LatencyLabel}
-			if apiInterfaceArg != "" {
-				labels["apiInterface"] = apiInterface
-			}
-			metric.WithLabelValues(labels).Set(latency)
-		}
-	}
-	setMetricsForQos(qos, pme.qosMetric, apiInterface, providerEndpoint)
-	setMetricsForQos(reputation, pme.providerReputationMetric, "", providerEndpoint) // it's one api interface for all of them
-
 	labels := map[string]string{"spec": chainId, "provider_address": providerAddress, "apiInterface": apiInterface, "provider_endpoint": providerEndpoint}
 	pme.LatestBlockMetric.WithLabelValues(labels).Set(float64(latestBlock))
 }
@@ -777,8 +672,6 @@ func (pme *ConsumerMetricsManager) ResetSessionRelatedMetrics() {
 	}
 	pme.lock.Lock()
 	defer pme.lock.Unlock()
-	pme.qosMetric.Reset()
-	pme.providerReputationMetric.Reset()
 	pme.selectionStatsMetric.Reset()
 	pme.providerRelays = map[string]uint64{}
 }
@@ -938,31 +831,6 @@ func (pme *ConsumerMetricsManager) SetFailedWsSubscriptionRequestMetric(chainId 
 		return
 	}
 	pme.totalFailedWsSubscriptionRequestsMetric.WithLabelValues(chainId, apiInterface).Inc()
-}
-
-func (pme *ConsumerMetricsManager) SetDuplicatedWsSubscriptionRequestMetric(chainId string, apiInterface string) {
-	if pme == nil {
-		return
-	}
-	pme.totalDuplicatedWsSubscriptionRequestsMetric.WithLabelValues(chainId, apiInterface).Inc()
-}
-
-func (pme *ConsumerMetricsManager) SetWsSubscriptionDisconnectRequestMetric(chainId string, apiInterface string, disconnectReason string) {
-	if pme == nil {
-		return
-	}
-	pme.totalWsSubscriptionDisconnectMetric.WithLabelValues(chainId, apiInterface, disconnectReason).Inc()
-}
-
-func (pme *ConsumerMetricsManager) SetLoLResponse(success bool) {
-	if pme == nil {
-		return
-	}
-	if success {
-		pme.totalLoLSuccessMetric.Inc()
-	} else {
-		pme.totalLoLErrorsMetric.Inc()
-	}
 }
 
 func (pme *ConsumerMetricsManager) SetProviderLiveness(chainId string, providerAddress string, providerEndpoint string, isAlive bool) {

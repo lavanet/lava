@@ -107,13 +107,6 @@ func NewRPCConsumerLogs(consumerMetricsManager ConsumerMetricsManagerInf, consum
 	return rpcConsumerLogs, err
 }
 
-func (rpccl *RPCConsumerLogs) SetLoLResponse(success bool) {
-	if rpccl == nil {
-		return
-	}
-	rpccl.consumerMetricsManager.SetLoLResponse(success)
-}
-
 func (rpccl *RPCConsumerLogs) SetWebSocketConnectionActive(chainId string, apiInterface string, add bool) {
 	rpccl.consumerMetricsManager.SetWebSocketConnectionActive(chainId, apiInterface, add)
 }

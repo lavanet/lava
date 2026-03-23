@@ -496,7 +496,6 @@ func (dwsm *DirectWSSubscriptionManager) StartSubscription(
 	existingReply, joined := dwsm.checkForActiveSubscriptionAndConnect(ctx, hashedParams, clientKey, safeChannelSender, requestID)
 	if existingReply != nil {
 		if joined {
-			go dwsm.metricsManager.SetDuplicatedWsSubscriptionRequestMetric(dwsm.chainID, dwsm.apiInterface)
 			return existingReply, repliesChannel, nil
 		}
 		// Already had this exact subscription
@@ -818,7 +817,6 @@ func (dwsm *DirectWSSubscriptionManager) Unsubscribe(
 		if activeSub.upstreamConnection != nil {
 			activeSub.upstreamPool.NotifySubscriptionRemoved(activeSub.upstreamConnection)
 		}
-		go dwsm.metricsManager.SetWsSubscriptionDisconnectRequestMetric(dwsm.chainID, dwsm.apiInterface, metrics.WsDisconnectionReasonUser)
 	}
 
 	return nodeResp, nil
@@ -903,7 +901,6 @@ func (dwsm *DirectWSSubscriptionManager) UnsubscribeAll(
 			if activeSub.upstreamConnection != nil {
 				activeSub.upstreamPool.NotifySubscriptionRemoved(activeSub.upstreamConnection)
 			}
-			go dwsm.metricsManager.SetWsSubscriptionDisconnectRequestMetric(dwsm.chainID, dwsm.apiInterface, metrics.WsDisconnectionReasonUser)
 		}
 	}
 
@@ -1381,7 +1378,6 @@ func (dwsm *DirectWSSubscriptionManager) handleClientDisconnect(
 		if upstreamConn != nil {
 			upstreamPool.NotifySubscriptionRemoved(upstreamConn)
 		}
-		go dwsm.metricsManager.SetWsSubscriptionDisconnectRequestMetric(dwsm.chainID, dwsm.apiInterface, metrics.WsDisconnectionReasonConsumer)
 	}
 }
 
@@ -1418,8 +1414,6 @@ func (dwsm *DirectWSSubscriptionManager) cleanupSubscription(hashedParams string
 	if activeSub.upstreamConnection != nil {
 		activeSub.upstreamPool.NotifySubscriptionRemoved(activeSub.upstreamConnection)
 	}
-
-	go dwsm.metricsManager.SetWsSubscriptionDisconnectRequestMetric(dwsm.chainID, dwsm.apiInterface, metrics.WsDisconnectionReasonProvider)
 
 	utils.LavaFormatTrace("DirectWS: subscription cleaned up",
 		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
