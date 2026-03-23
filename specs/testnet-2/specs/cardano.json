@@ -2035,8 +2035,7 @@
                         "headers": [
                             {
                                 "name": "content-type",
-                                "kind": "pass_override",
-                                "value": "application/cbor"
+                                "kind": "pass_send"
                             },
                             {
                                 "name": "project_id",
