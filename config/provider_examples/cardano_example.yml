@@ -1,3 +1,8 @@
+# Cardano provider configuration using Blockfrost as the node backend.
+# Blockfrost requires a project_id header for authentication.
+# Get your project_id at https://blockfrost.io after creating a project for the
+# corresponding network (mainnet, preprod, or preview).
+# Port 2221 is the default Lava provider listen port.
 endpoints:
   - api-interface: rest
     chain-id: ADA
@@ -7,7 +12,7 @@ endpoints:
       - url: "https://cardano-mainnet.blockfrost.io/api/v0"
         auth-config:
           auth-headers:
-            project_id: <YOUR_PROJECT_ID>
+            project_id: <YOUR_PROJECT_ID> # Blockfrost mainnet project ID
   - api-interface: rest
     chain-id: ADAT
     network-address:
@@ -16,7 +21,7 @@ endpoints:
       - url: "https://cardano-preprod.blockfrost.io/api/v0"
         auth-config:
           auth-headers:
-            project_id: <YOUR_PROJECT_ID>
+            project_id: <YOUR_PROJECT_ID> # Blockfrost preprod project ID
   - api-interface: rest
     chain-id: ADAPRE
     network-address:
@@ -25,4 +30,4 @@ endpoints:
       - url: "https://cardano-preview.blockfrost.io/api/v0"
         auth-config:
           auth-headers:
-            project_id: <YOUR_PROJECT_ID>
+            project_id: <YOUR_PROJECT_ID> # Blockfrost preview project ID
