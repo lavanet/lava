@@ -120,7 +120,7 @@ func (bcp *BaseChainParser) isExtension(extension string) bool {
 
 // ValidateMessage validates the chain message against the consumer's policy (allowed addons).
 // Should be called after ParseMsg by consumers/providers that enforce policy.
-// Smart-router does not call this since it uses static providers without on-chain policy.
+// Direct RPC mode does not call this since it uses static providers without on-chain policy.
 func (bcp *BaseChainParser) ValidateMessage(chainMsg ChainMessage) error {
 	nodeMessage, ok := chainMsg.(*baseChainMessageContainer)
 	if !ok {

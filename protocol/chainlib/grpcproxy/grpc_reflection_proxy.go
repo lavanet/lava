@@ -18,7 +18,7 @@ type ReflectionProxyCallback func(ctx context.Context) (*grpc.ClientConn, func()
 
 // ReflectionProxyService implements the gRPC reflection service by proxying
 // requests to an upstream gRPC server. This enables tools like grpcurl to work
-// with the smart router in Direct RPC mode.
+// with the gRPC proxy in Direct RPC mode.
 type ReflectionProxyService struct {
 	reflectionpb.UnimplementedServerReflectionServer
 	getConnection ReflectionProxyCallback

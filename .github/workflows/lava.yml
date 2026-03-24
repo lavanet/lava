@@ -4,11 +4,9 @@ on:
   push:
     branches:
       - main
-      - smart-router-v1.1
   pull_request:
     branches:
       - main
-      - smart-router-v1.1
   workflow_dispatch:
 
 permissions:

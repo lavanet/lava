@@ -278,7 +278,7 @@ func (csm *ConsumerSessionManager) Initialized() bool {
 }
 
 // EndpointWithDirectConnection holds an endpoint and its direct RPC connection.
-// Used by smart router for pre-warming ChainTrackers.
+// Used for pre-warming ChainTrackers.
 type EndpointWithDirectConnection struct {
 	Endpoint         *Endpoint
 	DirectConnection DirectRPCConnection
@@ -286,7 +286,7 @@ type EndpointWithDirectConnection struct {
 }
 
 // GetAllDirectRPCEndpoints returns all endpoints with direct RPC connections.
-// This is used by the smart router for initializing ChainTrackers on startup.
+// Used for initializing ChainTrackers on startup.
 // Returns empty slice if no direct RPC endpoints are configured.
 func (csm *ConsumerSessionManager) GetAllDirectRPCEndpoints() []*EndpointWithDirectConnection {
 	csm.lock.RLock()
@@ -466,7 +466,7 @@ func (csm *ConsumerSessionManager) probeProviders(ctx context.Context, pairingLi
 
 // this code needs to be thread safe
 func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSessionsWithProvider *ConsumerSessionsWithProvider, epoch uint64, tryReconnectToDisabledEndpoints bool) (latency time.Duration, providerAddress string, err error) {
-	// Static providers (direct RPC in smart router mode) use HTTP/WebSocket connections,
+	// Static providers (direct RPC mode) use HTTP/WebSocket connections,
 	// not gRPC. Skip fetchEndpointConnectionFromConsumerSessionWithProvider entirely —
 	// it returns endpoints with nil chosenEndpointConnection for direct RPC, which causes
 	// the gRPC probe loop below to fail with "returned nil client in endpoint", resulting
@@ -552,7 +552,7 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 	return endpointInfos[0].Latency, providerAddress, nil
 }
 
-// probeDirectRPCEndpoints handles health checking for direct RPC endpoints (smart router mode).
+// probeDirectRPCEndpoints handles health checking for direct RPC endpoints.
 // Unlike provider-relay endpoints which use gRPC Probe() calls, direct RPC endpoints
 // are probed by checking the health status of their DirectRPCConnections.
 // This avoids the "nil client" errors that occur when trying to use provider gRPC clients
@@ -807,7 +807,7 @@ func (csm *ConsumerSessionManager) getSessionWithProviderOrError(ctx context.Con
 
 // GetSessions will return a ConsumerSession, given cu needed for that session.
 // The user can also request specific providers to not be included in the search for a session.
-// selectedProvider allows forcing selection of a specific provider by address (smartrouter only).
+// selectedProvider allows forcing selection of a specific provider by address.
 func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, wantedProviderNumber int, cuNeededForSession uint64, usedProviders UsedProvidersInf, requestedBlock int64, addon string, extensions []*spectypes.Extension, stateful uint32, virtualEpoch uint64, stickiness string, selectedProvider string) (
 	consumerSessionMap ConsumerSessionsMap, errRet error,
 ) {
@@ -1041,7 +1041,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 	validAddressesLength := len(validAddresses)
 	totalValidLength := validAddressesLength - ignoredProvidersListLength
 
-	// Handle provider selection via header (smartrouter only)
+	// Handle provider selection via header
 	if selectedProvider != "" {
 		// Validate that the selected provider is in the valid addresses list
 		providerValid := slices.Contains(validAddresses, selectedProvider)

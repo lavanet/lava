@@ -20,7 +20,7 @@ type SingleConsumerSession struct {
 	LatestBlock   int64
 
 	// Connection type - uses composition pattern for type safety
-	// Either ProviderRelayConnection (rpcconsumer) or DirectRPCSessionConnection (rpcsmartrouter)
+	// Either ProviderRelayConnection or DirectRPCSessionConnection
 	Connection SessionConnection
 
 	// Legacy field - maintained for backward compatibility
@@ -146,7 +146,7 @@ func (scs *SingleConsumerSession) GetProviderUniqueId() string {
 	return scs.providerUniqueId
 }
 
-// GetDirectConnection returns the DirectRPCConnection if this is a smart router session
+// GetDirectConnection returns the DirectRPCConnection if this is a direct RPC session.
 // Returns (connection, true) if this is a direct RPC session, (nil, false) otherwise
 func (scs *SingleConsumerSession) GetDirectConnection() (DirectRPCConnection, bool) {
 	if drsc, ok := scs.Connection.(*DirectRPCSessionConnection); ok {
@@ -164,7 +164,7 @@ func (scs *SingleConsumerSession) GetProviderConnection() (*EndpointConnection, 
 	return nil, false
 }
 
-// IsDirectRPC returns true if this session uses direct RPC (smart router mode)
+// IsDirectRPC returns true if this session uses direct RPC
 func (scs *SingleConsumerSession) IsDirectRPC() bool {
 	_, ok := scs.Connection.(*DirectRPCSessionConnection)
 	return ok

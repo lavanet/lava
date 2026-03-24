@@ -11,8 +11,6 @@ Use **rpcconsumer** when you want:
 - ✅ **Trustless operation** - No need to trust specific provider infrastructure
 - ✅ **Full Lava protocol features** - Access all blockchain validation and incentive mechanisms
 
-For **centralized/enterprise deployments** with known provider infrastructure, use [rpcsmartrouter](../rpcsmartrouter) instead.
-
 ## Key Features
 
 ### Decentralized Architecture
@@ -177,18 +175,6 @@ User Request → RPC Consumer → Blockchain Pairing Query
               Return Best Response
 ```
 
-## vs. RPC Smart Router
-
-| Feature | RPC Consumer (Decentralized) | RPC Smart Router (Centralized) |
-|---------|------------------------------|--------------------------------|
-| Provider Discovery | On-chain blockchain pairing | Static configuration file |
-| Trust Model | Trustless (blockchain verified) | Trust known providers |
-| Provider Selection | Stake-weighted + QoS | QoS only |
-| Data Validation | Conflict detection + consensus | Basic validation |
-| Setup Complexity | Medium (requires wallet) | Simple (just config file) |
-| Use Case | Public networks, trustless | Enterprises, known infrastructure |
-| Blockchain Dependency | Yes (requires Lava chain) | Optional (only for specs) |
-
 ## Monitoring & Metrics
 
 RPC Consumer exposes Prometheus metrics at the configured `--metrics-listen-address`:
@@ -233,5 +219,4 @@ See the `config/consumer_examples/` directory for complete configuration example
 
 - [Lava Documentation](https://docs.lavanet.xyz)
 - [Consumer Configuration Guide](../../config/consumer_examples/)
-- [RPC Smart Router](../rpcsmartrouter) - Centralized alternative
 - [Protocol Overview](../README.md)

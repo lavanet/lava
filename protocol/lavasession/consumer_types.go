@@ -41,7 +41,7 @@ func (list EndpointInfoList) Swap(i, j int) {
 }
 
 // SessionConnection - Base interface for both connection types (provider-relay and direct-RPC)
-// This enables composition-based design where consumer and smart router use different connection types
+// This enables composition-based design supporting both provider-relay and direct RPC connection types
 type SessionConnection interface {
 	GetQoSManager() *qos.QoSManager
 	IsHealthy() bool
@@ -68,8 +68,7 @@ func (prc *ProviderRelayConnection) GetEndpointAddress() string {
 	return prc.EndpointAddress
 }
 
-// DirectRPCSessionConnection - For rpcsmartrouter (centralized)
-// Wraps a direct RPC connection with QoS management
+// DirectRPCSessionConnection wraps a direct RPC connection with QoS management
 type DirectRPCSessionConnection struct {
 	DirectConnection DirectRPCConnection
 	QoSManager       *qos.QoSManager
@@ -190,8 +189,8 @@ type Endpoint struct {
 	Enabled        bool
 
 	// Only ONE of these will be populated (determined by binary):
-	Connections       []*EndpointConnection // For rpcconsumer only (provider-relay)
-	DirectConnections []DirectRPCConnection // For rpcsmartrouter only (direct RPC)
+	Connections       []*EndpointConnection // For provider-relay connections
+	DirectConnections []DirectRPCConnection // For direct RPC connections
 
 	ConnectionRefusals uint64
 	Addons             map[string]struct{}
@@ -204,7 +203,7 @@ type Endpoint struct {
 	LastBlockUpdate time.Time    // When LatestBlock was last updated
 }
 
-// IsDirectRPC returns true if this endpoint uses direct RPC connections (smart router mode)
+// IsDirectRPC returns true if this endpoint uses direct RPC connections
 func (e *Endpoint) IsDirectRPC() bool {
 	return len(e.DirectConnections) > 0
 }
@@ -463,7 +462,7 @@ func (cswp *ConsumerSessionsWithProvider) getProviderStakeSize() sdk.Coin {
 }
 
 // GetProviderStakeSize returns the provider stake used by the consumer for selection weighting.
-// Exported for cross-package callers (e.g., rpcsmartrouter) that need to copy sessions.
+// Exported for cross-package callers that need to copy sessions.
 func (cswp *ConsumerSessionsWithProvider) GetProviderStakeSize() sdk.Coin {
 	return cswp.getProviderStakeSize()
 }
@@ -674,7 +673,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 			// connectEndpoint tries to get an existing connection or creates a new one.
 			// Uses explicit lock scopes to avoid holding lock during network calls.
 			connectEndpoint := func(cswp *ConsumerSessionsWithProvider, ctx context.Context, endpoint *Endpoint) (endpointConnection_ *EndpointConnection, connected_ bool) {
-				// Check if this is a direct RPC endpoint (smart router mode)
+				// Check if this is a direct RPC endpoint
 				if endpoint.IsDirectRPC() {
 					// Direct RPC connections are already established in convertProvidersToSessions
 					// Just verify they're healthy and return success

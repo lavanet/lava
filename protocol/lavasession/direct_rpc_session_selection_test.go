@@ -24,7 +24,7 @@ func TestGetConsumerSessionInstanceFromEndpoint_DirectRPC(t *testing.T) {
 	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
 	require.NoError(t, err)
 
-	// Create endpoint with DirectConnections (smart router mode)
+	// Create endpoint with DirectConnections (direct RPC mode)
 	endpoint := &Endpoint{
 		NetworkAddress:    nodeUrl.Url,
 		Enabled:           true,

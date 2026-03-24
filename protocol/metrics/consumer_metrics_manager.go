@@ -3,6 +3,7 @@ package metrics
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -92,6 +93,20 @@ type ProviderSelectionScores struct {
 	Sync            float64 // Sync score (0-1)
 	Stake           float64 // Stake score (0-1)
 	Composite       float64 // Combined QoS score (0-1)
+}
+
+// registerOrReuse registers a Prometheus collector, or returns the existing one if already registered.
+func registerOrReuse[T prometheus.Collector](c T) T {
+	if err := prometheus.Register(c); err != nil {
+		are := &prometheus.AlreadyRegisteredError{}
+		if errors.As(err, are) {
+			if existing, ok := are.ExistingCollector.(T); ok {
+				return existing
+			}
+		}
+		panic(err)
+	}
+	return c
 }
 
 func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerMetricsManager {

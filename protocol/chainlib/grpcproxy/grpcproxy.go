@@ -34,7 +34,7 @@ func NewGRPCProxy(cb ProxyCallBack, healthCheckPath string, cmdFlags common.Cons
 // NewGRPCProxyWithReflection creates a gRPC proxy with optional reflection support.
 // If reflectionCallback is provided, a separate gRPC server is created for reflection
 // that uses standard protobuf codec (not RawBytesCodec), allowing proper serialization.
-// This enables tools like grpcurl to work with the smart router.
+// This enables tools like grpcurl to work with the gRPC proxy.
 func NewGRPCProxyWithReflection(cb ProxyCallBack, healthCheckPath string, cmdFlags common.ConsumerCmdFlags, healthReporter HealthReporter, reflectionCallback ReflectionProxyCallback) (*grpc.Server, *http.Server, error) {
 	serverReceiveMaxMessageSize := grpc.MaxRecvMsgSize(MaxCallRecvMsgSize) // setting receive size to 32mb instead of 4mb default
 	s := grpc.NewServer(grpc.UnknownServiceHandler(makeProxyFunc(cb)), grpc.ForceServerCodec(RawBytesCodec{}), serverReceiveMaxMessageSize)

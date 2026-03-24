@@ -10,7 +10,7 @@ import (
 // WSSubscriptionManager defines the interface for WebSocket subscription management.
 // This interface is implemented by both:
 //   - ConsumerWSSubscriptionManager: routes subscriptions through Lava providers
-//   - DirectWSSubscriptionManager: connects directly to RPC endpoints (for smart router)
+//   - DirectWSSubscriptionManager: connects directly to RPC endpoints
 //
 // The interface enables the chain listener to work with either implementation,
 // supporting both provider-based and direct RPC subscription models.

@@ -81,7 +81,7 @@ type NodeUrl struct {
 	Addons            []string      `yaml:"addons,omitempty" json:"addons,omitempty" mapstructure:"addons"`
 	SkipVerifications []string      `yaml:"skip-verifications,omitempty" json:"skip-verifications,omitempty" mapstructure:"skip-verifications"`
 	Methods           []string      `yaml:"methods,omitempty" json:"methods,omitempty" mapstructure:"methods"`
-	// GrpcConfig holds gRPC-specific configuration for direct gRPC connections (smart router)
+	// GrpcConfig holds gRPC-specific configuration for direct gRPC connections
 	GrpcConfig GrpcConfig `yaml:"grpc-config,omitempty" json:"grpc-config,omitempty" mapstructure:"grpc-config"`
 }
 
@@ -198,7 +198,7 @@ func (ac *AuthConfig) AddAuthPath(url string) string {
 }
 
 // GrpcConfig holds gRPC-specific configuration for direct gRPC connections.
-// Used by the smart router for direct connections to gRPC endpoints (Cosmos SDK, Solana, etc.)
+// Used for direct connections to gRPC endpoints (Cosmos SDK, Solana, etc.)
 type GrpcConfig struct {
 	// DescriptorSource specifies how to obtain protobuf descriptors for dynamic message handling.
 	// Options:
