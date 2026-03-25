@@ -4,7 +4,7 @@
         "description": "Adding new specification support for relaying Cardano data on Lava",
         "specs": [
             {
-                "index": "ADA",
+                "index": "CARDANO",
                 "name": "cardano mainnet",
                 "enabled": true,
                 "reliability_threshold": 268435455,
@@ -2145,7 +2145,7 @@
                 ]
             },
             {
-                "index": "ADAT",
+                "index": "CARDANOT",
                 "name": "cardano preprod testnet",
                 "enabled": true,
                 "reliability_threshold": 268435455,
