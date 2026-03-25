@@ -1491,3 +1491,79 @@ func TestBackupProviderOptimizerSelection(t *testing.T) {
 	_, err = csm.getValidConsumerSessionsWithProviderFromBackupProviderList(ctx, ignoredProv, cuForFirstRequest, servicedBlockNumber, "", []string{}, 0, 0, NewUsedProviders(nil))
 	require.Error(t, err, "expected error when all backup providers are exhausted")
 }
+
+// TestGetReportedProviders_EpochTransitionRace reproduces the race between
+// GetReportedProviders and UpdateAllProviders that causes the error
+// "Failed to find a reported provider in pairing list".
+//
+// The race window (without fix):
+//  1. GetReportedProviders passes the epoch check and reads reportedProviders [A]
+//     — neither operation requires csm.lock
+//  2. While GetReportedProviders waits for csm.lock.RLock, UpdateAllProviders runs
+//     under csm.lock.Lock: resets reportedProviders, rebuilds pairing without A
+//  3. GetReportedProviders acquires csm.lock.RLock, looks up A → not found → error
+//
+// This test forces that exact interleaving: it holds csm.lock.Lock (simulating
+// UpdateAllProviders) while GetReportedProviders runs in a goroutine. Without
+// the fix, GetReportedProviders reads the stale reportedProviders [A] before
+// blocking on the lock. With the fix, it blocks on the lock first, then reads
+// the (now empty) reportedProviders — returning a consistent result.
+func TestGetReportedProviders_EpochTransitionRace(t *testing.T) {
+	ctx := context.Background()
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil)
+	require.NoError(t, err)
+
+	// Get a session and fail it to report a provider.
+	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "", "")
+	require.NoError(t, err)
+
+	var reportedAddr string
+	for _, cs := range css {
+		reportedAddr = cs.Session.Parent.PublicLavaAddress
+		err = csm.OnSessionFailure(cs.Session, ReportAndBlockProviderError)
+		require.NoError(t, err)
+	}
+	require.NotEmpty(t, reportedAddr)
+
+	// Sanity: the provider IS reported and returned before any race.
+	reported := csm.GetReportedProviders(firstEpochHeight)
+	require.NotEmpty(t, reported, "provider should be reported before the race test begins")
+
+	// Hold the write lock — simulating UpdateAllProviders in progress.
+	csm.lock.Lock()
+
+	// Start GetReportedProviders in a goroutine. Without the fix it will:
+	//   1. pass the epoch check (atomic, no lock needed)
+	//   2. read reportedProviders [A] (under rp.lock, not csm.lock)
+	//   3. block on csm.lock.RLock
+	// With the fix it blocks on csm.lock.RLock immediately (step 1).
+	resultCh := make(chan []*pairingtypes.ReportedProvider, 1)
+	go func() {
+		resultCh <- csm.GetReportedProviders(firstEpochHeight)
+	}()
+
+	// Give the goroutine enough time to reach the RLock blocking point.
+	time.Sleep(100 * time.Millisecond)
+
+	// Reset reportedProviders while holding the lock — this is what
+	// UpdateAllProviders does (along with rebuilding pairing).
+	// We only reset reportedProviders; pairing still contains A.
+	csm.reportedProviders.Reset()
+	csm.lock.Unlock()
+
+	result := <-resultCh
+
+	// Without fix: GetReportedProviders already read [A] from reportedProviders
+	// BEFORE we held the lock, so it still returns [A] — stale data from a
+	// snapshot that is no longer consistent with the current state.
+	//
+	// With fix: GetReportedProviders waited for the lock, then read
+	// reportedProviders (now empty after our Reset), returning [] consistently.
+	require.Empty(t, result,
+		"GetReportedProviders returned stale reported providers — it read "+
+			"reportedProviders outside csm.lock, producing a snapshot inconsistent "+
+			"with the current state. The fix moves csm.lock.RLock before reading "+
+			"reportedProviders so both reads are atomic.")
+}

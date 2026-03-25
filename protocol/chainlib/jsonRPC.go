@@ -105,7 +105,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 
 	// connectionType is currently only used in rest API.
 	// Unmarshal request
-	msgs, err := rpcInterfaceMessages.ParseJsonRPCMsg(data)
+	msgs, isBatch, err := rpcInterfaceMessages.ParseJsonRPCMsgWithBatchFlag(data)
 	if err != nil {
 		return nil, err
 	}
@@ -229,16 +229,22 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	}
 
 	var nodeMsg *baseChainMessageContainer
-	if len(msgs) == 1 {
+	if len(msgs) == 1 && !isBatch {
 		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, blockHashes, &msgs[0], apiCollection, parsedDefault)
 	} else {
+		// For single-element batches, earliestRequestedBlock was never updated by
+		// CompareRequestedBlockInBatch (which only runs for idx > 0). With one message,
+		// earliest == latest.
+		if len(msgs) == 1 {
+			earliestRequestedBlock = latestRequestedBlock
+		}
 		nodeMsg, err = apip.newBatchChainMessage(api, latestRequestedBlock, earliestRequestedBlock, blockHashes, msgs, apiCollection, parsedDefault)
 		if err != nil {
 			return nil, err
 		}
 	}
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, extensionInfo)
-	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
+	return nodeMsg, nil
 }
 
 func (*JsonRPCChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, requestedBlockHashes []string, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection, usedDefaultValue bool) (*baseChainMessageContainer, error) {
@@ -495,7 +501,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		}
 
-		response := checkBTCResponseAndFixReply(chainID, reply.Data)
+		response := checkUTXOResponseAndFixReply(chainID, reply.Data)
 		// Log request and response
 		apil.logger.LogRequestAndResponse("jsonrpc http",
 			false,
@@ -510,10 +516,8 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		if relayResult.GetStatusCode() != 0 {
 			fiberCtx.Status(relayResult.StatusCode)
 		}
-		// Return json response and add metric for after provider processing
+		// Return json response
 		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
-		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, chainID, apiInterface)
-		apil.logger.SetEndToEndLatency(chainID, apiInterface, time.Since(startTime))
 		return err
 	}
 	app.Post("/*", handlerPost)

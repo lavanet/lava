@@ -16,16 +16,12 @@ func TestProcessingTimestampLifecycle(t *testing.T) {
 	analytics := metrics.NewRelayAnalytics("test-project", "LAV1", "rest")
 	analytics.SetProcessingTimestampBeforeRelay(startTime)
 
-	// Verify initial state
-	require.Equal(t, startTime, analytics.ProcessingTimestamp, "ProcessingTimestamp should be set")
-	require.False(t, analytics.MeasureAfterProviderProcessingTime, "MeasureAfterProviderProcessingTime should be false initially")
+	require.Equal(t, startTime, analytics.ProcessingTimestamp, "ProcessingTimestamp should be set after before-relay")
 
 	// Simulate successful relay (as done in rpcconsumer_server.go)
 	time.Sleep(10 * time.Millisecond)
 	afterProviderTime := time.Now()
 	analytics.SetProcessingTimestampAfterRelay(afterProviderTime)
 
-	// Verify after provider state
-	require.Equal(t, afterProviderTime, analytics.ProcessingTimestamp, "ProcessingTimestamp should be updated")
-	require.True(t, analytics.MeasureAfterProviderProcessingTime, "MeasureAfterProviderProcessingTime should be true")
+	require.Equal(t, afterProviderTime, analytics.ProcessingTimestamp, "ProcessingTimestamp should be updated after relay")
 }

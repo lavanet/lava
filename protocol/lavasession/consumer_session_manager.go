@@ -1124,7 +1124,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 				)
 			}
 			allScores, rngValue := convertSelectionStatsToMetrics(selectionStats)
-			csm.consumerMetricsManager.SetProviderSelected(csm.rpcEndpoint.ChainID, providers[0], allScores, rngValue)
+			csm.consumerMetricsManager.SetProviderSelected(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, providers[0], allScores, rngValue)
 		}
 	} else {
 		// Make a copy of ignoredProvidersList to avoid modifying the original
@@ -1163,7 +1163,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 			allScores, rngValue := convertSelectionStatsToMetrics(selectionStats)
 			for _, providerAddr := range provider {
 				ignoredProvidersListCopy[providerAddr] = struct{}{}
-				csm.consumerMetricsManager.SetProviderSelected(csm.rpcEndpoint.ChainID, providerAddr, allScores, rngValue)
+				csm.consumerMetricsManager.SetProviderSelected(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, providerAddr, allScores, rngValue)
 			}
 			providers = append(providers, provider...)
 		}
@@ -1771,12 +1771,15 @@ func (csm *ConsumerSessionManager) GetSelectionStats() *provideroptimizer.Select
 
 // Get the reported providers currently stored in the session manager.
 func (csm *ConsumerSessionManager) GetReportedProviders(epoch uint64) []*pairingtypes.ReportedProvider {
+	// Hold the read lock for the entire operation so that UpdateAllProviders cannot
+	// reset reportedProviders and rebuild pairing between the epoch check and the
+	// pairing lookup, which would cause a spurious "not found" error.
+	csm.lock.RLock()
+	defer csm.lock.RUnlock()
 	if epoch != csm.atomicReadCurrentEpoch() {
 		return nil // if epochs are not equal, we will return an empty list.
 	}
 	reportedProviders := csm.reportedProviders.GetReportedProviders()
-	csm.lock.RLock()
-	defer csm.lock.RUnlock()
 	filteredReportedProviders := []*pairingtypes.ReportedProvider{}
 	for _, reportedProvider := range reportedProviders {
 		provider, ok := csm.pairing[reportedProvider.Address]

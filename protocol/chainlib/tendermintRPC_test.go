@@ -244,6 +244,33 @@ func TestTendermintRpcBatchCall(t *testing.T) {
 	}()
 }
 
+func TestTendermintRpcSingleElementBatchRequestedBlock(t *testing.T) {
+	ctx := context.Background()
+	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `[{"jsonrpc":"2.0","id":1,"result":{"block_id":{},"block":{}}}]`)
+	})
+
+	chainParser, _, _, closeServer, _, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceTendermintRPC, serverHandle, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+
+	// Single-element batch requesting a historical block
+	singleBatch := `[{"jsonrpc":"2.0","id":1,"method":"block","params":{"height":"500"}}]`
+	chainMessage, err := chainParser.ParseMsg("", []byte(singleBatch), "", nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+
+	// Must be detected as batch
+	require.True(t, chainMessage.IsBatch(), "single-element array must be treated as batch")
+
+	// earliestRequestedBlock must equal latestRequestedBlock, NOT spectypes.LATEST_BLOCK
+	latest, earliest := chainMessage.RequestedBlock()
+	require.Equal(t, int64(500), latest, "latestRequestedBlock should be 500")
+	require.Equal(t, int64(500), earliest, "earliestRequestedBlock must equal latest for single-element batch, not LATEST_BLOCK")
+}
+
 func TestTendermintRpcBatchCallWithSameID(t *testing.T) {
 	ctx := context.Background()
 	gotCalled := false

@@ -173,7 +173,7 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 
 	nodeMsg := apip.newChainMessage(apiCont.api, parsedInput, &grpcMessage, apiCollection)
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, extensionInfo)
-	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
+	return nodeMsg, nil
 }
 
 func (*GrpcChainParser) newChainMessage(api *spectypes.Api, parsedInput *parser.ParsedInput, grpcMessage *rpcInterfaceMessages.GrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
@@ -297,8 +297,6 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			return nil, nil, utils.LavaFormatError("Failed to SendRelay", fmt.Errorf("%s", errMasking))
 		}
 		apil.logger.LogRequestAndResponse("grpc in/out", false, method, string(reqBody), "", "", msgSeed, time.Since(startTime), nil)
-		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, apil.endpoint.ChainID, apiInterface)
-		apil.logger.SetEndToEndLatency(apil.endpoint.ChainID, apiInterface, time.Since(startTime))
 
 		// try checking for node errors.
 		nodeError := &GrpcNodeErrorResponse{}

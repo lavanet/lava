@@ -134,7 +134,7 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 
 	nodeMsg := apip.newChainMessage(apiCont.api, parsedInput, &restMessage, apiCollection)
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, extensionInfo)
-	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
+	return nodeMsg, nil
 }
 
 func (*RestChainParser) newChainMessage(api *spectypes.Api, parsedInput *parser.ParsedInput, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
@@ -331,8 +331,6 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		}
 		// Return json response and add metric for after provider processing
 		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
-		apil.logger.AddMetricForProcessingLatencyAfterProvider(analytics, chainID, apiInterface)
-		apil.logger.SetEndToEndLatency(chainID, apiInterface, time.Since(startTime))
 		return err
 	}
 
@@ -409,8 +407,6 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 
 		// Return json response
 		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
-		apil.logger.AddMetricForProcessingLatencyAfterProvider(analytics, chainID, apiInterface)
-		apil.logger.SetEndToEndLatency(chainID, apiInterface, time.Since(startTime))
 		return err
 	}
 

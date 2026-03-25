@@ -15,6 +15,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/internal/chainqueries"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
@@ -109,6 +110,10 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 		averageBlockTime,
 	)
 
+	// Assign before creating the manager so that goroutines spawned by
+	// initializeChainTrackers always observe the field on their first callback.
+	rpcss.smartRouterEndpointMetrics = smartRouterEndpointMetrics
+
 	// Initialize per-endpoint ChainTracker manager for continuous block polling
 	rpcss.endpointChainTrackerManager = NewEndpointChainTrackerManager(ctx, EndpointChainTrackerConfig{
 		ChainParser:      chainParser,
@@ -135,8 +140,6 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 			rpcss.smartRouterEndpointMetrics.RecordBlockFetch(listenEndpoint.ChainID, listenEndpoint.ApiInterface, endpointURL, true, false)
 		},
 	})
-
-	rpcss.smartRouterEndpointMetrics = smartRouterEndpointMetrics
 
 	// NewChainListener now accepts WSSubscriptionManager interface, which is implemented
 	// by both ConsumerWSSubscriptionManager (provider-relay mode) and
@@ -280,7 +283,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayWithRetries(ctx context.Context, ret
 	usedProviders := lavasession.NewUsedProviders(nil)
 
 	// Create state machine first - it determines Selection type based on cross-validation headers
-	stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, rpcss, protocolMessage, nil, rpcss.debugRelays, rpcss.rpcSmartRouterLogs)
+	stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, rpcss, protocolMessage, nil, rpcss.debugRelays)
 	if err != nil {
 		return false, err
 	}
@@ -520,7 +523,7 @@ func (rpcss *RPCSmartRouterServer) SendParsedRelay(
 		utils.LogAttr("GUID", ctx),
 	)
 
-	rpcss.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, protocolMessage, protocolMessage.GetApi().GetName())
+	rpcss.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, protocolMessage, protocolMessage.GetApi().GetName(), analytics, err == nil)
 	if err != nil {
 		return returnedResult, utils.LavaFormatError("failed processing responses from RPC endpoints", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.LogAttr("endpoint", rpcss.listenEndpoint.Key()))
 	}
@@ -555,7 +558,7 @@ func (rpcss *RPCSmartRouterServer) ProcessRelaySend(ctx context.Context, protoco
 	usedProviders := lavasession.NewUsedProviders(protocolMessage)
 
 	// Create state machine first - it determines Selection type based on cross-validation headers
-	stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, rpcss, protocolMessage, analytics, rpcss.debugRelays, rpcss.rpcSmartRouterLogs)
+	stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, rpcss, protocolMessage, analytics, rpcss.debugRelays)
 	if err != nil {
 		return nil, err
 	}
@@ -817,6 +820,12 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 			)
 
 			if rpcss.smartRouterEndpointMetrics != nil {
+				if analytics != nil {
+					analytics.IsWrite = chainlib.GetStateful(chainMessage) != common.NO_STATE
+					analytics.IsArchive = chainqueries.IsArchiveRequest(chainMessage)
+					analytics.IsDebugTrace = chainqueries.IsDebugOrTraceRequest(chainMessage)
+					analytics.IsBatch = chainqueries.IsBatchRequest(chainMessage)
+				}
 				rpcss.smartRouterEndpointMetrics.RecordDirectRelayEnd(
 					rpcss.listenEndpoint.ChainID,
 					rpcss.listenEndpoint.ApiInterface,
@@ -824,6 +833,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 					apiMethod,
 					float64(relayLatency.Milliseconds()),
 					err == nil,
+					analytics,
 				)
 			}
 
@@ -1398,7 +1408,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToEndpoint(
 		sharedStateId = rpcss.smartRouterConsistency.Key(userData) // use same key as we use for consistency, (for better consistency :-D)
 	}
 
-	chainId, _ := rpcss.GetChainIdAndApiInterface()
+	chainId, apiInterface := rpcss.GetChainIdAndApiInterface()
 
 	// Get Session. we get session here so we can use the epoch in the callbacks
 	reqBlock, _ := protocolMessage.RequestedBlock()
@@ -1493,6 +1503,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToEndpoint(
 						utils.LogAttr("lookupFinalized", lookupFinalized),
 					)
 
+					cacheStart := time.Now()
 					cacheReply, cacheError = rpcss.cache.GetEntry(cacheCtx, &pairingtypes.RelayCacheGet{
 						RequestHash:           hashKey,
 						RequestedBlock:        requestedBlockForCache,
@@ -1504,6 +1515,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToEndpoint(
 						BlocksHashesToHeights: rpcss.newBlocksHashesToHeightsSliceFromRequestedBlockHashes(protocolMessage.GetRequestedBlocksHashes()),
 					}) // caching in the consumer doesn't care about hashes, and we don't have data on finalization yet
 					cancel()
+					cacheLatencyMs := float64(time.Since(cacheStart).Milliseconds())
 
 					// Generate the actual cache key that will be used for lookup
 					actualLookupCacheKey := make([]byte, len(hashKey))
@@ -1571,8 +1583,17 @@ func (rpcss *RPCSmartRouterServer) sendRelayToEndpoint(
 							RelayResult: relayResult,
 							Err:         nil,
 						})
+						if analytics != nil {
+							analytics.IsWrite = chainlib.GetStateful(protocolMessage) != 0
+							analytics.IsArchive = chainqueries.IsArchiveRequest(protocolMessage)
+							analytics.IsDebugTrace = chainqueries.IsDebugOrTraceRequest(protocolMessage)
+							analytics.IsBatch = chainqueries.IsBatchRequest(protocolMessage)
+						}
+						go rpcss.smartRouterEndpointMetrics.RecordCacheHitRequest(chainId, apiInterface, protocolMessage.GetApi().GetName(), analytics)
+						go rpcss.smartRouterEndpointMetrics.RecordCacheResult(chainId, apiInterface, protocolMessage.GetApi().GetName(), true, cacheLatencyMs)
 						return nil
 					}
+					go rpcss.smartRouterEndpointMetrics.RecordCacheResult(chainId, apiInterface, protocolMessage.GetApi().GetName(), false, cacheLatencyMs)
 					// Cache miss - will relay to endpoint
 					latestBlockHashRequested, earliestBlockHashRequested = rpcss.getEarliestBlockHashRequestedFromCacheReply(cacheReply)
 					utils.LavaFormatTrace("[Archive Debug] Reading block hashes from cache", utils.LogAttr("latestBlockHashRequested", latestBlockHashRequested), utils.LogAttr("earliestBlockHashRequested", earliestBlockHashRequested), utils.LogAttr("GUID", ctx))
@@ -1755,13 +1776,6 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 		endpointName:        endpointName,
 		originalRequestData: originalRequestData,
 	}
-
-	// Add metric for processing latency (compatible with existing metrics)
-	rpcss.rpcSmartRouterLogs.AddMetricForProcessingLatencyBeforeProvider(
-		analytics,
-		rpcss.listenEndpoint.ChainID,
-		rpcss.listenEndpoint.ApiInterface,
-	)
 
 	// Send relay directly to RPC endpoint
 	startTime := time.Now()
@@ -1977,7 +1991,7 @@ type RelayProcessorForHeaders interface {
 	NodeErrors() (ret []common.RelayResult)
 }
 
-func (rpcss *RPCSmartRouterServer) appendHeadersToRelayResult(ctx context.Context, relayResult *common.RelayResult, protocolErrors uint64, relayProcessor RelayProcessorForHeaders, protocolMessage chainlib.ProtocolMessage, apiName string) {
+func (rpcss *RPCSmartRouterServer) appendHeadersToRelayResult(ctx context.Context, relayResult *common.RelayResult, protocolErrors uint64, relayProcessor RelayProcessorForHeaders, protocolMessage chainlib.ProtocolMessage, apiName string, analytics *metrics.RelayMetrics, success bool) {
 	metadataReply := []pairingtypes.Metadata{}
 
 	// Check if cross-validation is enabled via Selection type
@@ -1985,7 +1999,7 @@ func (rpcss *RPCSmartRouterServer) appendHeadersToRelayResult(ctx context.Contex
 
 	if selection == relaycore.CrossValidation {
 		// For cross-validation mode: show all participating providers and status
-		successResults, _, _ := relayProcessor.GetResultsData()
+		successResults, nodeErrorResults, protocolErrorResults := relayProcessor.GetResultsData()
 		cvParams := relayProcessor.GetCrossValidationParams()
 
 		// Get all providers that were queried (set before any responses came back)
@@ -1993,38 +2007,64 @@ func (rpcss *RPCSmartRouterServer) appendHeadersToRelayResult(ctx context.Contex
 		allProvidersList := relayProcessor.GetCrossValidationQueriedProviders()
 		sort.Strings(allProvidersList)
 
-		// Determine cross-validation status and agreeing providers
-		var cvStatus string
-		var agreeingProvidersList []string
+		// Determine cross-validation status and agreeing/disagreeing providers
+		cvSuccess := relayResult != nil && cvParams != nil && relayResult.CrossValidation >= cvParams.AgreementThreshold
+		cvStatus := "failed"
+		var agreeingProvidersList, disagreeingProvidersList []string
 
-		// Check if we have a successful result with enough agreements
-		if relayResult != nil && cvParams != nil && relayResult.CrossValidation >= cvParams.AgreementThreshold {
+		if cvSuccess {
 			cvStatus = "success"
-			// Find providers whose responses matched the winning consensus
 			winningHash := relayResult.ResponseHash
-			agreeingProvidersMap := make(map[string]bool)
 			for _, result := range successResults {
-				if result.ResponseHash == winningHash && result.ProviderInfo.ProviderAddress != "" {
-					agreeingProvidersMap[result.ProviderInfo.ProviderAddress] = true
+				if result.ProviderInfo.ProviderAddress == "" {
+					continue
+				}
+				if result.ResponseHash == winningHash {
+					agreeingProvidersList = append(agreeingProvidersList, result.ProviderInfo.ProviderAddress)
+				} else {
+					disagreeingProvidersList = append(disagreeingProvidersList, result.ProviderInfo.ProviderAddress)
 				}
 			}
-			agreeingProvidersList = make([]string, 0, len(agreeingProvidersMap))
-			for provider := range agreeingProvidersMap {
-				agreeingProvidersList = append(agreeingProvidersList, provider)
+			// Providers that returned errors always disagree with the winning response
+			for _, result := range nodeErrorResults {
+				if result.ProviderInfo.ProviderAddress != "" {
+					disagreeingProvidersList = append(disagreeingProvidersList, result.ProviderInfo.ProviderAddress)
+				}
 			}
-			sort.Strings(agreeingProvidersList)
+			for _, result := range protocolErrorResults {
+				if result.ProviderInfo.ProviderAddress != "" {
+					disagreeingProvidersList = append(disagreeingProvidersList, result.ProviderInfo.ProviderAddress)
+				}
+			}
 		} else {
-			cvStatus = "failed"
-			agreeingProvidersList = []string{} // Empty on failure - no consensus reached
+			// No consensus — every provider that responded (success or error) is in conflict
+			for _, result := range successResults {
+				if result.ProviderInfo.ProviderAddress != "" {
+					disagreeingProvidersList = append(disagreeingProvidersList, result.ProviderInfo.ProviderAddress)
+				}
+			}
+			for _, result := range nodeErrorResults {
+				if result.ProviderInfo.ProviderAddress != "" {
+					disagreeingProvidersList = append(disagreeingProvidersList, result.ProviderInfo.ProviderAddress)
+				}
+			}
+			for _, result := range protocolErrorResults {
+				if result.ProviderInfo.ProviderAddress != "" {
+					disagreeingProvidersList = append(disagreeingProvidersList, result.ProviderInfo.ProviderAddress)
+				}
+			}
 		}
+
+		// Deduplicate and sort both lists for stable metric labels and headers
+		agreeingProvidersList = dedupSortedStrings(agreeingProvidersList)
+		disagreeingProvidersList = dedupSortedStrings(disagreeingProvidersList)
 
 		// Emit cross-validation metric (even on failure)
 		if cvParams != nil && rpcss.listenEndpoint != nil && rpcss.rpcSmartRouterLogs != nil {
 			chainId, apiInterface := rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface
 			go rpcss.rpcSmartRouterLogs.SetCrossValidationMetric(
-				chainId, apiInterface, apiName, cvStatus,
-				cvParams.MaxParticipants, cvParams.AgreementThreshold,
-				allProvidersList, agreeingProvidersList,
+				chainId, apiInterface, apiName, cvSuccess,
+				agreeingProvidersList, disagreeingProvidersList,
 			)
 		}
 
@@ -2065,6 +2105,12 @@ func (rpcss *RPCSmartRouterServer) appendHeadersToRelayResult(ctx context.Contex
 				Name:  common.RETRY_COUNT_HEADER_NAME,
 				Value: strconv.FormatUint(totalRetries, 10),
 			})
+			// Record retry incident metrics
+			if rpcss.listenEndpoint != nil && rpcss.rpcSmartRouterLogs != nil {
+				chainId := rpcss.listenEndpoint.ChainID
+				apiInterface := rpcss.listenEndpoint.ApiInterface
+				go rpcss.rpcSmartRouterLogs.RecordIncidentRetry(chainId, apiInterface, apiName, totalRetries, success)
+			}
 
 			// When there are retries, show all attempted providers (similar to REST behavior)
 			allProvidersMap := make(map[string]bool)
@@ -2111,6 +2157,20 @@ func (rpcss *RPCSmartRouterServer) appendHeadersToRelayResult(ctx context.Contex
 					}
 				}
 			}
+		}
+	}
+
+	// Record consistency and hedge incident metrics (only for non-cross-validation mode)
+	if selection != relaycore.CrossValidation && rpcss.listenEndpoint != nil && rpcss.rpcSmartRouterLogs != nil {
+		chainId := rpcss.listenEndpoint.ChainID
+		apiInterface := rpcss.listenEndpoint.ApiInterface
+		// Consistency: triggered when the consumer enforces a minimum seen block height
+		if protocolMessage.RelayPrivateData().SeenBlock > 0 {
+			go rpcss.rpcSmartRouterLogs.RecordIncidentConsistency(chainId, apiInterface, apiName, success)
+		}
+		// Hedge: triggered when the batch ticker fired during this relay
+		if analytics != nil && analytics.HedgeCount > 0 {
+			go rpcss.rpcSmartRouterLogs.RecordIncidentHedgeResult(chainId, apiInterface, apiName, analytics.HedgeCount, success)
 		}
 	}
 
@@ -2289,8 +2349,22 @@ func (rpcss *RPCSmartRouterServer) RoundTrip(req *http.Request) (*http.Response,
 		return nil, err
 	}
 	resp, err := rpcss.chainParser.SetResponseFromRelayResult(relayResult)
-	rpcss.rpcSmartRouterLogs.SetLoLResponse(err == nil)
 	return resp, err
+}
+
+// dedupSortedStrings returns a sorted, deduplicated copy of the input slice.
+func dedupSortedStrings(s []string) []string {
+	if len(s) == 0 {
+		return s
+	}
+	sort.Strings(s)
+	out := s[:1]
+	for _, v := range s[1:] {
+		if v != out[len(out)-1] {
+			out = append(out, v)
+		}
+	}
+	return out
 }
 
 func (rpcss *RPCSmartRouterServer) updateProtocolMessageIfNeededWithNewEarliestData(

@@ -394,6 +394,33 @@ func TestJsonRpcBatchSizeLimit(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestJsonRpcSingleElementBatchRequestedBlock(t *testing.T) {
+	ctx := context.Background()
+	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `[{"jsonrpc":"2.0","id":1,"result":"0x1"}]`)
+	})
+
+	chainParser, _, _, closeServer, _, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+
+	// Single-element batch requesting a specific block via eth_getBlockByNumber
+	singleBatch := `[{"jsonrpc":"2.0","id":1,"method":"eth_getBlockByNumber","params":["0x1F4",false]}]`
+	chainMessage, err := chainParser.ParseMsg("", []byte(singleBatch), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+
+	// Must be detected as batch
+	require.True(t, chainMessage.IsBatch(), "single-element array must be treated as batch")
+
+	// earliestRequestedBlock must equal latestRequestedBlock (not 0 or LATEST_BLOCK)
+	latest, earliest := chainMessage.RequestedBlock()
+	require.Equal(t, int64(500), latest, "latestRequestedBlock should be 500 (0x1F4)")
+	require.Equal(t, int64(500), earliest, "earliestRequestedBlock must equal latest for single-element batch")
+}
+
 func TestJsonRpcBatchCallSameID(t *testing.T) {
 	ctx := context.Background()
 	gotCalled := false

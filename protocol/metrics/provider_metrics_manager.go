@@ -125,7 +125,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 	}
 
 	blockMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
-		Name:   "lava_latest_block",
+		Name:   "lava_provider_latest_block",
 		Help:   "The latest block measured",
 		Labels: blockMetricLabels,
 	})
@@ -185,7 +185,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 	}, []string{"spec"})
 
 	virtualEpochMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "virtual_epoch",
+		Name: "lava_provider_virtual_epoch",
 		Help: "The current virtual epoch measured",
 	}, []string{"spec"})
 

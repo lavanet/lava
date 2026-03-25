@@ -9,7 +9,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
-	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
@@ -243,22 +242,7 @@ func TestExtractConsumerAddressWithSkipSigning(t *testing.T) {
 	require.NoError(t, err)
 	relaySession.Sig = sig
 
-	// Test with SkipRelaySigning disabled (normal behavior)
-	originalSkipRelaySigning := lavaprotocol.SkipRelaySigning
-	lavaprotocol.SkipRelaySigning = false
-	defer func() { lavaprotocol.SkipRelaySigning = originalSkipRelaySigning }()
-
 	extractedAddress, err := rpcps.ExtractConsumerAddress(ctx, relaySession)
 	require.NoError(t, err)
 	require.Equal(t, consumer_address, extractedAddress, "Should extract correct consumer address from signed session")
-
-	// Test with SkipRelaySigning enabled
-	lavaprotocol.SkipRelaySigning = true
-
-	extractedAddress, err = rpcps.ExtractConsumerAddress(ctx, relaySession)
-	require.NoError(t, err)
-	// Should return placeholder address when SkipRelaySigning is enabled
-	expectedPlaceholder, err := sdk.AccAddressFromHexUnsafe("0000000000000000000000000000000000000000")
-	require.NoError(t, err)
-	require.Equal(t, expectedPlaceholder, extractedAddress, "Should return placeholder address when SkipRelaySigning is enabled")
 }

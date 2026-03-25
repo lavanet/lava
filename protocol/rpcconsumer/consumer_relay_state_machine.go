@@ -37,10 +37,6 @@ type ConsumerRelaySender interface {
 	) (protocolMessage chainlib.ProtocolMessage, err error)
 }
 
-type tickerMetricSetterInf interface {
-	SetRelaySentByNewBatchTickerMetric(chainId string, apiInterface string)
-}
-
 type ConsumerRelayStateMachine struct {
 	ctx                   context.Context // same context as user context.
 	relaySender           ConsumerRelaySender
@@ -49,7 +45,6 @@ type ConsumerRelayStateMachine struct {
 	selection             relaycore.Selection
 	crossValidationParams *common.CrossValidationParams // nil for Stateless/Stateful, non-nil for CrossValidation
 	debugRelays           bool
-	tickerMetricSetter    tickerMetricSetterInf
 	batchUpdate           chan error
 	usedProviders         *lavasession.UsedProviders
 	relayRetriesManager   *lavaprotocol.RelayRetriesManager
@@ -65,7 +60,6 @@ func NewRelayStateMachine(
 	protocolMessage chainlib.ProtocolMessage,
 	analytics *metrics.RelayMetrics,
 	debugRelays bool,
-	tickerMetricSetter tickerMetricSetterInf,
 ) (RelayStateMachine, error) {
 	// Check cross-validation headers FIRST (highest priority)
 	// This is the SINGLE SOURCE OF TRUTH for determining if cross-validation is enabled
@@ -101,7 +95,6 @@ func NewRelayStateMachine(
 		selection:             selection,
 		crossValidationParams: cvParams,
 		debugRelays:           debugRelays,
-		tickerMetricSetter:    tickerMetricSetter,
 		batchUpdate:           make(chan error, MaximumNumberOfTickerRelayRetries),
 		relayState:            make([]*relaycore.RelayState, 0),
 	}, nil
@@ -352,7 +345,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 				}
 				// If should retry == true, send a new batch. (success == false)
 				if crsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
-					utils.LavaFormatTrace("[StateMachine] LavaFormatTrace success := <-gotResults - crsm.ShouldRetry(batchNumber)", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", crsm.ctx))
+					utils.LavaFormatInfo("[StateMachine] relay failed, retrying", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", crsm.ctx))
 					relayTaskChannel <- RelayStateSendInstructions{RelayState: crsm.getLatestState(), NumOfProviders: 1}
 				} else {
 					go validateReturnCondition(nil)
@@ -361,10 +354,11 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSen
 			case <-startNewBatchTicker.C:
 				// Only trigger another batch for non Stateful relays or if we didn't pass the retry limit.
 				if crsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
-					utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", crsm.ctx))
+					utils.LavaFormatInfo("[StateMachine] hedge triggered", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", crsm.ctx))
 					relayTaskChannel <- RelayStateSendInstructions{RelayState: crsm.getLatestState(), NumOfProviders: 1}
-					// Add ticker launch metrics
-					go crsm.tickerMetricSetter.SetRelaySentByNewBatchTickerMetric(crsm.relaySender.GetChainIdAndApiInterface())
+					if crsm.analytics != nil {
+						crsm.analytics.HedgeCount++
+					}
 				}
 			case returnErr := <-returnCondition:
 				utils.LavaFormatTrace("[StateMachine] returnErr := <-returnCondition", utils.LogAttr("batch", crsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", crsm.ctx))

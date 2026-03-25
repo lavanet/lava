@@ -104,11 +104,12 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 	// connectionType is currently only used in rest api
 	// Unmarshal request
 	var msgs []rpcInterfaceMessages.JsonrpcMessage
+	var isBatch bool
 	isJsonrpc := string(data) != ""
 	if isJsonrpc {
 		// Fetch pointer to message and error
 		var err error
-		msgs, err = rpcInterfaceMessages.ParseJsonRPCMsg(data)
+		msgs, isBatch, err = rpcInterfaceMessages.ParseJsonRPCMsgWithBatchFlag(data)
 		if err != nil {
 			return nil, err
 		}
@@ -246,13 +247,19 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 	}
 
 	var nodeMsg *baseChainMessageContainer
-	if msgsLength == 1 {
+	if msgsLength == 1 && !isBatch {
 		tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msgs[0], Path: ""}
 		if !isJsonrpc {
 			tenderMsg.Path = urlPath // add path
 		}
 		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, blockHashes, &tenderMsg, apiCollection, parsedDefault)
 	} else {
+		// For single-element batches, earliestRequestedBlock was never updated by
+		// CompareRequestedBlockInBatch (which only runs for idx > 0). With one message,
+		// earliest == latest.
+		if msgsLength == 1 {
+			earliestRequestedBlock = latestRequestedBlock
+		}
 		var err error
 		nodeMsg, err = apip.newBatchChainMessage(api, latestRequestedBlock, earliestRequestedBlock, blockHashes, msgs, apiCollection, parsedDefault)
 		if err != nil {
@@ -262,7 +269,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 
 	utils.LavaFormatTrace("[Archive Debug] TendermintRPC ParseMsg calling ExtensionParsing", utils.LogAttr("addon", apiCollection.CollectionData.AddOn), utils.LogAttr("extensionInfo", extensionInfo), utils.LogAttr("urlPath", urlPath))
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, extensionInfo)
-	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
+	return nodeMsg, nil
 }
 
 func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, requestedHashes []string, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection, usedDefaultValue bool) (*baseChainMessageContainer, error) {
@@ -506,8 +513,6 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		response := string(reply.Data)
 		// Return json response
 		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
-		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, chainID, apiInterface)
-		apil.logger.SetEndToEndLatency(chainID, apiInterface, time.Since(startTime))
 		return err
 	}
 
@@ -573,8 +578,6 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		}
 		// Return json response
 		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
-		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, chainID, apiInterface)
-		apil.logger.SetEndToEndLatency(chainID, apiInterface, time.Since(startTime))
 		return err
 	}
 

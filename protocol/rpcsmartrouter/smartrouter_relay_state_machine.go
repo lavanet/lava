@@ -37,10 +37,6 @@ type SmartRouterRelaySender interface {
 	) (protocolMessage chainlib.ProtocolMessage, err error)
 }
 
-type tickerMetricSetterInf interface {
-	SetRelaySentByNewBatchTickerMetric(chainId string, apiInterface string)
-}
-
 type SmartRouterRelayStateMachine struct {
 	ctx                      context.Context // same context as user context.
 	relaySender              SmartRouterRelaySender
@@ -49,7 +45,6 @@ type SmartRouterRelayStateMachine struct {
 	selection                relaycore.Selection
 	crossValidationParams    *common.CrossValidationParams // nil for Stateless/Stateful, non-nil for CrossValidation
 	debugRelays              bool
-	tickerMetricSetter       tickerMetricSetterInf
 	batchUpdate              chan error
 	usedProviders            *lavasession.UsedProviders
 	relayRetriesManager      *lavaprotocol.RelayRetriesManager
@@ -66,7 +61,6 @@ func NewSmartRouterRelayStateMachine(
 	protocolMessage chainlib.ProtocolMessage,
 	analytics *metrics.RelayMetrics,
 	debugRelays bool,
-	tickerMetricSetter tickerMetricSetterInf,
 ) (RelayStateMachine, error) {
 	// Check cross-validation headers FIRST (highest priority)
 	// This is the SINGLE SOURCE OF TRUTH for determining if cross-validation is enabled
@@ -102,7 +96,6 @@ func NewSmartRouterRelayStateMachine(
 		selection:             selection,
 		crossValidationParams: cvParams,
 		debugRelays:           debugRelays,
-		tickerMetricSetter:    tickerMetricSetter,
 		batchUpdate:           make(chan error, MaximumNumberOfTickerRelayRetries),
 		relayState:            make([]*relaycore.RelayState, 0),
 	}, nil
@@ -418,7 +411,7 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 
 				// If should retry == true, send a new batch. (success == false)
 				if srsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
-					utils.LavaFormatTrace("[StateMachine] LavaFormatTrace success := <-gotResults - srsm.ShouldRetry(batchNumber)", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
+					utils.LavaFormatInfo("[StateMachine] relay failed, retrying", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
 					relayTaskChannel <- RelayStateSendInstructions{RelayState: srsm.getLatestState(), NumOfProviders: 1}
 				} else {
 					go validateReturnCondition(nil)
@@ -431,10 +424,11 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 				}
 				// Only trigger another batch for non Stateful relays or if we didn't pass the retry limit.
 				if srsm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
-					utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
+					utils.LavaFormatInfo("[StateMachine] hedge triggered", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))
 					relayTaskChannel <- RelayStateSendInstructions{RelayState: srsm.getLatestState(), NumOfProviders: 1}
-					// Add ticker launch metrics
-					go srsm.tickerMetricSetter.SetRelaySentByNewBatchTickerMetric(srsm.relaySender.GetChainIdAndApiInterface())
+					if srsm.analytics != nil {
+						srsm.analytics.HedgeCount++
+					}
 				}
 			case returnErr := <-returnCondition:
 				utils.LavaFormatTrace("[StateMachine] returnErr := <-returnCondition", utils.LogAttr("batch", srsm.usedProviders.BatchNumber()), utils.LogAttr("GUID", srsm.ctx))

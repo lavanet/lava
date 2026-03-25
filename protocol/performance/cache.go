@@ -9,10 +9,14 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type relayerCacheClientStore struct {
 	client       pairingtypes.RelayerCacheClient
+	conn         *grpc.ClientConn // stored so we can close it on reconnect or shutdown
 	lock         sync.RWMutex
 	ctx          context.Context
 	address      string
@@ -47,35 +51,44 @@ func (r *relayerCacheClientStore) getClient() pairingtypes.RelayerCacheClient {
 	return r.client // might be nil
 }
 
-func (r *relayerCacheClientStore) connectGRPCConnectionToRelayerCacheService() (*pairingtypes.RelayerCacheClient, error) {
+func (r *relayerCacheClientStore) connectGRPCConnectionToRelayerCacheService() (pairingtypes.RelayerCacheClient, *grpc.ClientConn, error) {
 	connectCtx, cancel := context.WithTimeout(r.ctx, 3*time.Second)
 	defer cancel()
 
 	conn, err := lavasession.ConnectGRPCClient(connectCtx, r.address, false, true, false)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	/*defer conn.Close()*/
 
 	c := pairingtypes.NewRelayerCacheClient(conn)
-	return &c, nil
+	return c, conn, nil
 }
 
 func (r *relayerCacheClientStore) connectClient() error {
-	relayerCacheClient, err := r.connectGRPCConnectionToRelayerCacheService()
+	relayerCacheClient, conn, err := r.connectGRPCConnectionToRelayerCacheService()
 	if err == nil {
-		utils.LavaFormatInfo("Connected to cache service", utils.LogAttr("address", r.address))
+		utils.LavaFormatInfo("cache service connected successfully", utils.LogAttr("address", r.address))
 		func() {
 			r.lock.Lock()
 			defer r.lock.Unlock()
-			r.client = *relayerCacheClient
+			// Close the old connection before replacing it to prevent goroutine leaks.
+			// Each *grpc.ClientConn spawns internal goroutines (reader, writer, callback serializers)
+			// that only exit when conn.Close() is called.
+			if r.conn != nil {
+				utils.LavaFormatDebug("closing previous cache gRPC connection before replacing", utils.LogAttr("address", r.address))
+				if err := r.conn.Close(); err != nil {
+					utils.LavaFormatWarning("failed to close previous cache gRPC connection", err, utils.LogAttr("address", r.address))
+				}
+			}
+			r.client = relayerCacheClient
+			r.conn = conn
 		}()
 
 		r.reconnecting.Store(false)
 		return nil // connected
 	}
 
-	utils.LavaFormatDebug("Failed to connect to cache service", utils.LogAttr("address", r.address), utils.LogAttr("error", err))
+	utils.LavaFormatDebug("cache service connection attempt failed", utils.LogAttr("address", r.address), utils.LogAttr("error", err))
 	return err
 }
 
@@ -91,16 +104,39 @@ func (r *relayerCacheClientStore) reconnectClient() {
 		return
 	}
 
+	utils.LavaFormatInfo("cache service reconnection loop started", utils.LogAttr("address", r.address))
+
 	for {
 		select {
 		case <-r.ctx.Done():
+			utils.LavaFormatInfo("cache service reconnection loop exiting (context cancelled)", utils.LogAttr("address", r.address))
 			return
 		case <-time.After(reconnectInterval):
-			if r.connectClient() != nil {
+			// connectClient() returns nil on success, non-nil error on failure.
+			// Exit the loop on success, keep retrying on failure.
+			if r.connectClient() == nil {
+				utils.LavaFormatInfo("cache service reconnection succeeded, exiting reconnect loop", utils.LogAttr("address", r.address))
 				return
 			}
 		}
 	}
+}
+
+// resetOnConnectionError clears the client when a gRPC connection-level error is detected,
+// allowing the next getClient() call to trigger reconnection.
+func (r *relayerCacheClientStore) resetOnConnectionError(err error) {
+	if err == nil {
+		return
+	}
+	code := status.Code(err)
+	if code != codes.Unavailable {
+		return
+	}
+	utils.LavaFormatWarning("cache service connection error detected, triggering reconnection", err, utils.LogAttr("address", r.address))
+	r.lock.Lock()
+	r.client = nil
+	r.lock.Unlock()
+	go r.reconnectClient()
 }
 
 type Cache struct {
@@ -129,6 +165,9 @@ func (cache *Cache) GetEntry(ctx context.Context, relayCacheGet *pairingtypes.Re
 	}
 
 	reply, err = client.GetRelay(ctx, relayCacheGet)
+	if err != nil {
+		cache.clientStore.resetOnConnectionError(err)
+	}
 	return reply, err
 }
 
@@ -147,5 +186,8 @@ func (cache *Cache) SetEntry(ctx context.Context, cacheSet *pairingtypes.RelayCa
 	}
 
 	_, err := client.SetRelay(ctx, cacheSet)
+	if err != nil {
+		cache.clientStore.resetOnConnectionError(err)
+	}
 	return err
 }

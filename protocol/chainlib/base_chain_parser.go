@@ -22,7 +22,6 @@ import (
 )
 
 var (
-	SkipPolicyVerification    = false
 	SkipWebsocketVerification = false
 	DefaultApiName            = "Default-"
 )
@@ -41,17 +40,18 @@ type InternalPath struct {
 }
 
 type BaseChainParser struct {
-	internalPaths   map[string]InternalPath
-	taggedApis      map[spectypes.FUNCTION_TAG]TaggedContainer
-	spec            spectypes.Spec
-	rwLock          sync.RWMutex
-	serverApis      map[ApiKey]ApiContainer
-	apiCollections  map[CollectionKey]*spectypes.ApiCollection
-	headers         map[ApiKey]*spectypes.Header
-	verifications   map[VerificationKey]map[string][]VerificationContainer // map[VerificationKey]map[InternalPath][]VerificationContainer
-	allowedAddons   map[string]bool
-	extensionParser extensionslib.ExtensionParser
-	active          bool
+	internalPaths     map[string]InternalPath
+	taggedApis        map[spectypes.FUNCTION_TAG]TaggedContainer
+	spec              spectypes.Spec
+	rwLock            sync.RWMutex
+	serverApis        map[ApiKey]ApiContainer
+	apiCollections    map[CollectionKey]*spectypes.ApiCollection
+	headers           map[ApiKey]*spectypes.Header
+	verifications     map[VerificationKey]map[string][]VerificationContainer // map[VerificationKey]map[InternalPath][]VerificationContainer
+	allowedAddons     map[string]bool
+	allowedExtensions map[string]struct{}
+	extensionParser   extensionslib.ExtensionParser
+	active            bool
 }
 
 func (bcp *BaseChainParser) Activate() {
@@ -114,32 +114,28 @@ func (bcp *BaseChainParser) isAddon(addon string) bool {
 }
 
 func (bcp *BaseChainParser) isExtension(extension string) bool {
-	return bcp.extensionParser.AllowedExtension(extension, SkipPolicyVerification)
+	_, ok := bcp.allowedExtensions[extension]
+	return ok
 }
 
-// use while bcp locked.
-func (bcp *BaseChainParser) validateAddons(nodeMessage *baseChainMessageContainer) error {
-	var addon string
-	if SkipPolicyVerification {
+// ValidateMessage validates the chain message against the consumer's policy (allowed addons).
+// Should be called after ParseMsg by consumers/providers that enforce policy.
+// Smart-router does not call this since it uses static providers without on-chain policy.
+func (bcp *BaseChainParser) ValidateMessage(chainMsg ChainMessage) error {
+	nodeMessage, ok := chainMsg.(*baseChainMessageContainer)
+	if !ok {
 		return nil
 	}
-	if addon = GetAddon(nodeMessage); addon != "" { // check we have an addon
-		if allowed := bcp.allowedAddons[addon]; !allowed { // check addon is allowed
+	bcp.rwLock.RLock()
+	defer bcp.rwLock.RUnlock()
+	if addon := GetAddon(nodeMessage); addon != "" {
+		if allowed := bcp.allowedAddons[addon]; !allowed {
 			return utils.LavaFormatError("consumer policy does not allow addon", nil,
 				utils.LogAttr("addon", addon),
 			)
 		}
 	}
-	// no addons to validate or validation completed successfully
 	return nil
-}
-
-func (bcp *BaseChainParser) Validate(nodeMessage *baseChainMessageContainer) error {
-	bcp.rwLock.RLock()
-	defer bcp.rwLock.RUnlock()
-	err := bcp.validateAddons(nodeMessage)
-	// add more validations in the future here.
-	return err
 }
 
 func (bcp *BaseChainParser) BuildMapFromPolicyQuery(policy PolicyInf, chainId string, apiInterface string) (map[string]struct{}, error) {
@@ -287,8 +283,8 @@ func (bcp *BaseChainParser) Construct(spec spectypes.Spec, internalPaths map[str
 		allowedAddons[apiCollection.CollectionData.AddOn] = bcp.allowedAddons[apiCollection.CollectionData.AddOn]
 	}
 	bcp.allowedAddons = allowedAddons
-
-	bcp.extensionParser = extensionslib.NewExtensionParser(allowedExtensions, bcp.extensionParser.GetConfiguredExtensions())
+	bcp.allowedExtensions = allowedExtensions
+	bcp.extensionParser = extensionslib.NewExtensionParser(bcp.extensionParser.GetConfiguredExtensions())
 }
 
 func (bcp *BaseChainParser) ParseDirectiveEnabled() bool {
