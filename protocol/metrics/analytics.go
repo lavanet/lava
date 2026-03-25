@@ -24,6 +24,7 @@ type RelayMetrics struct {
 	ProcessingTimestamp time.Time
 	// Request classification fields — populated at relay call sites
 	ProviderAddress string
+	CacheHit        bool // true only when the response was served from the cache
 	IsWrite         bool // stateful != 0; false means read
 	IsArchive       bool
 	IsDebugTrace    bool

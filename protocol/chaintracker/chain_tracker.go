@@ -350,21 +350,21 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 				cs.notUpdated()
 			}
 		}
-		cs.pmetrics.SetLatestBlockFetchError(cs.endpoint.ChainID)
+		cs.pmetrics.SetLatestBlockFetchError(cs.endpoint.ChainID, cs.endpoint.ApiInterface)
 		if cs.fetchErrorCallback != nil {
 			cs.fetchErrorCallback()
 		}
 		return err
 	}
-	cs.pmetrics.SetLatestBlockFetchSuccess(cs.endpoint.ChainID)
+	cs.pmetrics.SetLatestBlockFetchSuccess(cs.endpoint.ChainID, cs.endpoint.ApiInterface)
 	gotNewBlock := cs.gotNewBlock(ctx, newLatestBlock)
 	forked, err := cs.forkChanged(ctx, newLatestBlock)
 	if err != nil {
-		cs.pmetrics.SetSpecificBlockFetchError(cs.endpoint.ChainID)
+		cs.pmetrics.SetSpecificBlockFetchError(cs.endpoint.ChainID, cs.endpoint.ApiInterface)
 		return utils.LavaFormatDebug("could not fetchLatestBlock Hash in ChainTracker", utils.Attribute{Key: "error", Value: err}, utils.Attribute{Key: "block", Value: newLatestBlock}, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
 	}
 	prev_latest := cs.GetAtomicLatestBlockNum()
-	cs.pmetrics.SetSpecificBlockFetchSuccess(cs.endpoint.ChainID)
+	cs.pmetrics.SetSpecificBlockFetchSuccess(cs.endpoint.ChainID, cs.endpoint.ApiInterface)
 	if gotNewBlock || forked {
 		latestHash, err := cs.fetchAllPreviousBlocks(ctx, newLatestBlock)
 		if err != nil {

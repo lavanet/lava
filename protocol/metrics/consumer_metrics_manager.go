@@ -544,7 +544,7 @@ func (pme *ConsumerMetricsManager) SetRelayMetrics(relayMetric *RelayMetrics, er
 	//                                            a separate partition, so they can overlap and
 	//                                            their sum is NOT expected to equal total.
 	providerLabel := relayMetric.ProviderAddress
-	if providerLabel == "" {
+	if providerLabel == "" && relayMetric.CacheHit {
 		providerLabel = "Cached"
 	}
 	reqLabels := []string{relayMetric.ChainID, relayMetric.APIType, providerLabel, relayMetric.ApiMethod}
