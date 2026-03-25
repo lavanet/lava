@@ -341,7 +341,8 @@ func (d *DirectRPCRelaySender) sendJSONRPCRelay(
 			utils.LogAttr("error", err.Error()),
 			utils.LogAttr("latency", latency),
 		)
-		return nil, MapDirectRPCError(err, d.directConnection.GetProtocol())
+		ClassifyDirectRPCError(err) // classify for logging/metrics only
+		return nil, err
 	}
 
 	statusCode := response.StatusCode
@@ -354,11 +355,13 @@ func (d *DirectRPCRelaySender) sendJSONRPCRelay(
 			utils.LogAttr("status", statusCode),
 			utils.LogAttr("latency", latency),
 		)
-		return nil, MapDirectRPCError(&lavasession.HTTPStatusError{
+		httpErr := &lavasession.HTTPStatusError{
 			StatusCode: statusCode,
 			Status:     fmt.Sprintf("%d", statusCode),
 			Body:       responseData,
-		}, d.directConnection.GetProtocol())
+		}
+		ClassifyDirectRPCError(httpErr) // classify for logging/metrics only
+		return nil, httpErr
 	}
 
 	utils.LavaFormatTrace("direct RPC request succeeded",
@@ -470,7 +473,8 @@ func (d *DirectRPCRelaySender) sendRESTRelay(
 
 	// Handle transport errors
 	if err != nil {
-		return nil, MapDirectRPCError(err, d.directConnection.GetProtocol())
+		ClassifyDirectRPCError(err) // classify for logging/metrics only
+		return nil, err
 	}
 
 	// Proper error classification (don't treat all 4xx as node errors)
@@ -617,7 +621,8 @@ func (d *DirectRPCRelaySender) sendGRPCRelay(
 			}, nil
 		}
 
-		return nil, MapDirectRPCError(err, d.directConnection.GetProtocol())
+		ClassifyDirectRPCError(err) // classify for logging/metrics only
+		return nil, err
 	}
 
 	utils.LavaFormatTrace("direct gRPC request succeeded",

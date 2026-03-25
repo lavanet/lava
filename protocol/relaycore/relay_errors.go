@@ -133,6 +133,7 @@ type RelayError struct {
 	Err          error
 	ProviderInfo common.ProviderInfo
 	Response     *RelayResponse
+	LavaError    *common.LavaError // classified error code (nil if not yet classified)
 }
 
 func (re RelayError) String() string {

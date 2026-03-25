@@ -447,6 +447,21 @@ func LavaFormatError(description string, err error, attributes ...Attribute) err
 	return LavaFormatLog(description, err, attributes, LAVA_LOG_ERROR)
 }
 
+// LavaFormatCodedError logs an error with a classified LavaError code.
+// It auto-populates error_code, error_name, error_category, and retryable fields.
+// lavaError should be a *common.LavaError — passed as interface{} to avoid circular imports.
+// Use common.LavaError fields: Code (uint32), Name (string), Category (Stringer), Retryable (bool).
+func LavaFormatCodedError(description string, err error, errorCode uint32, errorName string, errorCategory string, retryable bool, attributes ...Attribute) error {
+	codedAttrs := []Attribute{
+		{Key: "error_code", Value: errorCode},
+		{Key: "error_name", Value: errorName},
+		{Key: "error_category", Value: errorCategory},
+		{Key: "retryable", Value: retryable},
+	}
+	codedAttrs = append(codedAttrs, attributes...)
+	return LavaFormatLog(description, err, codedAttrs, LAVA_LOG_ERROR)
+}
+
 func LavaFormatWarning(description string, err error, attributes ...Attribute) error {
 	return LavaFormatLog(description, err, attributes, LAVA_LOG_WARN)
 }

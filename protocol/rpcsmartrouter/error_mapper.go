@@ -2,40 +2,36 @@ package rpcsmartrouter
 
 import (
 	"errors"
-	"fmt"
 	"net"
-	"strings"
 	"syscall"
 
-	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/common"
 )
 
-// MapDirectRPCError maps direct RPC errors to user-friendly errors
-func MapDirectRPCError(err error, protocol lavasession.DirectRPCProtocol) error {
+// ClassifyDirectRPCError classifies a direct RPC error into a LavaError for
+// internal use (logging, metrics, endpoint health). The original error is never
+// modified — the router is a transparent hop for the user.
+func ClassifyDirectRPCError(err error) *common.LavaError {
 	if err == nil {
 		return nil
 	}
 
-	// Connection errors
+	// Connection-level errors — detected before inspecting the message
+	var connError *common.LavaError
 	if isConnectionRefused(err) {
-		return fmt.Errorf("RPC endpoint unavailable (connection refused): %w", err)
+		connError = common.LavaErrorConnectionRefused
+	} else if isTimeout(err) {
+		connError = common.LavaErrorConnectionTimeout
 	}
 
-	if isTimeout(err) {
-		return fmt.Errorf("RPC request timeout: %w", err)
-	}
+	// Classify: connection error takes precedence, otherwise classify from message.
+	// Smart router doesn't know chain family at this point — use EVM as default
+	// since JSON-RPC is the most common transport for direct RPC.
+	classified := common.ClassifyError(connError, common.ChainFamilyEVM, common.TransportJsonRPC, 0, err.Error())
 
-	// Protocol-specific error handling
-	switch protocol {
-	case lavasession.DirectRPCProtocolHTTP, lavasession.DirectRPCProtocolHTTPS:
-		return mapHTTPError(err)
-	case lavasession.DirectRPCProtocolGRPC:
-		return mapGRPCError(err)
-	case lavasession.DirectRPCProtocolWS, lavasession.DirectRPCProtocolWSS:
-		return mapWebSocketError(err)
-	}
+	common.LogCodedError("direct RPC error", err, classified)
 
-	return err
+	return classified
 }
 
 func isConnectionRefused(err error) bool {
@@ -52,34 +48,4 @@ func isConnectionRefused(err error) bool {
 func isTimeout(err error) bool {
 	var netErr net.Error
 	return errors.As(err, &netErr) && netErr.Timeout()
-}
-
-func mapHTTPError(err error) error {
-	// Check for HTTP status codes (429, 503, etc.)
-	errStr := err.Error()
-	if strings.Contains(errStr, "429") {
-		return fmt.Errorf("RPC rate limit exceeded: %w", err)
-	}
-	if strings.Contains(errStr, "503") {
-		return fmt.Errorf("RPC service unavailable: %w", err)
-	}
-	if strings.Contains(errStr, "500") {
-		return fmt.Errorf("RPC internal server error: %w", err)
-	}
-	if strings.Contains(errStr, "502") || strings.Contains(errStr, "504") {
-		return fmt.Errorf("RPC gateway error: %w", err)
-	}
-	return err
-}
-
-func mapGRPCError(err error) error {
-	// Map gRPC status codes
-	// TODO: Add gRPC-specific error mapping when gRPC support is implemented
-	return err
-}
-
-func mapWebSocketError(err error) error {
-	// Map WebSocket-specific errors
-	// TODO: Add WebSocket-specific error mapping when WS support is implemented
-	return err
 }
