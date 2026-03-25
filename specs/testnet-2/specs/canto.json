@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Canto",
-        "description": "Adding new specification support for relaying Canto data on Lava",
+        "description": "Add canto mainnet spec",
         "specs": [
             {
                 "index": "CANTO",

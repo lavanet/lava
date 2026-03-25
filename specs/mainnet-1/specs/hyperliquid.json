@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Hyperliquid",
-        "description": "Adding new specification support for relaying Hyperliquid data on Lava",
+        "description": "Add hyperliquid mainnet spec",
         "specs": [
             {
                 "index": "HYPERLIQUID",

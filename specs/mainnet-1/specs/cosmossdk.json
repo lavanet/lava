@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Cosmos SDK",
-        "description": "Adding default Cosmos SDK specification",
+        "description": "Add cosmos sdk spec",
         "specs": [
             {
                 "index": "COSMOSSDK",

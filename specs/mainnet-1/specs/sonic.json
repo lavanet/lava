@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Sonic",
-        "description": "Adding new specification support for relaying Sonic data on Lava",
+        "description": "Add sonic mainnet spec",
         "specs": [
             {
                 "index": "SONIC",

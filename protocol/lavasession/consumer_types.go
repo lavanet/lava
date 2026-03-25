@@ -2,7 +2,6 @@ package lavasession
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -40,8 +39,8 @@ func (list EndpointInfoList) Swap(i, j int) {
 	list[i], list[j] = list[j], list[i]
 }
 
-// SessionConnection - Base interface for both connection types (provider-relay and direct-RPC)
-// This enables composition-based design supporting both provider-relay and direct RPC connection types
+// SessionConnection - Base interface for provider-relay connections.
+// Implemented by ProviderRelayConnection.
 type SessionConnection interface {
 	GetQoSManager() *qos.QoSManager
 	IsHealthy() bool
@@ -66,26 +65,6 @@ func (prc *ProviderRelayConnection) IsHealthy() bool {
 
 func (prc *ProviderRelayConnection) GetEndpointAddress() string {
 	return prc.EndpointAddress
-}
-
-// DirectRPCSessionConnection wraps a direct RPC connection with QoS management
-type DirectRPCSessionConnection struct {
-	DirectConnection DirectRPCConnection
-	QoSManager       *qos.QoSManager
-	EndpointAddress  string
-	Endpoint         *Endpoint // Direct reference to endpoint for per-endpoint tracking
-}
-
-func (drsc *DirectRPCSessionConnection) GetQoSManager() *qos.QoSManager {
-	return drsc.QoSManager
-}
-
-func (drsc *DirectRPCSessionConnection) IsHealthy() bool {
-	return drsc.DirectConnection != nil && drsc.DirectConnection.IsHealthy()
-}
-
-func (drsc *DirectRPCSessionConnection) GetEndpointAddress() string {
-	return drsc.EndpointAddress
 }
 
 const (
@@ -188,27 +167,15 @@ type Endpoint struct {
 	NetworkAddress string // change at the end to NetworkAddress
 	Enabled        bool
 
-	// Only ONE of these will be populated (determined by binary):
-	Connections       []*EndpointConnection // For provider-relay connections
-	DirectConnections []DirectRPCConnection // For direct RPC connections
-
+	Connections        []*EndpointConnection
 	ConnectionRefusals uint64
 	Addons             map[string]struct{}
 	Extensions         map[string]struct{}
 	Geolocation        planstypes.Geolocation
 	mu                 sync.RWMutex // Protects Connections, ConnectionRefusals, and Enabled fields
-
-	// Per-endpoint sync tracking (for direct RPC QoS)
-	LatestBlock     atomic.Int64 // Latest block seen from this endpoint
-	LastBlockUpdate time.Time    // When LatestBlock was last updated
 }
 
-// IsDirectRPC returns true if this endpoint uses direct RPC connections
-func (e *Endpoint) IsDirectRPC() bool {
-	return len(e.DirectConnections) > 0
-}
-
-// IsProviderRelay returns true if this endpoint uses provider-relay connections (consumer mode)
+// IsProviderRelay returns true if this endpoint has provider-relay connections.
 func (e *Endpoint) IsProviderRelay() bool {
 	return len(e.Connections) > 0
 }
@@ -238,7 +205,6 @@ func (e *Endpoint) MarkUnhealthy() {
 		utils.LavaFormatWarning("disabled unhealthy endpoint", nil,
 			utils.LogAttr("endpoint", e.NetworkAddress),
 			utils.LogAttr("refusals", e.ConnectionRefusals),
-			utils.LogAttr("is_direct_rpc", e.IsDirectRPC()),
 		)
 	}
 }
@@ -249,7 +215,6 @@ func (e *Endpoint) ResetHealth() {
 	e.Enabled = true
 	utils.LavaFormatInfo("re-enabled healthy endpoint",
 		utils.LogAttr("endpoint", e.NetworkAddress),
-		utils.LogAttr("is_direct_rpc", e.IsDirectRPC()),
 	)
 }
 
@@ -515,23 +480,10 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 
-	// Check if this is a provider-relay session (endpointConnection != nil)
-	// or direct RPC session (endpointConnection == nil, need to find endpoint by networkAddress)
-	isProviderRelay := (endpointConnection != nil)
-
 	// try to lock an existing session, if can't create a new one
 	var numberOfBlockedSessions uint64 = 0
 	for _, session := range cswp.Sessions {
-		// Match session to connection (different logic for provider-relay vs direct RPC)
-		matchesConnection := false
-		if isProviderRelay {
-			matchesConnection = (session.EndpointConnection == endpointConnection)
-		} else {
-			// Direct RPC: match by network address
-			matchesConnection = (session.Connection != nil && session.Connection.GetEndpointAddress() == networkAddress)
-		}
-
-		if !matchesConnection {
+		if session.EndpointConnection != endpointConnection {
 			// skip sessions that don't belong to the active connection
 			continue
 		}
@@ -559,49 +511,20 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 		randomSessionId = rand.Int63()
 	}
 
-	// Create appropriate connection type based on mode
-	var sessionConnection SessionConnection
-	if isProviderRelay {
-		// Provider-relay mode: Create ProviderRelayConnection wrapper
-		sessionConnection = &ProviderRelayConnection{
-			EndpointConnection: endpointConnection,
-			QoSManager:         qosManager,
-			EndpointAddress:    networkAddress,
-		}
-	} else {
-		// Direct RPC mode: find the endpoint and use its DirectConnection
-		var directConn DirectRPCConnection
-		var selectedEndpoint *Endpoint
-		for _, endpoint := range cswp.Endpoints {
-			if endpoint.NetworkAddress == networkAddress && endpoint.IsDirectRPC() {
-				if len(endpoint.DirectConnections) > 0 {
-					directConn = endpoint.DirectConnections[0]
-					selectedEndpoint = endpoint // ✅ Store endpoint reference
-					break
-				}
-			}
-		}
-
-		if directConn == nil {
-			return nil, 0, fmt.Errorf("direct RPC connection not found for endpoint: %s", networkAddress)
-		}
-
-		sessionConnection = &DirectRPCSessionConnection{
-			DirectConnection: directConn,
-			QoSManager:       qosManager,
-			EndpointAddress:  networkAddress,
-			Endpoint:         selectedEndpoint, // ✅ Store for per-endpoint tracking
-		}
+	sessionConnection := &ProviderRelayConnection{
+		EndpointConnection: endpointConnection,
+		QoSManager:         qosManager,
+		EndpointAddress:    networkAddress,
 	}
 	consumerSession := &SingleConsumerSession{
 		SessionId:          randomSessionId,
 		Parent:             cswp,
-		Connection:         sessionConnection,  // Use composition-based connection
-		EndpointConnection: endpointConnection, // Legacy field for backward compatibility (nil for direct RPC)
+		Connection:         sessionConnection,
+		EndpointConnection: endpointConnection,
 		StaticProvider:     cswp.StaticProvider,
 		routerKey:          NewRouterKey(nil),
 		epoch:              cswp.PairingEpoch,
-		QoSManager:         qosManager, // Legacy field for backward compatibility
+		QoSManager:         qosManager,
 	}
 
 	consumerSession.TryUseSession()                            // we must lock the session so other requests wont get it.
@@ -610,7 +533,6 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 		utils.LogAttr("provider", cswp.PublicLavaAddress),
 		utils.LogAttr("pairingEpoch", cswp.PairingEpoch),
 		utils.LogAttr("sessionId", consumerSession.SessionId),
-		utils.LogAttr("isDirectRPC", !isProviderRelay),
 	)
 	return consumerSession, cswp.PairingEpoch, nil
 }
@@ -673,25 +595,6 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 			// connectEndpoint tries to get an existing connection or creates a new one.
 			// Uses explicit lock scopes to avoid holding lock during network calls.
 			connectEndpoint := func(cswp *ConsumerSessionsWithProvider, ctx context.Context, endpoint *Endpoint) (endpointConnection_ *EndpointConnection, connected_ bool) {
-				// Check if this is a direct RPC endpoint
-				if endpoint.IsDirectRPC() {
-					// Direct RPC connections are already established in convertProvidersToSessions
-					// Just verify they're healthy and return success
-					if len(endpoint.DirectConnections) > 0 && endpoint.DirectConnections[0].IsHealthy() {
-						utils.LavaFormatTrace("using direct RPC connection",
-							utils.LogAttr("url", endpoint.DirectConnections[0].GetURL()),
-							utils.LogAttr("protocol", endpoint.DirectConnections[0].GetProtocol()),
-							utils.LogAttr("GUID", ctx),
-						)
-						return nil, true
-					}
-					utils.LavaFormatWarning("direct RPC connection is unhealthy", nil,
-						utils.LogAttr("endpoint", endpoint.NetworkAddress),
-						utils.LogAttr("GUID", ctx),
-					)
-					return nil, false
-				}
-
 				// Lock the endpoint to protect concurrent access to Connections, ConnectionRefusals, and Enabled
 				endpoint.mu.Lock()
 

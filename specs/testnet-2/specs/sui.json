@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Sui",
-        "description": "Adding new specification support for relaying Sui data on Lava",
+        "description": "Add sui devnet spec",
         "specs": [
             {
                 "index": "SUIT",

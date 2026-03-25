@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Ethereum",
-        "description": "Adding new specification support for relaying Ethereum data on Lava",
+        "description": "Add ethereum mainnet spec",
         "specs": [
             {
                 "index": "ETH1",

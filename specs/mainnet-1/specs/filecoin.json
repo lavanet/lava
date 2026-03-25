@@ -1,13 +1,15 @@
 {
     "proposal": {
         "title": "Add Specs: Filecoin Virtual Machine",
-        "description": "Adding new specification support for relaying FVM data on Lava",
+        "description": "Add filecoin mainnet spec",
         "specs": [
             {
                 "index": "FVM",
                 "name": "filecoin mainnet",
                 "enabled": true,
-                "imports": ["ETH1"],
+                "imports": [
+                    "ETH1"
+                ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 1,
@@ -459,7 +461,7 @@
                             },
                             {
                                 "name": "Filecoin.EthCall",
-                                 "block_parsing": {
+                                "block_parsing": {
                                     "parser_arg": [
                                         "1"
                                     ],
@@ -745,7 +747,7 @@
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
-                            }, 
+                            },
                             {
                                 "name": "Filecoin.EthGetStorageAt",
                                 "block_parsing": {
@@ -2845,19 +2847,19 @@
                                 ]
                             },
                             {
-                              "name": "pruning",
-                              "parse_directive": {
-                                "function_tag": "GET_BLOCK_BY_NUM"
+                                "name": "pruning",
+                                "parse_directive": {
+                                    "function_tag": "GET_BLOCK_BY_NUM"
                                 },
-                              "values": [
-                                {
-                                  "latest_distance": 2880
-                                },
-                                {
-                                  "extension": "archive",
-                                  "expected_value": "1"
-                                }
-                              ]
+                                "values": [
+                                    {
+                                        "latest_distance": 2880
+                                    },
+                                    {
+                                        "extension": "archive",
+                                        "expected_value": "1"
+                                    }
+                                ]
                             }
                         ],
                         "extensions": [
@@ -2869,7 +2871,7 @@
                                 }
                             }
                         ]
-                    }                    
+                    }
                 ],
                 "contributor": [
                     "lava@16gjdwqfpvk3dyasy83wsr26pk27kjq9wvfz0qy"

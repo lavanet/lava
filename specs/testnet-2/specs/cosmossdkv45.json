@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Cosmos SDK v0.45",
-        "description": "Adding default Cosmos SDK v0.45 deprecated apis specification",
+        "description": "Add cosmos sdk deprecated apis spec",
         "specs": [
             {
                 "index": "COSMOSSDK45DEP",

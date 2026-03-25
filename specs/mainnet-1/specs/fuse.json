@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Fuse",
-        "description": "Adding new specification support for relaying Fuse data on Lava",
+        "description": "Add fuse mainnet spec",
         "specs": [
             {
                 "index": "FUSE",
@@ -48,7 +48,7 @@
                     }
                 ],
                 "contributor": [
-                  "lava@16gjdwqfpvk3dyasy83wsr26pk27kjq9wvfz0qy"
+                    "lava@16gjdwqfpvk3dyasy83wsr26pk27kjq9wvfz0qy"
                 ],
                 "contributor_percentage": "0.015"
             },
@@ -96,11 +96,11 @@
                     }
                 ],
                 "contributor": [
-                  "lava@16gjdwqfpvk3dyasy83wsr26pk27kjq9wvfz0qy"
+                    "lava@16gjdwqfpvk3dyasy83wsr26pk27kjq9wvfz0qy"
                 ],
                 "contributor_percentage": "0.015"
             }
         ]
     },
     "deposit": "10000000ulava"
-  }
+}

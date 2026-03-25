@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Optimism",
-        "description": "Adding new specification support for relaying Optimism data on Lava, slow lookup for latest block to reduce provider load",
+        "description": "Add optimism mainnet spec",
         "specs": [
             {
                 "index": "OPTM",

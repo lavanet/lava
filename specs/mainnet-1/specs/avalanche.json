@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: avalanche",
-        "description": "Adding new specification support for relaying avalanche data on Lava",
+        "description": "Add avalanche mainnet spec",
         "specs": [
             {
                 "index": "AVAX",

@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Near",
-        "description": "Adding new specification support for relaying Near data on Lava",
+        "description": "Add near mainnet spec",
         "specs": [
             {
                 "index": "NEAR",

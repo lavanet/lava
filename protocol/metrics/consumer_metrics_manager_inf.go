@@ -90,7 +90,7 @@ type ConsumerMetricsManagerInf interface {
 	ResetSessionRelatedMetrics()
 	ResetBlockedProvidersMetrics(chainId, apiInterface string, providers map[string]string)
 
-	// --- WebSocket (DirectWSSubscriptionManager) ---
+	// --- WebSocket ---
 	SetWsSubscriptionRequestMetric(chainId string, apiInterface string)
 	SetFailedWsSubscriptionRequestMetric(chainId string, apiInterface string)
 	SetWebSocketConnectionActive(chainId string, apiInterface string, add bool)

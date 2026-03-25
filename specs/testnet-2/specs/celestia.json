@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Celestia",
-        "description": "Adding new specification support for relaying Celestia data on Lava",
+        "description": "Add celestia mainnet spec",
         "specs": [
             {
                 "index": "CELESTIA",
@@ -347,10 +347,10 @@
                             {
                                 "name": "minimum-gas-price",
                                 "values": [
-                                  {
-                                    "expected_value": "0.002000000000000000utia",
-                                    "severity": "Warning"
-                                  }
+                                    {
+                                        "expected_value": "0.002000000000000000utia",
+                                        "severity": "Warning"
+                                    }
                                 ]
                             },
                             {
@@ -723,10 +723,10 @@
                             {
                                 "name": "minimum-gas-price",
                                 "values": [
-                                  {
-                                    "expected_value": "0.002000000000000000utia",
-                                    "severity": "Warning"
-                                  }
+                                    {
+                                        "expected_value": "0.002000000000000000utia",
+                                        "severity": "Warning"
+                                    }
                                 ]
                             },
                             {
@@ -1451,8 +1451,6 @@
                                 ]
                             }
                         ],
-
-                        
                         "extensions": [
                             {
                                 "name": "archive",
@@ -1500,10 +1498,10 @@
                             {
                                 "name": "minimum-gas-price",
                                 "values": [
-                                  {
-                                    "expected_value": "0.002000000000000000utia",
-                                    "severity": "Warning"
-                                  }
+                                    {
+                                        "expected_value": "0.002000000000000000utia",
+                                        "severity": "Warning"
+                                    }
                                 ]
                             },
                             {
@@ -1532,10 +1530,10 @@
                             {
                                 "name": "minimum-gas-price",
                                 "values": [
-                                  {
-                                    "expected_value": "0.002000000000000000utia",
-                                    "severity": "Warning"
-                                  }
+                                    {
+                                        "expected_value": "0.002000000000000000utia",
+                                        "severity": "Warning"
+                                    }
                                 ]
                             },
                             {
@@ -1594,7 +1592,6 @@
                             }
                         ]
                     }
-                    
                 ]
             },
             {
@@ -1632,10 +1629,10 @@
                             {
                                 "name": "minimum-gas-price",
                                 "values": [
-                                  {
-                                    "expected_value": "0.002000000000000000utia",
-                                    "severity": "Warning"
-                                  }
+                                    {
+                                        "expected_value": "0.002000000000000000utia",
+                                        "severity": "Warning"
+                                    }
                                 ]
                             },
                             {
@@ -1664,10 +1661,10 @@
                             {
                                 "name": "minimum-gas-price",
                                 "values": [
-                                  {
-                                    "expected_value": "0.002000000000000000utia",
-                                    "severity": "Warning"
-                                  }
+                                    {
+                                        "expected_value": "0.002000000000000000utia",
+                                        "severity": "Warning"
+                                    }
                                 ]
                             },
                             {

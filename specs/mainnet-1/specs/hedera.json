@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Hedera",
-        "description": "Adding new specification support for relaying Hedera data on Lava",
+        "description": "Add hedera mainnet spec",
         "specs": [
             {
                 "index": "HEDERA",

@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: ETHERMINT",
-        "description": "Adding default Ethermint specification",
+        "description": "Add ethermint spec",
         "specs": [
             {
                 "index": "ETHERMINT",

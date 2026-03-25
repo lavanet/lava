@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Polygon",
-        "description": "Adding new specification support for relaying Polygon data on Lava",
+        "description": "Add polygon mainnet spec",
         "specs": [
             {
                 "index": "POLYGON",

@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: BitcoinCash",
-        "description": "Adding new specification support for relaying bitcoin cash data on Lava",
+        "description": "Add bitcoin cash mainnet spec",
         "specs": [
             {
                 "index": "BCH",

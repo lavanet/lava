@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Litecoin",
-        "description": "Adding new specification support for relaying Litecoin data on Lava",
+        "description": "Add litecoin mainnet spec",
         "specs": [
             {
                 "index": "LTC",

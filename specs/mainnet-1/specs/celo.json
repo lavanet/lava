@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Celo",
-        "description": "Adding new specification support for relaying Celo data on Lava",
+        "description": "Add celo mainnet spec",
         "specs": [
             {
                 "index": "CELO",
