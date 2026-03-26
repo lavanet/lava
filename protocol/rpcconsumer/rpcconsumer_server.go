@@ -435,7 +435,7 @@ func (rpccs *RPCConsumerServer) ParseRelay(
 		utils.LogAttr("extensions", extensions),
 		utils.LogAttr("GUID", ctx))
 	utils.LavaFormatTrace("[Archive Debug] Calling chainParser.ParseMsg", utils.LogAttr("url", url), utils.LogAttr("req", req), utils.LogAttr("extensions", extensions), utils.LogAttr("chainParserType", rpccs.chainParser), utils.LogAttr("GUID", ctx))
-	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType, metadata, extensions)
+	chainMessage, err := chainlib.ParseAndValidateMessage(rpccs.chainParser, url, []byte(req), connectionType, metadata, extensions)
 	if err != nil {
 		return nil, err
 	}
@@ -966,6 +966,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 							RelayResult: relayResult,
 							Err:         nil,
 						})
+						if analytics != nil {
+							analytics.CacheHit = true
+						}
 						go rpccs.rpcConsumerLogs.RecordCacheResult(chainId, apiInterface, protocolMessage.GetApi().GetName(), true, cacheLatencyMs)
 						return nil
 					}
@@ -1863,6 +1866,18 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 		cvStatus := "failed"
 		var agreeingProvidersList, disagreeingProvidersList []string
 
+		// Error providers always disagree regardless of consensus outcome
+		for _, result := range nodeErrorResults {
+			if result.ProviderInfo.ProviderAddress != "" {
+				disagreeingProvidersList = append(disagreeingProvidersList, result.ProviderInfo.ProviderAddress)
+			}
+		}
+		for _, result := range protocolErrorResultsCV {
+			if result.ProviderInfo.ProviderAddress != "" {
+				disagreeingProvidersList = append(disagreeingProvidersList, result.ProviderInfo.ProviderAddress)
+			}
+		}
+
 		if cvSuccess {
 			cvStatus = "success"
 			winningHash := relayResult.ResponseHash
@@ -1877,13 +1892,29 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 				}
 			}
 		} else {
-			// No consensus — every provider with a valid response is in conflict
+			// No consensus — every successful provider is also in conflict
 			for _, result := range successResults {
 				if result.ProviderInfo.ProviderAddress != "" {
 					disagreeingProvidersList = append(disagreeingProvidersList, result.ProviderInfo.ProviderAddress)
 				}
 			}
 		}
+
+		// Deduplicate and sort for stable metric labels (independent maps per list)
+		dedupSort := func(list []string) []string {
+			seen := make(map[string]struct{}, len(list))
+			out := make([]string, 0, len(list))
+			for _, s := range list {
+				if _, ok := seen[s]; !ok {
+					seen[s] = struct{}{}
+					out = append(out, s)
+				}
+			}
+			sort.Strings(out)
+			return out
+		}
+		agreeingProvidersList = dedupSort(agreeingProvidersList)
+		disagreeingProvidersList = dedupSort(disagreeingProvidersList)
 
 		// Emit cross-validation metric (even on failure)
 		if cvParams != nil && rpccs.listenEndpoint != nil && rpccs.rpcConsumerLogs != nil {
@@ -2185,7 +2216,6 @@ func (rpccs *RPCConsumerServer) RoundTrip(req *http.Request) (*http.Response, er
 		return nil, err
 	}
 	resp, err := rpccs.chainParser.SetResponseFromRelayResult(relayResult)
-	rpccs.rpcConsumerLogs.SetLoLResponse(err == nil)
 	return resp, err
 }
 

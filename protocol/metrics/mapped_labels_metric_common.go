@@ -1,9 +1,12 @@
 package metrics
 
+import "github.com/prometheus/client_golang/prometheus"
+
 type MappedLabelsMetricOpts struct {
-	Name   string
-	Help   string
-	Labels []string
+	Name       string
+	Help       string
+	Labels     []string
+	Registerer prometheus.Registerer
 }
 
 type MappedLabelsMetricBase struct {

@@ -24,14 +24,18 @@ func NewMappedLabelsCounterVec(opts MappedLabelsMetricOpts) *MappedLabelsCounter
 		}, opts.Labels),
 	}
 
-	if err := prometheus.Register(metric.CounterVec); err != nil {
-		are := &prometheus.AlreadyRegisteredError{}
-		if errors.As(err, are) {
-			if existing, ok := are.ExistingCollector.(*prometheus.CounterVec); ok {
-				metric.CounterVec = existing
+	if opts.Registerer != nil {
+		if err := opts.Registerer.Register(metric.CounterVec); err != nil {
+			are := &prometheus.AlreadyRegisteredError{}
+			if errors.As(err, are) {
+				if existing, ok := are.ExistingCollector.(*prometheus.CounterVec); ok {
+					metric.CounterVec = existing
+				} else {
+					panic(are)
+				}
+			} else {
+				panic(err)
 			}
-		} else {
-			panic(err)
 		}
 	}
 

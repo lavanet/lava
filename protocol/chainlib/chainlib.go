@@ -22,6 +22,19 @@ const (
 	INTERNAL_ADDRESS = "internal-addr"
 )
 
+// ParseAndValidateMessage parses the message and validates it against the consumer's addon policy.
+// Use this in consumer/provider paths. Smart-router should call ParseMsg directly (no policy to enforce).
+func ParseAndValidateMessage(parser ChainParser, url string, data []byte, connectionType string, metadata []pairingtypes.Metadata, extensionInfo extensionslib.ExtensionInfo) (ChainMessage, error) {
+	msg, err := parser.ParseMsg(url, data, connectionType, metadata, extensionInfo)
+	if err != nil {
+		return nil, err
+	}
+	if err := parser.ValidateMessage(msg); err != nil {
+		return nil, err
+	}
+	return msg, nil
+}
+
 func NewChainParser(apiInterface string) (chainParser ChainParser, err error) {
 	switch apiInterface {
 	case spectypes.APIInterfaceJsonRPC:
@@ -76,6 +89,7 @@ type ChainParser interface {
 	GetVerifications(supported []string, internalPath string, apiInterface string) ([]VerificationContainer, error)
 	SeparateAddonsExtensions(ctx context.Context, supported []string) (addons, extensions []string, err error)
 	SetPolicy(policy PolicyInf, chainId string, apiInterface string) error
+	ValidateMessage(ChainMessage) error
 	Active() bool
 	Activate()
 	UpdateBlockTime(newBlockTime time.Duration)

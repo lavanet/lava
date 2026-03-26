@@ -47,7 +47,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/common"
-	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
@@ -143,19 +142,18 @@ func (s *strategyValue) Type() string {
 }
 
 type AnalyticsServerAddresses struct {
-	AddApiMethodCallsMetrics bool
-	MetricsListenAddress     string
-	RelayServerAddress       string
-	RelayKafkaAddress        string
-	RelayKafkaTopic          string
-	RelayKafkaUsername       string
-	RelayKafkaPassword       string
-	RelayKafkaMechanism      string
-	RelayKafkaTLSEnabled     bool
-	RelayKafkaTLSInsecure    bool
-	ReportsAddressFlag       string
-	OptimizerQoSAddress      string
-	OptimizerQoSListen       bool
+	MetricsListenAddress  string
+	RelayServerAddress    string
+	RelayKafkaAddress     string
+	RelayKafkaTopic       string
+	RelayKafkaUsername    string
+	RelayKafkaPassword    string
+	RelayKafkaMechanism   string
+	RelayKafkaTLSEnabled  bool
+	RelayKafkaTLSInsecure bool
+	ReportsAddressFlag    string
+	OptimizerQoSAddress   string
+	OptimizerQoSListen    bool
 }
 type RPCSmartRouter struct {
 	// Smart router doesn't need blockchain state tracking
@@ -1282,24 +1280,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			utils.LavaFormatInfo("lavap Binary Version: " + upgrade.GetCurrentVersion().ConsumerVersion)
 			rand.InitRandomSeed()
 
-			// Smart router automatically enables skip-relay-signing for performance unless explicitly disabled
-			// This saves CPU and memory since rewards are not claimed in smart router mode
-			if !viper.IsSet(common.SkipRelaySigningFlag) {
-				lavaprotocol.SkipRelaySigning = true
-				utils.LavaFormatInfo("[SkipRelaySigning] Smart router mode: automatically enabling skip-relay-signing for performance",
-					utils.Attribute{Key: "skipRelaySigning", Value: lavaprotocol.SkipRelaySigning},
-					utils.Attribute{Key: "reason", Value: "auto-enabled for smart router mode"},
-				)
-			} else {
-				// Flag was explicitly set, log the value
-				explicitValue := viper.GetBool(common.SkipRelaySigningFlag)
-				lavaprotocol.SkipRelaySigning = explicitValue
-				utils.LavaFormatInfo("[SkipRelaySigning] Smart router mode: using explicit flag value",
-					utils.Attribute{Key: "skipRelaySigning", Value: lavaprotocol.SkipRelaySigning},
-					utils.Attribute{Key: "source", Value: "command-line/config file"},
-				)
-			}
-
 			var cache *performance.Cache = nil
 			cacheAddr, err := cmd.Flags().GetString(performance.CacheFlagName)
 			if err != nil {
@@ -1317,19 +1297,18 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			}
 
 			analyticsServerAddresses := AnalyticsServerAddresses{
-				AddApiMethodCallsMetrics: viper.GetBool(metrics.AddApiMethodCallsMetrics),
-				MetricsListenAddress:     viper.GetString(metrics.MetricsListenFlagName),
-				RelayServerAddress:       viper.GetString(metrics.RelayServerFlagName),
-				RelayKafkaAddress:        viper.GetString(metrics.RelayKafkaFlagName),
-				RelayKafkaTopic:          viper.GetString(metrics.RelayKafkaTopicFlagName),
-				RelayKafkaUsername:       viper.GetString(metrics.RelayKafkaUsernameFlagName),
-				RelayKafkaPassword:       viper.GetString(metrics.RelayKafkaPasswordFlagName),
-				RelayKafkaMechanism:      viper.GetString(metrics.RelayKafkaMechanismFlagName),
-				RelayKafkaTLSEnabled:     viper.GetBool(metrics.RelayKafkaTLSEnabledFlagName),
-				RelayKafkaTLSInsecure:    viper.GetBool(metrics.RelayKafkaTLSInsecureFlagName),
-				ReportsAddressFlag:       viper.GetString(reportsSendBEAddress),
-				OptimizerQoSAddress:      viper.GetString(common.OptimizerQosServerAddressFlag),
-				OptimizerQoSListen:       viper.GetBool(common.OptimizerQosListenFlag),
+				MetricsListenAddress:  viper.GetString(metrics.MetricsListenFlagName),
+				RelayServerAddress:    viper.GetString(metrics.RelayServerFlagName),
+				RelayKafkaAddress:     viper.GetString(metrics.RelayKafkaFlagName),
+				RelayKafkaTopic:       viper.GetString(metrics.RelayKafkaTopicFlagName),
+				RelayKafkaUsername:    viper.GetString(metrics.RelayKafkaUsernameFlagName),
+				RelayKafkaPassword:    viper.GetString(metrics.RelayKafkaPasswordFlagName),
+				RelayKafkaMechanism:   viper.GetString(metrics.RelayKafkaMechanismFlagName),
+				RelayKafkaTLSEnabled:  viper.GetBool(metrics.RelayKafkaTLSEnabledFlagName),
+				RelayKafkaTLSInsecure: viper.GetBool(metrics.RelayKafkaTLSInsecureFlagName),
+				ReportsAddressFlag:    viper.GetString(reportsSendBEAddress),
+				OptimizerQoSAddress:   viper.GetString(common.OptimizerQosServerAddressFlag),
+				OptimizerQoSListen:    viper.GetBool(common.OptimizerQosListenFlag),
 			}
 
 			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)
@@ -1426,7 +1405,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 		utils.LavaFormatFatal("failed binding min selection chance flag", err)
 	}
 	cmdRPCSmartRouter.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
-	cmdRPCSmartRouter.Flags().Bool(metrics.AddApiMethodCallsMetrics, false, "adding a counter gauge for each method called per chain per api interface")
 	cmdRPCSmartRouter.Flags().String(metrics.RelayServerFlagName, metrics.DisabledFlagOption, "the http address of the relay usage server api endpoint (example http://127.0.0.1:8080)")
 	cmdRPCSmartRouter.Flags().String(metrics.RelayKafkaFlagName, metrics.DisabledFlagOption, "the kafka address for sending relay metrics (example localhost:9092)")
 	cmdRPCSmartRouter.Flags().String(metrics.RelayKafkaTopicFlagName, "lava-relay-metrics", "the kafka topic for sending relay metrics")
@@ -1467,8 +1445,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().Int64Var(&chainlib.MaximumNumberOfParallelWebsocketConnectionsPerIp, common.LimitParallelWebsocketConnectionsPerIpFlag, chainlib.MaximumNumberOfParallelWebsocketConnectionsPerIp, "limit number of parallel connections to websocket, per ip, default is unlimited (0)")
 	cmdRPCSmartRouter.Flags().Int64Var(&chainlib.MaxIdleTimeInSeconds, common.LimitWebsocketIdleTimeFlag, chainlib.MaxIdleTimeInSeconds, "limit the idle time in seconds for a websocket connection, default is 20 minutes ( 20 * 60 )")
 	cmdRPCSmartRouter.Flags().DurationVar(&chainlib.WebSocketBanDuration, common.BanDurationForWebsocketRateLimitExceededFlag, chainlib.WebSocketBanDuration, "once websocket rate limit is reached, user will be banned Xfor a duration, default no ban")
-	cmdRPCSmartRouter.Flags().BoolVar(&chainlib.SkipPolicyVerification, common.SkipPolicyVerificationFlag, chainlib.SkipPolicyVerification, "skip policy verifications, this flag will skip onchain policy verification and will use the static provider list")
-	cmdRPCSmartRouter.Flags().BoolVar(&lavaprotocol.SkipRelaySigning, common.SkipRelaySigningFlag, lavaprotocol.SkipRelaySigning, "skip cryptographic signing of relay requests/responses to reduce CPU and memory usage (use only with static providers)")
+
 	cmdRPCSmartRouter.Flags().BoolVar(&chainlib.SkipWebsocketVerification, common.SkipWebsocketVerificationFlag, chainlib.SkipWebsocketVerification, "skip websocket verification for chains that require ws/wss endpoints")
 
 	cmdRPCSmartRouter.Flags().BoolVar(&lavasession.PeriodicProbeProviders, common.PeriodicProbeProvidersFlagName, lavasession.PeriodicProbeProviders, "enable periodic probing of providers")

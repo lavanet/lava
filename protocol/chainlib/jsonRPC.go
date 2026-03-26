@@ -244,7 +244,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 		}
 	}
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, extensionInfo)
-	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
+	return nodeMsg, nil
 }
 
 func (*JsonRPCChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, requestedBlockHashes []string, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection, usedDefaultValue bool) (*baseChainMessageContainer, error) {

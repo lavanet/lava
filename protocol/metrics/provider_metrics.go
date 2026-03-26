@@ -4,14 +4,10 @@ import (
 	"sync"
 	"time"
 
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
-	AvailabilityLabel = "availability"
-	SyncLabel         = "sync/freshness"
-	LatencyLabel      = "latency"
 	// Selection stats labels
 	SelectionAvailabilityLabel = "availability"
 	SelectionLatencyLabel      = "latency"
@@ -23,48 +19,27 @@ const (
 type ProviderMetrics struct {
 	specID                          string
 	apiInterface                    string
-	endpoint                        string
 	lock                            sync.Mutex
 	totalCUServicedMetric           *prometheus.CounterVec
 	totalCUPaidMetric               *prometheus.CounterVec
 	totalRelaysServicedMetric       *MappedLabelsCounterVec
-	totalRequestsPerFunctionMetric  *MappedLabelsCounterVec
+	totalErroredMetric              *MappedLabelsCounterVec
 	inFlightPerFunctionMetric       *MappedLabelsGaugeVec
-	totalErrorsPerFunctionMetric    *MappedLabelsCounterVec
-	requestLatencyPerFunctionMetric *MappedLabelsGaugeVec
-	totalErroredMetric              *prometheus.CounterVec
-	consumerQoSMetric               *prometheus.GaugeVec
+	requestLatencyPerFunctionMetric *prometheus.HistogramVec
 	loadRateMetric                  *prometheus.GaugeVec
-	providerLatencyMetric           *prometheus.GaugeVec
-	providerEndToEndLatencyMetric   *prometheus.GaugeVec
+	providerLatencyMetric           *prometheus.HistogramVec
+	providerEndToEndLatencyMetric   *prometheus.HistogramVec
 }
 
-func (pm *ProviderMetrics) AddRelay(consumerAddress string, cu uint64, qos *pairingtypes.QualityOfServiceReport, function string) {
+func (pm *ProviderMetrics) AddRelay(cu uint64, function string) {
 	if pm == nil {
 		return
 	}
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
 	pm.totalCUServicedMetric.WithLabelValues(pm.specID, pm.apiInterface).Add(float64(cu))
-	totalRelayedLabels := map[string]string{"spec": pm.specID, "apiInterface": pm.apiInterface, "provider_endpoint": pm.endpoint}
-	totalReqPerFuncLabels := map[string]string{"spec": pm.specID, "apiInterface": pm.apiInterface, "function": function}
-	pm.totalRelaysServicedMetric.WithLabelValues(totalRelayedLabels).Add(1)
-	pm.totalRequestsPerFunctionMetric.WithLabelValues(totalReqPerFuncLabels).Add(1)
-	if qos == nil {
-		return
-	}
-	availability, err := qos.Availability.Float64()
-	if err == nil {
-		pm.consumerQoSMetric.WithLabelValues(pm.specID, consumerAddress, AvailabilityLabel).Set(availability)
-	}
-	sync, err := qos.Sync.Float64()
-	if err == nil {
-		pm.consumerQoSMetric.WithLabelValues(pm.specID, consumerAddress, SyncLabel).Set(sync)
-	}
-	latency, err := qos.Latency.Float64()
-	if err == nil {
-		pm.consumerQoSMetric.WithLabelValues(pm.specID, consumerAddress, LatencyLabel).Set(latency)
-	}
+	labels := map[string]string{"spec": pm.specID, "apiInterface": pm.apiInterface, "function": function}
+	pm.totalRelaysServicedMetric.WithLabelValues(labels).Add(1)
 }
 
 func (pm *ProviderMetrics) AddInFlightRelay(function string) {
@@ -98,18 +73,14 @@ func (pm *ProviderMetrics) SetLatency(latencyMs float64) {
 	if pm == nil {
 		return
 	}
-	pm.lock.Lock()
-	defer pm.lock.Unlock()
-	pm.providerLatencyMetric.WithLabelValues(pm.specID, pm.apiInterface).Set(latencyMs)
+	pm.providerLatencyMetric.WithLabelValues(pm.specID, pm.apiInterface).Observe(latencyMs)
 }
 
 func (pm *ProviderMetrics) SetEndToEndLatency(latencyMs float64) {
 	if pm == nil {
 		return
 	}
-	pm.lock.Lock()
-	defer pm.lock.Unlock()
-	pm.providerEndToEndLatencyMetric.WithLabelValues(pm.specID, pm.apiInterface).Set(latencyMs)
+	pm.providerEndToEndLatencyMetric.WithLabelValues(pm.specID, pm.apiInterface).Observe(latencyMs)
 }
 
 func (pm *ProviderMetrics) AddPayment(cu uint64) {
@@ -125,10 +96,7 @@ func (pm *ProviderMetrics) AddFunctionLatency(function string, latency time.Dura
 	if pm == nil {
 		return
 	}
-	pm.lock.Lock()
-	defer pm.lock.Unlock()
-	labels := map[string]string{"spec": pm.specID, "apiInterface": pm.apiInterface, "function": function}
-	pm.requestLatencyPerFunctionMetric.WithLabelValues(labels).Set(float64(latency.Milliseconds()))
+	pm.requestLatencyPerFunctionMetric.WithLabelValues(pm.specID, pm.apiInterface, function).Observe(float64(latency.Milliseconds()))
 }
 
 func (pm *ProviderMetrics) AddFunctionError(function string) {
@@ -137,42 +105,34 @@ func (pm *ProviderMetrics) AddFunctionError(function string) {
 	}
 	pm.lock.Lock()
 	defer pm.lock.Unlock()
-	pm.totalErroredMetric.WithLabelValues(pm.specID, pm.apiInterface).Add(1)
 	labels := map[string]string{"spec": pm.specID, "apiInterface": pm.apiInterface, "function": function}
-	pm.totalRequestsPerFunctionMetric.WithLabelValues(labels).Add(1)
-	pm.totalErrorsPerFunctionMetric.WithLabelValues(labels).Add(1)
+	pm.totalRelaysServicedMetric.WithLabelValues(labels).Add(1)
+	pm.totalErroredMetric.WithLabelValues(labels).Add(1)
 }
 
-func NewProviderMetrics(specID, apiInterface, endpoint string, totalCUServicedMetric *prometheus.CounterVec,
+func NewProviderMetrics(specID, apiInterface string,
+	totalCUServicedMetric *prometheus.CounterVec,
 	totalCUPaidMetric *prometheus.CounterVec,
 	totalRelaysServicedMetric *MappedLabelsCounterVec,
-	totalRequestsPerFunctionMetric *MappedLabelsCounterVec,
+	totalErroredMetric *MappedLabelsCounterVec,
 	inFlightPerFunctionMetric *MappedLabelsGaugeVec,
-	totalErrorsPerFunctionMetric *MappedLabelsCounterVec,
-	requestLatencyPerFunctionMetric *MappedLabelsGaugeVec,
-	totalErroredMetric *prometheus.CounterVec,
-	consumerQoSMetric *prometheus.GaugeVec,
+	requestLatencyPerFunctionMetric *prometheus.HistogramVec,
 	loadRateMetric *prometheus.GaugeVec,
-	providerLatencyMetric *prometheus.GaugeVec,
-	providerEndToEndLatencyMetric *prometheus.GaugeVec,
+	providerLatencyMetric *prometheus.HistogramVec,
+	providerEndToEndLatencyMetric *prometheus.HistogramVec,
 ) *ProviderMetrics {
-	pm := &ProviderMetrics{
+	return &ProviderMetrics{
 		specID:                          specID,
 		apiInterface:                    apiInterface,
-		endpoint:                        endpoint,
 		lock:                            sync.Mutex{},
 		totalCUServicedMetric:           totalCUServicedMetric,
 		totalCUPaidMetric:               totalCUPaidMetric,
 		totalRelaysServicedMetric:       totalRelaysServicedMetric,
-		totalRequestsPerFunctionMetric:  totalRequestsPerFunctionMetric,
-		inFlightPerFunctionMetric:       inFlightPerFunctionMetric,
-		totalErrorsPerFunctionMetric:    totalErrorsPerFunctionMetric,
-		requestLatencyPerFunctionMetric: requestLatencyPerFunctionMetric,
 		totalErroredMetric:              totalErroredMetric,
-		consumerQoSMetric:               consumerQoSMetric,
+		inFlightPerFunctionMetric:       inFlightPerFunctionMetric,
+		requestLatencyPerFunctionMetric: requestLatencyPerFunctionMetric,
 		loadRateMetric:                  loadRateMetric,
 		providerLatencyMetric:           providerLatencyMetric,
 		providerEndToEndLatencyMetric:   providerEndToEndLatencyMetric,
 	}
-	return pm
 }
