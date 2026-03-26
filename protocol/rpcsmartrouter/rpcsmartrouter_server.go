@@ -1797,42 +1797,37 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 			utils.LogAttr("GUID", ctx),
 		)
 
-		// Classify error and decide on health tracking
+		// Classify error using the error registry and decide on health tracking
 		shouldMarkUnhealthy := false
 		needsBackoff = false
 
-		// Check if this is an HTTP status error
+		// Extract HTTP status code if available for classification
+		errorCode := 0
 		if httpErr, ok := err.(*lavasession.HTTPStatusError); ok {
-			statusCode := httpErr.StatusCode
+			errorCode = httpErr.StatusCode
+		}
 
-			switch {
-			case statusCode >= 500:
-				// 5xx errors indicate server/node issues - mark unhealthy and backoff
-				shouldMarkUnhealthy = true
-				needsBackoff = true
-				utils.LavaFormatDebug("endpoint returned server error",
-					utils.LogAttr("status", statusCode),
-					utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
-				)
-			case statusCode == 429:
-				// Rate limit - backoff but DON'T mark unhealthy (endpoint is healthy, just busy)
-				needsBackoff = true
-				utils.LavaFormatDebug("endpoint rate limited",
-					utils.LogAttr("status", statusCode),
-					utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
-				)
-			case statusCode >= 400:
-				// 4xx errors are client errors - don't mark unhealthy, don't backoff
-				utils.LavaFormatDebug("client error",
-					utils.LogAttr("status", statusCode),
-					utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
-				)
-			}
-		} else {
-			// Non-HTTP errors (timeout, connection refused, network errors)
-			// These indicate endpoint/network issues - mark unhealthy and backoff
+		classified := common.ClassifyError(nil, -1, common.TransportJsonRPC, errorCode, err.Error())
+		common.LogCodedError("direct RPC relay error", err, classified,
+			rpcss.listenEndpoint.ChainID, errorCode, err.Error(),
+			utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
+		)
+
+		switch {
+		case classified.Category == common.CategoryInternal:
+			// Internal/protocol errors (timeout, connection refused, DNS failure)
+			// indicate endpoint/network issues — mark unhealthy and backoff
 			shouldMarkUnhealthy = true
 			needsBackoff = true
+		case classified.Category == common.CategoryExternal && classified.Retryable:
+			// External retryable errors (5xx, node syncing, rate limit)
+			// Backoff, but only mark unhealthy for server errors (not rate limits)
+			needsBackoff = true
+			if classified != common.LavaErrorNodeRateLimited {
+				shouldMarkUnhealthy = true
+			}
+			// CategoryExternal + !Retryable = client errors, unsupported methods, etc.
+			// Don't mark unhealthy, don't backoff — the error is the user's or permanent.
 		}
 
 		// Apply health tracking based on error classification

@@ -447,7 +447,7 @@ Log output automatically includes:
 - [x] Replace `IsUnsupportedMethodError()` pattern matching with `LavaError.SubCategory.IsUnsupportedMethod()` check
 - [x] Replace `IsUnsupportedMethodMessage()` in `protocol/common/errors.go` with registry-based classification
 - [x] Update `protocol/rpcsmartrouter/error_mapper.go` to use `ClassifyError` and registry codes
-- [ ] Migrate `relayInnerDirect()` in `protocol/rpcsmartrouter/rpcsmartrouter_server.go` to use `LavaError` classification for endpoint health decisions (replace ad-hoc 5xx/429/timeout checks with `LavaError.Category` and `LavaError.Retryable`)
+- [x] Migrate `relayInnerDirect()` in `protocol/rpcsmartrouter/rpcsmartrouter_server.go` to use `LavaError` classification for endpoint health decisions (replace ad-hoc 5xx/429/timeout checks with `LavaError.Category` and `LavaError.Retryable`)
 
 ### Phase 4: Migrate Existing Errors — API Interface Layer
 - [ ] Update `protocol/common/return_errors.go` to use registry for JSON-RPC/REST error responses
