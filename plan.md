@@ -443,9 +443,9 @@ Log output automatically includes:
 - [x] Map existing `protocol/chainlib/common.go` errors to new registry
 - [x] Map existing `protocol/performance/errors.go` to new registry
 - [x] Map existing `ecosystem/cache/handlers.go` errors to new registry
-- [ ] Update `protocol/chainlib/node_error_handler.go` to use `ClassifyError` and registry codes
-- [ ] Replace `IsUnsupportedMethodError()` pattern matching with `LavaError.SubCategory.IsUnsupportedMethod()` check
-- [ ] Replace `IsUnsupportedMethodMessage()` in `protocol/common/errors.go` with registry-based classification
+- [x] Update `protocol/chainlib/node_error_handler.go` to use `ClassifyError` and registry codes
+- [x] Replace `IsUnsupportedMethodError()` pattern matching with `LavaError.SubCategory.IsUnsupportedMethod()` check
+- [x] Replace `IsUnsupportedMethodMessage()` in `protocol/common/errors.go` with registry-based classification
 - [x] Update `protocol/rpcsmartrouter/error_mapper.go` to use `ClassifyError` and registry codes
 - [ ] Migrate `relayInnerDirect()` in `protocol/rpcsmartrouter/rpcsmartrouter_server.go` to use `LavaError` classification for endpoint health decisions (replace ad-hoc 5xx/429/timeout checks with `LavaError.Category` and `LavaError.Retryable`)
 

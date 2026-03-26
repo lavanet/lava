@@ -80,49 +80,73 @@ func NewSolanaNonRetryableError(originalError error) *SolanaNonRetryableError {
 	}
 }
 
-// IsUnsupportedMethodError checks if an error indicates an unsupported method
-// This is the comprehensive check that handles:
-// - Error message pattern matching (via common.IsUnsupportedMethodMessage)
-// - HTTP status codes (404, 405)
-// - gRPC status codes (Unimplemented)
-// - JSON-RPC error codes (-32601)
+// ClassifyNodeError classifies a node error into a LavaError using the error registry.
+// It extracts error codes and messages from JSON-RPC, gRPC, and HTTP errors,
+// then delegates to common.ClassifyError for two-tier classification.
+//
+// Parameters:
+//   - nodeError: the error from the node
+//   - chainFamily: the chain family for Tier 2 lookups (use -1 if unknown)
+//   - transport: the transport type for Tier 1 generic matcher partitioning
+func ClassifyNodeError(nodeError error, chainFamily common.ChainFamily, transport common.TransportType) *common.LavaError {
+	if nodeError == nil {
+		return nil
+	}
+
+	errorCode := 0
+	errorMessage := nodeError.Error()
+
+	// Extract error code from HTTP-wrapped JSON-RPC errors
+	if jsonMsg := TryRecoverNodeErrorFromClientError(nodeError); jsonMsg != nil && jsonMsg.Error != nil {
+		errorCode = jsonMsg.Error.Code
+		if jsonMsg.Error.Message != "" {
+			errorMessage = jsonMsg.Error.Message
+		}
+	}
+
+	// Extract gRPC status code
+	if st, ok := status.FromError(nodeError); ok {
+		errorCode = int(st.Code())
+		if st.Message() != "" {
+			errorMessage = st.Message()
+		}
+	}
+
+	// Extract HTTP status code
+	if httpError, ok := nodeError.(rpcclient.HTTPError); ok {
+		errorCode = httpError.StatusCode
+	}
+
+	return common.ClassifyError(nil, chainFamily, transport, errorCode, errorMessage)
+}
+
+// IsUnsupportedMethodError checks if an error indicates an unsupported method.
+// Uses the error registry's SubCategory classification for a unified check across
+// all transports (JSON-RPC, REST, gRPC) and all pattern types (codes, messages).
 func IsUnsupportedMethodError(nodeError error) bool {
 	if nodeError == nil {
 		return false
 	}
 
-	// First check the error message patterns
+	// Fast path: check the error message patterns directly (covers most cases)
 	if common.IsUnsupportedMethodMessage(nodeError.Error()) {
 		return true
 	}
 
-	// Check for HTTP status codes that indicate unsupported endpoints
-	if httpError, ok := nodeError.(rpcclient.HTTPError); ok {
-		return httpError.StatusCode == common.HTTPStatusNotFound || httpError.StatusCode == common.HTTPStatusMethodNotAllowed
+	// Classify using the registry — checks codes, messages, and HTTP/gRPC status
+	classified := ClassifyNodeError(nodeError, -1, common.TransportJsonRPC)
+	if classified != nil && classified.SubCategory.IsUnsupportedMethod() {
+		return true
 	}
 
-	// Check for gRPC status codes
-	if st, ok := status.FromError(nodeError); ok {
-		// Check for both Unimplemented and Unknown codes that might indicate unsupported methods
-		if st.Code() == codes.Unimplemented {
-			return true
-		}
-		// Also check Unknown code with unsupported method message
-		if st.Code() == codes.Unknown && common.IsUnsupportedMethodMessage(st.Message()) {
-			return true
-		}
+	// Also try REST and gRPC transports for HTTP status codes and gRPC codes
+	classified = ClassifyNodeError(nodeError, -1, common.TransportREST)
+	if classified != nil && classified.SubCategory.IsUnsupportedMethod() {
+		return true
 	}
-
-	// Try to recover JSON-RPC error from HTTP error
-	if jsonMsg := TryRecoverNodeErrorFromClientError(nodeError); jsonMsg != nil && jsonMsg.Error != nil {
-		// JSON-RPC error code -32601 is "Method not found"
-		if jsonMsg.Error.Code == common.JSONRPCMethodNotFoundCode {
-			return true
-		}
-		// Check error message patterns in JSON-RPC error
-		if jsonMsg.Error.Message != "" {
-			return common.IsUnsupportedMethodMessage(jsonMsg.Error.Message)
-		}
+	classified = ClassifyNodeError(nodeError, -1, common.TransportGRPC)
+	if classified != nil && classified.SubCategory.IsUnsupportedMethod() {
+		return true
 	}
 
 	return false
@@ -179,36 +203,41 @@ func IsSolanaNonRetryableErrorType(err error) bool {
 	return errors.As(err, &solanaNonRetryableError)
 }
 
-// ShouldRetryError determines if an error should trigger retry attempts
-// Returns false for:
-// - Unsupported method errors
-// - Solana non-retryable errors (e.g., -32009 "missing in long-term storage")
+// ShouldRetryError determines if an error should trigger retry attempts.
+// Uses the error registry's Retryable field and SubCategory for classification,
+// with fallback to legacy type checks for wrapped errors.
 func ShouldRetryError(err error) bool {
 	if err == nil {
 		return false
 	}
 
-	// Never retry unsupported method errors
+	// Check wrapped error types (these wrap the original error with retry intent)
 	if IsUnsupportedMethodErrorType(err) {
 		return false
 	}
-
-	// Never retry if the error message indicates an unsupported method
-	if IsUnsupportedMethodError(err) {
-		return false
-	}
-
-	// Never retry Solana non-retryable errors (wrapped type)
 	if IsSolanaNonRetryableErrorType(err) {
 		return false
 	}
 
-	// Never retry if the error message indicates a Solana non-retryable error
+	// Classify using the registry
+	classified := ClassifyNodeError(err, -1, common.TransportJsonRPC)
+	if classified != nil && classified != common.LavaErrorUnknown {
+		// Unsupported methods are never retried regardless of Retryable flag
+		if classified.SubCategory.IsUnsupportedMethod() {
+			return false
+		}
+		return classified.Retryable
+	}
+
+	// Legacy fallback for errors not classified by the registry
+	if IsUnsupportedMethodError(err) {
+		return false
+	}
 	if IsSolanaNonRetryableError(err) {
 		return false
 	}
 
-	// For other errors, allow retry logic to decide
+	// Unknown errors — allow retry
 	return true
 }
 
