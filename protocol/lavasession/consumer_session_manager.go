@@ -1784,7 +1784,11 @@ func (csm *ConsumerSessionManager) GetReportedProviders(epoch uint64) []*pairing
 	for _, reportedProvider := range reportedProviders {
 		provider, ok := csm.pairing[reportedProvider.Address]
 		if !ok {
-			// that shouldn't happen
+			// Provider may be a backup provider — they are stored separately
+			// from the main pairing but can still be reported on failure.
+			provider, ok = csm.backupProviders[reportedProvider.Address]
+		}
+		if !ok {
 			utils.LavaFormatError("Failed to find a reported provider in pairing list", nil, utils.LogAttr("provider_address", reportedProvider.Address), utils.LogAttr("epoch", csm.currentEpoch))
 			continue
 		}

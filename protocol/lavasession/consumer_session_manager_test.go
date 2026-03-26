@@ -1567,3 +1567,100 @@ func TestGetReportedProviders_EpochTransitionRace(t *testing.T) {
 			"with the current state. The fix moves csm.lock.RLock before reading "+
 			"reportedProviders so both reads are atomic.")
 }
+
+// TestGetReportedProviders_ReconnectRace reproduces a race between
+// ReconnectProviders and UpdateAllProviders that causes the error
+// "Failed to find a reported provider in pairing list".
+//
+// The race window:
+//  1. ReconnectCandidates() returns a snapshot containing provider A
+//  2. UpdateAllProviders runs: Reset() clears reportedProviders, pairing
+//     is rebuilt WITHOUT provider A (new epoch, different provider set)
+//  3. ReconnectProviders iterates the stale snapshot, reconnectCB fails
+//     for provider A, and ReportProvider re-adds A to reportedProviders
+//  4. GetReportedProviders finds A in reportedProviders but NOT in
+//     csm.pairing → "Failed to find a reported provider in pairing list"
+//
+// The test forces this interleaving by using a reconnectCB that blocks
+// until the epoch transition completes, ensuring the stale candidate is
+// processed after Reset() + pairing rebuild.
+func TestGetReportedProviders_ReconnectRace(t *testing.T) {
+	ctx := context.Background()
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil)
+	require.NoError(t, err)
+
+	// Get a session and fail it to report a provider.
+	css, err := csm.GetSessions(ctx, 1, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0, "", "")
+	require.NoError(t, err)
+
+	var reportedAddr string
+	for _, cs := range css {
+		reportedAddr = cs.Session.Parent.PublicLavaAddress
+		err = csm.OnSessionFailure(cs.Session, ReportAndBlockProviderError)
+		require.NoError(t, err)
+	}
+	require.NotEmpty(t, reportedAddr)
+
+	// Sanity: provider is reported.
+	reported := csm.GetReportedProviders(firstEpochHeight)
+	require.NotEmpty(t, reported, "provider should be reported before the race test begins")
+
+	// Set up a reconnectCB that blocks until the epoch transition happens.
+	// This forces the exact race: ReconnectCandidates captures the snapshot,
+	// then the CB blocks while UpdateAllProviders resets everything, then the
+	// CB returns an error — triggering the re-report of a stale provider.
+	epochTransitioned := make(chan struct{})
+	csm.reportedProviders.lock.Lock()
+	for _, entry := range csm.reportedProviders.addedToPurgeAndReport {
+		entry.addedTime = time.Now().Add(-2 * ReconnectCandidateTime)
+		entry.Errors = 0 // clear errors so it qualifies as a reconnect candidate
+		entry.reconnectCB = func() error {
+			// Block until epoch transition completes
+			<-epochTransitioned
+			return fmt.Errorf("reconnect failed")
+		}
+	}
+	csm.reportedProviders.lock.Unlock()
+
+	// Launch ReconnectProviders in a goroutine — it will call
+	// ReconnectCandidates (capturing the stale snapshot), then block
+	// inside reconnectCB waiting for the epoch transition.
+	reconnectDone := make(chan struct{})
+	go func() {
+		csm.reportedProviders.ReconnectProviders()
+		close(reconnectDone)
+	}()
+
+	// Give ReconnectProviders time to call ReconnectCandidates and enter reconnectCB.
+	time.Sleep(100 * time.Millisecond)
+
+	// Epoch transition: new providers, Reset() clears reportedProviders.
+	newPairingList := createPairingList("new_provider_", true)
+	err = csm.UpdateAllProviders(secondEpochHeight, newPairingList, nil)
+	require.NoError(t, err)
+
+	// Unblock the reconnectCB — it will return an error, and ReconnectProviders
+	// will attempt to re-report the stale provider.
+	close(epochTransitioned)
+	<-reconnectDone
+
+	// Verify the old provider is no longer in pairing.
+	csm.lock.RLock()
+	_, stillInPairing := csm.pairing[reportedAddr]
+	csm.lock.RUnlock()
+	require.False(t, stillInPairing, "old provider should not be in new epoch pairing")
+
+	// The stale provider must NOT be re-added to reportedProviders.
+	require.False(t, csm.reportedProviders.IsReported(reportedAddr),
+		"stale provider should not be in reportedProviders after epoch transition — "+
+			"ReconnectProviders re-added it from a stale candidate snapshot")
+
+	// GetReportedProviders must not return the stale provider.
+	reported = csm.GetReportedProviders(secondEpochHeight)
+	for _, rp := range reported {
+		require.NotEqual(t, reportedAddr, rp.Address,
+			"stale provider from previous epoch should not appear in reported providers")
+	}
+}
