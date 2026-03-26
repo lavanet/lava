@@ -8,7 +8,7 @@ package common
 //
 // Usage:
 //
-//	lavaErr := ClassifyLegacyError(legacyErr)
+//	lavaErr := classifyLegacyError(legacyErr)
 var legacyCodeToLavaError = map[uint32]*LavaError{
 	// --- protocol/common/errors.go ---
 	300: LavaErrorContextDeadline,      // ContextDeadlineExceededError
@@ -73,9 +73,9 @@ var legacyCodeToLavaError = map[uint32]*LavaError{
 	// ErrBatchRequestSizeExceeded uses sdkerrors codespace, code 1 — mapped by message instead
 }
 
-// ClassifyLegacyError extracts the sdkerrors code from a legacy error and returns
+// classifyLegacyError extracts the sdkerrors code from a legacy error and returns
 // the corresponding LavaError. Returns LavaErrorUnknown if no mapping exists.
-func ClassifyLegacyError(err error) *LavaError {
+func classifyLegacyError(err error) *LavaError {
 	if err == nil {
 		return nil
 	}

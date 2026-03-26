@@ -108,7 +108,7 @@ func TestFixtureFileValid(t *testing.T) {
 		assert.True(t, ok, "fixture %s has unknown transport: %s", f.Name, f.Transport)
 
 		// Expected code matches a registered error
-		le := GetLavaError(f.ExpectedCode)
+		le := getLavaError(f.ExpectedCode)
 		assert.Equal(t, f.ExpectedName, le.Name,
 			"fixture %s: expected_lava_code %d resolves to %s, not %s",
 			f.Name, f.ExpectedCode, le.Name, f.ExpectedName)

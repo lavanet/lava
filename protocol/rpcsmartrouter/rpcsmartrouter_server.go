@@ -1772,10 +1772,16 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 	// Create direct RPC relay sender
 	// Use provider name (configured name) instead of raw URL to avoid leaking API keys
 	endpointName := singleConsumerSession.Parent.PublicLavaAddress
+	// Resolve chain family for Tier 2 error classification
+	senderChainFamily := common.ChainFamily(-1)
+	if family, ok := common.GetChainFamily(rpcss.listenEndpoint.ChainID); ok {
+		senderChainFamily = family
+	}
 	directSender := &DirectRPCRelaySender{
 		directConnection:    directConnection,
 		endpointName:        endpointName,
 		originalRequestData: originalRequestData,
+		chainFamily:         senderChainFamily,
 	}
 
 	// Send relay directly to RPC endpoint
@@ -1798,37 +1804,42 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 		)
 
 		// Classify error using the error registry and decide on health tracking
-		shouldMarkUnhealthy := false
-		needsBackoff = false
+		// Try to extract LavaError from classifiedError (already classified by classifyAndWrap)
+		classified := extractLavaError(err)
+		if classified == nil {
+			// Fallback: derive transport and chain family, classify from scratch
+			transport := common.TransportJsonRPC
+			switch directConnection.GetProtocol() {
+			case lavasession.DirectRPCProtocolGRPC:
+				transport = common.TransportGRPC
+			case lavasession.DirectRPCProtocolHTTP, lavasession.DirectRPCProtocolHTTPS:
+				// HTTP could be JSON-RPC or REST — use the endpoint's API interface
+				if rpcss.listenEndpoint.ApiInterface == "rest" {
+					transport = common.TransportREST
+				}
+			}
 
-		// Extract HTTP status code if available for classification
-		errorCode := 0
-		if httpErr, ok := err.(*lavasession.HTTPStatusError); ok {
-			errorCode = httpErr.StatusCode
+			// Resolve chain family for Tier 2 matchers
+			chainFamily := common.ChainFamily(-1)
+			if family, ok := common.GetChainFamily(rpcss.listenEndpoint.ChainID); ok {
+				chainFamily = family
+			}
+
+			errorCode := 0
+			if httpErr, ok := err.(*lavasession.HTTPStatusError); ok {
+				errorCode = httpErr.StatusCode
+			}
+			classified = common.ClassifyError(nil, chainFamily, transport, errorCode, err.Error())
 		}
 
-		classified := common.ClassifyError(nil, -1, common.TransportJsonRPC, errorCode, err.Error())
 		common.LogCodedError("direct RPC relay error", err, classified,
-			rpcss.listenEndpoint.ChainID, errorCode, err.Error(),
+			rpcss.listenEndpoint.ChainID, 0, err.Error(),
 			utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
 		)
 
-		switch {
-		case classified.Category == common.CategoryInternal:
-			// Internal/protocol errors (timeout, connection refused, DNS failure)
-			// indicate endpoint/network issues — mark unhealthy and backoff
-			shouldMarkUnhealthy = true
-			needsBackoff = true
-		case classified.Category == common.CategoryExternal && classified.Retryable:
-			// External retryable errors (5xx, node syncing, rate limit)
-			// Backoff, but only mark unhealthy for server errors (not rate limits)
-			needsBackoff = true
-			if classified != common.LavaErrorNodeRateLimited {
-				shouldMarkUnhealthy = true
-			}
-			// CategoryExternal + !Retryable = client errors, unsupported methods, etc.
-			// Don't mark unhealthy, don't backoff — the error is the user's or permanent.
-		}
+		// Decide endpoint health based on error classification
+		var shouldMarkUnhealthy bool
+		shouldMarkUnhealthy, needsBackoff = classifyEndpointHealth(classified)
 
 		// Apply health tracking based on error classification
 		if shouldMarkUnhealthy && targetEndpoint != nil {

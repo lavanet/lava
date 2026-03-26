@@ -131,16 +131,44 @@ var genericErrorMappings = map[TransportType][]errorMapping{
 		// Node server/generic errors — broadest matchers last
 		{CodeEquals(-32000), LavaErrorNodeServerError},
 
-		// HTTP status codes — JSON-RPC is transported over HTTP, so status codes appear in errors
-		{HTTPStatusContains(429), LavaErrorNodeRateLimited},
-		{HTTPStatusContains(500), LavaErrorNodeInternalError},
-		{HTTPStatusContains(502), LavaErrorNodeBadGateway},
-		{HTTPStatusContains(503), LavaErrorNodeServiceUnavailable},
-		{HTTPStatusContains(504), LavaErrorNodeGatewayTimeout},
+		// HTTP status matchers are appended by init() via httpStatusMessageMappings()
 	},
 
 	TransportREST: {
-		// HTTP status matchers
+		// CodeEquals and HTTPStatusContains matchers are appended by init()
+		// via httpStatusCodeMappings() and httpStatusMessageMappings()
+	},
+
+	TransportGRPC: {
+		// gRPC status code matchers (codes from google.golang.org/grpc/codes)
+		{GRPCCodeEquals(12), LavaErrorNodeUnimplemented},      // codes.Unimplemented
+		{GRPCCodeEquals(14), LavaErrorNodeServiceUnavailable}, // codes.Unavailable
+	},
+}
+
+// ---------------------------------------------------------------------------
+// Shared HTTP status mappings — appended to JSON-RPC and REST at init time
+// ---------------------------------------------------------------------------
+
+// httpStatusCodeMappings returns CodeEquals matchers for common HTTP error status codes.
+// These are used for REST transport where the error code is the HTTP status code itself.
+func httpStatusCodeMappings() []errorMapping {
+	return []errorMapping{
+		{CodeEquals(404), LavaErrorNodeEndpointNotFound},
+		{CodeEquals(405), LavaErrorNodeMethodNotAllowed},
+		{CodeEquals(413), LavaErrorUserRequestTooLarge},
+		{CodeEquals(429), LavaErrorNodeRateLimited},
+		{CodeEquals(500), LavaErrorNodeInternalError},
+		{CodeEquals(502), LavaErrorNodeBadGateway},
+		{CodeEquals(503), LavaErrorNodeServiceUnavailable},
+		{CodeEquals(504), LavaErrorNodeGatewayTimeout},
+	}
+}
+
+// httpStatusMessageMappings returns HTTPStatusContains matchers for common HTTP error status codes.
+// These match status codes appearing as substrings in error messages (e.g., "HTTP status 429").
+func httpStatusMessageMappings() []errorMapping {
+	return []errorMapping{
 		{HTTPStatusContains(404), LavaErrorNodeEndpointNotFound},
 		{HTTPStatusContains(405), LavaErrorNodeMethodNotAllowed},
 		{HTTPStatusContains(413), LavaErrorUserRequestTooLarge},
@@ -149,13 +177,16 @@ var genericErrorMappings = map[TransportType][]errorMapping{
 		{HTTPStatusContains(502), LavaErrorNodeBadGateway},
 		{HTTPStatusContains(503), LavaErrorNodeServiceUnavailable},
 		{HTTPStatusContains(504), LavaErrorNodeGatewayTimeout},
-	},
+	}
+}
 
-	TransportGRPC: {
-		// gRPC status code matchers (codes from google.golang.org/grpc/codes)
-		{GRPCCodeEquals(12), LavaErrorNodeUnimplemented},      // codes.Unimplemented
-		{GRPCCodeEquals(14), LavaErrorNodeServiceUnavailable}, // codes.Unavailable
-	},
+func init() {
+	// Append shared HTTP status message matchers to JSON-RPC transport
+	genericErrorMappings[TransportJsonRPC] = append(genericErrorMappings[TransportJsonRPC], httpStatusMessageMappings()...)
+
+	// Append both CodeEquals and HTTPStatusContains matchers to REST transport
+	genericErrorMappings[TransportREST] = append(genericErrorMappings[TransportREST], httpStatusCodeMappings()...)
+	genericErrorMappings[TransportREST] = append(genericErrorMappings[TransportREST], httpStatusMessageMappings()...)
 }
 
 // ---------------------------------------------------------------------------

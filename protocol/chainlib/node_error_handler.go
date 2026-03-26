@@ -134,19 +134,11 @@ func IsUnsupportedMethodError(nodeError error) bool {
 	}
 
 	// Classify using the registry — checks codes, messages, and HTTP/gRPC status
-	classified := ClassifyNodeError(nodeError, -1, common.TransportJsonRPC)
-	if classified != nil && classified.SubCategory.IsUnsupportedMethod() {
-		return true
-	}
-
-	// Also try REST and gRPC transports for HTTP status codes and gRPC codes
-	classified = ClassifyNodeError(nodeError, -1, common.TransportREST)
-	if classified != nil && classified.SubCategory.IsUnsupportedMethod() {
-		return true
-	}
-	classified = ClassifyNodeError(nodeError, -1, common.TransportGRPC)
-	if classified != nil && classified.SubCategory.IsUnsupportedMethod() {
-		return true
+	for _, transport := range []common.TransportType{common.TransportJsonRPC, common.TransportREST, common.TransportGRPC} {
+		classified := ClassifyNodeError(nodeError, -1, transport)
+		if classified != nil && classified.SubCategory.IsUnsupportedMethod() {
+			return true
+		}
 	}
 
 	return false
@@ -204,9 +196,15 @@ func IsSolanaNonRetryableErrorType(err error) bool {
 }
 
 // ShouldRetryError determines if an error should trigger retry attempts.
-// Uses the error registry's Retryable field and SubCategory for classification,
-// with fallback to legacy type checks for wrapped errors.
+// Convenience wrapper that uses default chain family and transport.
+// Prefer ShouldRetryErrorWithContext when chain/transport info is available.
 func ShouldRetryError(err error) bool {
+	return ShouldRetryErrorWithContext(err, -1, common.TransportJsonRPC)
+}
+
+// ShouldRetryErrorWithContext determines if an error should trigger retry attempts,
+// using chain family and transport for accurate Tier 2 classification.
+func ShouldRetryErrorWithContext(err error, chainFamily common.ChainFamily, transport common.TransportType) bool {
 	if err == nil {
 		return false
 	}
@@ -219,8 +217,8 @@ func ShouldRetryError(err error) bool {
 		return false
 	}
 
-	// Classify using the registry
-	classified := ClassifyNodeError(err, -1, common.TransportJsonRPC)
+	// Classify using the registry with chain-specific and transport-specific matchers
+	classified := ClassifyNodeError(err, chainFamily, transport)
 	if classified != nil && classified != common.LavaErrorUnknown {
 		// Unsupported methods are never retried regardless of Retryable flag
 		if classified.SubCategory.IsUnsupportedMethod() {

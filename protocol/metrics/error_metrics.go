@@ -23,7 +23,9 @@ func InitErrorMetrics() {
 		// Best-effort registration — if already registered (e.g., in tests), reuse.
 		if err := prometheus.Register(counter); err != nil {
 			if existing, ok := err.(prometheus.AlreadyRegisteredError); ok {
-				counter = existing.ExistingCollector.(*prometheus.CounterVec)
+				if reused, ok := existing.ExistingCollector.(*prometheus.CounterVec); ok {
+					counter = reused
+				}
 			}
 		}
 

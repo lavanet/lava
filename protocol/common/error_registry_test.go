@@ -56,8 +56,8 @@ func TestRegistryCodeRanges(t *testing.T) {
 func TestAllErrorCodesRegistered(t *testing.T) {
 	// Spot-check that key error codes are in the registry
 	// Verify UNKNOWN_ERROR is registered at code 0
-	assert.Equal(t, LavaErrorUnknown, GetLavaError(0))
-	assert.Equal(t, "UNKNOWN_ERROR", GetLavaError(0).Name)
+	assert.Equal(t, LavaErrorUnknown, getLavaError(0))
+	assert.Equal(t, "UNKNOWN_ERROR", getLavaError(0).Name)
 
 	codes := []uint32{
 		1001, // CONNECTION_TIMEOUT
@@ -69,7 +69,7 @@ func TestAllErrorCodesRegistered(t *testing.T) {
 		4001, // PARSE_ERROR
 	}
 	for _, code := range codes {
-		le := GetLavaError(code)
+		le := getLavaError(code)
 		assert.NotEqual(t, LavaErrorUnknown, le, "code %d should be registered", code)
 		assert.Equal(t, code, le.Code)
 	}
@@ -79,30 +79,30 @@ func TestAllErrorCodesRegistered(t *testing.T) {
 // Lookup helper tests
 // ---------------------------------------------------------------------------
 
-func TestGetLavaError(t *testing.T) {
-	le := GetLavaError(1001)
+func TestErrorRegistry_GetLavaErrorByCode(t *testing.T) {
+	le := getLavaError(1001)
 	assert.Equal(t, "PROTOCOL_CONNECTION_TIMEOUT", le.Name)
 
-	le = GetLavaError(99999)
+	le = getLavaError(99999)
 	assert.Equal(t, LavaErrorUnknown, le)
 }
 
-func TestGetLavaErrorByName(t *testing.T) {
-	le := GetLavaErrorByName("PROTOCOL_CONNECTION_TIMEOUT")
+func TestErrorRegistry_GetLavaErrorByName(t *testing.T) {
+	le := getLavaErrorByName("PROTOCOL_CONNECTION_TIMEOUT")
 	assert.Equal(t, uint32(1001), le.Code)
 
-	le = GetLavaErrorByName("NONEXISTENT")
+	le = getLavaErrorByName("NONEXISTENT")
 	assert.Equal(t, LavaErrorUnknown, le)
 }
 
-func TestIsRetryable(t *testing.T) {
-	assert.True(t, IsRetryable(1001))  // CONNECTION_TIMEOUT
-	assert.False(t, IsRetryable(1004)) // TLS_MISMATCH
-	assert.False(t, IsRetryable(3001)) // NONCE_TOO_LOW
-	assert.True(t, IsRetryable(0))     // UNKNOWN — retryable by default
+func TestErrorRegistry_IsRetryableStates(t *testing.T) {
+	assert.True(t, isRetryable(1001))  // CONNECTION_TIMEOUT
+	assert.False(t, isRetryable(1004)) // TLS_MISMATCH
+	assert.False(t, isRetryable(3001)) // NONCE_TOO_LOW
+	assert.True(t, isRetryable(0))     // UNKNOWN — retryable by default
 }
 
-func TestIsInternalExternal(t *testing.T) {
+func TestErrorRegistry_IsInternalExternalFlags(t *testing.T) {
 	assert.True(t, IsInternal(1001))  // PROTOCOL_CONNECTION_TIMEOUT
 	assert.False(t, IsExternal(1001)) // not external
 
@@ -132,7 +132,7 @@ func TestErrorSubCategoryString(t *testing.T) {
 func TestUnsupportedMethodSubCategory(t *testing.T) {
 	unsupportedCodes := []uint32{2001, 2002, 2008, 2009, 2010}
 	for _, code := range unsupportedCodes {
-		le := GetLavaError(code)
+		le := getLavaError(code)
 		require.NotEqual(t, LavaErrorUnknown, le, "code %d not registered", code)
 		assert.True(t, le.SubCategory.IsUnsupportedMethod(),
 			"code %d (%s) should be SubCategoryUnsupportedMethod", code, le.Name)
@@ -141,7 +141,7 @@ func TestUnsupportedMethodSubCategory(t *testing.T) {
 	// Non-unsupported codes should not be
 	normalCodes := []uint32{1001, 2003, 2005, 3001, 4001}
 	for _, code := range normalCodes {
-		le := GetLavaError(code)
+		le := getLavaError(code)
 		assert.False(t, le.SubCategory.IsUnsupportedMethod(),
 			"code %d (%s) should NOT be SubCategoryUnsupportedMethod", code, le.Name)
 	}
@@ -151,7 +151,7 @@ func TestUnsupportedMethodSubCategory(t *testing.T) {
 // ChainFamily tests
 // ---------------------------------------------------------------------------
 
-func TestGetChainFamily(t *testing.T) {
+func TestChainFamily_GetByChainID(t *testing.T) {
 	tests := []struct {
 		chainID  string
 		expected ChainFamily
@@ -219,6 +219,14 @@ func TestHTTPStatusContainsMatcher(t *testing.T) {
 	m := HTTPStatusContains(429)
 	assert.True(t, m.Matches(0, "HTTP status 429: Too Many Requests"))
 	assert.False(t, m.Matches(0, "HTTP status 200: OK"))
+
+	// Boundary checks — false-positive defense
+	m500 := HTTPStatusContains(500)
+	assert.True(t, m500.Matches(0, "HTTP status 500: Internal Server Error"))
+	assert.False(t, m500.Matches(0, "block 25001500"), "should not match 500 inside 25001500")
+	assert.False(t, m500.Matches(0, "error code 5001"), "should not match 500 with trailing digit")
+	assert.False(t, m500.Matches(0, "tx 1500 confirmed"), "should not match 500 with leading digit")
+	assert.False(t, m500.Matches(0, "slot 15003 was skipped"), "should not match 500 embedded in 15003")
 }
 
 func TestGRPCCodeEqualsMatcher(t *testing.T) {

@@ -241,13 +241,34 @@ func MessageRegex(pattern string) ErrorMatcher {
 	return messageRegexMatcher{re: regexp.MustCompile(pattern)}
 }
 
-// HTTPStatusContains matches an HTTP status code as a substring in the error message.
+// HTTPStatusContains matches an HTTP status code in the error message with non-digit
+// boundary checks. This prevents false positives like "500" matching inside "25001500".
+// Prefer structured status codes (CodeEquals) when the HTTP status is available as an int.
 type httpStatusMatcher struct {
 	status string
 }
 
 func (m httpStatusMatcher) Matches(_ int, errorMessage string) bool {
-	return strings.Contains(errorMessage, m.status)
+	target := m.status
+	msg := errorMessage
+	for {
+		idx := strings.Index(msg, target)
+		if idx < 0 {
+			return false
+		}
+		// Check that the character before the match (if any) is not a digit
+		if idx > 0 && msg[idx-1] >= '0' && msg[idx-1] <= '9' {
+			msg = msg[idx+len(target):]
+			continue
+		}
+		// Check that the character after the match (if any) is not a digit
+		end := idx + len(target)
+		if end < len(msg) && msg[end] >= '0' && msg[end] <= '9' {
+			msg = msg[end:]
+			continue
+		}
+		return true
+	}
 }
 
 func HTTPStatusContains(status int) ErrorMatcher {
@@ -307,14 +328,14 @@ func registerError(le *LavaError) *LavaError {
 // Lookup helpers
 // ---------------------------------------------------------------------------
 
-func GetLavaError(code uint32) *LavaError {
+func getLavaError(code uint32) *LavaError {
 	if le, ok := errorRegistry[code]; ok {
 		return le
 	}
 	return LavaErrorUnknown
 }
 
-func GetLavaErrorByName(name string) *LavaError {
+func getLavaErrorByName(name string) *LavaError {
 	for _, le := range errorRegistry {
 		if le.Name == name {
 			return le
@@ -323,14 +344,14 @@ func GetLavaErrorByName(name string) *LavaError {
 	return LavaErrorUnknown
 }
 
-func IsRetryable(code uint32) bool {
-	return GetLavaError(code).Retryable
+func isRetryable(code uint32) bool {
+	return getLavaError(code).Retryable
 }
 
 func IsInternal(code uint32) bool {
-	return GetLavaError(code).Category == CategoryInternal
+	return getLavaError(code).Category == CategoryInternal
 }
 
 func IsExternal(code uint32) bool {
-	return GetLavaError(code).Category == CategoryExternal
+	return getLavaError(code).Category == CategoryExternal
 }

@@ -8,20 +8,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestClassifyLegacyError_NilError(t *testing.T) {
-	assert.Nil(t, ClassifyLegacyError(nil))
+func TestLegacyErrorMapping_NilError(t *testing.T) {
+	assert.Nil(t, classifyLegacyError(nil))
 }
 
-func TestClassifyLegacyError_NonLegacyError(t *testing.T) {
+func TestLegacyErrorMapping_NonLegacyError(t *testing.T) {
 	// A plain error without sdkerrors code falls back to message classification
 	err := errors.New("nonce too low")
-	result := ClassifyLegacyError(err)
+	result := classifyLegacyError(err)
 	assert.Equal(t, LavaErrorChainNonceTooLow, result)
 }
 
-func TestClassifyLegacyError_UnknownFallback(t *testing.T) {
+func TestLegacyErrorMapping_UnknownFallback(t *testing.T) {
 	err := errors.New("completely unknown error")
-	result := ClassifyLegacyError(err)
+	result := classifyLegacyError(err)
 	assert.Equal(t, LavaErrorUnknown, result)
 }
 
@@ -34,7 +34,7 @@ type mockSDKError struct {
 func (e *mockSDKError) Error() string    { return e.msg }
 func (e *mockSDKError) ABCICode() uint32 { return e.code }
 
-func TestClassifyLegacyError_SessionErrors(t *testing.T) {
+func TestLegacyErrorMapping_SessionErrors(t *testing.T) {
 	tests := []struct {
 		name     string
 		code     uint32
@@ -54,14 +54,14 @@ func TestClassifyLegacyError_SessionErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := &mockSDKError{code: tt.code, msg: "test"}
-			result := ClassifyLegacyError(err)
+			result := classifyLegacyError(err)
 			require.NotNil(t, result)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
 
-func TestClassifyLegacyError_ProviderErrors(t *testing.T) {
+func TestLegacyErrorMapping_ProviderErrors(t *testing.T) {
 	tests := []struct {
 		name     string
 		code     uint32
@@ -83,14 +83,14 @@ func TestClassifyLegacyError_ProviderErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := &mockSDKError{code: tt.code, msg: "test"}
-			result := ClassifyLegacyError(err)
+			result := classifyLegacyError(err)
 			require.NotNil(t, result)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
 
-func TestClassifyLegacyError_ProtocolErrors(t *testing.T) {
+func TestLegacyErrorMapping_ProtocolErrors(t *testing.T) {
 	tests := []struct {
 		name     string
 		code     uint32
@@ -107,14 +107,14 @@ func TestClassifyLegacyError_ProtocolErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := &mockSDKError{code: tt.code, msg: "test"}
-			result := ClassifyLegacyError(err)
+			result := classifyLegacyError(err)
 			require.NotNil(t, result)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
 
-func TestClassifyLegacyError_CommonErrors(t *testing.T) {
+func TestLegacyErrorMapping_CommonErrors(t *testing.T) {
 	tests := []struct {
 		name     string
 		code     uint32
@@ -130,14 +130,14 @@ func TestClassifyLegacyError_CommonErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := &mockSDKError{code: tt.code, msg: "test"}
-			result := ClassifyLegacyError(err)
+			result := classifyLegacyError(err)
 			require.NotNil(t, result)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
 
-func TestClassifyLegacyError_ChainTrackerErrors(t *testing.T) {
+func TestLegacyErrorMapping_ChainTrackerErrors(t *testing.T) {
 	tests := []struct {
 		name     string
 		code     uint32
@@ -153,23 +153,23 @@ func TestClassifyLegacyError_ChainTrackerErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := &mockSDKError{code: tt.code, msg: "test"}
-			result := ClassifyLegacyError(err)
+			result := classifyLegacyError(err)
 			require.NotNil(t, result)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
 
-func TestClassifyLegacyError_PerformanceErrors(t *testing.T) {
+func TestLegacyErrorMapping_PerformanceErrors(t *testing.T) {
 	err := &mockSDKError{code: 700, msg: "No Connection To grpc server"}
-	result := ClassifyLegacyError(err)
+	result := classifyLegacyError(err)
 	assert.Equal(t, LavaErrorConnectionRefused, result)
 }
 
-func TestClassifyLegacyError_UnmappedCode(t *testing.T) {
+func TestLegacyErrorMapping_UnmappedCode(t *testing.T) {
 	// An sdkerrors code that isn't in our mapping should fall back to message classification
 	err := &mockSDKError{code: 99999, msg: "some unknown legacy error"}
-	result := ClassifyLegacyError(err)
+	result := classifyLegacyError(err)
 	assert.Equal(t, LavaErrorUnknown, result)
 }
 

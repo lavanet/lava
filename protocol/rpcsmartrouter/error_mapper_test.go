@@ -12,8 +12,9 @@ import (
 )
 
 func TestClassifyDirectRPCError_Nil(t *testing.T) {
-	result := ClassifyDirectRPCError(nil)
-	assert.Nil(t, result)
+	lavaErr, wrappedErr := classifyDirectRPCError(nil, -1, common.TransportJsonRPC)
+	assert.Equal(t, common.LavaErrorUnknown, lavaErr)
+	assert.Nil(t, wrappedErr)
 }
 
 func TestClassifyDirectRPCError_ConnectionRefused(t *testing.T) {
@@ -28,7 +29,7 @@ func TestClassifyDirectRPCError_ConnectionRefused(t *testing.T) {
 		},
 	}
 
-	lavaErr := ClassifyDirectRPCError(err)
+	lavaErr, _ := classifyDirectRPCError(err, -1, common.TransportJsonRPC)
 	require.NotNil(t, lavaErr)
 	assert.Equal(t, common.LavaErrorConnectionRefused, lavaErr)
 	assert.True(t, lavaErr.Retryable)
@@ -38,7 +39,7 @@ func TestClassifyDirectRPCError_ConnectionRefused(t *testing.T) {
 func TestClassifyDirectRPCError_Timeout(t *testing.T) {
 	err := &mockNetError{timeout: true}
 
-	lavaErr := ClassifyDirectRPCError(err)
+	lavaErr, _ := classifyDirectRPCError(err, -1, common.TransportJsonRPC)
 	require.NotNil(t, lavaErr)
 	assert.Equal(t, common.LavaErrorConnectionTimeout, lavaErr)
 	assert.True(t, lavaErr.Retryable)
@@ -81,7 +82,7 @@ func TestClassifyDirectRPCError_HTTPStatusCodes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := errors.New(tt.errorMsg)
-			lavaErr := ClassifyDirectRPCError(err)
+			lavaErr, _ := classifyDirectRPCError(err, -1, common.TransportJsonRPC)
 			require.NotNil(t, lavaErr)
 			assert.Equal(t, tt.expectedError, lavaErr)
 			assert.Equal(t, common.CategoryExternal, lavaErr.Category)
@@ -92,7 +93,7 @@ func TestClassifyDirectRPCError_HTTPStatusCodes(t *testing.T) {
 
 func TestClassifyDirectRPCError_UnknownError(t *testing.T) {
 	err := errors.New("your mom died")
-	lavaErr := ClassifyDirectRPCError(err)
+	lavaErr, _ := classifyDirectRPCError(err, -1, common.TransportJsonRPC)
 	require.NotNil(t, lavaErr)
 	assert.Equal(t, common.LavaErrorUnknown, lavaErr)
 	// Unknown errors are external — they're pass-throughs from the node
@@ -101,7 +102,7 @@ func TestClassifyDirectRPCError_UnknownError(t *testing.T) {
 
 func TestClassifyDirectRPCError_RateLimitByMessage(t *testing.T) {
 	err := errors.New("rate limit exceeded for this endpoint")
-	lavaErr := ClassifyDirectRPCError(err)
+	lavaErr, _ := classifyDirectRPCError(err, -1, common.TransportJsonRPC)
 	require.NotNil(t, lavaErr)
 	assert.Equal(t, common.LavaErrorNodeRateLimited, lavaErr)
 }
@@ -109,12 +110,12 @@ func TestClassifyDirectRPCError_RateLimitByMessage(t *testing.T) {
 func TestClassifyDirectRPCError_InternalVsExternal(t *testing.T) {
 	// Connection errors are internal (Lava protocol layer)
 	timeoutErr := &mockNetError{timeout: true}
-	lavaErr := ClassifyDirectRPCError(timeoutErr)
+	lavaErr, _ := classifyDirectRPCError(timeoutErr, -1, common.TransportJsonRPC)
 	assert.True(t, common.IsInternal(lavaErr.Code))
 
 	// HTTP status errors are external (node/chain layer)
 	httpErr := errors.New("HTTP status 503: Service Unavailable")
-	lavaErr = ClassifyDirectRPCError(httpErr)
+	lavaErr, _ = classifyDirectRPCError(httpErr, -1, common.TransportJsonRPC)
 	assert.True(t, common.IsExternal(lavaErr.Code))
 }
 
@@ -138,7 +139,7 @@ func TestClassifyDirectRPCError_UnsupportedMethod(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := errors.New(tt.errorMsg)
-			lavaErr := ClassifyDirectRPCError(err)
+			lavaErr, _ := classifyDirectRPCError(err, -1, common.TransportJsonRPC)
 			require.NotNil(t, lavaErr)
 			assert.Equal(t, tt.expected, lavaErr)
 			assert.True(t, lavaErr.SubCategory.IsUnsupportedMethod())
@@ -176,6 +177,30 @@ func TestIsTimeout(t *testing.T) {
 	assert.False(t, isTimeout(regularErr))
 }
 
+func TestExtractLavaError_FromclassifiedError(t *testing.T) {
+	origErr := errors.New("nonce too low")
+	_, wrappedErr := classifyDirectRPCError(origErr, -1, common.TransportJsonRPC)
+	require.NotNil(t, wrappedErr)
+
+	lavaErr := extractLavaError(wrappedErr)
+	require.NotNil(t, lavaErr)
+	assert.Equal(t, common.LavaErrorChainNonceTooLow, lavaErr)
+}
+
+func TestExtractLavaError_FromPlainError(t *testing.T) {
+	plainErr := errors.New("plain error")
+	lavaErr := extractLavaError(plainErr)
+	assert.Nil(t, lavaErr)
+}
+
+func TestClassifiedError_Unwrap(t *testing.T) {
+	origErr := errors.New("original error")
+	ce := &classifiedError{Original: origErr, LavaError: common.LavaErrorUnknown}
+
+	assert.Equal(t, origErr, errors.Unwrap(ce))
+	assert.True(t, errors.Is(ce, origErr))
+}
+
 // mockNetError implements net.Error for testing
 type mockNetError struct {
 	timeout   bool
@@ -185,3 +210,79 @@ type mockNetError struct {
 func (e *mockNetError) Error() string   { return "mock net error" }
 func (e *mockNetError) Timeout() bool   { return e.timeout }
 func (e *mockNetError) Temporary() bool { return e.temporary }
+
+// ---------------------------------------------------------------------------
+// Endpoint health classification tests (GIVEN–WHEN–THEN)
+// ---------------------------------------------------------------------------
+
+func TestClassifyEndpointHealth_InternalError(t *testing.T) {
+	// GIVEN a CategoryInternal error (transport timeout, connection refused, DNS failure)
+	// WHEN the relay fails
+	// THEN the endpoint is marked unhealthy AND backoff is requested
+	internalErrors := []*common.LavaError{
+		common.LavaErrorConnectionTimeout,
+		common.LavaErrorConnectionRefused,
+		common.LavaErrorDNSFailure,
+		common.LavaErrorConnectionReset,
+		common.LavaErrorContextDeadline,
+	}
+	for _, le := range internalErrors {
+		unhealthy, backoff := classifyEndpointHealth(le)
+		assert.True(t, unhealthy, "%s should mark unhealthy", le.Name)
+		assert.True(t, backoff, "%s should request backoff", le.Name)
+	}
+}
+
+func TestClassifyEndpointHealth_ExternalRetryable(t *testing.T) {
+	// GIVEN a CategoryExternal + Retryable error (5xx, node syncing)
+	// WHEN the relay fails
+	// THEN backoff is requested AND endpoint is marked unhealthy
+	retryableErrors := []*common.LavaError{
+		common.LavaErrorNodeInternalError,
+		common.LavaErrorNodeServiceUnavailable,
+		common.LavaErrorNodeBadGateway,
+		common.LavaErrorNodeGatewayTimeout,
+		common.LavaErrorNodeSyncing,
+	}
+	for _, le := range retryableErrors {
+		unhealthy, backoff := classifyEndpointHealth(le)
+		assert.True(t, unhealthy, "%s should mark unhealthy", le.Name)
+		assert.True(t, backoff, "%s should request backoff", le.Name)
+	}
+}
+
+func TestClassifyEndpointHealth_RateLimited(t *testing.T) {
+	// GIVEN a rate-limited error (CategoryExternal + Retryable but rate-limited)
+	// WHEN the relay fails
+	// THEN backoff is requested but endpoint is NOT marked unhealthy (it's healthy, just busy)
+	unhealthy, backoff := classifyEndpointHealth(common.LavaErrorNodeRateLimited)
+	assert.False(t, unhealthy, "rate-limited should NOT mark unhealthy")
+	assert.True(t, backoff, "rate-limited should request backoff")
+}
+
+func TestClassifyEndpointHealth_ExternalNonRetryable(t *testing.T) {
+	// GIVEN a CategoryExternal + non-retryable error (4xx, unsupported method, nonce too low)
+	// WHEN the relay fails
+	// THEN neither mark unhealthy nor backoff (error is the user's or permanent)
+	nonRetryableErrors := []*common.LavaError{
+		common.LavaErrorNodeMethodNotFound,
+		common.LavaErrorNodeEndpointNotFound,
+		common.LavaErrorChainNonceTooLow,
+		common.LavaErrorChainExecutionReverted,
+		common.LavaErrorUserInvalidParams,
+	}
+	for _, le := range nonRetryableErrors {
+		unhealthy, backoff := classifyEndpointHealth(le)
+		assert.False(t, unhealthy, "%s should NOT mark unhealthy", le.Name)
+		assert.False(t, backoff, "%s should NOT request backoff", le.Name)
+	}
+}
+
+func TestClassifyEndpointHealth_Nil(t *testing.T) {
+	// GIVEN a nil classification
+	// WHEN health is evaluated
+	// THEN neither mark unhealthy nor backoff
+	unhealthy, backoff := classifyEndpointHealth(nil)
+	assert.False(t, unhealthy)
+	assert.False(t, backoff)
+}

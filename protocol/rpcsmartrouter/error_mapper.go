@@ -2,18 +2,61 @@ package rpcsmartrouter
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"syscall"
 
 	"github.com/lavanet/lava/v5/protocol/common"
 )
 
-// ClassifyDirectRPCError classifies a direct RPC error into a LavaError for
+// ---------------------------------------------------------------------------
+// classifiedError — wraps an error with its classification metadata
+// ---------------------------------------------------------------------------
+
+// classifiedError wraps an original error with its LavaError classification.
+// It implements the error interface and supports errors.Unwrap().
+type classifiedError struct {
+	Original  error
+	LavaError *common.LavaError
+}
+
+func (ce *classifiedError) Error() string {
+	return formatclassifiedError(ce.Original, ce.LavaError)
+}
+
+func (ce *classifiedError) Unwrap() error {
+	return ce.Original
+}
+
+// formatclassifiedError builds a human-readable string from an error and its classification.
+func formatclassifiedError(err error, le *common.LavaError) string {
+	if le == nil {
+		return err.Error()
+	}
+	return fmt.Sprintf("[%s] %s", le.Name, err.Error())
+}
+
+// extractLavaError extracts the *common.LavaError from a classifiedError,
+// or returns nil if the error is not (or does not wrap) a classifiedError.
+func extractLavaError(err error) *common.LavaError {
+	var ce *classifiedError
+	if errors.As(err, &ce) {
+		return ce.LavaError
+	}
+	return nil
+}
+
+// ---------------------------------------------------------------------------
+// Classification helpers
+// ---------------------------------------------------------------------------
+
+// classifyDirectRPCError classifies a direct RPC error into a LavaError for
 // internal use (logging, metrics, endpoint health). The original error is never
 // modified — the router is a transparent hop for the user.
-func ClassifyDirectRPCError(err error) *common.LavaError {
+// Returns both the classification and a classifiedError that wraps the original.
+func classifyDirectRPCError(err error, chainFamily common.ChainFamily, transport common.TransportType) (*common.LavaError, error) {
 	if err == nil {
-		return nil
+		return common.LavaErrorUnknown, nil
 	}
 
 	// Connection-level errors — detected before inspecting the message
@@ -24,14 +67,47 @@ func ClassifyDirectRPCError(err error) *common.LavaError {
 		connError = common.LavaErrorConnectionTimeout
 	}
 
-	// Classify: connection error takes precedence, otherwise classify from message.
-	// Smart router doesn't know chain family at this point — use EVM as default
-	// since JSON-RPC is the most common transport for direct RPC.
-	classified := common.ClassifyError(connError, common.ChainFamilyEVM, common.TransportJsonRPC, 0, err.Error())
+	// Classify using the correct chain family for Tier 2 matchers
+	classified := common.ClassifyError(connError, chainFamily, transport, 0, err.Error())
 
 	common.LogCodedError("direct RPC error", err, classified, "", 0, err.Error())
 
-	return classified
+	return classified, &classifiedError{Original: err, LavaError: classified}
+}
+
+// classifyAndWrap is a convenience that calls classifyDirectRPCError and returns
+// only the wrapped error (discarding the *LavaError for call sites that don't need it).
+func classifyAndWrap(err error, chainFamily common.ChainFamily, transport common.TransportType) error {
+	if err == nil {
+		return nil
+	}
+	_, wrapped := classifyDirectRPCError(err, chainFamily, transport)
+	return wrapped
+}
+
+// classifyEndpointHealth decides whether an endpoint should be marked unhealthy
+// and/or backed off based on the classified error.
+//
+// Rules:
+//   - CategoryInternal (timeout, connection refused, DNS) → unhealthy + backoff
+//   - CategoryExternal + Retryable (5xx, syncing) → backoff + unhealthy (except rate limit)
+//   - CategoryExternal + Retryable + RateLimited → backoff only (endpoint is healthy, just busy)
+//   - CategoryExternal + !Retryable (4xx, unsupported) → neither (error is the user's)
+func classifyEndpointHealth(classified *common.LavaError) (shouldMarkUnhealthy bool, needsBackoff bool) {
+	if classified == nil {
+		return false, false
+	}
+	switch {
+	case classified.Category == common.CategoryInternal:
+		return true, true
+	case classified.Category == common.CategoryExternal && classified.Retryable:
+		if classified == common.LavaErrorNodeRateLimited {
+			return false, true // healthy but busy
+		}
+		return true, true
+	default:
+		return false, false
+	}
 }
 
 func isConnectionRefused(err error) bool {
