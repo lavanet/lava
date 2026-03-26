@@ -4,7 +4,7 @@
         "description": "Adding new specification support for relaying Avalanche P Chain data on Lava",
         "specs": [
             {
-                "index": "AVAXP",
+                "index": "AVALANCHEP",
                 "name": "avalanche p chain mainnet",
                 "enabled": true,
                 "reliability_threshold": 268435455,
@@ -579,11 +579,11 @@
                 ]
             },
             {
-                "index": "AVAXPT",
+                "index": "AVALANCHEPT",
                 "name": "avalanche p chain testnet",
                 "enabled": true,
                 "imports": [
-                    "AVAXP"
+                    "AVALANCHEP"
                 ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,

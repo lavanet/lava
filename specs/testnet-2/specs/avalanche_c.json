@@ -4,7 +4,7 @@
         "description": "Adding new specification support for relaying Avalanche C Chain data on Lava. Note: Warp APIs (warp_getMessage, etc.) require the node to be configured with warp-api-enabled=true",
         "specs": [
             {
-                "index": "AVAXC",
+                "index": "AVALANCHEC",
                 "name": "avalanche c chain mainnet",
                 "enabled": true,
                 "reliability_threshold": 268435455,
@@ -515,11 +515,11 @@
                 ]
             },
             {
-                "index": "AVAXCT",
+                "index": "AVALANCHECT",
                 "name": "avalanche c chain testnet",
                 "enabled": true,
                 "imports": [
-                    "AVAXC"
+                    "AVALANCHEC"
                 ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,

@@ -48,19 +48,19 @@ fi
 
 lavad tx subscription buy DefaultPlan $(lavad keys show user1 -a) -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
-lavad tx pairing stake-provider "AVAXCT" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) -y --from servicer1 --provider-moniker "dummyMoniker"  --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "AVALANCHECT" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) -y --from servicer1 --provider-moniker "dummyMoniker"  --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 sleep_until_next_epoch
 
 # Generate provider YAML config with explicit internal-path mapping.
-# The AVAXC spec requires internal-path "/C/rpc" for its API collections.
+# The AVALANCHEC spec requires internal-path "/C/rpc" for its API collections.
 # CLI args format doesn't support internal-path, so we use a YAML config.
 # Viper searches for configs relative to CWD and ./config, so we write there.
 PROVIDER1_YAML="config/provider1_avaxc.yml"
 cat > "$PROVIDER1_YAML" <<EOF
 endpoints:
   - api-interface: jsonrpc
-    chain-id: AVAXCT
+    chain-id: AVALANCHECT
     network-address:
       address: $PROVIDER1_LISTENER
     node-urls:
@@ -77,7 +77,7 @@ $PROVIDER1_YAML \
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 --chain-id lava --skip-websocket-verification --metrics-listen-address \":7776\" 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 
 screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcconsumer \
-127.0.0.1:3360 AVAXCT jsonrpc \
+127.0.0.1:3360 AVALANCHECT jsonrpc \
 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing --metrics-listen-address \":7779\" 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
 
 echo "--- setting up screens done ---"

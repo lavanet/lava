@@ -1,8 +1,8 @@
-# Avalanche P-Chain provider config (AVAXP/AVAXPT spec)
+# Avalanche P-Chain provider config (AVALANCHEP/AVALANCHEPT spec)
 # Only requires internal path: /P
 endpoints:
   - api-interface: jsonrpc
-    chain-id: AVAXPT
+    chain-id: AVALANCHEPT
     network-address:
       address: 127.0.0.1:2221
     node-urls:
