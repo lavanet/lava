@@ -29,7 +29,7 @@ func ClassifyDirectRPCError(err error) *common.LavaError {
 	// since JSON-RPC is the most common transport for direct RPC.
 	classified := common.ClassifyError(connError, common.ChainFamilyEVM, common.TransportJsonRPC, 0, err.Error())
 
-	common.LogCodedError("direct RPC error", err, classified)
+	common.LogCodedError("direct RPC error", err, classified, "", 0, err.Error())
 
 	return classified
 }

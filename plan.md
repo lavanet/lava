@@ -431,9 +431,9 @@ Log output automatically includes:
 
 ### Phase 2: Logging Integration
 - [x] Add `LavaFormatCodedError` helper to `utils/lavalog.go` that takes a `LavaError` code
-- [ ] Ensure coded errors emit `error_code`, `error_name`, `error_category`, `retryable`, `chain_error_code`, `chain_error_message` fields in structured logs
-- [ ] Add Prometheus counter that auto-increments per error code (`lava_errors_total{code, name, category, retryable}`)
-- [ ] Write unit tests for coded error logging
+- [x] Ensure coded errors emit `error_code`, `error_name`, `error_category`, `retryable`, `chain_error_code`, `chain_error_message` fields in structured logs
+- [x] Add Prometheus counter that auto-increments per error code (`lava_errors_total{code, name, category, retryable, chain_id}`)
+- [x] Write unit tests for coded error logging
 
 ### Phase 3: Migrate Existing Errors — Protocol Layer
 - [ ] Map existing `protocol/lavaprotocol/protocolerrors/errors.go` codes to new registry
