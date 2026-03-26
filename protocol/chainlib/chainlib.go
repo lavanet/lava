@@ -23,7 +23,7 @@ const (
 )
 
 // ParseAndValidateMessage parses the message and validates it against the consumer's addon policy.
-// Use this in consumer/provider paths. Direct RPC mode should call ParseMsg directly (no policy to enforce).
+// Use this in consumer/provider paths. Flows that do not enforce addon policy should call ParseMsg directly.
 func ParseAndValidateMessage(parser ChainParser, url string, data []byte, connectionType string, metadata []pairingtypes.Metadata, extensionInfo extensionslib.ExtensionInfo) (ChainMessage, error) {
 	msg, err := parser.ParseMsg(url, data, connectionType, metadata, extensionInfo)
 	if err != nil {

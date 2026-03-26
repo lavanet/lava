@@ -1,4 +1,4 @@
-// Mock RPC server for Direct RPC testing.
+// Mock RPC server for endpoint relay testing.
 // Returns configurable HTTP status and delay so you can test retry, health, and 4xx behavior.
 //
 // Usage: go run ./scripts/mock_rpc_server [flags]
