@@ -436,13 +436,13 @@ Log output automatically includes:
 - [x] Write unit tests for coded error logging
 
 ### Phase 3: Migrate Existing Errors — Protocol Layer
-- [ ] Map existing `protocol/lavaprotocol/protocolerrors/errors.go` codes to new registry
-- [ ] Map existing `protocol/lavasession/errors.go` (consumer + provider) to new registry
-- [ ] Map existing `protocol/chaintracker/errors.go` to new registry
-- [ ] Map existing `protocol/common/errors.go` to new registry
-- [ ] Map existing `protocol/chainlib/common.go` errors to new registry
-- [ ] Map existing `protocol/performance/errors.go` to new registry
-- [ ] Map existing `ecosystem/cache/handlers.go` errors to new registry
+- [x] Map existing `protocol/lavaprotocol/protocolerrors/errors.go` codes to new registry
+- [x] Map existing `protocol/lavasession/errors.go` (consumer + provider) to new registry
+- [x] Map existing `protocol/chaintracker/errors.go` to new registry
+- [x] Map existing `protocol/common/errors.go` to new registry
+- [x] Map existing `protocol/chainlib/common.go` errors to new registry
+- [x] Map existing `protocol/performance/errors.go` to new registry
+- [x] Map existing `ecosystem/cache/handlers.go` errors to new registry
 - [ ] Update `protocol/chainlib/node_error_handler.go` to use `ClassifyError` and registry codes
 - [ ] Replace `IsUnsupportedMethodError()` pattern matching with `LavaError.SubCategory.IsUnsupportedMethod()` check
 - [ ] Replace `IsUnsupportedMethodMessage()` in `protocol/common/errors.go` with registry-based classification
@@ -471,11 +471,17 @@ Log output automatically includes:
 - [ ] Update `protocol/metrics/rpcconsumer_logs.go` to use error codes
 - [ ] Verify error codes appear in existing dashboards/alerts
 
-### Phase 7: Cleanup
-- [ ] Delete old sdkerrors definitions from all 12 files (86 references across `protocol/`) — no aliases, clean cutover after Phases 3-5 migrate all consumers
-- [ ] Verify no remaining imports of old error packages (`grep` for old import paths)
-- [ ] Clean up `fmt.Printf` / direct logger usage to use `LavaFormat*` consistently
-- [ ] Update `protocol/chainlib/node_error_handler.go` `ShouldRetryError()` to use registry's `Retryable` field
+### Phase 7: Refactor — Replace Legacy Errors with LavaError
+- [ ] Replace `sdkerrors.Register` error variables in `protocol/lavasession/errors.go` with `LavaError`-based equivalents
+- [ ] Replace `sdkerrors.Register` error variables in `protocol/lavaprotocol/protocolerrors/errors.go` with `LavaError`-based equivalents
+- [ ] Replace `sdkerrors.Register` error variables in `protocol/chaintracker/errors.go` with `LavaError`-based equivalents
+- [ ] Replace `sdkerrors.Register` error variables in `protocol/common/errors.go` with `LavaError`-based equivalents
+- [ ] Replace `sdkerrors.Register` error variables in `protocol/performance/errors.go` with `LavaError`-based equivalents
+- [ ] Update all `errors.Is(err, SomeOldError)` callsites to use `LavaError`-based checks
+- [ ] Remove `UnsupportedMethodError` / `SolanaNonRetryableError` custom types, replace with `LavaError.SubCategory` / `LavaError.Retryable`
+- [ ] Update `ShouldRetryError()` in `node_error_handler.go` to use registry's `Retryable` field
+- [ ] Delete old error packages / re-exports after all consumers are migrated
+- [ ] Verify no remaining imports of old error definitions (`grep` for old import paths)
 
 ---
 
