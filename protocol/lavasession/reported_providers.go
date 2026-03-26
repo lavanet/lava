@@ -17,6 +17,7 @@ const (
 type ReportedProviders struct {
 	addedToPurgeAndReport map[string]*ReportedProviderEntry // list of purged providers to report for QoS unavailability. (easier to search maps.)
 	lock                  sync.RWMutex
+	generation            uint64 // incremented on Reset(); used to discard stale reconnect candidates
 	reporter              metrics.Reporter
 	chainId               string
 }
@@ -35,6 +36,7 @@ func (rp *ReportedProviders) Reset() {
 		utils.LavaFormatDebug("[debugReportedProviders] Reset called")
 	}
 	rp.addedToPurgeAndReport = make(map[string]*ReportedProviderEntry, 0)
+	rp.generation++
 }
 
 func (rp *ReportedProviders) GetReportedProviders() []*pairingtypes.ReportedProvider {
@@ -56,6 +58,11 @@ func (rp *ReportedProviders) GetReportedProviders() []*pairingtypes.ReportedProv
 func (rp *ReportedProviders) ReportProvider(providerAddr string, errors uint64, disconnections uint64, reconnectCB func() error, errorsForReport []error) {
 	rp.lock.Lock()
 	defer rp.lock.Unlock()
+	rp.reportProviderLocked(providerAddr, errors, disconnections, reconnectCB, errorsForReport)
+}
+
+// reportProviderLocked performs the actual report. Caller must hold rp.lock.Lock().
+func (rp *ReportedProviders) reportProviderLocked(providerAddr string, errors uint64, disconnections uint64, reconnectCB func() error, errorsForReport []error) {
 	if _, ok := rp.addedToPurgeAndReport[providerAddr]; !ok { // add if it doesn't exist already
 		utils.LavaFormatInfo("Reporting Provider for unresponsiveness", utils.Attribute{Key: "Provider address", Value: providerAddr})
 		rp.addedToPurgeAndReport[providerAddr] = &ReportedProviderEntry{}
@@ -96,7 +103,12 @@ type reconnectCandidate struct {
 	reconnectCB func() error
 }
 
-func (rp *ReportedProviders) ReconnectCandidates() []reconnectCandidate {
+type reconnectCandidatesResult struct {
+	candidates []reconnectCandidate
+	generation uint64
+}
+
+func (rp *ReportedProviders) ReconnectCandidates() reconnectCandidatesResult {
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
 	candidates := []reconnectCandidate{}
@@ -113,21 +125,39 @@ func (rp *ReportedProviders) ReconnectCandidates() []reconnectCandidate {
 			candidates = append(candidates, candidate)
 		}
 	}
-	return candidates
+	return reconnectCandidatesResult{candidates: candidates, generation: rp.generation}
 }
 
 func (rp *ReportedProviders) ReconnectProviders() {
-	candidates := rp.ReconnectCandidates()
-	for _, candidate := range candidates {
+	result := rp.ReconnectCandidates()
+	for _, candidate := range result.candidates {
 		if candidate.reconnectCB != nil {
 			if debugReportedProviders {
 				utils.LavaFormatDebug("[debugReportedProviders] Trying to reconnect candidate", utils.LogAttr("candidate", candidate.address))
 			}
 			err := candidate.reconnectCB()
-			if err == nil {
-				rp.RemoveReport(candidate.address)
-			} else {
-				rp.ReportProvider(candidate.address, 0, 1, nil, []error{err}) // add a disconnection
+			// Generation check and mutation must happen under the same lock
+			// to prevent Reset() from interleaving between check and mutation.
+			stale := func() bool {
+				rp.lock.Lock()
+				defer rp.lock.Unlock()
+				if rp.generation != result.generation {
+					return true
+				}
+				if err == nil {
+					if debugReportedProviders {
+						utils.LavaFormatDebug("[debugReportedProviders] Removing Report", utils.LogAttr("address", candidate.address))
+					}
+					delete(rp.addedToPurgeAndReport, candidate.address)
+				} else {
+					rp.reportProviderLocked(candidate.address, 0, 1, nil, []error{err})
+				}
+				return false
+			}()
+			if stale {
+				utils.LavaFormatDebug("skipping stale reconnect candidate after epoch transition",
+					utils.Attribute{Key: "provider", Value: candidate.address})
+				continue
 			}
 			utils.LavaFormatDebug("reconnect attempt", utils.Attribute{Key: "provider", Value: candidate.address}, utils.Attribute{Key: "success", Value: err == nil})
 		}

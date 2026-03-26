@@ -76,13 +76,13 @@ func TestReportedReconnect(t *testing.T) {
 	require.True(t, reportedProviders.IsReported(providers[1]))
 	require.True(t, reportedProviders.IsReported(providers[2]))
 	require.True(t, reportedProviders.IsReported(providers[3]))
-	require.Empty(t, reportedProviders.ReconnectCandidates())
+	require.Empty(t, reportedProviders.ReconnectCandidates().candidates)
 	// set all entries in the past now
 	for _, entry := range reportedProviders.addedToPurgeAndReport {
 		timeAgo := time.Now().Add(-2 * ReconnectCandidateTime)
 		entry.addedTime = timeAgo
 	}
-	candidates := reportedProviders.ReconnectCandidates()
+	candidates := reportedProviders.ReconnectCandidates().candidates
 	require.NotEmpty(t, candidates)
 	require.Zero(t, reconnectAttempt)
 	reportedProviders.ReconnectProviders()
