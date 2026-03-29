@@ -466,37 +466,80 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	if parsing.FunctionTemplate == "" {
 		return "", utils.LavaFormatError(tagName+" missing function template", nil, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
+
+	if blockNum < 0 {
+		return "", utils.LavaFormatError(tagName+" invalid negative block number", nil,
+			[]utils.Attribute{{Key: "blockNum", Value: blockNum}, {Key: "chainID", Value: cf.endpoint.ChainID}}...)
+	}
+
+	if !common.IsSolanaFamily(cf.endpoint.ChainID) {
+		res, _, err := cf.fetchSingleBlockHashByNum(ctx, blockNum, parsing, collectionData, tagName)
+		return res, err
+	}
+
+	fetchFn := func(fCtx context.Context, block int64) (string, []byte, error) {
+		return cf.fetchSingleBlockHashByNum(fCtx, block, parsing, collectionData, tagName)
+	}
+	hash, fetchedBlock, err := FetchBlockHashWithSolanaRetry(ctx, blockNum, SameSlotRetryDelay, fetchFn)
+	if err != nil {
+		return "", utils.LavaFormatError(tagName+" all block-not-available retries exhausted", err,
+			utils.LogAttr("originalBlock", blockNum),
+			utils.LogAttr("chainID", cf.endpoint.ChainID),
+		)
+	}
+	if fetchedBlock == blockNum {
+		utils.LavaFormatDebug("Chain Tracker fetched same slot after propagation delay",
+			utils.LogAttr("block", blockNum),
+			utils.LogAttr("chainID", cf.endpoint.ChainID),
+		)
+	} else {
+		utils.LavaFormatWarning("Chain Tracker fetched previous slot after block-not-available",
+			nil,
+			utils.LogAttr("originalBlock", blockNum),
+			utils.LogAttr("fetchedBlock", fetchedBlock),
+			utils.LogAttr("chainID", cf.endpoint.ChainID),
+		)
+	}
+	return hash, nil
+}
+
+// fetchSingleBlockHashByNum fetches the block hash for a single block number.
+// Returns the hash, the raw response data (for error inspection), and any error.
+func (cf *ChainFetcher) fetchSingleBlockHashByNum(ctx context.Context, blockNum int64, parsing *spectypes.ParseDirective, collectionData spectypes.CollectionData, tagName string) (string, []byte, error) {
 	path := parsing.ApiName
 	data := []byte(fmt.Sprintf(parsing.FunctionTemplate, blockNum))
 	chainMessage, err := CraftChainMessage(parsing, collectionData.Type, cf.chainParser, &CraftData{Path: path, Data: data, ConnectionType: collectionData.Type}, cf.ChainFetcherMetadata())
 	if err != nil {
-		return "", utils.LavaFormatError(tagName+" failed CraftChainMessage on function template", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+		return "", nil, utils.LavaFormatError(tagName+" failed CraftChainMessage on function template", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
 	start := time.Now()
 	reply, _, _, proxyUrl, chainId, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 	if err != nil {
 		timeTaken := time.Since(start)
-		return "", utils.LavaFormatDebug(tagName+" failed sending chainMessage", []utils.Attribute{{Key: "sendTime", Value: timeTaken}, {Key: "error", Value: err}, {Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+		return "", nil, utils.LavaFormatDebug(tagName+" failed sending chainMessage", []utils.Attribute{{Key: "sendTime", Value: timeTaken}, {Key: "error", Value: err}, {Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
+
+	responseData := reply.RelayReply.Data
+
 	parserInput, err := FormatResponseForParsing(reply.RelayReply, chainMessage)
 	if err != nil {
-		return "", utils.LavaFormatDebug(tagName+" Failed formatResponseForParsing", []utils.Attribute{
+		return "", responseData, utils.LavaFormatDebug(tagName+" Failed formatResponseForParsing", []utils.Attribute{
 			{Key: "error", Value: err},
 			{Key: "chainId", Value: chainId},
 			{Key: "nodeUrl", Value: proxyUrl.Url},
 			{Key: "Method", Value: parsing.ApiName},
-			{Key: "Response", Value: parser.CapStringLen(string(reply.RelayReply.Data))},
+			{Key: "Response", Value: parser.CapStringLen(string(responseData))},
 		}...)
 	}
 
 	res, err := parser.ParseBlockHashFromReplyAndDecode(parserInput, parsing.ResultParsing, parsing.Parsers)
 	if err != nil {
-		return "", utils.LavaFormatDebug(tagName+" Failed ParseMessageResponse", []utils.Attribute{
+		return "", responseData, utils.LavaFormatDebug(tagName+" Failed ParseMessageResponse", []utils.Attribute{
 			{Key: "error", Value: err},
 			{Key: "chainId", Value: chainId},
 			{Key: "nodeUrl", Value: proxyUrl.Url},
 			{Key: "Method", Value: parsing.ApiName},
-			{Key: "Response", Value: parser.CapStringLen(string(reply.RelayReply.Data))},
+			{Key: "Response", Value: parser.CapStringLen(string(responseData))},
 		}...)
 	}
 	_, _, blockDistanceToFinalization, _ := cf.chainParser.ChainBlockStats()
@@ -508,7 +551,7 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 			cf.populateCache(cf.constructRelayData(collectionData.Type, path, data, blockNum, "", nil, latestBlock), reply.RelayReply, []byte(res), finalized)
 		}
 	}
-	return res, nil
+	return res, responseData, nil
 }
 
 type ChainFetcherOptions struct {
