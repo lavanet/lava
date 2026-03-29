@@ -1,4 +1,0 @@
-USER_DATA: "{\"1\":{\"default\":{\"project_public_key\":\"test111111\",\"private_key\":\"123456\",\"epochs_max_cu\":1},\"projectId2\":{\"project_public_key\":\"test1122\",\"private_key\":\"12345678\",\"epochs_max_cu\":1}},\"2\":{\"default\":{\"project_public_key\":\"test123\",\"private_key\":\"123456\",\"epochs_max_cu\":1}}}"
-DEFAULT_GEOLOCATION: 1
-COUNTRIES_FILE_PATH: ""
-IP_FILE_PATH: ""

@@ -1,5 +1,0 @@
-endpoints:
-    - chain-id: ETH1
-      api-interface: jsonrpc
-      network-address: 127.0.0.1:3333
-metrics-listen-address: ":7779"

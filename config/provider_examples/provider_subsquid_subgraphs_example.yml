@@ -1,7 +1,0 @@
-endpoints:
-    - api-interface: rest
-      chain-id: SQDSUBGRAPH
-      network-address:
-        address: "127.0.0.1:2221"
-      node-urls:
-        - url: "http://127.0.0.1:8000"

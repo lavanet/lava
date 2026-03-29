@@ -1,5 +1,0 @@
-endpoints:
-    - chain-id: SQDSUBGRAPH
-      api-interface: rest
-      network-address: 127.0.0.1:4334
-metrics-listen-address: ":7779"

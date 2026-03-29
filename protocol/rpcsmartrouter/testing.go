@@ -15,7 +15,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	commonlib "github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
-	"github.com/lavanet/lava/v5/protocol/rpcprovider"
 	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
@@ -71,7 +70,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, rpcEndpoints []
 			chainTrackerConfig := chaintracker.ChainTrackerConfig{
 				BlocksToSave:          blocksToSaveChainTracker,
 				AverageBlockTime:      averageBlockTime,
-				ServerBlockMemory:     rpcprovider.ChainTrackerDefaultMemory + blocksToSaveChainTracker,
+				ServerBlockMemory:     chaintracker.ChainTrackerDefaultMemory + blocksToSaveChainTracker,
 				NewLatestCallback:     printOnNewLatestCallback,
 				ConsistencyCallback:   consistencyErrorCallback,
 				ParseDirectiveEnabled: true,

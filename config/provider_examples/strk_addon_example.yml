@@ -1,9 +1,0 @@
-endpoints:
-    - api-interface: jsonrpc
-      chain-id: STRK
-      network-address:
-        address: "127.0.0.1:2220"
-      node-urls:
-        - url: <url-here>
-          Addons:
-            - trace

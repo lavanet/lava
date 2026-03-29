@@ -1,7 +1,0 @@
-endpoints:
-    - chain-id: OSMOSIS
-      api-interface: tendermintrpc
-      network-address: 127.0.0.1:3335
-    - chain-id: OSMOSIS
-      api-interface: rest
-      network-address: 127.0.0.1:3334

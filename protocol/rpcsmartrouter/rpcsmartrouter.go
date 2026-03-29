@@ -52,7 +52,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/performance"
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
 	"github.com/lavanet/lava/v5/protocol/relaycore"
-	"github.com/lavanet/lava/v5/protocol/rpcprovider"
 	"github.com/lavanet/lava/v5/protocol/statetracker"
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
@@ -732,7 +731,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	// ============================================================================
 	// Validate ALL static providers BEFORE creating chain tracker (matches provider behavior).
 	// Only validates providers matching this endpoint's api-interface.
-	// See: rpcprovider.go:644-667 for provider's validation approach.
+	// See: the provider's validation approach for reference.
 	if len(relevantStaticProviderList) > 0 {
 		utils.LavaFormatInfo("Validating static providers",
 			utils.LogAttr("chain", rpcEndpoint.ChainID),
@@ -994,7 +993,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 			chainTrackerConfig := chaintracker.ChainTrackerConfig{
 				BlocksToSave:          blocksToSaveChainTracker,
 				AverageBlockTime:      averageBlockTime,
-				ServerBlockMemory:     rpcprovider.ChainTrackerDefaultMemory + blocksToSaveChainTracker,
+				ServerBlockMemory:     chaintracker.ChainTrackerDefaultMemory + blocksToSaveChainTracker,
 				ChainId:               rpcEndpoint.ChainID,
 				ParseDirectiveEnabled: chainParser.ParseDirectiveEnabled(),
 			}
@@ -1212,7 +1211,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				directRPCConfigKey = common.StaticProvidersConfigName // backward compat
 			}
 			if viper.IsSet(directRPCConfigKey) {
-				directRPCEndpoints, err = rpcprovider.ParseStaticProviderEndpoints(viper.GetViper(), directRPCConfigKey, geolocation)
+				directRPCEndpoints, err = ParseStaticProviderEndpoints(viper.GetViper(), directRPCConfigKey, geolocation)
 				if err != nil {
 					return utils.LavaFormatError("invalid direct-rpc endpoints definition", err)
 				}
@@ -1234,7 +1233,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			}
 			if viper.IsSet(backupConfigKey) {
 				utils.LavaFormatInfo("Backup direct-rpc config found", utils.Attribute{Key: "configKey", Value: backupConfigKey})
-				backupDirectRPCEndpoints, err = rpcprovider.ParseStaticProviderEndpoints(viper.GetViper(), backupConfigKey, geolocation)
+				backupDirectRPCEndpoints, err = ParseStaticProviderEndpoints(viper.GetViper(), backupConfigKey, geolocation)
 				if err != nil {
 					return utils.LavaFormatError("invalid backup-direct-rpc endpoints definition", err)
 				}

@@ -1,6 +1,0 @@
-# Kinds: ADMIN=1, DEVELOPER=2, ADMIN+DEVELOPER=3
-Project-Keys:
-  - key: lava@1xtfqykth53pkt97v955h3lql8zkj2m4s4rq9cr
-    Kinds: 3
-  - key: lava@1r3ernqu6rzp95z92580wae7xpuqwmznk3eqd7w
-    Kinds: 1
