@@ -1,6 +1,7 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -112,6 +113,31 @@ func TestErrorRegistry_IsInternalExternalFlags(t *testing.T) {
 	assert.True(t, IsExternal(3001)) // CHAIN_NONCE_TOO_LOW
 	assert.True(t, IsExternal(4001)) // USER_PARSE_ERROR
 	assert.True(t, IsExternal(0))    // UNKNOWN — external
+}
+
+// ---------------------------------------------------------------------------
+// LavaError as error interface + errors.Is tests
+// ---------------------------------------------------------------------------
+
+func TestLavaError_ErrorInterface(t *testing.T) {
+	var err error = LavaErrorChainNonceTooLow
+	assert.Contains(t, err.Error(), "CHAIN_NONCE_TOO_LOW")
+}
+
+func TestLavaError_ErrorsIs(t *testing.T) {
+	// Direct match
+	assert.True(t, errors.Is(LavaErrorChainNonceTooLow, LavaErrorChainNonceTooLow))
+	assert.False(t, errors.Is(LavaErrorChainNonceTooLow, LavaErrorConnectionTimeout))
+
+	// Wrapped with NewLavaError
+	wrapped := NewLavaError(LavaErrorChainNonceTooLow, "tx failed")
+	assert.True(t, errors.Is(wrapped, LavaErrorChainNonceTooLow))
+	assert.False(t, errors.Is(wrapped, LavaErrorConnectionTimeout))
+	assert.Contains(t, wrapped.Error(), "tx failed")
+
+	// Wrapped with fmt.Errorf %w
+	doubleWrapped := fmt.Errorf("relay error: %w", wrapped)
+	assert.True(t, errors.Is(doubleWrapped, LavaErrorChainNonceTooLow))
 }
 
 // ---------------------------------------------------------------------------

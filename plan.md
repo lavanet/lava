@@ -472,16 +472,17 @@ Log output automatically includes:
 - [x] Verify error codes appear in existing dashboards/alerts (lava_errors_total emits all labels needed for dashboards)
 
 ### Phase 7: Refactor — Replace Legacy Errors with LavaError
-- [ ] Replace `sdkerrors.Register` error variables in `protocol/lavasession/errors.go` with `LavaError`-based equivalents
-- [ ] Replace `sdkerrors.Register` error variables in `protocol/lavaprotocol/protocolerrors/errors.go` with `LavaError`-based equivalents
-- [ ] Replace `sdkerrors.Register` error variables in `protocol/chaintracker/errors.go` with `LavaError`-based equivalents
-- [ ] Replace `sdkerrors.Register` error variables in `protocol/common/errors.go` with `LavaError`-based equivalents
-- [ ] Replace `sdkerrors.Register` error variables in `protocol/performance/errors.go` with `LavaError`-based equivalents
+- [x] Remove `UnsupportedMethodError` / `SolanaNonRetryableError` custom types, replace with `LavaWrappedError` + `LavaError.SubCategory` / `LavaError.Retryable`
+- [x] Update `ShouldRetryError()` in `node_error_handler.go` to use registry's `Retryable` field
+- [x] Make `LavaError` implement `error` interface with `Error()`, `Is()`, `ABCICode()` for drop-in replacement
+- [x] Add `LavaWrappedError` + `NewLavaError()` for wrapping errors with classification that supports `errors.Is`
+
+### Phase 8: Protocol Upgrade — Full sdkerrors Removal (future PR)
+_Blocked on protocol upgrade: sdkerrors carry ABCI codes used in the gRPC wire format between consumer and provider. Changing them requires coordinated upgrade across all network participants._
+- [ ] Replace `sdkerrors.Register` error variables with `LavaError`-based equivalents
 - [ ] Update all `errors.Is(err, SomeOldError)` callsites to use `LavaError`-based checks
-- [ ] Remove `UnsupportedMethodError` / `SolanaNonRetryableError` custom types, replace with `LavaError.SubCategory` / `LavaError.Retryable`
-- [ ] Update `ShouldRetryError()` in `node_error_handler.go` to use registry's `Retryable` field
 - [ ] Delete old error packages / re-exports after all consumers are migrated
-- [ ] Verify no remaining imports of old error definitions (`grep` for old import paths)
+- [ ] Verify no remaining imports of old error definitions
 
 ---
 

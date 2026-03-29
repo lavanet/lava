@@ -17,42 +17,44 @@ func TestUnsupportedMethodError(t *testing.T) {
 		originalErr := errors.New("original error")
 		err := NewUnsupportedMethodError(originalErr, "eth_someMethod")
 
-		require.Equal(t, `unsupported method "eth_someMethod": original error`, err.Error())
+		require.Contains(t, err.Error(), "eth_someMethod")
+		require.Contains(t, err.Error(), "unsupported method")
 	})
 
 	t.Run("Error formatting without method name", func(t *testing.T) {
 		originalErr := errors.New("original error")
 		err := NewUnsupportedMethodError(originalErr, "")
 
-		require.Equal(t, "unsupported method: original error", err.Error())
+		require.Contains(t, err.Error(), "unsupported method")
 	})
 
-	t.Run("WithMethod sets method name", func(t *testing.T) {
+	t.Run("IsUnsupportedMethodErrorType detects the error", func(t *testing.T) {
 		originalErr := errors.New("original error")
-		err := &UnsupportedMethodError{originalError: originalErr}
-		err = err.WithMethod("eth_call")
+		err := NewUnsupportedMethodError(originalErr, "eth_call")
 
-		require.Equal(t, "eth_call", err.methodName)
-		require.Equal(t, `unsupported method "eth_call": original error`, err.Error())
+		require.True(t, IsUnsupportedMethodErrorType(err))
+		require.Contains(t, err.Error(), "eth_call")
 	})
 
-	t.Run("Unwrap returns original error", func(t *testing.T) {
+	t.Run("Unwrap returns LavaError", func(t *testing.T) {
 		originalErr := errors.New("original error")
 		err := NewUnsupportedMethodError(originalErr, "method")
 
-		require.Equal(t, originalErr, err.Unwrap())
+		unwrapped := errors.Unwrap(err)
+		require.NotNil(t, unwrapped)
+		require.True(t, errors.Is(err, common.LavaErrorNodeMethodNotFound))
 	})
 
-	t.Run("GetMethodName returns method name", func(t *testing.T) {
+	t.Run("Error message contains method name when provided", func(t *testing.T) {
 		originalErr := errors.New("original error")
 		err := NewUnsupportedMethodError(originalErr, "test-method")
-		require.Equal(t, "test-method", err.GetMethodName())
+		require.Contains(t, err.Error(), "test-method")
 	})
 
-	t.Run("GetMethodName returns empty string when no method name", func(t *testing.T) {
+	t.Run("Error message has no method name when empty", func(t *testing.T) {
 		originalErr := errors.New("original error")
 		err := NewUnsupportedMethodError(originalErr, "")
-		require.Equal(t, "", err.GetMethodName())
+		require.Contains(t, err.Error(), "unsupported method")
 	})
 }
 

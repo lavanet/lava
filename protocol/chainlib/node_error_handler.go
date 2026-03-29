@@ -22,62 +22,19 @@ import (
 	"github.com/lavanet/lava/v5/utils"
 )
 
-type UnsupportedMethodError struct {
-	originalError error
-	methodName    string
-}
-
-func (e *UnsupportedMethodError) Error() string {
-	if e.methodName != "" {
-		return fmt.Sprintf("unsupported method %q: %v", e.methodName, e.originalError)
+// NewUnsupportedMethodError creates an error wrapping a LavaError with unsupported method classification.
+// The methodName is included in the context for logging.
+func NewUnsupportedMethodError(originalError error, methodName string) error {
+	context := "unsupported method"
+	if methodName != "" {
+		context = fmt.Sprintf("unsupported method %q", methodName)
 	}
-	return fmt.Sprintf("unsupported method: %v", e.originalError)
+	return common.NewLavaError(common.LavaErrorNodeMethodNotFound, context)
 }
 
-func (e *UnsupportedMethodError) Unwrap() error {
-	return e.originalError
-}
-
-// WithMethod sets the method name for the error
-func (e *UnsupportedMethodError) WithMethod(method string) *UnsupportedMethodError {
-	e.methodName = method
-	return e
-}
-
-// GetMethodName returns the method name associated with this error
-func (e *UnsupportedMethodError) GetMethodName() string {
-	return e.methodName
-}
-
-// NewUnsupportedMethodError creates a new UnsupportedMethodError with optional method name
-func NewUnsupportedMethodError(originalError error, methodName string) *UnsupportedMethodError {
-	return &UnsupportedMethodError{
-		originalError: originalError,
-		methodName:    methodName,
-	}
-}
-
-// SolanaNonRetryableError represents a Solana error that should not be retried.
-// Currently covers error code -32009 ("missing in long-term storage") which indicates
-// the slot data is permanently unavailable.
-// Note: -32007 (ledger jump) IS retryable as another provider may have the data.
-type SolanaNonRetryableError struct {
-	originalError error
-}
-
-func (e *SolanaNonRetryableError) Error() string {
-	return fmt.Sprintf("solana non-retryable error: %v", e.originalError)
-}
-
-func (e *SolanaNonRetryableError) Unwrap() error {
-	return e.originalError
-}
-
-// NewSolanaNonRetryableError creates a new SolanaNonRetryableError
-func NewSolanaNonRetryableError(originalError error) *SolanaNonRetryableError {
-	return &SolanaNonRetryableError{
-		originalError: originalError,
-	}
+// NewSolanaNonRetryableError creates an error wrapping a LavaError with non-retryable classification.
+func NewSolanaNonRetryableError(originalError error) error {
+	return common.NewLavaError(common.LavaErrorChainSolanaMissingLongTerm, "solana non-retryable error")
 }
 
 // ClassifyNodeError classifies a node error into a LavaError using the error registry.
@@ -144,13 +101,21 @@ func IsUnsupportedMethodError(nodeError error) bool {
 	return false
 }
 
-// IsUnsupportedMethodErrorType checks if an error is specifically an UnsupportedMethodError type
-func IsUnsupportedMethodErrorType(err error) bool {
-	if err == nil {
-		return false
+// unwrapLavaError extracts the *LavaError from a LavaWrappedError, or returns nil.
+func unwrapLavaError(err error) *common.LavaError {
+	var wrapped *common.LavaWrappedError
+	if errors.As(err, &wrapped) {
+		return wrapped.LavaErr
 	}
-	var unsupportedMethodError *UnsupportedMethodError
-	return errors.As(err, &unsupportedMethodError)
+	return nil
+}
+
+// IsUnsupportedMethodErrorType checks if an error wraps a LavaError with unsupported method SubCategory.
+func IsUnsupportedMethodErrorType(err error) bool {
+	if le := unwrapLavaError(err); le != nil {
+		return le.SubCategory.IsUnsupportedMethod()
+	}
+	return false
 }
 
 // IsSolanaNonRetryableError checks if an error indicates a Solana error that should not be retried.
@@ -186,13 +151,12 @@ func IsSolanaNonRetryableError(nodeError error) bool {
 	return false
 }
 
-// IsSolanaNonRetryableErrorType checks if an error is specifically a SolanaNonRetryableError type
+// IsSolanaNonRetryableErrorType checks if an error wraps a non-retryable LavaError.
 func IsSolanaNonRetryableErrorType(err error) bool {
-	if err == nil {
-		return false
+	if le := unwrapLavaError(err); le != nil {
+		return !le.Retryable
 	}
-	var solanaNonRetryableError *SolanaNonRetryableError
-	return errors.As(err, &solanaNonRetryableError)
+	return false
 }
 
 // ShouldRetryError determines if an error should trigger retry attempts.
@@ -390,12 +354,12 @@ func handleAndClassify(ctx context.Context, nodeError error, transport common.Tr
 
 	// Wrap unsupported method errors
 	if classified.SubCategory.IsUnsupportedMethod() {
-		return &UnsupportedMethodError{originalError: nodeError}
+		return common.NewLavaError(classified, nodeError.Error())
 	}
 
 	// Wrap non-retryable errors
 	if classified != common.LavaErrorUnknown && !classified.Retryable {
-		return &SolanaNonRetryableError{originalError: nodeError}
+		return common.NewLavaError(classified, nodeError.Error())
 	}
 
 	return geh.handleGenericErrors(ctx, nodeError)

@@ -2,7 +2,6 @@ package rpcsmartrouter
 
 import (
 	"errors"
-	"fmt"
 	"net"
 	"syscall"
 
@@ -21,19 +20,11 @@ type classifiedError struct {
 }
 
 func (ce *classifiedError) Error() string {
-	return formatclassifiedError(ce.Original, ce.LavaError)
+	return ce.Original.Error()
 }
 
 func (ce *classifiedError) Unwrap() error {
 	return ce.Original
-}
-
-// formatclassifiedError builds a human-readable string from an error and its classification.
-func formatclassifiedError(err error, le *common.LavaError) string {
-	if le == nil {
-		return err.Error()
-	}
-	return fmt.Sprintf("[%s] %s", le.Name, err.Error())
 }
 
 // extractLavaError extracts the *common.LavaError from a classifiedError,

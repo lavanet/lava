@@ -12,6 +12,19 @@ import (
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
+// transportFromProtocolMessage derives the TransportType from the protocol message's API collection.
+func transportFromProtocolMessage(pm chainlib.ProtocolMessage) common.TransportType {
+	if collection := pm.GetApiCollection(); collection != nil {
+		switch collection.CollectionData.ApiInterface {
+		case "rest":
+			return common.TransportREST
+		case "grpc":
+			return common.TransportGRPC
+		}
+	}
+	return common.TransportJsonRPC // default for jsonrpc and tendermintrpc
+}
+
 type ResultsManager interface {
 	String() string
 	NodeResults() []common.RelayResult
@@ -54,7 +67,7 @@ func (rp *ResultsManagerInst) setErrorResponse(response *RelayResponse) {
 		utils.Attribute{Key: "statusCode", Value: response.RelayResult.StatusCode},
 		utils.Attribute{Key: "providerTrailer", Value: response.RelayResult.ProviderTrailer},
 	)
-	classified := common.ClassifyError(nil, -1, common.TransportJsonRPC, 0, response.Err.Error())
+	classified := common.ClassifyError(nil, -1, common.TransportJsonRPC, 0, response.Err.Error()) // protocol errors are always internal, transport doesn't matter
 	rp.protocolResponseErrors.AddError(RelayError{Err: response.Err, ProviderInfo: response.RelayResult.ProviderInfo, Response: response, LavaError: classified})
 }
 
@@ -141,7 +154,9 @@ func (rp *ResultsManagerInst) setValidResponse(response *RelayResponse, protocol
 			utils.LogAttr("requestPayload", parser.CapStringLen(reqPayload)),
 			utils.LogAttr("requestHeaders", reqHeaders),
 		)
-		nodeClassified := common.ClassifyError(nil, -1, common.TransportJsonRPC, 0, err.Error())
+		// Derive transport from the protocol message's API collection
+		transport := transportFromProtocolMessage(protocolMessage)
+		nodeClassified := common.ClassifyError(nil, -1, transport, 0, err.Error())
 		rp.nodeResponseErrors.AddError(RelayError{Err: err, ProviderInfo: response.RelayResult.ProviderInfo, Response: response, LavaError: nodeClassified})
 		return err
 	}

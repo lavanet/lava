@@ -73,10 +73,7 @@ func (jm JsonrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (ha
 		return false, ""
 	}
 
-	// Classify the JSON-RPC error for logging/metrics
-	classified := common.ClassifyError(nil, -1, common.TransportJsonRPC, result.Error.Code, result.Error.Message)
-	common.LogCodedError("JSON-RPC node error", fmt.Errorf("%s", result.Error.Message), classified,
-		"", result.Error.Code, result.Error.Message)
+	common.ClassifyAndLogNodeError(common.TransportJsonRPC, result.Error.Code, result.Error.Message)
 
 	return true, result.Error.Message
 }

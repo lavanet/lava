@@ -56,10 +56,7 @@ func (gm *GrpcMessage) GetRawRequestHash() ([]byte, error) {
 func (jm GrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
 	// grpc status code different than OK or 0 is a node error.
 	if httpStatusCode != 0 && httpStatusCode != http.StatusOK {
-		// Classify the gRPC error for logging/metrics
-		classified := common.ClassifyError(nil, -1, common.TransportGRPC, httpStatusCode, "")
-		common.LogCodedError("gRPC node error", fmt.Errorf("gRPC status %d", httpStatusCode), classified,
-			"", httpStatusCode, "")
+		common.ClassifyAndLogNodeError(common.TransportGRPC, httpStatusCode, "")
 		return true, ""
 	}
 	return false, ""

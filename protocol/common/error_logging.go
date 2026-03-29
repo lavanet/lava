@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/lavanet/lava/v5/utils"
@@ -65,4 +66,12 @@ func LogCodedError(description string, err error, lavaError *LavaError, chainID 
 	}
 
 	return utils.LavaFormatError(description, err, codedAttrs...)
+}
+
+// ClassifyAndLogNodeError is a convenience for CheckResponseError implementations.
+// It classifies an error by transport, logs it with LogCodedError, and returns the classification.
+func ClassifyAndLogNodeError(transport TransportType, errorCode int, errorMessage string) *LavaError {
+	classified := ClassifyError(nil, -1, transport, errorCode, errorMessage)
+	LogCodedError("node error", fmt.Errorf("%s", errorMessage), classified, "", errorCode, errorMessage)
+	return classified
 }

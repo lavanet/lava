@@ -67,6 +67,28 @@ func (le *LavaError) String() string {
 	return fmt.Sprintf("[%d] %s", le.Code, le.Name)
 }
 
+// Error implements the error interface so LavaError can be used directly as an error
+// and checked with errors.Is().
+func (le *LavaError) Error() string {
+	return fmt.Sprintf("%s: %s", le.Name, le.Description)
+}
+
+// Is implements errors.Is matching by error code.
+// This allows errors.Is(err, LavaErrorSomething) to work when err wraps a LavaError.
+func (le *LavaError) Is(target error) bool {
+	if t, ok := target.(*LavaError); ok {
+		return le.Code == t.Code
+	}
+	return false
+}
+
+// ABCICode returns the error code for gRPC wire protocol compatibility.
+// This replaces the sdkerrors.ABCICode() method so LavaError can be used
+// in status.Error(codes.Code(err.ABCICode()), ...) calls.
+func (le *LavaError) ABCICode() uint32 {
+	return le.Code
+}
+
 // ---------------------------------------------------------------------------
 // Chain families — grouping chains by their error system
 // ---------------------------------------------------------------------------
@@ -346,6 +368,36 @@ func getLavaErrorByName(name string) *LavaError {
 
 func isRetryable(code uint32) bool {
 	return getLavaError(code).Retryable
+}
+
+// LavaWrappedError wraps a LavaError with context, supporting errors.Is matching.
+type LavaWrappedError struct {
+	LavaErr *LavaError
+	Context string
+}
+
+func (e *LavaWrappedError) Error() string {
+	if e.Context != "" {
+		return fmt.Sprintf("%s: %s", e.Context, e.LavaErr.Description)
+	}
+	return e.LavaErr.Error()
+}
+
+func (e *LavaWrappedError) Is(target error) bool {
+	if t, ok := target.(*LavaError); ok {
+		return e.LavaErr.Code == t.Code
+	}
+	return false
+}
+
+func (e *LavaWrappedError) Unwrap() error {
+	return e.LavaErr
+}
+
+// NewLavaError creates an error that wraps a LavaError with optional context.
+// Supports errors.Is(err, LavaErrorSomething) matching by code.
+func NewLavaError(lavaErr *LavaError, context string) error {
+	return &LavaWrappedError{LavaErr: lavaErr, Context: context}
 }
 
 func IsInternal(code uint32) bool {
