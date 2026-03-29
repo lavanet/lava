@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
@@ -366,8 +365,8 @@ type ConflictHandlerInterface interface {
 
 type ProviderInfo struct {
 	ProviderAddress           string
-	ProviderReputationSummary sdk.Dec // the number represents the average qos for this provider session
-	ProviderStake             sdk.Coin
+	ProviderReputationSummary float64 // the number represents the average qos for this provider session
+	ProviderStake             int64
 }
 
 type RelayResult struct {

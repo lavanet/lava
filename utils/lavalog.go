@@ -5,14 +5,10 @@ import (
 	"fmt"
 	"os"
 	"runtime/debug"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
 
-	sdkerrors "cosmossdk.io/errors"
-	"github.com/cometbft/cometbft/libs/log"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	zerolog "github.com/rs/zerolog"
 	zerologlog "github.com/rs/zerolog/log"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -21,6 +17,17 @@ import (
 const (
 	EventPrefix = "lava_"
 )
+
+// wrappedLavaError wraps a cause error and preserves compatibility with
+// cosmossdk's causer-based error chain traversal (used by sdkerrors.Error.Is).
+type wrappedLavaError struct {
+	msg   string
+	cause error
+}
+
+func (e *wrappedLavaError) Error() string  { return e.msg }
+func (e *wrappedLavaError) Cause() error   { return e.cause }
+func (e *wrappedLavaError) Unwrap() error  { return e.cause }
 
 const (
 	LAVA_LOG_TRACE = iota
@@ -72,42 +79,6 @@ func init() {
 	} else {
 		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.StampNano}).Level(defaultGlobalLogLevel)
 	}
-}
-
-func LogLavaEvent(ctx sdk.Context, logger log.Logger, name string, attributes map[string]string, description string) {
-	LogLavaEventWithLevel(ctx, logger, name, attributes, description, LAVA_LOG_INFO)
-}
-
-func LogLavaEventDebug(ctx sdk.Context, logger log.Logger, name string, attributes map[string]string, description string) {
-	LogLavaEventWithLevel(ctx, logger, name, attributes, description, LAVA_LOG_DEBUG)
-}
-
-func LogLavaEventWithLevel(ctx sdk.Context, logger log.Logger, name string, attributes map[string]string, description string, level uint) {
-	var sb strings.Builder
-	eventAttrs := make([]sdk.Attribute, 0, len(attributes))
-	for key, val := range attributes {
-		sb.WriteString(key)
-		sb.WriteString(": ")
-		sb.WriteString(val)
-		sb.WriteByte(',')
-		eventAttrs = append(eventAttrs, sdk.NewAttribute(key, val))
-	}
-	sort.Slice(eventAttrs, func(i, j int) bool {
-		return eventAttrs[i].Key < eventAttrs[j].Key
-	})
-
-	logMsg := EventPrefix + name + ":" + description + " " + sb.String()
-	switch level {
-	case LAVA_LOG_DEBUG:
-		logger.Debug(logMsg)
-	case LAVA_LOG_INFO:
-		logger.Info(logMsg)
-	case LAVA_LOG_ERROR:
-		logger.Error(logMsg)
-	default:
-		logger.Info(logMsg)
-	}
-	ctx.EventManager().EmitEvent(sdk.NewEvent(EventPrefix+name, eventAttrs...))
 }
 
 func getLogLevel(logLevel string) zerolog.Level {
@@ -420,12 +391,13 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 	if rollingLoggerEvent != nil {
 		rollingLoggerEvent.Msg(description)
 	}
-	// here we return the same type of the original error message, this handles nil case as well
-	errRet := sdkerrors.Wrap(err, output)
-	if errRet == nil { // we always want to return an error if lavaFormatError was called
-		return fmt.Errorf("%s", output)
+	// Return a wrappedLavaError that supports both Unwrap() (stdlib) and
+	// Cause() (cosmossdk/pkg-errors causer interface), preserving error chain
+	// traversal for callers using sdkerrors.Error.Is() or errors.Is().
+	if err != nil {
+		return &wrappedLavaError{msg: output, cause: err}
 	}
-	return errRet
+	return fmt.Errorf("%s", output)
 }
 
 func LavaFormatPanic(description string, err error, attributes ...Attribute) {

@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
 	"github.com/lavanet/lava/v5/utils"
@@ -1446,9 +1445,9 @@ func TestBackupProviderOptimizerSelection(t *testing.T) {
 	csm := CreateConsumerSessionManager()
 
 	// Register two backup providers and zero static providers.
-	backupA := NewConsumerSessionWithProvider("backupA", []*Endpoint{{NetworkAddress: grpcListener, Enabled: true, Connections: []*EndpointConnection{}}}, 999999, firstEpochHeight, sdk.NewInt64Coin("ulava", 0))
+	backupA := NewConsumerSessionWithProvider("backupA", []*Endpoint{{NetworkAddress: grpcListener, Enabled: true, Connections: []*EndpointConnection{}}}, 999999, firstEpochHeight, int64(0))
 	backupA.StaticProvider = true
-	backupB := NewConsumerSessionWithProvider("backupB", []*Endpoint{{NetworkAddress: grpcListener, Enabled: true, Connections: []*EndpointConnection{}}}, 999999, firstEpochHeight, sdk.NewInt64Coin("ulava", 0))
+	backupB := NewConsumerSessionWithProvider("backupB", []*Endpoint{{NetworkAddress: grpcListener, Enabled: true, Connections: []*EndpointConnection{}}}, 999999, firstEpochHeight, int64(0))
 	backupB.StaticProvider = true
 
 	backupList := map[uint64]*ConsumerSessionsWithProvider{

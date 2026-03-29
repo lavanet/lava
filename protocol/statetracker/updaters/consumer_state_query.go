@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/client"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
 )
@@ -20,31 +19,20 @@ type ProtocolVersionResponse struct {
 	BlockNumber string
 }
 
-// ConsumerStateQuery is a minimal stub for querying chain state from a consumer
-// context. In the stripped-down smart-router build it wraps a cosmos-sdk client
-// context and delegates spec queries directly over gRPC so the testing command
-// can still fetch specs from a running node.
-type ConsumerStateQuery struct {
-	clientCtx   client.Context
-	fromAddress string
+// ConsumerStateQuery is a minimal stub that always returns an error for spec
+// queries. The smart router uses static spec loading exclusively; this stub
+// exists only to satisfy the testing command's interface without importing
+// cosmos-sdk. For live blockchain queries, use a fully-featured client.
+type ConsumerStateQuery struct{}
+
+// NewConsumerStateQuery constructs a ConsumerStateQuery stub. The context
+// parameter is accepted for API compatibility but is not used.
+func NewConsumerStateQuery(_ context.Context) *ConsumerStateQuery {
+	return &ConsumerStateQuery{}
 }
 
-// NewConsumerStateQuery constructs a ConsumerStateQuery backed by the provided
-// cosmos client context.  It is intentionally minimal: only GetSpec is
-// implemented, which is all the smart-router testing command requires.
-func NewConsumerStateQuery(_ context.Context, clientCtx client.Context) *ConsumerStateQuery {
-	return &ConsumerStateQuery{
-		clientCtx:   clientCtx,
-		fromAddress: clientCtx.FromAddress.String(),
-	}
-}
-
-// GetSpec queries the spec for the given chainID from the connected node.
-func (csq *ConsumerStateQuery) GetSpec(ctx context.Context, chainID string) (*spectypes.Spec, error) {
-	specClient := spectypes.NewQueryClient(csq.clientCtx)
-	resp, err := specClient.Spec(ctx, &spectypes.QueryGetSpecRequest{ChainID: chainID})
-	if err != nil {
-		return nil, fmt.Errorf("failed querying spec for chain %s: %w", chainID, err)
-	}
-	return &resp.Spec, nil
+// GetSpec always returns an error because the smart router does not query the
+// blockchain. Callers should use static spec loading instead.
+func (csq *ConsumerStateQuery) GetSpec(_ context.Context, chainID string) (*spectypes.Spec, error) {
+	return nil, fmt.Errorf("ConsumerStateQuery stub: blockchain spec queries are not supported in smart-router mode; use --static-spec-paths to load specs from files (chainID: %s)", chainID)
 }

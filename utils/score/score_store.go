@@ -6,8 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"cosmossdk.io/errors"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/utils"
 )
 
@@ -142,7 +140,7 @@ func (ss *ScoreStore) validateInner() error {
 		return fmt.Errorf("invalid %s ScoreStore: num or denom are non-positives, num: %f, denom: %f", ss.Name, ss.Num, ss.Denom)
 	}
 	if err := ss.Config.Validate(); err != nil {
-		return errors.Wrap(err, "invalid "+ss.Name+" ScoreStore")
+		return fmt.Errorf("invalid %s ScoreStore: %w", ss.Name, err)
 	}
 	return nil
 }
@@ -152,7 +150,7 @@ func (ss *ScoreStore) Resolve() (float64, error) {
 	ss.lock.RLock()
 	defer ss.lock.RUnlock()
 	if err := ss.validateInner(); err != nil {
-		return 0, errors.Wrap(err, "cannot calculate "+ss.Name+" ScoreStore's score")
+		return 0, fmt.Errorf("cannot calculate %s ScoreStore's score: %w", ss.Name, err)
 	}
 	return ss.Num / ss.Denom, nil
 }
@@ -223,7 +221,7 @@ func (ss *ScoreStore) Update(sample float64, sampleTime time.Time) error {
 	ss.Time = sampleTime
 
 	if err := ss.validateInner(); err != nil {
-		return errors.Wrap(err, "cannot update "+ss.Name+" ScoreStore's num and denom")
+		return fmt.Errorf("cannot update %s ScoreStore's num and denom: %w", ss.Name, err)
 	}
 
 	return nil
@@ -284,15 +282,6 @@ func (ss *ScoreStore) GetLastUpdateTime() time.Time {
 
 func (ss *ScoreStore) GetConfig() Config {
 	return ss.Config
-}
-
-func ConvertToDec(val float64) sdk.Dec {
-	if val > 0 && val < math.Pow(10, -float64(DecPrecision)) {
-		// If value is positive but would round to zero, return smallest possible value
-		return sdk.NewDecWithPrec(1, DecPrecision)
-	}
-	intScore := int64(math.Round(val * math.Pow(10, float64(DecPrecision))))
-	return sdk.NewDecWithPrec(intScore, DecPrecision)
 }
 
 // QoS excellence is a collection of performance metrics that measure a provider's

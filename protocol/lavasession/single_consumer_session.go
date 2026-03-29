@@ -3,7 +3,6 @@ package lavasession
 import (
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/protocol/qos"
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
@@ -43,27 +42,6 @@ func (cs *SingleConsumerSession) CalculateExpectedLatency(timeoutGivenToRelay ti
 	return expectedLatency
 }
 
-// cs should be locked here to use this method, returns the computed qos or zero if last qos is nil or failed to compute.
-func (cs *SingleConsumerSession) getQosComputedResultOrZero() sdk.Dec {
-	// Use GetSessionQoSManager() to support both connection types
-	qosManager := cs.GetSessionQoSManager()
-	if qosManager == nil {
-		return sdk.ZeroDec()
-	}
-
-	lastReputationReport := qosManager.GetLastReputationQoSReport(cs.epoch, cs.SessionId)
-	if lastReputationReport != nil {
-		computedReputation, errComputing := lastReputationReport.ComputeReputation()
-		if errComputing == nil { // if we failed to compute the qos will be 0 so this provider wont be picked to return the error in case we get it
-			return computedReputation
-		}
-		utils.LavaFormatDebug("Failed computing QoS used for error parsing, could happen if we have no sync data or one of the fields is zero",
-			utils.LogAttr("Report", lastReputationReport),
-			utils.LogAttr("error", errComputing),
-		)
-	}
-	return sdk.ZeroDec()
-}
 
 func (scs *SingleConsumerSession) SetUsageForSession(cuNeededForSession uint64, reputationReport *pairingtypes.QualityOfServiceReport, usedProviders UsedProvidersInf, routerKey RouterKey) error {
 	scs.LatestRelayCu = cuNeededForSession // set latestRelayCu

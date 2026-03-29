@@ -8,7 +8,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/v5/protocol/chainlib/cacheformat"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v5/protocol/common"
@@ -525,43 +524,6 @@ func NewChainFetcher(ctx context.Context, options *ChainFetcherOptions) *ChainFe
 		endpoint:    options.Endpoint,
 		cache:       options.Cache,
 	}
-}
-
-type LavaChainFetcher struct {
-	clientCtx client.Context
-}
-
-func (lcf *LavaChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
-	return lavasession.RPCProviderEndpoint{NodeUrls: []common.NodeUrl{{Url: lcf.clientCtx.NodeURI}}, ChainID: "Lava-node", ApiInterface: "tendermintrpc"}
-}
-
-func (lcf *LavaChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) {
-	resultStatus, err := lcf.clientCtx.Client.Status(ctx)
-	if err != nil {
-		return 0, err
-	}
-	return resultStatus.SyncInfo.LatestBlockHeight, nil
-}
-
-func (lcf *LavaChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
-	resultStatus, err := lcf.clientCtx.Client.Status(ctx)
-	if err != nil {
-		return "", err
-	}
-	return resultStatus.SyncInfo.LatestBlockHash.String(), nil
-}
-
-func (lcf *LavaChainFetcher) CustomMessage(ctx context.Context, path string, data []byte, connectionType string, apiName string) ([]byte, error) {
-	return nil, utils.LavaFormatError("Not Implemented CustomMessage for LavaChainFetcher", nil)
-}
-
-func (lcf *LavaChainFetcher) FetchChainID(ctx context.Context) (string, string, error) {
-	return "", "", utils.LavaFormatError("FetchChainID not supported for lava chain fetcher", nil)
-}
-
-func NewLavaChainFetcher(ctx context.Context, clientCtx client.Context) *LavaChainFetcher {
-	lcf := &LavaChainFetcher{clientCtx: clientCtx}
-	return lcf
 }
 
 func FormatResponseForParsing(reply *pairingtypes.RelayReply, chainMessage ChainMessageForSend) (parsable parser.RPCInput, err error) {

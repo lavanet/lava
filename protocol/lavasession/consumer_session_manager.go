@@ -952,9 +952,6 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, wantedProvid
 					ReportedProviders: reportedProviders,
 				}
 
-				// adding qos summary for error parsing.
-				// consumer session is locked here so its ok to read the qos report.
-				sessionInfo.QoSSummaryResult = consumerSession.getQosComputedResultOrZero()
 				sessions[providerAddress] = sessionInfo
 
 				qosReport, _ := csm.providerOptimizer.GetReputationReportForProvider(providerAddress)

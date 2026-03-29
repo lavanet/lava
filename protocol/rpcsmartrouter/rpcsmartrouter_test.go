@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
 	"github.com/lavanet/lava/v5/utils/rand"
@@ -43,7 +42,7 @@ func TestUpdateEpoch_FreshSessions(t *testing.T) {
 		[]*lavasession.Endpoint{{NetworkAddress: "http://provider:8080", Enabled: true}},
 		100,
 		initialEpoch,
-		sdk.NewCoin("ulava", sdk.NewInt(1)),
+		int64(1),
 	)
 	initialSession.StaticProvider = true
 

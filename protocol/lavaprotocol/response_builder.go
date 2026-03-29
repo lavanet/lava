@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec/v2"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol/protocolerrors"
 	"github.com/lavanet/lava/v5/utils"
@@ -47,7 +46,7 @@ func CraftEmptyRPCResponseFromGenericMessage(message rpcInterfaceMessages.Generi
 	return rpcResponse, nil
 }
 
-func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.RelayRequest, pkey *btcSecp256k1.PrivateKey, reply *pairingtypes.RelayReply) (*pairingtypes.RelayReply, error) {
+func SignRelayResponse(request pairingtypes.RelayRequest, pkey *btcSecp256k1.PrivateKey, reply *pairingtypes.RelayReply) (*pairingtypes.RelayReply, error) {
 	// request is a copy of the original request, but won't modify it
 	// update relay request requestedBlock to the provided one in case it was arbitrary
 	UpdateRequestedBlock(request.RelayData, reply)
@@ -68,13 +67,9 @@ func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.Rela
 
 func VerifyRelayReply(ctx context.Context, reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, addr string) error {
 	relayExchange := pairingtypes.NewRelayExchange(*relayRequest, *reply)
-	serverKey, err := sigs.RecoverPubKey(relayExchange)
+	serverAddr, err := sigs.ExtractSignerAddress(relayExchange)
 	if err != nil {
-		return utils.LavaFormatWarning("Relay reply verification failed, RecoverPubKey returned error", err, utils.LogAttr("GUID", ctx))
-	}
-	serverAddr, err := sdk.AccAddressFromHexUnsafe(serverKey.Address().String())
-	if err != nil {
-		return utils.LavaFormatWarning("Relay reply verification failed, AccAddressFromHexUnsafe returned error", err, utils.LogAttr("GUID", ctx))
+		return utils.LavaFormatWarning("Relay reply verification failed, ExtractSignerAddress returned error", err, utils.LogAttr("GUID", ctx))
 	}
 	if serverAddr.String() != addr {
 		return utils.LavaFormatError("reply server address mismatch", protocolerrors.ProviderFinalizationDataError,

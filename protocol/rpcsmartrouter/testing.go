@@ -7,9 +7,6 @@ import (
 	"os/signal"
 	"strings"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
@@ -18,11 +15,12 @@ import (
 	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
+	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-func startTesting(ctx context.Context, clientCtx client.Context, rpcEndpoints []*lavasession.RPCProviderEndpoint, parallelConnections uint) error {
+func startTesting(ctx context.Context, rpcEndpoints []*lavasession.RPCProviderEndpoint, parallelConnections uint) error {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -31,7 +29,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, rpcEndpoints []
 		cancel()
 	}()
 	chainlib.IgnoreWsEnforcementForTestCommands = true // ignore ws panic for tests
-	stateQuery := updaters.NewConsumerStateQuery(ctx, clientCtx)
+	stateQuery := updaters.NewConsumerStateQuery(ctx)
 	for _, rpcProviderEndpoint := range rpcEndpoints {
 		go func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint) error {
 			chainParser, err := chainlib.NewChainParser(rpcProviderEndpoint.ApiInterface)
@@ -109,17 +107,13 @@ func CreateTestRPCSmartRouterCobraCommand() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			utils.LavaFormatInfo("RPCConsumer Test started", utils.Attribute{Key: "args", Value: strings.Join(args, ";")})
-			clientCtx, err := client.GetClientTxContext(cmd)
-			if err != nil {
-				return err
-			}
 			// handle flags, pass necessary fields
 			ctx := context.Background()
-			networkChainId, err := cmd.Flags().GetString(flags.FlagChainID)
+			networkChainId, err := cmd.Flags().GetString("chain-id")
 			if err != nil {
 				return err
 			}
-			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)
+			logLevel, err := cmd.Flags().GetString("log-level")
 			if err != nil {
 				utils.LavaFormatFatal("failed to read log level flag", err)
 			}
@@ -156,19 +150,23 @@ func CreateTestRPCSmartRouterCobraCommand() *cobra.Command {
 					}},
 				}
 			}
-			clientCtx = clientCtx.WithChainID(networkChainId)
-			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
+			_ = networkChainId // chain-id flag kept for CLI compatibility but unused in static-spec mode
+			utils.LavaFormatInfo("lavad Binary Version: " + protocoltypes.DefaultVersion.ConsumerTarget)
 			rand.InitRandomSeed()
 			numberOfNodeParallelConnections, err := cmd.Flags().GetUint(chainproxy.ParallelConnectionsFlag)
 			if err != nil {
 				utils.LavaFormatFatal("error fetching chainproxy.ParallelConnectionsFlag", err)
 			}
-			return startTesting(ctx, clientCtx, modifiedProviderEndpoints, numberOfNodeParallelConnections)
+			return startTesting(ctx, modifiedProviderEndpoints, numberOfNodeParallelConnections)
 		},
 	}
 
-	// RPCConsumer command flags
-	flags.AddTxFlagsToCmd(cmdTestRPCSmartRouter)
+	// RPCConsumer command flags (minimal set — no blockchain tx flags)
+	cmdTestRPCSmartRouter.Flags().String("chain-id", "", "network chain id")
+	cmdTestRPCSmartRouter.Flags().String("log-level", "info", "log level (debug|info|warn|error)")
+	cmdTestRPCSmartRouter.Flags().String("log-format", "text", "log format (text|json)")
+	cmdTestRPCSmartRouter.Flags().String("node", "", "node RPC endpoint")
+	cmdTestRPCSmartRouter.Flags().String("from", "", "account key name")
 	cmdTestRPCSmartRouter.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")
 	cmdTestRPCSmartRouter.Flags().Bool(chainproxy.GRPCAllowInsecureConnection, false, "used to test grpc, to allow insecure (self signed cert).")
 	cmdTestRPCSmartRouter.Flags().Bool(chainproxy.GRPCUseTls, true, "use tls configuration for grpc connections to your consumer")

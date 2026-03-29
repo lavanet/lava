@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/stretchr/testify/require"
 )
@@ -23,36 +22,36 @@ func TestRelayError(t *testing.T) {
 					{
 						Err: fmt.Errorf("test1"),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.OneDec(),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
+							ProviderReputationSummary: 1.0,
+							ProviderStake:             10,
 						},
 					},
 					{
 						Err: fmt.Errorf("test2"),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.OneDec(),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 20),
+							ProviderReputationSummary: 1.0,
+							ProviderStake:             20,
 						},
 					},
 					{
 						Err: fmt.Errorf("test3"),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.OneDec(),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 30),
+							ProviderReputationSummary: 1.0,
+							ProviderStake:             30,
 						},
 					},
 					{
 						Err: fmt.Errorf("test4"),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.OneDec(),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 40),
+							ProviderReputationSummary: 1.0,
+							ProviderStake:             40,
 						},
 					},
 					{
 						Err: fmt.Errorf("%s", expectedValue),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.OneDec(),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 50),
+							ProviderReputationSummary: 1.0,
+							ProviderStake:             50,
 						},
 					},
 				},
@@ -66,50 +65,50 @@ func TestRelayError(t *testing.T) {
 					{
 						Err: fmt.Errorf("test1"),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.MustNewDecFromStr("0.5"),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
+							ProviderReputationSummary: 0.5,
+							ProviderStake:             10,
 						},
 					},
 					{
 						Err: fmt.Errorf("test1"),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.MustNewDecFromStr("0.25"),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
+							ProviderReputationSummary: 0.25,
+							ProviderStake:             10,
 						},
 					},
 					{
 						Err: fmt.Errorf("test3"),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.MustNewDecFromStr("0.6"),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
+							ProviderReputationSummary: 0.6,
+							ProviderStake:             10,
 						},
 					},
 					{
 						Err: fmt.Errorf("test3"),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.MustNewDecFromStr("0.7"),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
+							ProviderReputationSummary: 0.7,
+							ProviderStake:             10,
 						},
 					},
 					{
 						Err: fmt.Errorf("test4"),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.MustNewDecFromStr("0.7"),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
+							ProviderReputationSummary: 0.7,
+							ProviderStake:             10,
 						},
 					},
 					{
 						Err: fmt.Errorf("test4"),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.MustNewDecFromStr("0.7"),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
+							ProviderReputationSummary: 0.7,
+							ProviderStake:             10,
 						},
 					},
 					{
 						Err: fmt.Errorf("%s", expectedValue),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.MustNewDecFromStr("0.8"),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
+							ProviderReputationSummary: 0.8,
+							ProviderStake:             10,
 						},
 					},
 				},
@@ -123,36 +122,36 @@ func TestRelayError(t *testing.T) {
 					{
 						Err: fmt.Errorf("test1"),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.OneDec(),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 1000),
+							ProviderReputationSummary: 1.0,
+							ProviderStake:             1000,
 						},
 					},
 					{
 						Err: fmt.Errorf("test2"),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.OneDec(),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 1000),
+							ProviderReputationSummary: 1.0,
+							ProviderStake:             1000,
 						},
 					},
 					{
 						Err: fmt.Errorf("%s", expectedValue),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.ZeroDec(),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 0),
+							ProviderReputationSummary: 0.0,
+							ProviderStake:             0,
 						},
 					},
 					{
 						Err: fmt.Errorf("%s", expectedValue),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.ZeroDec(),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 0),
+							ProviderReputationSummary: 0.0,
+							ProviderStake:             0,
 						},
 					},
 					{
 						Err: fmt.Errorf("%s", expectedValue),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.ZeroDec(),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 0),
+							ProviderReputationSummary: 0.0,
+							ProviderStake:             0,
 						},
 					},
 				},
@@ -166,36 +165,36 @@ func TestRelayError(t *testing.T) {
 					{
 						Err: fmt.Errorf("%s", expectedValue),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.OneDec(),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
+							ProviderReputationSummary: 1.0,
+							ProviderStake:             10,
 						},
 					},
 					{
 						Err: fmt.Errorf("%s", expectedValue),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.OneDec(),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 20),
+							ProviderReputationSummary: 1.0,
+							ProviderStake:             20,
 						},
 					},
 					{
 						Err: fmt.Errorf("test3"),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.OneDec(),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 30),
+							ProviderReputationSummary: 1.0,
+							ProviderStake:             30,
 						},
 					},
 					{
 						Err: fmt.Errorf("test4"),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.OneDec(),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 40),
+							ProviderReputationSummary: 1.0,
+							ProviderStake:             40,
 						},
 					},
 					{
 						Err: fmt.Errorf("%s", expectedValue),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.OneDec(),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
+							ProviderReputationSummary: 1.0,
+							ProviderStake:             10,
 						},
 					},
 				},
@@ -209,36 +208,36 @@ func TestRelayError(t *testing.T) {
 					{
 						Err: fmt.Errorf("%s", expectedValue),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.OneDec(),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
+							ProviderReputationSummary: 1.0,
+							ProviderStake:             10,
 						},
 					},
 					{
 						Err: fmt.Errorf("%s", expectedValue),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.OneDec(),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 20),
+							ProviderReputationSummary: 1.0,
+							ProviderStake:             20,
 						},
 					},
 					{
 						Err: fmt.Errorf("test3"),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.OneDec(),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 30),
+							ProviderReputationSummary: 1.0,
+							ProviderStake:             30,
 						},
 					},
 					{
 						Err: fmt.Errorf("test4"),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.OneDec(),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 40),
+							ProviderReputationSummary: 1.0,
+							ProviderStake:             40,
 						},
 					},
 					{
 						Err: fmt.Errorf("%s", expectedValue),
 						ProviderInfo: common.ProviderInfo{
-							ProviderReputationSummary: sdk.OneDec(),
-							ProviderStake:             sdk.NewInt64Coin("ulava", 10),
+							ProviderReputationSummary: 1.0,
+							ProviderStake:             10,
 						},
 					},
 				},

@@ -3,14 +3,13 @@ package lavasession
 import (
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCalcWeightsByStake_NonStaticProviders(t *testing.T) {
 	// Non-static providers should be unaffected by the static-provider stake logic.
-	p1 := NewConsumerSessionWithProvider("p1", nil, 1, 1, sdk.NewInt64Coin("ulava", 7))
-	p2 := NewConsumerSessionWithProvider("p2", nil, 1, 1, sdk.NewInt64Coin("ulava", 11))
+	p1 := NewConsumerSessionWithProvider("p1", nil, 1, 1, int64(7))
+	p2 := NewConsumerSessionWithProvider("p2", nil, 1, 1, int64(11))
 
 	providers := map[uint64]*ConsumerSessionsWithProvider{
 		0: p1,
@@ -25,8 +24,8 @@ func TestCalcWeightsByStake_NonStaticProviders(t *testing.T) {
 func TestCalcWeightsByStake_StaticProviders_DefaultWhenStakeOmitted(t *testing.T) {
 	// If stake is omitted for static providers, stakeSize is 0 and they get the legacy boost.
 	// With ONLY static providers, maxWeight remains 1, so boost yields WeightMultiplierForStaticProviders (==10).
-	p1 := NewConsumerSessionWithProvider("p1", nil, 1, 1, sdk.NewInt64Coin("ulava", 0))
-	p2 := NewConsumerSessionWithProvider("p2", nil, 1, 1, sdk.NewInt64Coin("ulava", 0))
+	p1 := NewConsumerSessionWithProvider("p1", nil, 1, 1, int64(0))
+	p2 := NewConsumerSessionWithProvider("p2", nil, 1, 1, int64(0))
 	p1.StaticProvider = true
 	p2.StaticProvider = true
 
@@ -42,7 +41,7 @@ func TestCalcWeightsByStake_StaticProviders_DefaultWhenStakeOmitted(t *testing.T
 
 func TestCalcWeightsByStake_StaticProviders_ZeroValueStakeDoesNotPanic(t *testing.T) {
 	// This mirrors the integration test setup where ConsumerSessionsWithProvider is constructed via a struct literal
-	// and stakeSize is left at its zero value (sdk.Coin{}), whose Amount may be a nil-backed math.Int.
+	// and stakeSize is left at its zero value (0), no longer a nil-backed math.Int.
 	p := &ConsumerSessionsWithProvider{
 		PublicLavaAddress: "p",
 		StaticProvider:    true,
@@ -59,8 +58,8 @@ func TestCalcWeightsByStake_StaticProviders_ZeroValueStakeDoesNotPanic(t *testin
 func TestCalcWeightsByStake_StaticProviders_LegacyBoostAgainstMaxStake(t *testing.T) {
 	// If there are other (non-static or explicitly-staked static) providers, omitted-stake static providers
 	// get boosted relative to the max stake in the pairing list.
-	chain := NewConsumerSessionWithProvider("chain", nil, 1, 1, sdk.NewInt64Coin("ulava", 100))
-	staticOmitted := NewConsumerSessionWithProvider("staticOmitted", nil, 1, 1, sdk.NewInt64Coin("ulava", 0))
+	chain := NewConsumerSessionWithProvider("chain", nil, 1, 1, int64(100))
+	staticOmitted := NewConsumerSessionWithProvider("staticOmitted", nil, 1, 1, int64(0))
 	staticOmitted.StaticProvider = true
 
 	providers := map[uint64]*ConsumerSessionsWithProvider{
@@ -75,7 +74,7 @@ func TestCalcWeightsByStake_StaticProviders_LegacyBoostAgainstMaxStake(t *testin
 
 func TestCalcWeightsByStake_StaticProvider_ExplicitStake_NoBoost(t *testing.T) {
 	// If stake is explicitly set (>0) for a static provider, it should be used as-is (no boost).
-	staticExplicit := NewConsumerSessionWithProvider("staticExplicit", nil, 1, 1, sdk.NewInt64Coin("ulava", 25))
+	staticExplicit := NewConsumerSessionWithProvider("staticExplicit", nil, 1, 1, int64(25))
 	staticExplicit.StaticProvider = true
 
 	providers := map[uint64]*ConsumerSessionsWithProvider{
@@ -90,9 +89,9 @@ func TestBackupProviderWeightsViaCalcWeightsByStake(t *testing.T) {
 	// Backup providers are registered using the same CalcWeightsByStake logic as static providers.
 	// Statics and backups are never in the same optimizer candidate list, so their weights only
 	// affect within-tier ranking — no artificial cap on backup weights is needed.
-	staticP := NewConsumerSessionWithProvider("static", nil, 1, 1, sdk.NewInt64Coin("ulava", 0))
+	staticP := NewConsumerSessionWithProvider("static", nil, 1, 1, int64(0))
 	staticP.StaticProvider = true
-	backupP := NewConsumerSessionWithProvider("backup", nil, 1, 1, sdk.NewInt64Coin("ulava", 0))
+	backupP := NewConsumerSessionWithProvider("backup", nil, 1, 1, int64(0))
 	backupP.StaticProvider = true
 
 	staticWeights := CalcWeightsByStake(map[uint64]*ConsumerSessionsWithProvider{0: staticP})

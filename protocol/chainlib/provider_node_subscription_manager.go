@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	gojson "github.com/goccy/go-json"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
@@ -27,7 +26,7 @@ const SubscriptionTimeoutDuration = 15 * time.Minute
 type connectedConsumerContainer struct {
 	consumerChannel    *common.SafeChannelSender[*pairingtypes.RelayReply]
 	firstSetupRequest  *pairingtypes.RelayRequest
-	consumerSDKAddress sdk.AccAddress
+	consumerSDKAddress []byte
 }
 
 type activeSubscription struct {
@@ -136,12 +135,12 @@ func (pnsm *ProviderNodeSubscriptionManager) checkAndAddPendingSubscriptionsWith
 	return listenChan, ok
 }
 
-func (pnsm *ProviderNodeSubscriptionManager) checkForActiveSubscriptionsWithLock(ctx context.Context, hashedParams string, consumerAddr sdk.AccAddress, consumerProcessGuid string, params []byte, chainMessage ChainMessage, consumerChannel chan<- *pairingtypes.RelayReply, request *pairingtypes.RelayRequest) (subscriptionId string, err error) {
+func (pnsm *ProviderNodeSubscriptionManager) checkForActiveSubscriptionsWithLock(ctx context.Context, hashedParams string, consumerAddr []byte, consumerProcessGuid string, params []byte, chainMessage ChainMessage, consumerChannel chan<- *pairingtypes.RelayReply, request *pairingtypes.RelayRequest) (subscriptionId string, err error) {
 	pnsm.lock.Lock()
 	defer pnsm.lock.Unlock()
 	paramsChannelToConnectedConsumers, foundSubscriptionHash := pnsm.activeSubscriptions[hashedParams]
 	if foundSubscriptionHash {
-		consumerAddrString := consumerAddr.String()
+		consumerAddrString := fmt.Sprintf("%x", consumerAddr)
 		utils.LavaFormatTrace("[AddConsumer] found existing subscription",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("consumerAddr", consumerAddr),
@@ -228,7 +227,7 @@ func (pnsm *ProviderNodeSubscriptionManager) checkForActiveSubscriptionsWithLock
 	return "", NoActiveSubscriptionFound
 }
 
-func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, request *pairingtypes.RelayRequest, chainMessage ChainMessage, consumerAddr sdk.AccAddress, consumerChannel chan<- *pairingtypes.RelayReply, consumerProcessGuid string) (subscriptionId string, err error) {
+func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, request *pairingtypes.RelayRequest, chainMessage ChainMessage, consumerAddr []byte, consumerChannel chan<- *pairingtypes.RelayReply, consumerProcessGuid string) (subscriptionId string, err error) {
 	utils.LavaFormatTrace("[AddConsumer] called", utils.LogAttr("consumerAddr", consumerAddr))
 
 	if pnsm == nil {
@@ -275,7 +274,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 		}
 
 		// did not find active or pending subscriptions, will try to create a new subscription.
-		consumerAddrString := consumerAddr.String()
+		consumerAddrString := fmt.Sprintf("%x", consumerAddr)
 		utils.LavaFormatTrace("[AddConsumer] did not found existing subscription for hashed params, creating new one", utils.LogAttr("hash", hashedParams))
 		nodeChan := make(chan interface{})
 		var replyWrapper *RelayReplyWrapper
@@ -499,14 +498,14 @@ func (pnsm *ProviderNodeSubscriptionManager) convertNodeMsgToMarshalledJsonRpcRe
 	return marshalledMsg, nil
 }
 
-func (pnsm *ProviderNodeSubscriptionManager) signReply(ctx context.Context, reply *pairingtypes.RelayReply, consumerAddr sdk.AccAddress, chainMessage ChainMessage, request *pairingtypes.RelayRequest) error {
+func (pnsm *ProviderNodeSubscriptionManager) signReply(ctx context.Context, reply *pairingtypes.RelayReply, consumerAddr []byte, chainMessage ChainMessage, request *pairingtypes.RelayRequest) error {
 	// Send the first setup message to the consumer in a go routine because the blocking listening for this channel happens after this function
 
 	// FinalizedBlocksHashes is no longer populated for subscriptions
 
 	var ignoredMetadata []pairingtypes.Metadata
 	reply.Metadata, _, ignoredMetadata = pnsm.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
-	reply, err := lavaprotocol.SignRelayResponse(consumerAddr, *request, pnsm.privKey, reply)
+	reply, err := lavaprotocol.SignRelayResponse(*request, pnsm.privKey, reply)
 	if err != nil {
 		return err
 	}
@@ -578,7 +577,7 @@ func (pnsm *ProviderNodeSubscriptionManager) handleNewNodeMessage(ctx context.Co
 	return nil
 }
 
-func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context, chainMessage ChainMessageForSend, consumerAddr sdk.AccAddress, closeConsumerChannel bool, consumerProcessGuid string) error {
+func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context, chainMessage ChainMessageForSend, consumerAddr []byte, closeConsumerChannel bool, consumerProcessGuid string) error {
 	if pnsm == nil {
 		return nil
 	}
@@ -595,7 +594,7 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 	)
 
-	consumerAddrString := consumerAddr.String()
+	consumerAddrString := fmt.Sprintf("%x", consumerAddr)
 
 	var subToClose *activeSubscription
 	func() {

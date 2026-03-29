@@ -8,7 +8,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
 	"github.com/lavanet/lava/v5/protocol/qos"
 	"github.com/lavanet/lava/v5/utils"
@@ -114,8 +113,7 @@ type UsedProvidersInf interface {
 
 type SessionInfo struct {
 	Session           *SingleConsumerSession
-	StakeSize         sdk.Coin
-	QoSSummaryResult  sdk.Dec // using ComputeQoS to get the total QOS
+	StakeSize         int64
 	Epoch             uint64
 	ReportedProviders []*pairingtypes.ReportedProvider
 }
@@ -299,7 +297,7 @@ type ConsumerSessionsWithProvider struct {
 	PairingEpoch      uint64
 	// whether we already reported this provider this epoch, we can only report one conflict per provider per epoch
 	conflictFoundAndReported uint32   // 0 == not reported, 1 == reported
-	stakeSize                sdk.Coin // the stake size the provider staked
+	stakeSize                int64 // the stake size the provider staked (ulava)
 
 	// blocked provider recovery status if 0 currently not used, if 1 a session has tried resume communication with this provider
 	// if the provider is not blocked at all this field is irrelevant
@@ -307,7 +305,7 @@ type ConsumerSessionsWithProvider struct {
 	StaticProvider                            bool
 }
 
-func NewConsumerSessionWithProvider(publicLavaAddress string, pairingEndpoints []*Endpoint, maxCu uint64, epoch uint64, stakeSize sdk.Coin) *ConsumerSessionsWithProvider {
+func NewConsumerSessionWithProvider(publicLavaAddress string, pairingEndpoints []*Endpoint, maxCu uint64, epoch uint64, stakeSize int64) *ConsumerSessionsWithProvider {
 	return &ConsumerSessionsWithProvider{
 		PublicLavaAddress: publicLavaAddress,
 		Endpoints:         pairingEndpoints,
@@ -455,16 +453,16 @@ func (cswp *ConsumerSessionsWithProvider) doesProviderEndpointsContainGeolocatio
 	return false
 }
 
-// Validate and add the compute units for this provider
-func (cswp *ConsumerSessionsWithProvider) getProviderStakeSize() sdk.Coin {
+// getProviderStakeSize returns the stake size (in ulava) for this provider.
+func (cswp *ConsumerSessionsWithProvider) getProviderStakeSize() int64 {
 	cswp.Lock.RLock()
 	defer cswp.Lock.RUnlock()
 	return cswp.stakeSize
 }
 
-// GetProviderStakeSize returns the provider stake used by the consumer for selection weighting.
+// GetProviderStakeSize returns the provider stake (in ulava) used for selection weighting.
 // Exported for cross-package callers (e.g., rpcsmartrouter) that need to copy sessions.
-func (cswp *ConsumerSessionsWithProvider) GetProviderStakeSize() sdk.Coin {
+func (cswp *ConsumerSessionsWithProvider) GetProviderStakeSize() int64 {
 	return cswp.getProviderStakeSize()
 }
 
@@ -858,18 +856,13 @@ func CalcWeightsByStake(providers map[uint64]*ConsumerSessionsWithProvider) (wei
 	staticProvidersToBoost := make([]*ConsumerSessionsWithProvider, 0)
 	maxWeight := int64(1)
 	for _, cswp := range providers {
-		stakeAmount := cswp.getProviderStakeSize().Amount
+		stakeAmount := cswp.getProviderStakeSize()
 		stake := int64(10) // defaults to 10 if stake isn't set
-		if !stakeAmount.IsNil() && stakeAmount.IsInt64() {
-			stake = stakeAmount.Int64()
+		if stakeAmount > 0 {
+			stake = stakeAmount
 		}
-		// NOTE: stakeAmount may be a zero-value (nil-backed) math.Int if stake wasn't initialized
-		// (e.g. when ConsumerSessionsWithProvider is constructed directly without setting stakeSize).
-		// Calling IsZero() on a nil-backed Int will panic, so guard IsZero() with IsNil().
-		stakeOmitted := stakeAmount.IsNil()
-		if !stakeOmitted {
-			stakeOmitted = stakeAmount.IsZero()
-		}
+		// stakeOmitted is true when no explicit stake was configured (stakeAmount == 0).
+		stakeOmitted := stakeAmount == 0
 		// Preserve legacy behavior for static providers: if no explicit stake was set (stakeAmount==0),
 		// boost them relative to the max stake in the pairing list.
 		// If explicit stake is provided (>0), treat the static provider like any other provider.

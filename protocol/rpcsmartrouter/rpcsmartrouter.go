@@ -39,9 +39,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
@@ -80,10 +77,10 @@ var (
 	RelaysHealthEnableFlagDefault  = true
 	RelayHealthIntervalFlagDefault = 5 * time.Minute
 
-	// StaticProviderDummyCoin is used for type compatibility in provider sessions.
+	// StaticProviderDummyStake is used for stake-based provider selection weighting.
 	// For static providers that do NOT specify an explicit stake, we keep this at 0 so CalcWeightsByStake
 	// can apply the legacy "static provider boost" behavior (see lavasession package).
-	StaticProviderDummyCoin = sdk.NewCoin("ulava", sdk.NewInt(0))
+	StaticProviderDummyStake = int64(0)
 )
 
 // staticPolicy is a simple implementation of chainlib.PolicyInf
@@ -181,7 +178,6 @@ type rpcSmartRouterStartOptions struct {
 	staticProvidersList      []*lavasession.RPCStaticProviderEndpoint // define static providers as primary providers
 	backupProvidersList      []*lavasession.RPCStaticProviderEndpoint // define backup providers as emergency fallback when no providers available
 	geoLocation              uint64
-	clientCtx                client.Context // Blockchain client context for querying specs
 	weightedSelectorConfig   provideroptimizer.WeightedSelectorConfig
 }
 
@@ -339,18 +335,9 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 			return err
 		}
 	} else {
-		// Query spec once from blockchain (no ongoing updates like rpcconsumer)
-		specQueryClient := spectypes.NewQueryClient(options.clientCtx)
-		chainSpecResponse, err := specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
-			ChainID: chainID,
-		})
-		if err != nil {
-			err = utils.LavaFormatError("failed querying chain spec from blockchain", err, utils.Attribute{Key: "chainID", Value: chainID})
-			errCh <- err
-			return err
-		}
-		chainParser.SetSpec(chainSpecResponse.Spec)
-		utils.LavaFormatInfo("Loaded spec from blockchain", utils.Attribute{Key: "chainID", Value: chainID})
+		err = utils.LavaFormatError("no static spec paths configured; smart router requires --static-spec-paths to load chain specs", nil, utils.Attribute{Key: "chainID", Value: chainID})
+		errCh <- err
+		return err
 	}
 
 	// Filter the relevant static providers
@@ -567,16 +554,16 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 			if stake < 0 {
 				stake = 0
 			}
-			stakeCoin := StaticProviderDummyCoin
+			stakeAmount := StaticProviderDummyStake
 			if stake > 0 {
-				stakeCoin = sdk.NewInt64Coin("ulava", stake)
+				stakeAmount = stake
 			}
 			providerEntry := lavasession.NewConsumerSessionWithProvider(
 				provider.Name,
 				endpoints,
 				999999999, // High compute units for availability
 				1,         // Fixed epoch (smart router doesn't track blockchain epochs)
-				stakeCoin,
+				stakeAmount,
 			)
 			providerEntry.StaticProvider = true
 			sessions[uint64(idx)] = providerEntry
@@ -1092,10 +1079,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			utils.LavaFormatInfo(common.ProcessStartLogText)
-			clientCtx, err := client.GetClientTxContext(cmd)
-			if err != nil {
-				return err
-			}
+			var err error
 			// set viper
 			config_name := DefaultRPCSmartRouterFileName
 			if len(args) == 1 {
@@ -1108,7 +1092,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			viper.AddConfigPath(lavaDefaultNodeHome)
 
 			// set log format
-			logFormat := viper.GetString(flags.FlagLogFormat)
+			logFormat := viper.GetString("log-format")
 			utils.JsonFormat = logFormat == "json"
 			// set rolling log.
 			closeLoggerOnFinish := common.SetupRollingLogger()
@@ -1155,7 +1139,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			// Smart router doesn't need blockchain chain ID
 			utils.LavaFormatInfo("Running Smart Router")
 
-			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)
+			logLevel, err := cmd.Flags().GetString("log-level")
 			if err != nil {
 				utils.LavaFormatFatal("failed to read log level flag", err)
 			}
@@ -1363,7 +1347,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				staticProvidersList:      directRPCEndpoints,
 				backupProvidersList:      backupDirectRPCEndpoints,
 				geoLocation:              geolocation,
-				clientCtx:                clientCtx,
 				weightedSelectorConfig:   weightedSelectorConfig,
 			})
 
@@ -1466,6 +1449,9 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().BoolVar(&relaycore.DisableBatchRequestRetry, common.DisableBatchRequestRetryFlag, true, "disable retries for batch requests (JSON-RPC batches)")
 
 	common.AddRollingLogConfig(cmdRPCSmartRouter)
+	// Log level/format flags (previously provided by cosmos-sdk AddTxFlagsToCmd)
+	cmdRPCSmartRouter.Flags().String("log-level", "info", "log level (debug|info|warn|error|fatal)")
+	cmdRPCSmartRouter.Flags().String("log-format", "text", "log format (text|json)")
 	return cmdRPCSmartRouter
 }
 

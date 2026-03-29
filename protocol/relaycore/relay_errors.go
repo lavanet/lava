@@ -5,7 +5,6 @@ import (
 	"regexp"
 	"strconv"
 
-	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/utils"
 )
@@ -55,17 +54,14 @@ func (r *RelayErrors) AddError(err RelayError) {
 
 func (r *RelayErrors) GetBestErrorMessageForUser() RelayError {
 	bestIndex := -1
-	bestResult := github_com_cosmos_cosmos_sdk_types.ZeroDec()
+	bestResult := 0.0
 	errorMap := make(map[string][]int)
 	for idx, relayError := range r.RelayErrors {
 		errorMessage := r.sanitizeError(relayError.Err)
 		errorMap[errorMessage] = append(errorMap[errorMessage], idx)
-		if relayError.ProviderInfo.ProviderReputationSummary.IsNil() || relayError.ProviderInfo.ProviderStake.Amount.IsNil() {
-			continue
-		}
-		currentResult := relayError.ProviderInfo.ProviderReputationSummary.MulInt(relayError.ProviderInfo.ProviderStake.Amount)
-		if currentResult.GTE(bestResult) { // 0 or 1 here are valid replacements, so even 0 scores will return the error value
-			bestResult.Set(currentResult)
+		currentResult := relayError.ProviderInfo.ProviderReputationSummary * float64(relayError.ProviderInfo.ProviderStake)
+		if currentResult >= bestResult { // 0 or 1 here are valid replacements, so even 0 scores will return the error value
+			bestResult = currentResult
 			bestIndex = idx
 		}
 	}

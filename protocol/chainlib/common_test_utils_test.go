@@ -11,11 +11,9 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
-	"github.com/cosmos/cosmos-sdk/server/grpc/gogoreflection"
-	"github.com/cometbft/cometbft/proto/tendermint/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/reflection"
 
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/common"
@@ -41,27 +39,63 @@ func (mrw mockResponseWriter) WriteHeader(statusCode int) {
 	*mrw.blockToReturn = statusCode
 }
 
-type myServiceImplementation struct {
-	*tmservice.UnimplementedServiceServer
+// mockTMServiceServer provides a minimal mock of the Tendermint service for gRPC testing.
+// This replaces the cosmos-sdk tmservice dependency.
+type mockTMServiceServer struct {
 	serverCallback http.HandlerFunc
 }
 
-func (bbb myServiceImplementation) GetLatestBlock(ctx context.Context, reqIn *tmservice.GetLatestBlockRequest) (*tmservice.GetLatestBlockResponse, error) {
-	metadata, exists := metadata.FromIncomingContext(ctx)
+// mockGetLatestBlockRequest/Response are minimal types for the mock gRPC service.
+type mockGetLatestBlockRequest struct{}
+type mockGetLatestBlockResponse struct {
+	Height int64
+}
+
+func (s mockTMServiceServer) GetLatestBlock(ctx context.Context, _ *mockGetLatestBlockRequest) (*mockGetLatestBlockResponse, error) {
+	md, exists := metadata.FromIncomingContext(ctx)
 	req := &http.Request{}
 	if exists {
 		headers := map[string][]string{}
-		for key, val := range metadata {
+		for key, val := range md {
 			headers[key] = val
 		}
-		req = &http.Request{
-			Header: headers,
-		}
+		req = &http.Request{Header: headers}
 	}
 	num := 5
 	respWriter := mockResponseWriter{blockToReturn: &num}
-	bbb.serverCallback(respWriter, req)
-	return &tmservice.GetLatestBlockResponse{Block: &types.Block{Header: types.Header{Height: int64(num)}}}, nil
+	s.serverCallback(respWriter, req)
+	return &mockGetLatestBlockResponse{Height: int64(num)}, nil
+}
+
+// mockTMServiceDesc is the gRPC service descriptor for the mock TM service.
+var mockTMServiceDesc = grpc.ServiceDesc{
+	ServiceName: "cosmos.base.tendermint.v1beta1.Service",
+	HandlerType: (*mockTMServiceInterface)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetLatestBlock",
+			Handler: func(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+				in := new(mockGetLatestBlockRequest)
+				if err := dec(in); err != nil {
+					return nil, err
+				}
+				return srv.(mockTMServiceInterface).GetLatestBlock(ctx, in)
+			},
+		},
+	},
+	Streams: []grpc.StreamDesc{},
+}
+
+type mockTMServiceInterface interface {
+	GetLatestBlock(context.Context, *mockGetLatestBlockRequest) (*mockGetLatestBlockResponse, error)
+}
+
+type myServiceImplementation struct {
+	serverCallback http.HandlerFunc
+}
+
+func (s myServiceImplementation) GetLatestBlock(ctx context.Context, req *mockGetLatestBlockRequest) (*mockGetLatestBlockResponse, error) {
+	return mockTMServiceServer{serverCallback: s.serverCallback}.GetLatestBlock(ctx, req)
 }
 
 func generateCombinations(arr []string) [][]string {
@@ -211,8 +245,8 @@ func CreateChainLibMocks(
 		}
 		go func() {
 			service := myServiceImplementation{serverCallback: httpServerCallback}
-			tmservice.RegisterServiceServer(grpcServer, service)
-			gogoreflection.Register(grpcServer)
+			grpcServer.RegisterService(&mockTMServiceDesc, service)
+			reflection.Register(grpcServer)
 			// Serve requests on the buffered connection
 			if err := grpcServer.Serve(lis); err != nil {
 				return

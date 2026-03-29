@@ -5,7 +5,6 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/spf13/pflag"
 )
@@ -62,12 +61,12 @@ func ParseTransactionResult(parsedValues map[string]any) (retData TxResultData, 
 }
 
 func VerifyAndHandleUnsupportedFlags(currentFlags *pflag.FlagSet) error {
-	fees, err := currentFlags.GetString(flags.FlagFees)
+	fees, err := currentFlags.GetString("fees")
 	if err != nil {
 		return err
 	}
 	if fees != "" {
-		currentFlags.Set(flags.FlagFees, "")
+		currentFlags.Set("fees", "")
 		utils.LavaFormatWarning("fees flag was used and is not supported, rpcprovider will ignore it. No action is required", nil)
 	}
 	return nil
