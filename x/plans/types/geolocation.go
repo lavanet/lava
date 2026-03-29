@@ -1,5 +1,7 @@
 package types
 
+import "fmt"
+
 // Geolocation is a bitmask identifying one or more geographic regions.
 // Values match the on-chain protobuf enum lavanet.lava.plans.Geolocation.
 type Geolocation int32
@@ -34,6 +36,30 @@ func GeolocationsAll() []Geolocation {
 		Geolocation_AF,
 		Geolocation_AS,
 		Geolocation_AU,
+	}
+}
+
+// String returns a human-readable name for a geolocation constant.
+func (geo Geolocation) String() string {
+	switch geo {
+	case Geolocation_GL:
+		return "GL"
+	case Geolocation_USC:
+		return "USC"
+	case Geolocation_EU:
+		return "EU"
+	case Geolocation_USE:
+		return "USE"
+	case Geolocation_USW:
+		return "USW"
+	case Geolocation_AF:
+		return "AF"
+	case Geolocation_AS:
+		return "AS"
+	case Geolocation_AU:
+		return "AU"
+	default:
+		return fmt.Sprintf("Geolocation(%d)", int32(geo))
 	}
 }
 
