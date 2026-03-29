@@ -458,12 +458,12 @@ Log output automatically includes:
 
 ### Phase 5: Migrate Existing Errors — Relay Path
 - [x] Add `LavaError *LavaError` field to `RelayError` struct in `protocol/relaycore/relay_errors.go`
-- [ ] Call `ClassifyError` when creating `RelayError` in `results_manager.go` (`setErrorResponse` and `setValidResponse`) — decentralized path
-- [ ] Populate `RelayError.LavaError` in the smart-router path (`direct_rpc_relay.go` → pass classification from `ClassifyDirectRPCError` into the relay response flow)
-- [ ] Update `GetBestErrorMessageForUser` to prefer external errors (`CHAIN_*`, `NODE_*`) over internal (`PROTOCOL_*`) when selecting the best error for the user
-- [ ] Update `protocol/relaycore/relay_processor.go` to propagate codes
-- [ ] Update consumer server (`rpcconsumer/rpcconsumer_server.go`) to log with codes
-- [ ] Update provider server (`rpcprovider/rpcprovider_server.go`) to log with codes
+- [x] Call `ClassifyError` when creating `RelayError` in `results_manager.go` (`setErrorResponse` and `setValidResponse`) — decentralized path
+- [x] Populate `RelayError.LavaError` in the smart-router path (`direct_rpc_relay.go` → pass classification from `ClassifyDirectRPCError` into the relay response flow)
+- [x] Update `GetBestErrorMessageForUser` to prefer external errors (`CHAIN_*`, `NODE_*`) over internal (`PROTOCOL_*`) when selecting the best error for the user
+- [x] Update `protocol/relaycore/relay_processor.go` to propagate codes
+- [x] Update consumer server (`rpcconsumer/rpcconsumer_server.go`) to log with codes
+- [x] Update provider server (`rpcprovider/rpcprovider_server.go`) to log with codes
 
 ### Phase 6: Metrics & Observability
 - [ ] Verify Prometheus counter `lava_errors_total{code, name, category, retryable}` works end-to-end
