@@ -95,10 +95,10 @@ func TestDirectRPCRelaySender_SendDirectRelay_Timeout(t *testing.T) {
 	// Send relay with short timeout
 	result, err := sender.SendDirectRelay(ctx, chainMessage, 100*time.Millisecond)
 
-	// Should timeout
+	// Should timeout — error preserves original message, classification in metadata
 	require.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "timeout")
+	assert.Contains(t, err.Error(), "deadline exceeded")
 }
 
 func TestDirectRPCRelaySender_SendDirectRelay_ServerError(t *testing.T) {
@@ -128,10 +128,10 @@ func TestDirectRPCRelaySender_SendDirectRelay_ServerError(t *testing.T) {
 	// Send relay
 	result, err := sender.SendDirectRelay(ctx, chainMessage, 5*time.Second)
 
-	// Should return error for 5xx status codes (server errors)
+	// Should return error for 5xx status codes — error preserves original HTTP status
 	require.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "service unavailable")
+	assert.Contains(t, err.Error(), "503")
 }
 
 func TestDirectRPCRelaySender_SendDirectRelay_BatchRequest(t *testing.T) {

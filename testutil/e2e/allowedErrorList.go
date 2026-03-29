@@ -37,6 +37,8 @@ var allowedErrors = map[string]string{
 	"request.userAddr":                                                                 "This error is allowed because it's part of error context information in relay failures",
 	"srv.Send()":                                                                       "This error is allowed because it can occur when trying to send on a closing gRPC connection during normal shutdown or connection issues",
 	"rpc error: code = Unavailable desc = transport is closing":                        "This error is allowed because gRPC streams can close during connection shutdown, causing Unavailable errors",
+	"provider node error":                                                              "This error is the classified error log from the error registry — transient connection/EOF errors during startup are expected",
+	"node error error=":                                                                "This error is the classified node error log from CheckResponseError — node responses detected as errors are expected during normal operation",
 }
 
 var allowedErrorsDuringEmergencyMode = map[string]string{

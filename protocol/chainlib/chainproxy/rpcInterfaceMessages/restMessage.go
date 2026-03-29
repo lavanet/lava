@@ -9,6 +9,7 @@ import (
 
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/parser"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/sigs"
@@ -50,23 +51,23 @@ func (rm *RestMessage) GetRawRequestHash() ([]byte, error) {
 }
 
 func (jm RestMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
-	// Treat 5xx and 429 as node errors (triggers retries)
-	if httpStatusCode >= 500 || httpStatusCode == 429 {
-		// Server error or rate limit - treat as node error for retry logic
-		errorMsg := extractErrorMessage(data, httpStatusCode)
-		return true, errorMsg
-	}
-
-	// Check Cosmos SDK transaction errors (HTTP 2xx with error code in JSON)
+	// Check Cosmos SDK transaction errors first (HTTP 2xx with error code in JSON body)
 	if httpStatusCode >= 200 && httpStatusCode < 300 {
-		if hasError, errMsg := checkCosmosTxError(data); hasError {
-			return hasError, errMsg
+		if cosmosTxErr, errMsg := checkCosmosTxError(data); cosmosTxErr {
+			return cosmosTxErr, errMsg
 		}
-		// HTTP status code is 2xx and no Cosmos SDK error, treat as success
 		return false, ""
 	}
 
-	// 4xx (except 429) are client errors - not node errors, pass through to consumer
+	// For non-2xx, classify using the error registry.
+	// Only treat known retryable external errors as "node errors" for the relay processor.
+	// Unknown/unclassified errors (e.g., 400 Bad Request) pass through to the consumer.
+	errorMsg := extractErrorMessage(data, httpStatusCode)
+	classified := common.ClassifyAndLogNodeError(common.TransportREST, httpStatusCode, errorMsg)
+	if classified != common.LavaErrorUnknown && classified.Category == common.CategoryExternal && classified.Retryable {
+		return true, errorMsg
+	}
+
 	return false, ""
 }
 

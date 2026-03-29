@@ -8,6 +8,7 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/parser"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/sigs"
@@ -68,7 +69,13 @@ func (jm JsonrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (ha
 	if result.Error == nil { // no error
 		return false, ""
 	}
-	return result.Error.Message != "", result.Error.Message
+	if result.Error.Message == "" {
+		return false, ""
+	}
+
+	common.ClassifyAndLogNodeError(common.TransportJsonRPC, result.Error.Code, result.Error.Message)
+
+	return true, result.Error.Message
 }
 
 func ConvertJsonRPCMsg(rpcMsg *rpcclient.JsonrpcMessage) (*JsonrpcMessage, error) {

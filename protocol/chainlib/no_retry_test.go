@@ -134,9 +134,9 @@ func TestIsSolanaNonRetryableErrorType(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:     "UnsupportedMethodError is not SolanaNonRetryableError",
+			name:     "UnsupportedMethodError is also non-retryable",
 			err:      NewUnsupportedMethodError(errors.New("method not found"), "eth_test"),
-			expected: false,
+			expected: true, // unsupported methods are non-retryable
 		},
 	}
 
@@ -202,8 +202,10 @@ func TestSolanaNonRetryableError_ErrorMessage(t *testing.T) {
 	require.Contains(t, wrappedErr.Error(), "solana non-retryable error")
 	require.Contains(t, wrappedErr.Error(), "missing in long-term storage")
 
-	// Test Unwrap
-	require.Equal(t, originalErr, wrappedErr.Unwrap())
+	// Test Unwrap returns the underlying LavaError
+	unwrapped := errors.Unwrap(wrappedErr)
+	require.NotNil(t, unwrapped)
+	require.True(t, errors.Is(wrappedErr, common.LavaErrorChainSolanaMissingLongTerm))
 }
 
 func TestSolanaNonRetryableErrorCodes(t *testing.T) {

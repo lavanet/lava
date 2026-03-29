@@ -474,14 +474,12 @@ func (rpcps *RPCProviderServer) finalizeSession(isRelayError bool, ctx context.C
 		}
 
 		// Check if this is an unsupported method error
-		var unsupportedMethodError *chainlib.UnsupportedMethodError
-		if errors.As(err, &unsupportedMethodError) {
+		if chainlib.IsUnsupportedMethodErrorType(err) {
 			utils.LavaFormatInfo("CU rolled back for unsupported method error returned to consumer",
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("session_id", request.RelaySession.SessionId),
 				utils.LogAttr("relay_num", request.RelaySession.RelayNum),
-				utils.LogAttr("method", unsupportedMethodError.GetMethodName()),
-				utils.LogAttr("error", unsupportedMethodError.Error()),
+				utils.LogAttr("error", err.Error()),
 			)
 		} else {
 			err = utils.LavaFormatError("TryRelay Failed", err,

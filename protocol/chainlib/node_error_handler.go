@@ -22,119 +22,100 @@ import (
 	"github.com/lavanet/lava/v5/utils"
 )
 
-type UnsupportedMethodError struct {
-	originalError error
-	methodName    string
-}
-
-func (e *UnsupportedMethodError) Error() string {
-	if e.methodName != "" {
-		return fmt.Sprintf("unsupported method %q: %v", e.methodName, e.originalError)
+// NewUnsupportedMethodError creates an error wrapping a LavaError with unsupported method classification.
+// The methodName is included in the context for logging.
+func NewUnsupportedMethodError(_ error, methodName string) error {
+	context := "unsupported method"
+	if methodName != "" {
+		context = fmt.Sprintf("unsupported method %q", methodName)
 	}
-	return fmt.Sprintf("unsupported method: %v", e.originalError)
+	return common.NewLavaError(common.LavaErrorNodeMethodNotFound, context)
 }
 
-func (e *UnsupportedMethodError) Unwrap() error {
-	return e.originalError
+// NewSolanaNonRetryableError creates an error wrapping a LavaError with non-retryable classification.
+func NewSolanaNonRetryableError(_ error) error {
+	return common.NewLavaError(common.LavaErrorChainSolanaMissingLongTerm, "solana non-retryable error")
 }
 
-// WithMethod sets the method name for the error
-func (e *UnsupportedMethodError) WithMethod(method string) *UnsupportedMethodError {
-	e.methodName = method
-	return e
-}
-
-// GetMethodName returns the method name associated with this error
-func (e *UnsupportedMethodError) GetMethodName() string {
-	return e.methodName
-}
-
-// NewUnsupportedMethodError creates a new UnsupportedMethodError with optional method name
-func NewUnsupportedMethodError(originalError error, methodName string) *UnsupportedMethodError {
-	return &UnsupportedMethodError{
-		originalError: originalError,
-		methodName:    methodName,
+// ClassifyNodeError classifies a node error into a LavaError using the error registry.
+// It extracts error codes and messages from JSON-RPC, gRPC, and HTTP errors,
+// then delegates to common.ClassifyError for two-tier classification.
+//
+// Parameters:
+//   - nodeError: the error from the node
+//   - chainFamily: the chain family for Tier 2 lookups (use -1 if unknown)
+//   - transport: the transport type for Tier 1 generic matcher partitioning
+func ClassifyNodeError(nodeError error, chainFamily common.ChainFamily, transport common.TransportType) *common.LavaError {
+	if nodeError == nil {
+		return nil
 	}
-}
 
-// SolanaNonRetryableError represents a Solana error that should not be retried.
-// Currently covers error code -32009 ("missing in long-term storage") which indicates
-// the slot data is permanently unavailable.
-// Note: -32007 (ledger jump) IS retryable as another provider may have the data.
-type SolanaNonRetryableError struct {
-	originalError error
-}
+	errorCode := 0
+	errorMessage := nodeError.Error()
 
-func (e *SolanaNonRetryableError) Error() string {
-	return fmt.Sprintf("solana non-retryable error: %v", e.originalError)
-}
-
-func (e *SolanaNonRetryableError) Unwrap() error {
-	return e.originalError
-}
-
-// NewSolanaNonRetryableError creates a new SolanaNonRetryableError
-func NewSolanaNonRetryableError(originalError error) *SolanaNonRetryableError {
-	return &SolanaNonRetryableError{
-		originalError: originalError,
+	// Extract error code from HTTP-wrapped JSON-RPC errors
+	if jsonMsg := TryRecoverNodeErrorFromClientError(nodeError); jsonMsg != nil && jsonMsg.Error != nil {
+		errorCode = jsonMsg.Error.Code
+		if jsonMsg.Error.Message != "" {
+			errorMessage = jsonMsg.Error.Message
+		}
 	}
+
+	// Extract gRPC status code
+	if st, ok := status.FromError(nodeError); ok {
+		errorCode = int(st.Code())
+		if st.Message() != "" {
+			errorMessage = st.Message()
+		}
+	}
+
+	// Extract HTTP status code
+	if httpError, ok := nodeError.(rpcclient.HTTPError); ok {
+		errorCode = httpError.StatusCode
+	}
+
+	return common.ClassifyError(nil, chainFamily, transport, errorCode, errorMessage)
 }
 
-// IsUnsupportedMethodError checks if an error indicates an unsupported method
-// This is the comprehensive check that handles:
-// - Error message pattern matching (via common.IsUnsupportedMethodMessage)
-// - HTTP status codes (404, 405)
-// - gRPC status codes (Unimplemented)
-// - JSON-RPC error codes (-32601)
+// IsUnsupportedMethodError checks if an error indicates an unsupported method.
+// Uses the error registry's SubCategory classification for a unified check across
+// all transports (JSON-RPC, REST, gRPC) and all pattern types (codes, messages).
 func IsUnsupportedMethodError(nodeError error) bool {
 	if nodeError == nil {
 		return false
 	}
 
-	// First check the error message patterns
+	// Fast path: check the error message patterns directly (covers most cases)
 	if common.IsUnsupportedMethodMessage(nodeError.Error()) {
 		return true
 	}
 
-	// Check for HTTP status codes that indicate unsupported endpoints
-	if httpError, ok := nodeError.(rpcclient.HTTPError); ok {
-		return httpError.StatusCode == common.HTTPStatusNotFound || httpError.StatusCode == common.HTTPStatusMethodNotAllowed
-	}
-
-	// Check for gRPC status codes
-	if st, ok := status.FromError(nodeError); ok {
-		// Check for both Unimplemented and Unknown codes that might indicate unsupported methods
-		if st.Code() == codes.Unimplemented {
+	// Classify using the registry — checks codes, messages, and HTTP/gRPC status
+	for _, transport := range []common.TransportType{common.TransportJsonRPC, common.TransportREST, common.TransportGRPC} {
+		classified := ClassifyNodeError(nodeError, -1, transport)
+		if classified != nil && classified.SubCategory.IsUnsupportedMethod() {
 			return true
-		}
-		// Also check Unknown code with unsupported method message
-		if st.Code() == codes.Unknown && common.IsUnsupportedMethodMessage(st.Message()) {
-			return true
-		}
-	}
-
-	// Try to recover JSON-RPC error from HTTP error
-	if jsonMsg := TryRecoverNodeErrorFromClientError(nodeError); jsonMsg != nil && jsonMsg.Error != nil {
-		// JSON-RPC error code -32601 is "Method not found"
-		if jsonMsg.Error.Code == common.JSONRPCMethodNotFoundCode {
-			return true
-		}
-		// Check error message patterns in JSON-RPC error
-		if jsonMsg.Error.Message != "" {
-			return common.IsUnsupportedMethodMessage(jsonMsg.Error.Message)
 		}
 	}
 
 	return false
 }
 
-// IsUnsupportedMethodErrorType checks if an error is specifically an UnsupportedMethodError type
-func IsUnsupportedMethodErrorType(err error) bool {
-	if err == nil {
-		return false
+// unwrapLavaError extracts the *LavaError from a LavaWrappedError, or returns nil.
+func unwrapLavaError(err error) *common.LavaError {
+	var wrapped *common.LavaWrappedError
+	if errors.As(err, &wrapped) {
+		return wrapped.LavaErr
 	}
-	var unsupportedMethodError *UnsupportedMethodError
-	return errors.As(err, &unsupportedMethodError)
+	return nil
+}
+
+// IsUnsupportedMethodErrorType checks if an error wraps a LavaError with unsupported method SubCategory.
+func IsUnsupportedMethodErrorType(err error) bool {
+	if le := unwrapLavaError(err); le != nil {
+		return le.SubCategory.IsUnsupportedMethod()
+	}
+	return false
 }
 
 // IsSolanaNonRetryableError checks if an error indicates a Solana error that should not be retried.
@@ -170,45 +151,55 @@ func IsSolanaNonRetryableError(nodeError error) bool {
 	return false
 }
 
-// IsSolanaNonRetryableErrorType checks if an error is specifically a SolanaNonRetryableError type
+// IsSolanaNonRetryableErrorType checks if an error wraps a non-retryable LavaError.
 func IsSolanaNonRetryableErrorType(err error) bool {
-	if err == nil {
-		return false
+	if le := unwrapLavaError(err); le != nil {
+		return !le.Retryable
 	}
-	var solanaNonRetryableError *SolanaNonRetryableError
-	return errors.As(err, &solanaNonRetryableError)
+	return false
 }
 
-// ShouldRetryError determines if an error should trigger retry attempts
-// Returns false for:
-// - Unsupported method errors
-// - Solana non-retryable errors (e.g., -32009 "missing in long-term storage")
+// ShouldRetryError determines if an error should trigger retry attempts.
+// Convenience wrapper that uses default chain family and transport.
+// Prefer ShouldRetryErrorWithContext when chain/transport info is available.
 func ShouldRetryError(err error) bool {
+	return ShouldRetryErrorWithContext(err, -1, common.TransportJsonRPC)
+}
+
+// ShouldRetryErrorWithContext determines if an error should trigger retry attempts,
+// using chain family and transport for accurate Tier 2 classification.
+func ShouldRetryErrorWithContext(err error, chainFamily common.ChainFamily, transport common.TransportType) bool {
 	if err == nil {
 		return false
 	}
 
-	// Never retry unsupported method errors
+	// Check wrapped error types (these wrap the original error with retry intent)
 	if IsUnsupportedMethodErrorType(err) {
 		return false
 	}
-
-	// Never retry if the error message indicates an unsupported method
-	if IsUnsupportedMethodError(err) {
-		return false
-	}
-
-	// Never retry Solana non-retryable errors (wrapped type)
 	if IsSolanaNonRetryableErrorType(err) {
 		return false
 	}
 
-	// Never retry if the error message indicates a Solana non-retryable error
+	// Classify using the registry with chain-specific and transport-specific matchers
+	classified := ClassifyNodeError(err, chainFamily, transport)
+	if classified != nil && classified != common.LavaErrorUnknown {
+		// Unsupported methods are never retried regardless of Retryable flag
+		if classified.SubCategory.IsUnsupportedMethod() {
+			return false
+		}
+		return classified.Retryable
+	}
+
+	// Legacy fallback for errors not classified by the registry
+	if IsUnsupportedMethodError(err) {
+		return false
+	}
 	if IsSolanaNonRetryableError(err) {
 		return false
 	}
 
-	// For other errors, allow retry logic to decide
+	// Unknown errors — allow retry
 	return true
 }
 
@@ -353,67 +344,49 @@ func TryRecoverNodeErrorFromClientError(nodeErr error) *rpcclient.JsonrpcMessage
 	return nil
 }
 
+// handleAndClassify is the shared error handling path for all transports.
+// It classifies the error, logs it with structured fields, then delegates
+// to transport-specific handling (unsupported method wrapping, generic errors, etc.).
+func handleAndClassify(ctx context.Context, nodeError error, transport common.TransportType, geh *genericErrorHandler) error {
+	// Classify and log for metrics/observability
+	classified := ClassifyNodeError(nodeError, -1, transport)
+	common.LogCodedError("provider node error", nodeError, classified, "", 0, nodeError.Error())
+
+	// Wrap unsupported method errors
+	if classified.SubCategory.IsUnsupportedMethod() {
+		return common.NewLavaError(classified, nodeError.Error())
+	}
+
+	// Wrap non-retryable errors
+	if classified != common.LavaErrorUnknown && !classified.Retryable {
+		return common.NewLavaError(classified, nodeError.Error())
+	}
+
+	return geh.handleGenericErrors(ctx, nodeError)
+}
+
 type RestErrorHandler struct{ genericErrorHandler }
 
-// Validating if the error is related to the provider connection or not
-// returning nil if its not one of the expected connectivity error types
 func (rne *RestErrorHandler) HandleNodeError(ctx context.Context, nodeError error) error {
-	if IsUnsupportedMethodError(nodeError) {
-		return &UnsupportedMethodError{originalError: nodeError}
-	}
-
-	if IsSolanaNonRetryableError(nodeError) {
-		return &SolanaNonRetryableError{originalError: nodeError}
-	}
-
-	return rne.handleGenericErrors(ctx, nodeError)
+	return handleAndClassify(ctx, nodeError, common.TransportREST, &rne.genericErrorHandler)
 }
 
 type JsonRPCErrorHandler struct{ genericErrorHandler }
 
 func (jeh *JsonRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError error) error {
-	if IsUnsupportedMethodError(nodeError) {
-		return &UnsupportedMethodError{originalError: nodeError}
-	}
-
-	if IsSolanaNonRetryableError(nodeError) {
-		return &SolanaNonRetryableError{originalError: nodeError}
-	}
-
-	return jeh.handleGenericErrors(ctx, nodeError)
+	return handleAndClassify(ctx, nodeError, common.TransportJsonRPC, &jeh.genericErrorHandler)
 }
 
 type TendermintRPCErrorHandler struct{ genericErrorHandler }
 
 func (tendermintErrorHandler *TendermintRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError error) error {
-	if IsUnsupportedMethodError(nodeError) {
-		return &UnsupportedMethodError{originalError: nodeError}
-	}
-
-	if IsSolanaNonRetryableError(nodeError) {
-		return &SolanaNonRetryableError{originalError: nodeError}
-	}
-
-	return tendermintErrorHandler.handleGenericErrors(ctx, nodeError)
+	return handleAndClassify(ctx, nodeError, common.TransportJsonRPC, &tendermintErrorHandler.genericErrorHandler)
 }
 
 type GRPCErrorHandler struct{ genericErrorHandler }
 
 func (geh *GRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError error) error {
-	if IsUnsupportedMethodError(nodeError) {
-		return &UnsupportedMethodError{originalError: nodeError}
-	}
-
-	if IsSolanaNonRetryableError(nodeError) {
-		return &SolanaNonRetryableError{originalError: nodeError}
-	}
-
-	st, ok := status.FromError(nodeError)
-	if ok {
-		// Get the error message from the gRPC status
-		return geh.handleCodeErrors(st.Code())
-	}
-	return geh.handleGenericErrors(ctx, nodeError)
+	return handleAndClassify(ctx, nodeError, common.TransportGRPC, &geh.genericErrorHandler)
 }
 
 type ErrorHandler interface {
