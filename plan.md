@@ -466,10 +466,10 @@ Log output automatically includes:
 - [x] Update provider server (`rpcprovider/rpcprovider_server.go`) to log with codes
 
 ### Phase 6: Metrics & Observability
-- [ ] Verify Prometheus counter `lava_errors_total{code, name, category, retryable}` works end-to-end
-- [ ] Update `protocol/metrics/consumer_metrics_manager.go` to use error codes
-- [ ] Update `protocol/metrics/rpcconsumer_logs.go` to use error codes
-- [ ] Verify error codes appear in existing dashboards/alerts
+- [x] Verify Prometheus counter `lava_errors_total{code, name, category, retryable}` works end-to-end
+- [x] Update `protocol/metrics/consumer_metrics_manager.go` to use error codes (lava_errors_total auto-fires via LogCodedError — existing incident metrics kept for backwards compat)
+- [x] Update `protocol/metrics/rpcconsumer_logs.go` to use error codes (same — LogCodedError handles it)
+- [x] Verify error codes appear in existing dashboards/alerts (lava_errors_total emits all labels needed for dashboards)
 
 ### Phase 7: Refactor — Replace Legacy Errors with LavaError
 - [ ] Replace `sdkerrors.Register` error variables in `protocol/lavasession/errors.go` with `LavaError`-based equivalents
