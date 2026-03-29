@@ -125,6 +125,12 @@ func (ecf *EndpointChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64
 
 // FetchBlockHashByNum fetches the block hash for a given block number.
 // Used by ChainTracker for fork detection.
+//
+// For Solana-family chains, if the endpoint returns error code -32004
+// ("Block not available for slot X"), this method retries with previous slot
+// numbers (blockNum-1, blockNum-2, ...) up to maxBlockNotAvailableRetries times.
+// This handles both propagation delays (the latest slot data hasn't reached the
+// node yet) and skipped slots (Solana occasionally produces no block for a slot).
 func (ecf *EndpointChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
 	parsing, apiCollection, ok := ecf.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM)
 	tagName := spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM.String()
@@ -144,15 +150,87 @@ func (ecf *EndpointChainFetcher) FetchBlockHashByNum(ctx context.Context, blockN
 		)
 	}
 
-	// Substitute block number into template
+	if blockNum < 0 {
+		return "", utils.LavaFormatError(tagName+" invalid negative block number", nil,
+			utils.LogAttr("blockNum", blockNum),
+			utils.LogAttr("chainID", ecf.chainID),
+		)
+	}
+
+	// Determine if this chain supports block-not-available retry (Solana/SVM family).
+	shouldRetryBlockNotAvailable := common.IsSolanaFamily(ecf.chainID)
+
+	// Try the requested block number, then fall back to previous slots if needed.
+	currentBlock := blockNum
+	var lastErr error
+	maxAttempts := 1
+	if shouldRetryBlockNotAvailable {
+		maxAttempts = chainlib.MaxBlockNotAvailableRetries + 1 // +1 for the original attempt
+	}
+
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		if currentBlock < 0 {
+			break
+		}
+
+		hash, responseData, err := ecf.fetchSingleBlockHash(ctx, currentBlock, parsing, collectionData.Type, tagName)
+		if err == nil {
+			if attempt > 0 {
+				utils.LavaFormatDebug("Chain Tracker fetched previous slot after block-not-available",
+					utils.LogAttr("originalBlock", blockNum),
+					utils.LogAttr("fetchedBlock", currentBlock),
+					utils.LogAttr("attempts", attempt+1),
+					utils.LogAttr("chainID", ecf.chainID),
+					utils.LogAttr("endpoint", ecf.endpointURL),
+				)
+			}
+			return hash, nil
+		}
+
+		lastErr = err
+
+		// Check if this is a block-not-available error that we should retry.
+		if shouldRetryBlockNotAvailable && chainlib.IsBlockNotAvailableError(responseData) {
+			utils.LavaFormatDebug("Chain Tracker got block-not-available, trying previous slot",
+				utils.LogAttr("block", currentBlock),
+				utils.LogAttr("attempt", attempt+1),
+				utils.LogAttr("chainID", ecf.chainID),
+				utils.LogAttr("endpoint", ecf.endpointURL),
+			)
+			currentBlock--
+			continue
+		}
+
+		// Not a retryable error, return immediately.
+		return "", err
+	}
+
+	// All retries exhausted.
+	return "", utils.LavaFormatError(tagName+" all block-not-available retries exhausted", lastErr,
+		utils.LogAttr("originalBlock", blockNum),
+		utils.LogAttr("lastTriedBlock", currentBlock),
+		utils.LogAttr("attempts", maxAttempts),
+		utils.LogAttr("chainID", ecf.chainID),
+		utils.LogAttr("endpoint", ecf.endpointURL),
+	)
+}
+
+// fetchSingleBlockHash fetches the block hash for a single block number.
+// Returns the hash, the raw response data (for error inspection), and any error.
+func (ecf *EndpointChainFetcher) fetchSingleBlockHash(
+	ctx context.Context,
+	blockNum int64,
+	parsing *spectypes.ParseDirective,
+	connectionType string,
+	tagName string,
+) (string, []byte, error) {
 	requestData := []byte(fmt.Sprintf(parsing.FunctionTemplate, blockNum))
 
-	// Send request via direct RPC connection
 	start := time.Now()
-	responseData, err := ecf.sendRawRequest(ctx, requestData, collectionData.Type, parsing.ApiName)
+	responseData, err := ecf.sendRawRequest(ctx, requestData, connectionType, parsing.ApiName)
 	if err != nil {
 		timeTaken := time.Since(start)
-		return "", utils.LavaFormatDebug(tagName+" failed sending request",
+		return "", nil, utils.LavaFormatDebug(tagName+" failed sending request",
 			utils.LogAttr("sendTime", timeTaken),
 			utils.LogAttr("error", err),
 			utils.LogAttr("chainID", ecf.chainID),
@@ -160,24 +238,22 @@ func (ecf *EndpointChainFetcher) FetchBlockHashByNum(ctx context.Context, blockN
 		)
 	}
 
-	// Craft chain message for response parsing
 	craftData := &chainlib.CraftData{
 		Path:           parsing.ApiName,
 		Data:           requestData,
-		ConnectionType: collectionData.Type,
+		ConnectionType: connectionType,
 	}
-	chainMessage, err := chainlib.CraftChainMessage(parsing, collectionData.Type, ecf.chainParser, craftData, ecf.chainFetcherMetadata())
+	chainMessage, err := chainlib.CraftChainMessage(parsing, connectionType, ecf.chainParser, craftData, ecf.chainFetcherMetadata())
 	if err != nil {
-		return "", utils.LavaFormatError(tagName+" failed CraftChainMessage", err,
+		return "", responseData, utils.LavaFormatError(tagName+" failed CraftChainMessage", err,
 			utils.LogAttr("chainID", ecf.chainID),
 			utils.LogAttr("apiInterface", ecf.apiInterface),
 		)
 	}
 
-	// Parse the response
 	parserInput, err := chainlib.FormatResponseForParsing(&pairingtypes.RelayReply{Data: responseData}, chainMessage)
 	if err != nil {
-		return "", utils.LavaFormatDebug(tagName+" failed formatResponseForParsing",
+		return "", responseData, utils.LavaFormatDebug(tagName+" failed formatResponseForParsing",
 			utils.LogAttr("error", err),
 			utils.LogAttr("chainID", ecf.chainID),
 			utils.LogAttr("endpoint", ecf.endpointURL),
@@ -188,7 +264,7 @@ func (ecf *EndpointChainFetcher) FetchBlockHashByNum(ctx context.Context, blockN
 
 	res, err := parser.ParseBlockHashFromReplyAndDecode(parserInput, parsing.ResultParsing, parsing.Parsers)
 	if err != nil {
-		return "", utils.LavaFormatDebug(tagName+" failed ParseBlockHashFromReplyAndDecode",
+		return "", responseData, utils.LavaFormatDebug(tagName+" failed ParseBlockHashFromReplyAndDecode",
 			utils.LogAttr("error", err),
 			utils.LogAttr("chainID", ecf.chainID),
 			utils.LogAttr("endpoint", ecf.endpointURL),
@@ -197,7 +273,7 @@ func (ecf *EndpointChainFetcher) FetchBlockHashByNum(ctx context.Context, blockN
 		)
 	}
 
-	return res, nil
+	return res, responseData, nil
 }
 
 // FetchEndpoint returns the endpoint information for this fetcher.
