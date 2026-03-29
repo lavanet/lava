@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Juno",
-        "description": "Adding new specification support for relaying juno data on Lava",
+        "description": "Add juno mainnet spec",
         "specs": [
             {
                 "index": "JUN1",

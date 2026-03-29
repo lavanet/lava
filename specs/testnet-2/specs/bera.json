@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Berachain",
-        "description": "Adding new specification support for relaying Berachain data on Lava",
+        "description": "Add berachain artio mainnet spec",
         "specs": [
             {
                 "index": "BERA",
@@ -124,7 +124,8 @@
                         ]
                     }
                 ]
-            },{
+            },
+            {
                 "index": "BERAT2",
                 "name": "berachain bartio testnet",
                 "enabled": true,
@@ -187,6 +188,5 @@
             }
         ]
     },
-    
     "deposit": "10000000ulava"
 }

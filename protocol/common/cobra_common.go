@@ -32,7 +32,7 @@ const (
 	// This feature is suppose to help with successful relays in some chains that return node errors on rare race conditions on the serviced chains.
 	SetRelayCountOnNodeErrorFlag = "set-retry-count-on-node-error"
 	// SetRelayRetryLimitFlag controls the maximum number of retry attempts on relay errors
-	// (both node errors and protocol errors) for consumers and smart routers.
+	// (both node errors and protocol errors) for consumers.
 	SetRelayRetryLimitFlag = "set-relay-retry-limit"
 	// BatchNodeErrorOnAny controls batch request error detection for JSON-RPC batch requests
 	BatchNodeErrorOnAnyFlag = "batch-node-error-on-any"
@@ -106,7 +106,7 @@ const (
 	MaxBatchRequestSizeFlag        = "max-batch-request-size"
 	DefaultMaxBatchRequestSize int = 0 // 0 means unlimited
 
-	// DisableBatchRequestRetryFlag prevents batch requests from being retried on consumer/smartrouter side
+	// DisableBatchRequestRetryFlag prevents batch requests from being retried on the consumer side
 	DisableBatchRequestRetryFlag = "disable-batch-request-retry"
 
 	ShowProviderEndpointInMetricsFlagName = "show-provider-address-in-metrics"

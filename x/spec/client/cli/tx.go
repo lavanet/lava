@@ -122,7 +122,10 @@ $ %s tx gov spec-proposal spec-add <path/to/proposal.json> --from=<key_or_addres
 
 			msgExecLegacy := govv1.NewMsgExecLegacyContent(contentAny, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 
-			submitPropMsg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgExecLegacy}, deposit, from.String(), proposal.Proposal.Description, proposal.Proposal.Title, "Add a new spec", isExpedited)
+			// Use the title as metadata instead of the full description, which can
+			// exceed MaxMetadataLen when many spec files are combined.
+			metadata := proposal.Proposal.Title
+			submitPropMsg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgExecLegacy}, deposit, from.String(), metadata, proposal.Proposal.Title, proposal.Proposal.Description, isExpedited)
 			if err != nil {
 				return err
 			}

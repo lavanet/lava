@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Movement",
-        "description": "Adding new specification support for relaying Movement data on Lava",
+        "description": "Add movement mainnet spec",
         "specs": [
             {
                 "index": "MOVEMENT",
@@ -73,8 +73,8 @@
                                         "latest_distance": 8640
                                     },
                                     {
-                                      "extension": "archive",
-                                      "expected_value": "0"
+                                        "extension": "archive",
+                                        "expected_value": "0"
                                     }
                                 ]
                             }
@@ -91,7 +91,7 @@
                     }
                 ],
                 "contributor": [
-                  "lava@1w3qs6ksgzy66rjljmsjnetlqpvvhl9qkvntf0a"
+                    "lava@1w3qs6ksgzy66rjljmsjnetlqpvvhl9qkvntf0a"
                 ],
                 "contributor_percentage": "0.025"
             },
@@ -141,8 +141,8 @@
                                         "latest_distance": 86400
                                     },
                                     {
-                                      "extension": "archive",
-                                      "expected_value": "0"
+                                        "extension": "archive",
+                                        "expected_value": "0"
                                     }
                                 ]
                             }
@@ -159,7 +159,7 @@
                     }
                 ],
                 "contributor": [
-                  "lava@1w3qs6ksgzy66rjljmsjnetlqpvvhl9qkvntf0a"
+                    "lava@1w3qs6ksgzy66rjljmsjnetlqpvvhl9qkvntf0a"
                 ],
                 "contributor_percentage": "0.025"
             }

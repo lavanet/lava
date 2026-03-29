@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Solana",
-        "description": "Adding new specification support for relaying Solana data on Lava",
+        "description": "Add solana mainnet spec",
         "specs": [
             {
                 "index": "SOLANA",

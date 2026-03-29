@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: BEACON",
-        "description": "Adding new specification support for relaying Beacon Chain data on Lava",
+        "description": "Add ethereum beacon mainnet spec",
         "specs": [
             {
                 "index": "ETHBEACON",
@@ -846,33 +846,32 @@
                                 "function_template": "/eth/v1/beacon/headers/head",
                                 "function_tag": "GET_BLOCKNUM",
                                 "result_parsing": {
-                                  "parser_arg": [
-                                    "0",
-                                    "data",
-                                    "header",
-                                    "message",
-                                    "slot"
-                                  ],
-                                  "parser_func": "PARSE_CANONICAL"
+                                    "parser_arg": [
+                                        "0",
+                                        "data",
+                                        "header",
+                                        "message",
+                                        "slot"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
                                 },
                                 "api_name": "/eth/v1/beacon/headers/head"
-                                },
-                                {
+                            },
+                            {
                                 "function_template": "/eth/v1/beacon/headers/%d",
                                 "function_tag": "GET_BLOCK_BY_NUM",
                                 "result_parsing": {
-                                  "parser_arg": [
-                                    "0",
-                                    "data",
-                                    "header",
-                                    "message",
-                                    "slot"
-                                  ],
-                                  "parser_func": "PARSE_CANONICAL"
+                                    "parser_arg": [
+                                        "0",
+                                        "data",
+                                        "header",
+                                        "message",
+                                        "slot"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
                                 },
                                 "api_name": "/eth/v1/beacon/headers/{block_id}"
-                                }
-
+                            }
                         ],
                         "verifications": [
                             {
@@ -898,9 +897,9 @@
                             },
                             {
                                 "name": "pruning",
-                                "parse_directive": { 
+                                "parse_directive": {
                                     "function_tag": "GET_BLOCK_BY_NUM"
-                                    }
+                                }
                             }
                         ],
                         "extensions": [

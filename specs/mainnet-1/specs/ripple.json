@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: ripple",
-        "description": "Updated ripple spec for better relaying of ripple data",
+        "description": "Add ripple mainnet spec",
         "specs": [
             {
                 "index": "XRP",

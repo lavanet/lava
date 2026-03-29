@@ -248,7 +248,7 @@ func (rp *RelayProcessor) isBatchRequest() bool {
 
 // HasUnsupportedMethodErrors checks if any of the current errors are unsupported method errors.
 // Note: We only check nodeErrors and protocolErrors, not successResults, because:
-// - The IsUnsupportedMethod flag is only set when isNodeError=true (in consumer/smartrouter)
+// - The IsUnsupportedMethod flag is only set when isNodeError=true (in consumer)
 // - If it's a node error, it goes to nodeErrors, never to successResults
 func (rp *RelayProcessor) HasUnsupportedMethodErrors() bool {
 	if rp == nil {

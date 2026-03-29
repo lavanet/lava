@@ -429,7 +429,6 @@ func CreateRPCConsumerCobraCommand() *cobra.Command {
 		Short: `rpcconsumer sets up a decentralized server to perform api requests through the lava protocol using blockchain-paired providers`,
 		Long: `rpcconsumer sets up a decentralized server to perform api requests and sends them through the lava protocol to blockchain-paired data providers.
 		This is the decentralized mode that discovers and connects to providers dynamically through on-chain pairing.
-		For centralized/static provider routing, use rpcsmartrouter instead.
 		all configs should be located in the local running directory /config or ` + app.DefaultNodeHome + `
 		if no arguments are passed, assumes default config file: ` + DefaultRPCConsumerFileName + `
 		if one argument is passed, its assumed the config file name

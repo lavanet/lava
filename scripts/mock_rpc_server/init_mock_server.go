@@ -1,11 +1,11 @@
-// Mock RPC server for Smart Router Direct RPC testing.
+// Mock RPC server for endpoint relay testing.
 // Returns configurable HTTP status and delay so you can test retry, health, and 4xx behavior.
 //
 // Usage: go run ./scripts/mock_rpc_server [flags]
 // Flags: -port  Listen port (default 19999)
 //
-// When testing via Smart Router, use the control API (router does not forward X-Mock-* headers).
-// If ALL providers point at the same mock, the router sends N parallel requests; use sticky
+// Use the control API to set response behavior (X-Mock-* headers are not forwarded by proxies).
+// If ALL providers point at the same mock, parallel requests are sent; use sticky
 // so every request gets the same status until you reset:
 //
 //	curl "http://127.0.0.1:19999/control?status=500&sticky=1"  # ALL requests get 500 until reset
@@ -24,7 +24,7 @@
 //	curl "http://127.0.0.1:19999/control?block=4800"       # next response result 0x12c0 (4800)
 //	curl -d '...' http://127.0.0.1:3360  # -> 4800; consistency stays 5000 (no update for older block)
 //
-// Then send the RPC through the router; all parallel requests to the mock will get 500.
+// Then send the RPC through the proxy; all parallel requests to the mock will get 500.
 package main
 
 import (
@@ -68,9 +68,9 @@ func main() {
 	}
 }
 
-// control sets the next response status or delay. Use when testing via Smart Router
-// (router does not forward X-Mock-* headers). GET /control?status=500 then send
-// request through router; mock will return 500.
+// control sets the next response status or delay. Use when testing via a proxy
+// (proxies do not forward X-Mock-* headers). GET /control?status=500 then send
+// request through the proxy; mock will return 500.
 func control(w http.ResponseWriter, r *http.Request) {
 	mu.Lock()
 	defer mu.Unlock()

@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Subsquid subgraphs",
-        "description": "Adding new specification support for Subsquid subgraphs support",
+        "description": "Add subsquid powered subgraph spec",
         "specs": [
             {
                 "index": "SQDSUBGRAPH",

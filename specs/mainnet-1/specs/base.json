@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Base",
-        "description": "Adding new specification support for relaying Base data on Lava",
+        "description": "Add base mainnet spec",
         "specs": [
             {
                 "index": "BASE",

@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Arbitrum",
-        "description": "Adding new specification support for relaying Arbitrum data on Lava",
+        "description": "Add arbitrum mainnet spec",
         "specs": [
             {
                 "index": "ARBITRUM",

@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Dogecoin",
-        "description": "Adding new specification support for relaying dogecoin data on Lava",
+        "description": "Add dogecoin mainnet spec",
         "specs": [
             {
                 "index": "DOGE",

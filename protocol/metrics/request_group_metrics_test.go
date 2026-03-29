@@ -29,33 +29,8 @@ func newConsumerForRequestGroupTest() *ConsumerMetricsManager {
 	}
 }
 
-// newSmartRouterForRequestGroupTest constructs a minimal SmartRouterMetricsManager
-// with fresh, unregistered counters for testing RecordDirectRelayEnd logic.
-func newSmartRouterForRequestGroupTest() *SmartRouterMetricsManager {
-	reqLabels := []string{"spec", "apiInterface", "provider_address", "method"}
-	endpointLabels := []string{"spec", "apiInterface", "endpoint_id", "function"}
-	funcLabels := []string{"spec", "apiInterface", "endpoint_id", "function"}
-	return &SmartRouterMetricsManager{
-		// Fields touched by RecordDirectRelayEnd before the request-group block
-		endpointInFlight:            NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{Name: "t_sr_inflight", Labels: funcLabels}),
-		endpointTotalRelaysServiced: NewMappedLabelsCounterVec(MappedLabelsMetricOpts{Name: "t_sr_relays", Labels: funcLabels}),
-		endpointTotalErrored:        NewMappedLabelsCounterVec(MappedLabelsMetricOpts{Name: "t_sr_errored", Labels: funcLabels}),
-		endpointEndToEndLatency:     prometheus.NewHistogramVec(prometheus.HistogramOpts{Name: "t_sr_latency"}, endpointLabels),
-		// Request-group counters under test
-		routerRequestsTotal:      prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_req_total"}, reqLabels),
-		routerRequestsSuccess:    prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_req_success"}, reqLabels),
-		routerRequestsFailed:     prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_req_failed"}, reqLabels),
-		routerRequestsRead:       prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_req_read"}, reqLabels),
-		routerRequestsWrite:      prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_req_write"}, reqLabels),
-		routerRequestsDebugTrace: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_req_debug"}, reqLabels),
-		routerRequestsArchive:    prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_req_archive"}, reqLabels),
-		routerRequestsBatch:      prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_req_batch"}, reqLabels),
-		urlToProviderName:        make(map[string]string),
-	}
-}
-
 // requestGroupRunner is a thin adapter that lets the shared test case table
-// drive both ConsumerMetricsManager and SmartRouterMetricsManager.
+// drive ConsumerMetricsManager.
 type requestGroupRunner struct {
 	// invoke dispatches a single relay through the manager under test.
 	// err==nil means success; err!=nil means failure.
@@ -90,24 +65,6 @@ func newConsumerRequestGroupRunner() *requestGroupRunner {
 	}
 }
 
-func newSmartRouterRequestGroupRunner() *requestGroupRunner {
-	m := newSmartRouterForRequestGroupTest()
-	return &requestGroupRunner{
-		invoke: func(r RelayMetrics, e error) {
-			m.RecordDirectRelayEnd("ETH1", "jsonrpc", "ep1", r.ApiMethod, 10, e == nil, &r)
-		},
-		labels:  func(method string) []string { return []string{"ETH1", "jsonrpc", "ep1", method} },
-		total:   m.routerRequestsTotal,
-		success: m.routerRequestsSuccess,
-		failed:  m.routerRequestsFailed,
-		read:    m.routerRequestsRead,
-		write:   m.routerRequestsWrite,
-		archive: m.routerRequestsArchive,
-		debug:   m.routerRequestsDebugTrace,
-		batch:   m.routerRequestsBatch,
-	}
-}
-
 func (r *requestGroupRunner) assertCounters(t *testing.T, method string,
 	wantTotal, wantSuccess, wantFailed,
 	wantRead, wantWrite, wantArchive, wantDebug, wantBatch float64,
@@ -124,9 +81,8 @@ func (r *requestGroupRunner) assertCounters(t *testing.T, method string,
 	require.Equal(t, wantBatch, testutil.ToFloat64(r.batch.WithLabelValues(l...)), "batch")
 }
 
-// TestSetRelayMetrics covers the request-group counter logic for both
-// ConsumerMetricsManager (via SetRelayMetrics) and SmartRouterMetricsManager
-// (via RecordDirectRelayEnd) using the same table of cases.
+// TestSetRelayMetrics covers the request-group counter logic for
+// ConsumerMetricsManager (via SetRelayMetrics) using a table of cases.
 func TestSetRelayMetrics(t *testing.T) {
 	cases := []struct {
 		name        string
@@ -181,26 +137,14 @@ func TestSetRelayMetrics(t *testing.T) {
 		},
 	}
 
-	runners := []struct {
-		name string
-		new  func() *requestGroupRunner
-	}{
-		{"consumer", newConsumerRequestGroupRunner},
-		{"smart_router", newSmartRouterRequestGroupRunner},
-	}
-
-	for _, r := range runners {
-		t.Run(r.name, func(t *testing.T) {
-			for _, tc := range cases {
-				t.Run(tc.name, func(t *testing.T) {
-					runner := r.new()
-					runner.invoke(tc.relay, tc.err)
-					runner.assertCounters(t, tc.relay.ApiMethod,
-						tc.wantTotal, tc.wantSuccess, tc.wantFailed,
-						tc.wantRead, tc.wantWrite, tc.wantArchive, tc.wantDebug, tc.wantBatch,
-					)
-				})
-			}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			runner := newConsumerRequestGroupRunner()
+			runner.invoke(tc.relay, tc.err)
+			runner.assertCounters(t, tc.relay.ApiMethod,
+				tc.wantTotal, tc.wantSuccess, tc.wantFailed,
+				tc.wantRead, tc.wantWrite, tc.wantArchive, tc.wantDebug, tc.wantBatch,
+			)
 		})
 	}
 }
@@ -209,13 +153,6 @@ func TestConsumerSetRelayMetrics_NilManager(t *testing.T) {
 	var cmm *ConsumerMetricsManager
 	require.NotPanics(t, func() {
 		cmm.SetRelayMetrics(&RelayMetrics{ChainID: "ETH1", Success: true}, nil)
-	})
-}
-
-func TestSmartRouterRecordDirectRelayEnd_NilManager(t *testing.T) {
-	var m *SmartRouterMetricsManager
-	require.NotPanics(t, func() {
-		m.RecordDirectRelayEnd("ETH1", "jsonrpc", "ep1", "method", 10, true, &RelayMetrics{})
 	})
 }
 

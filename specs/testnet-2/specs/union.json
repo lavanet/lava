@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Union",
-        "description": "Adding new specification support for relaying union data on Lava",
+        "description": "Add union testnet spec",
         "specs": [
             {
                 "index": "UNIONT",
@@ -103,7 +103,7 @@
                                 "values": [
                                     {
                                         "latest_distance": 14400
-                                    }                                
+                                    }
                                 ]
                             }
                         ],
@@ -196,9 +196,9 @@
                             {
                                 "name": "pruning",
                                 "values": [
-                                  {
-                                    "latest_distance": 14400
-                                }
+                                    {
+                                        "latest_distance": 14400
+                                    }
                                 ]
                             }
                         ],
@@ -257,8 +257,8 @@
                         ]
                     }
                 ]
-            } 
+            }
         ]
     },
     "deposit": "10000000ulava"
-  }
+}

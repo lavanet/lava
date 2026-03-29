@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Ton",
-        "description": "Adding new specification support for relaying Ton data on Lava",
+        "description": "Add ton mainnet spec",
         "specs": [
             {
                 "index": "TON",
@@ -896,7 +896,9 @@
                             {
                                 "name": "/v3/estimateFee",
                                 "block_parsing": {
-                                    "parser_arg": ["latest"],
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
                                     "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
@@ -912,7 +914,9 @@
                             {
                                 "name": "/v3/message",
                                 "block_parsing": {
-                                    "parser_arg": ["latest"],
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
                                     "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
@@ -928,7 +932,9 @@
                             {
                                 "name": "/v3/runGetMethod",
                                 "block_parsing": {
-                                    "parser_arg": ["latest"],
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
                                     "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,

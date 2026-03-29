@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Aptos",
-        "description": "Adding new specification support for relaying Aptos data on Lava",
+        "description": "Add aptos mainnet spec",
         "specs": [
             {
                 "index": "APT1",

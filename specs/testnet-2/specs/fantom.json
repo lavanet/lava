@@ -1,7 +1,7 @@
 {
     "proposal": {
         "title": "Add Specs: Fantom",
-        "description": "Updated fantom spec for better relaying of fantom data",
+        "description": "Add fantom mainnet spec",
         "specs": [
             {
                 "index": "FTM250",

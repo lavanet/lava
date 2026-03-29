@@ -1,309 +1,309 @@
 {
-  "proposal": {
-    "title": "Add Specs: Avalanche C Chain",
-    "description": "Adding new specification support for relaying Avalanche C Chain data on Lava",
-    "specs": [
-      {
-        "index": "AVAXC",
-        "name": "avalanche c chain mainnet",
-        "enabled": true,
-        "reliability_threshold": 268435455,
-        "data_reliability_enabled": true,
-        "block_distance_for_finalized_data": 4,
-        "blocks_in_finalization_proof": 3,
-        "average_block_time": 2000,
-        "allowed_block_lag_for_qos_sync": 5,
-        "imports": [
-          "ETH1"
-        ],
-        "shares": 1,
-        "min_stake_provider": {
-          "denom": "ulava",
-          "amount": "5000000000"
-        },
-        "api_collections": [
-          {
-            "enabled": false,
-            "collection_data": {
-              "api_interface": "jsonrpc",
-              "internal_path": "",
-              "type": "POST",
-              "add_on": ""
-            }
-          },
-          {
-            "enabled": false,
-            "collection_data": {
-              "api_interface": "jsonrpc",
-              "internal_path": "",
-              "type": "POST",
-              "add_on": "debug"
-            }
-          },
-          {
-            "enabled": false,
-            "collection_data": {
-              "api_interface": "jsonrpc",
-              "internal_path": "",
-              "type": "POST",
-              "add_on": "trace"
-            }
-          },
-          {
-            "enabled": false,
-            "collection_data": {
-              "api_interface": "jsonrpc",
-              "internal_path": "",
-              "type": "POST",
-              "add_on": "bundler"
-            }
-          },
-          {
-            "enabled": true,
-            "collection_data": {
-              "api_interface": "jsonrpc",
-              "internal_path": "/C/rpc",
-              "type": "POST",
-              "add_on": ""
-            },
-            "apis": [
-              {
-                "name": "eth_blockNumber",
-                "block_parsing": {
-                  "parser_arg": [
-                    "latest"
-                  ],
-                  "parser_func": "DEFAULT"
-                },
-                "compute_units": 10,
+    "proposal": {
+        "title": "Add Specs: Avalanche C Chain",
+        "description": "Add avalanche c chain mainnet spec",
+        "specs": [
+            {
+                "index": "AVAXC",
+                "name": "avalanche c chain mainnet",
                 "enabled": true,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0
+                "reliability_threshold": 268435455,
+                "data_reliability_enabled": true,
+                "block_distance_for_finalized_data": 4,
+                "blocks_in_finalization_proof": 3,
+                "average_block_time": 2000,
+                "allowed_block_lag_for_qos_sync": 5,
+                "imports": [
+                    "ETH1"
+                ],
+                "shares": 1,
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "5000000000"
                 },
-                "extra_compute_units": 0
-              },
-              {
-                "name": "eth_getBlockByNumber",
-                "block_parsing": {
-                  "parser_arg": [
-                    "0"
-                  ],
-                  "parser_func": "PARSE_BY_ARG"
-                },
-                "compute_units": 20,
+                "api_collections": [
+                    {
+                        "enabled": false,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": ""
+                        }
+                    },
+                    {
+                        "enabled": false,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": "debug"
+                        }
+                    },
+                    {
+                        "enabled": false,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": "trace"
+                        }
+                    },
+                    {
+                        "enabled": false,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": "bundler"
+                        }
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "/C/rpc",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis": [
+                            {
+                                "name": "eth_blockNumber",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "eth_getBlockByNumber",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            }
+                        ],
+                        "headers": [],
+                        "inheritance_apis": [
+                            {
+                                "api_interface": "jsonrpc",
+                                "internal_path": "",
+                                "type": "POST",
+                                "add_on": ""
+                            }
+                        ],
+                        "parse_directives": [
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}",
+                                "function_tag": "GET_BLOCKNUM",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "api_name": "eth_blockNumber"
+                            },
+                            {
+                                "function_tag": "GET_BLOCK_BY_NUM",
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBlockByNumber\",\"params\":[\"0x%x\", false],\"id\":1}",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "hash"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "encoding": "hex"
+                                },
+                                "api_name": "eth_getBlockByNumber"
+                            }
+                        ],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "0xa86a"
+                                    }
+                                ]
+                            }
+                        ],
+                        "extensions": []
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "/C/rpc",
+                            "type": "POST",
+                            "add_on": "debug"
+                        },
+                        "apis": [
+                            {
+                                "name": "debug_getBadBlocks",
+                                "compute_units": 1,
+                                "enabled": false
+                            },
+                            {
+                                "name": "debug_getRawBlock",
+                                "compute_units": 1,
+                                "enabled": false
+                            },
+                            {
+                                "name": "debug_getRawHeader",
+                                "compute_units": 1,
+                                "enabled": false
+                            },
+                            {
+                                "name": "debug_getRawReceipts",
+                                "compute_units": 1,
+                                "enabled": false
+                            },
+                            {
+                                "name": "debug_getRawTransaction",
+                                "compute_units": 1,
+                                "enabled": false
+                            },
+                            {
+                                "name": "debug_storageRangeAt",
+                                "compute_units": 1,
+                                "enabled": false
+                            },
+                            {
+                                "name": "debug_traceBlock",
+                                "compute_units": 1,
+                                "enabled": false
+                            }
+                        ],
+                        "headers": [],
+                        "inheritance_apis": [
+                            {
+                                "api_interface": "jsonrpc",
+                                "internal_path": "",
+                                "type": "POST",
+                                "add_on": "debug"
+                            }
+                        ],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "enabled",
+                                "values": [
+                                    {
+                                        "expected_value": "*",
+                                        "severity": "Warning"
+                                    }
+                                ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 42600
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "/C/rpc",
+                            "type": "POST",
+                            "add_on": "trace"
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [
+                            {
+                                "api_interface": "jsonrpc",
+                                "internal_path": "",
+                                "type": "POST",
+                                "add_on": "trace"
+                            }
+                        ],
+                        "parse_directives": [],
+                        "verifications": [],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 42600
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "index": "AVAXCT",
+                "name": "avalanche c chain testnet",
                 "enabled": true,
-                "category": {
-                  "deterministic": true,
-                  "local": false,
-                  "subscription": false,
-                  "stateful": 0
+                "imports": [
+                    "AVAXC"
+                ],
+                "reliability_threshold": 268435455,
+                "data_reliability_enabled": true,
+                "block_distance_for_finalized_data": 4,
+                "blocks_in_finalization_proof": 3,
+                "average_block_time": 2000,
+                "allowed_block_lag_for_qos_sync": 5,
+                "shares": 1,
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "5000000000"
                 },
-                "extra_compute_units": 0
-              }
-            ],
-            "headers": [],
-            "inheritance_apis": [
-              {
-                "api_interface": "jsonrpc",
-                "internal_path": "",
-                "type": "POST",
-                "add_on": ""
-              }
-            ],
-            "parse_directives": [
-              {
-                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}",
-                "function_tag": "GET_BLOCKNUM",
-                "result_parsing": {
-                  "parser_arg": [
-                    "0"
-                  ],
-                  "parser_func": "PARSE_BY_ARG"
-                },
-                "api_name": "eth_blockNumber"
-              },
-              {
-                "function_tag": "GET_BLOCK_BY_NUM",
-                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBlockByNumber\",\"params\":[\"0x%x\", false],\"id\":1}",
-                "result_parsing": {
-                  "parser_arg": [
-                    "0",
-                    "hash"
-                  ],
-                  "parser_func": "PARSE_CANONICAL",
-                  "encoding": "hex"
-                },
-                "api_name": "eth_getBlockByNumber"
-              }
-            ],
-            "verifications": [
-              {
-                "name": "chain-id",
-                "values": [
-                  {
-                    "expected_value": "0xa86a"
-                  }
+                "api_collections": [
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "/C/rpc",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "0xa869"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
                 ]
-              }
-            ],
-            "extensions": []
-          },
-          {
-            "enabled": true,
-            "collection_data": {
-              "api_interface": "jsonrpc",
-              "internal_path": "/C/rpc",
-              "type": "POST",
-              "add_on": "debug"
-            },
-            "apis": [
-              {
-                "name": "debug_getBadBlocks",
-                "compute_units": 1,
-                "enabled": false
-              },
-              {
-                "name": "debug_getRawBlock",
-                "compute_units": 1,
-                "enabled": false
-              },
-              {
-                "name": "debug_getRawHeader",
-                "compute_units": 1,
-                "enabled": false
-              },
-              {
-                "name": "debug_getRawReceipts",
-                "compute_units": 1,
-                "enabled": false
-              },
-              {
-                "name": "debug_getRawTransaction",
-                "compute_units": 1,
-                "enabled": false
-              },
-              {
-                "name": "debug_storageRangeAt",
-                "compute_units": 1,
-                "enabled": false
-              },
-              {
-                "name": "debug_traceBlock",
-                "compute_units": 1,
-                "enabled": false
-              }
-            ],
-            "headers": [],
-            "inheritance_apis": [
-              {
-                "api_interface": "jsonrpc",
-                "internal_path": "",
-                "type": "POST",
-                "add_on": "debug"
-              }
-            ],
-            "parse_directives": [],
-            "verifications": [
-              {
-                "name": "enabled",
-                "values": [
-                  {
-                    "expected_value": "*",
-                    "severity": "Warning"
-                  }
-                ]
-              }
-            ],
-            "extensions": [
-              {
-                "name": "archive",
-                "cu_multiplier": 5,
-                "rule": {
-                  "block": 42600
-                }
-              }
-            ]
-          },
-          {
-            "enabled": true,
-            "collection_data": {
-              "api_interface": "jsonrpc",
-              "internal_path": "/C/rpc",
-              "type": "POST",
-              "add_on": "trace"
-            },
-            "apis": [],
-            "headers": [],
-            "inheritance_apis": [
-              {
-                "api_interface": "jsonrpc",
-                "internal_path": "",
-                "type": "POST",
-                "add_on": "trace"
-              }
-            ],
-            "parse_directives": [],
-            "verifications": [],
-            "extensions": [
-              {
-                "name": "archive",
-                "cu_multiplier": 5,
-                "rule": {
-                  "block": 42600
-                }
-              }
-            ]
-          }
+            }
         ]
-      },
-      {
-        "index": "AVAXCT",
-        "name": "avalanche c chain testnet",
-        "enabled": true,
-        "imports": [
-          "AVAXC"
-        ],
-        "reliability_threshold": 268435455,
-        "data_reliability_enabled": true,
-        "block_distance_for_finalized_data": 4,
-        "blocks_in_finalization_proof": 3,
-        "average_block_time": 2000,
-        "allowed_block_lag_for_qos_sync": 5,
-        "shares": 1,
-        "min_stake_provider": {
-          "denom": "ulava",
-          "amount": "5000000000"
-        },
-        "api_collections": [
-          {
-            "enabled": true,
-            "collection_data": {
-              "api_interface": "jsonrpc",
-              "internal_path": "/C/rpc",
-              "type": "POST",
-              "add_on": ""
-            },
-            "apis": [],
-            "headers": [],
-            "inheritance_apis": [],
-            "parse_directives": [],
-            "verifications": [
-              {
-                "name": "chain-id",
-                "values": [
-                  {
-                    "expected_value": "0xa869"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  },
-  "deposit": "10000000ulava"
+    },
+    "deposit": "10000000ulava"
 }

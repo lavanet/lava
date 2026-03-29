@@ -26,7 +26,7 @@ const (
 )
 
 // DefaultTimeout is the configurable default timeout for relay processing.
-// It can be overridden via the --default-timeout flag on consumer and smart router commands.
+// It can be overridden via the --default-timeout flag on consumer commands.
 var DefaultTimeout = time.Duration(DefaultTimeoutSeconds) * time.Second
 
 func LocalNodeTimePerCu(cu uint64) time.Duration {
