@@ -1,6 +1,10 @@
 package common
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"fmt"
+
+	"github.com/gofiber/fiber/v2"
+)
 
 // #######
 // JsonRPC
@@ -98,6 +102,7 @@ var RestAptosMethodNotFoundError = RestAptosError{
 }
 
 func CreateRestMethodNotFoundError(fiberCtx *fiber.Ctx, chainId string) error {
+	LogCodedError("REST method not found", fmt.Errorf("unsupported REST method"), LavaErrorNodeEndpointNotFound, chainId, 0, "")
 	switch chainId {
 	case "APT1":
 		// Aptos node returns a different error body than the rest of the chains

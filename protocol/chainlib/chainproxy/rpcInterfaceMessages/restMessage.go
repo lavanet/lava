@@ -65,6 +65,8 @@ func (jm RestMessage) CheckResponseError(data []byte, httpStatusCode int) (hasEr
 	errorMsg := extractErrorMessage(data, httpStatusCode)
 	classified := common.ClassifyError(nil, -1, common.TransportREST, httpStatusCode, errorMsg)
 	if classified != common.LavaErrorUnknown && classified.Category == common.CategoryExternal && classified.Retryable {
+		common.LogCodedError("REST node error", fmt.Errorf("HTTP %d", httpStatusCode), classified,
+			"", httpStatusCode, errorMsg)
 		return true, errorMsg
 	}
 

@@ -16,6 +16,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	dyncodec "github.com/lavanet/lava/v5/protocol/chainlib/grpcproxy/dyncodec"
+	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/parser"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/sigs"
@@ -55,6 +56,10 @@ func (gm *GrpcMessage) GetRawRequestHash() ([]byte, error) {
 func (jm GrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
 	// grpc status code different than OK or 0 is a node error.
 	if httpStatusCode != 0 && httpStatusCode != http.StatusOK {
+		// Classify the gRPC error for logging/metrics
+		classified := common.ClassifyError(nil, -1, common.TransportGRPC, httpStatusCode, "")
+		common.LogCodedError("gRPC node error", fmt.Errorf("gRPC status %d", httpStatusCode), classified,
+			"", httpStatusCode, "")
 		return true, ""
 	}
 	return false, ""

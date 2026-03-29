@@ -380,67 +380,49 @@ func TryRecoverNodeErrorFromClientError(nodeErr error) *rpcclient.JsonrpcMessage
 	return nil
 }
 
-type RestErrorHandler struct{ genericErrorHandler }
+// handleAndClassify is the shared error handling path for all transports.
+// It classifies the error, logs it with structured fields, then delegates
+// to transport-specific handling (unsupported method wrapping, generic errors, etc.).
+func handleAndClassify(ctx context.Context, nodeError error, transport common.TransportType, geh *genericErrorHandler) error {
+	// Classify and log for metrics/observability
+	classified := ClassifyNodeError(nodeError, -1, transport)
+	common.LogCodedError("provider node error", nodeError, classified, "", 0, nodeError.Error())
 
-// Validating if the error is related to the provider connection or not
-// returning nil if its not one of the expected connectivity error types
-func (rne *RestErrorHandler) HandleNodeError(ctx context.Context, nodeError error) error {
-	if IsUnsupportedMethodError(nodeError) {
+	// Wrap unsupported method errors
+	if classified.SubCategory.IsUnsupportedMethod() {
 		return &UnsupportedMethodError{originalError: nodeError}
 	}
 
-	if IsSolanaNonRetryableError(nodeError) {
+	// Wrap non-retryable errors
+	if classified != common.LavaErrorUnknown && !classified.Retryable {
 		return &SolanaNonRetryableError{originalError: nodeError}
 	}
 
-	return rne.handleGenericErrors(ctx, nodeError)
+	return geh.handleGenericErrors(ctx, nodeError)
+}
+
+type RestErrorHandler struct{ genericErrorHandler }
+
+func (rne *RestErrorHandler) HandleNodeError(ctx context.Context, nodeError error) error {
+	return handleAndClassify(ctx, nodeError, common.TransportREST, &rne.genericErrorHandler)
 }
 
 type JsonRPCErrorHandler struct{ genericErrorHandler }
 
 func (jeh *JsonRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError error) error {
-	if IsUnsupportedMethodError(nodeError) {
-		return &UnsupportedMethodError{originalError: nodeError}
-	}
-
-	if IsSolanaNonRetryableError(nodeError) {
-		return &SolanaNonRetryableError{originalError: nodeError}
-	}
-
-	return jeh.handleGenericErrors(ctx, nodeError)
+	return handleAndClassify(ctx, nodeError, common.TransportJsonRPC, &jeh.genericErrorHandler)
 }
 
 type TendermintRPCErrorHandler struct{ genericErrorHandler }
 
 func (tendermintErrorHandler *TendermintRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError error) error {
-	if IsUnsupportedMethodError(nodeError) {
-		return &UnsupportedMethodError{originalError: nodeError}
-	}
-
-	if IsSolanaNonRetryableError(nodeError) {
-		return &SolanaNonRetryableError{originalError: nodeError}
-	}
-
-	return tendermintErrorHandler.handleGenericErrors(ctx, nodeError)
+	return handleAndClassify(ctx, nodeError, common.TransportJsonRPC, &tendermintErrorHandler.genericErrorHandler)
 }
 
 type GRPCErrorHandler struct{ genericErrorHandler }
 
 func (geh *GRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError error) error {
-	if IsUnsupportedMethodError(nodeError) {
-		return &UnsupportedMethodError{originalError: nodeError}
-	}
-
-	if IsSolanaNonRetryableError(nodeError) {
-		return &SolanaNonRetryableError{originalError: nodeError}
-	}
-
-	st, ok := status.FromError(nodeError)
-	if ok {
-		// Get the error message from the gRPC status
-		return geh.handleCodeErrors(st.Code())
-	}
-	return geh.handleGenericErrors(ctx, nodeError)
+	return handleAndClassify(ctx, nodeError, common.TransportGRPC, &geh.genericErrorHandler)
 }
 
 type ErrorHandler interface {

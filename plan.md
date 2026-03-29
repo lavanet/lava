@@ -450,11 +450,11 @@ Log output automatically includes:
 - [x] Migrate `relayInnerDirect()` in `protocol/rpcsmartrouter/rpcsmartrouter_server.go` to use `LavaError` classification for endpoint health decisions (replace ad-hoc 5xx/429/timeout checks with `LavaError.Category` and `LavaError.Retryable`)
 
 ### Phase 4: Migrate Existing Errors — API Interface Layer
-- [ ] Update `protocol/common/return_errors.go` to use registry for JSON-RPC/REST error responses
-- [ ] Update JSON-RPC error handler to classify and log with codes
-- [ ] Update REST error handler to classify and log with codes
-- [ ] Update gRPC error handler to classify and log with codes
-- [ ] Update TendermintRPC error handler to classify and log with codes
+- [x] Update `protocol/common/return_errors.go` to use registry for JSON-RPC/REST error responses
+- [x] Update JSON-RPC error handler to classify and log with codes
+- [x] Update REST error handler to classify and log with codes
+- [x] Update gRPC error handler to classify and log with codes
+- [x] Update TendermintRPC error handler to classify and log with codes
 
 ### Phase 5: Migrate Existing Errors — Relay Path
 - [x] Add `LavaError *LavaError` field to `RelayError` struct in `protocol/relaycore/relay_errors.go`
