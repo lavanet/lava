@@ -5,9 +5,12 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func TestHandleAndClassify_UnsupportedMethod(t *testing.T) {
@@ -50,6 +53,53 @@ func TestHandleAndClassify_UnknownError(t *testing.T) {
 	result := handleAndClassify(context.Background(), err, common.TransportJsonRPC, &genericErrorHandler{})
 	assert.False(t, IsUnsupportedMethodErrorType(result))
 	assert.False(t, IsSolanaNonRetryableErrorType(result))
+}
+
+func TestClassifyNodeError_NilError(t *testing.T) {
+	result := ClassifyNodeError(nil, -1, common.TransportJsonRPC)
+	assert.Nil(t, result)
+}
+
+func TestClassifyNodeError_PlainError(t *testing.T) {
+	result := ClassifyNodeError(errors.New("nonce too low"), common.ChainFamilyEVM, common.TransportJsonRPC)
+	require.NotNil(t, result)
+	assert.Equal(t, common.LavaErrorChainNonceTooLow, result)
+}
+
+func TestClassifyNodeError_GRPCStatusError(t *testing.T) {
+	// gRPC Unimplemented should classify as unsupported method
+	grpcErr := status.Error(codes.Unimplemented, "method not implemented")
+	result := ClassifyNodeError(grpcErr, -1, common.TransportGRPC)
+	require.NotNil(t, result)
+	assert.True(t, result.SubCategory.IsUnsupportedMethod())
+}
+
+func TestClassifyNodeError_HTTPError(t *testing.T) {
+	// HTTPError with JSON-RPC body containing error code
+	httpErr := rpcclient.HTTPError{
+		StatusCode: 200,
+		Body:       []byte(`{"jsonrpc":"2.0","id":1,"error":{"code":-32601,"message":"Method not found"}}`),
+	}
+	result := ClassifyNodeError(httpErr, -1, common.TransportJsonRPC)
+	require.NotNil(t, result)
+	assert.Equal(t, common.LavaErrorNodeMethodNotFound, result)
+}
+
+func TestUnwrapLavaError_FromWrapped(t *testing.T) {
+	err := common.NewLavaError(common.LavaErrorChainNonceTooLow, "test")
+	le := unwrapLavaError(err)
+	require.NotNil(t, le)
+	assert.Equal(t, common.LavaErrorChainNonceTooLow, le)
+}
+
+func TestUnwrapLavaError_FromPlainError(t *testing.T) {
+	le := unwrapLavaError(errors.New("plain"))
+	assert.Nil(t, le)
+}
+
+func TestUnwrapLavaError_Nil(t *testing.T) {
+	le := unwrapLavaError(nil)
+	assert.Nil(t, le)
 }
 
 func TestHandleAndClassify_JsonRPCMethodNotFound(t *testing.T) {

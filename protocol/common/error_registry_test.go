@@ -119,6 +119,39 @@ func TestErrorRegistry_IsInternalExternalFlags(t *testing.T) {
 // LavaError as error interface + errors.Is tests
 // ---------------------------------------------------------------------------
 
+func TestLavaError_String(t *testing.T) {
+	assert.Equal(t, "[3001] CHAIN_NONCE_TOO_LOW", LavaErrorChainNonceTooLow.String())
+}
+
+func TestLavaError_ABCICode(t *testing.T) {
+	assert.Equal(t, uint32(3001), LavaErrorChainNonceTooLow.ABCICode())
+	assert.Equal(t, uint32(1001), LavaErrorConnectionTimeout.ABCICode())
+	assert.Equal(t, uint32(0), LavaErrorUnknown.ABCICode())
+}
+
+func TestLavaError_IsNonMatch(t *testing.T) {
+	// Is returns false for non-LavaError targets
+	assert.False(t, LavaErrorChainNonceTooLow.Is(errors.New("not a LavaError")))
+}
+
+func TestLavaWrappedError_EmptyContext(t *testing.T) {
+	wrapped := NewLavaError(LavaErrorChainNonceTooLow, "")
+	assert.Contains(t, wrapped.Error(), "CHAIN_NONCE_TOO_LOW")
+}
+
+func TestLavaWrappedError_IsNonMatch(t *testing.T) {
+	wrapped := NewLavaError(LavaErrorChainNonceTooLow, "context")
+	// Is returns false for non-LavaError targets
+	assert.False(t, errors.Is(wrapped, errors.New("not a LavaError")))
+}
+
+func TestLavaWrappedError_Unwrap(t *testing.T) {
+	wrapped := NewLavaError(LavaErrorChainNonceTooLow, "context")
+	unwrapped := errors.Unwrap(wrapped)
+	require.NotNil(t, unwrapped)
+	assert.Equal(t, LavaErrorChainNonceTooLow, unwrapped)
+}
+
 func TestLavaError_ErrorInterface(t *testing.T) {
 	var err error = LavaErrorChainNonceTooLow
 	assert.Contains(t, err.Error(), "CHAIN_NONCE_TOO_LOW")

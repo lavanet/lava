@@ -24,7 +24,7 @@ import (
 
 // NewUnsupportedMethodError creates an error wrapping a LavaError with unsupported method classification.
 // The methodName is included in the context for logging.
-func NewUnsupportedMethodError(originalError error, methodName string) error {
+func NewUnsupportedMethodError(_ error, methodName string) error {
 	context := "unsupported method"
 	if methodName != "" {
 		context = fmt.Sprintf("unsupported method %q", methodName)
@@ -33,7 +33,7 @@ func NewUnsupportedMethodError(originalError error, methodName string) error {
 }
 
 // NewSolanaNonRetryableError creates an error wrapping a LavaError with non-retryable classification.
-func NewSolanaNonRetryableError(originalError error) error {
+func NewSolanaNonRetryableError(_ error) error {
 	return common.NewLavaError(common.LavaErrorChainSolanaMissingLongTerm, "solana non-retryable error")
 }
 
