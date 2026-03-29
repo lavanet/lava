@@ -4,102 +4,42 @@ import (
 	"fmt"
 	_ "net/http/pprof"
 	"os"
-	"strings"
 
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/server"
-	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
-	"github.com/lavanet/lava/v5/app"
-	"github.com/lavanet/lava/v5/cmd/lavad/cmd"
-	"github.com/lavanet/lava/v5/ecosystem/cache"
-	"github.com/lavanet/lava/v5/ecosystem/cache_populator"
-	"github.com/lavanet/lava/v5/protocol/loadtest"
-	"github.com/lavanet/lava/v5/protocol/monitoring"
 	"github.com/lavanet/lava/v5/protocol/performance/connection"
-	validators "github.com/lavanet/lava/v5/protocol/performance/validators"
-	"github.com/lavanet/lava/v5/protocol/rpcconsumer"
-	"github.com/lavanet/lava/v5/protocol/rpcprovider"
 	"github.com/lavanet/lava/v5/protocol/rpcsmartrouter"
-	"github.com/lavanet/lava/v5/protocol/statetracker"
-	"github.com/lavanet/lava/v5/protocol/upgrade"
+	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
 	"github.com/spf13/cobra"
 )
 
-const (
-	DefaultRPCConsumerFileName = "rpcconsumer.yml"
-	DefaultRPCProviderFileName = "rpcprovider.yml"
-)
-
 func main() {
-	rootCmd := cmd.NewLavaProtocolRootCmd()
+	rootCmd := &cobra.Command{
+		Use:   "lavap",
+		Short: "Lava Protocol Smart Router",
+	}
 
-	// version cobra command
-	cmdVersion := versionCommand()
-	// rpc consumer cobra command (decentralized)
-	cmdRPCConsumer := rpcconsumer.CreateRPCConsumerCobraCommand()
-	// rpc smart router cobra command (centralized)
+	cmdVersion := &cobra.Command{
+		Use:   "version",
+		Short: "Print the version number",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println(protocoltypes.DefaultVersion.ConsumerTarget)
+		},
+	}
+
 	cmdRPCSmartRouter := rpcsmartrouter.CreateRPCSmartRouterCobraCommand()
-	// rpc provider cobra command
-	cmdRPCProvider := rpcprovider.CreateRPCProviderCobraCommand()
 
-	validatorsCmd := validators.CreateValidatorsPerformanceCommand()
-
-	// Add Version Command
 	rootCmd.AddCommand(cmdVersion)
-	// Add RPC Consumer Command
-	rootCmd.AddCommand(cmdRPCConsumer)
-	// Add RPC Smart Router Command
 	rootCmd.AddCommand(cmdRPCSmartRouter)
-	// Add RPC Provider Command
-	rootCmd.AddCommand(cmdRPCProvider)
-
-	// add command to test validators
-	rootCmd.AddCommand(validatorsCmd)
 
 	testCmd := &cobra.Command{
 		Use:   "test",
 		Short: "Test commands for protocol network",
 	}
 	rootCmd.AddCommand(testCmd)
-	testCmd.AddCommand(rpcconsumer.CreateTestRPCConsumerCobraCommand())
 	testCmd.AddCommand(rpcsmartrouter.CreateTestRPCSmartRouterCobraCommand())
-	testCmd.AddCommand(rpcprovider.CreateTestRPCProviderCobraCommand())
-	testCmd.AddCommand(statetracker.CreateEventsCobraCommand())
-	testCmd.AddCommand(statetracker.CreateRelayPaymentCSVCobraCommand())
-	testCmd.AddCommand(statetracker.CreateTxCounterCobraCommand())
 	testCmd.AddCommand(connection.CreateTestConnectionServerCobraCommand())
 	testCmd.AddCommand(connection.CreateTestConnectionProbeCobraCommand())
-	testCmd.AddCommand(monitoring.CreateHealthCobraCommand())
-	testCmd.AddCommand(monitoring.CreateChainHeightsCommand())
-	testCmd.AddCommand(loadtest.CreateTestLoadCobraCommand())
 
-	rootCmd.AddCommand(cache.CreateCacheCobraCommand())
-	rootCmd.AddCommand(cache_populator.CreateCachePopulatorCommand())
-
-	cmd.OverwriteFlagDefaults(rootCmd, map[string]string{
-		flags.FlagChainID:       strings.ReplaceAll(app.Name, "-", ""),
-		flags.FlagGasAdjustment: statetracker.DefaultGasAdjustment,
-	})
-
-	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {
-		switch e := err.(type) {
-		case server.ErrorCode:
-			os.Exit(e.Code)
-
-		default:
-			os.Exit(1)
-		}
-	}
-}
-
-func versionCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "version",
-		Short: "Print the version number",
-		Run: func(cmd *cobra.Command, args []string) {
-			// Print the lavap version
-			version := upgrade.GetCurrentVersion()
-			fmt.Println(version.ProviderVersion) // currently we have only one version.
-		},
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
 	}
 }

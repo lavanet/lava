@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/v5/utils"
-	specutils "github.com/lavanet/lava/v5/x/spec/client/utils"
 	"github.com/lavanet/lava/v5/x/spec/types"
 )
 
@@ -271,7 +270,7 @@ func (f *Fetcher) fetchFilesParallel(ctx context.Context, fileURLs []string, set
 				return
 			}
 
-			var proposal specutils.SpecAddProposalJSON
+			var proposal types.SpecAddProposalJSON
 			if err := json.Unmarshal(content, &proposal); err != nil {
 				result.errors = append(result.errors, fmt.Sprintf("%s: failed to parse JSON: %v", url, err))
 				resultChan <- result

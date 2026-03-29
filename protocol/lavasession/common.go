@@ -18,7 +18,6 @@ import (
 	"github.com/gogo/status"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v5/utils"
-	"github.com/lavanet/lava/v5/x/pairing/keeper/scores"
 	planstypes "github.com/lavanet/lava/v5/x/plans/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -178,7 +177,7 @@ func GetTlsConfig(networkAddress NetworkAddressData) *tls.Config {
 
 func SortByGeolocations(pairingEndpoints []*Endpoint, currentGeo planstypes.Geolocation) {
 	latencyToGeo := func(a, b planstypes.Geolocation) int64 {
-		_, latency := scores.CalcGeoLatency(a, []planstypes.Geolocation{b})
+		_, latency := CalcGeoLatency(a, []planstypes.Geolocation{b})
 		return latency
 	}
 

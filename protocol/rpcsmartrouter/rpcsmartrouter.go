@@ -42,7 +42,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v5/app"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
@@ -53,12 +52,12 @@ import (
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
 	"github.com/lavanet/lava/v5/protocol/relaycore"
 	"github.com/lavanet/lava/v5/protocol/statetracker"
-	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
 	scoreutils "github.com/lavanet/lava/v5/utils/score"
 	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/v5/x/plans/types"
+	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -69,6 +68,11 @@ const (
 	DebugRelaysFlagName           = "debug-relays"
 	DebugProbesFlagName           = "debug-probes"
 	reportsSendBEAddress          = "reports-be-address"
+
+	// lavaAppName is the application name, previously app.Name.
+	lavaAppName = "lava"
+	// lavaDefaultNodeHome is the default home directory, previously lavaDefaultNodeHome (~/.lava).
+	lavaDefaultNodeHome = "$HOME/." + lavaAppName
 )
 
 var (
@@ -238,7 +242,7 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 		utils.LavaFormatFatal("failed creating RPCSmartRouter logs", err)
 	}
 
-	smartRouterMetricsManager.SetVersion(upgrade.GetCurrentVersion().ConsumerVersion)
+	smartRouterMetricsManager.SetVersion(protocoltypes.DefaultVersion.ConsumerTarget)
 	smartRouterMetricsManager.StartSelectionStatsUpdater(ctx, metrics.OptimizerQosServerSamplingInterval)
 
 	// we want one provider optimizer per chain so we will store them for reuse across rpcEndpoints
@@ -1066,7 +1070,7 @@ func CreateRPCSmartRouterCobraCommand() *cobra.Command {
 		Short: `rpcsmartrouter sets up a centralized server with static providers to perform api requests`,
 		Long: `rpcsmartrouter sets up a centralized server with static and backup providers to perform api requests through the lava protocol.
 		This is the smart router mode that uses pre-configured static providers instead of dynamically discovering providers on-chain.
-		all configs should be located in the local running directory /config or ` + app.DefaultNodeHome + `
+		all configs should be located in the local running directory /config or ` + lavaDefaultNodeHome + `
 		if no arguments are passed, assumes default config file: ` + DefaultRPCSmartRouterFileName + `
 		if one argument is passed, its assumed the config file name
 		`,
@@ -1101,7 +1105,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			viper.SetConfigType("yml")
 			viper.AddConfigPath(".")
 			viper.AddConfigPath("./config")
-			viper.AddConfigPath(app.DefaultNodeHome)
+			viper.AddConfigPath(lavaDefaultNodeHome)
 
 			// set log format
 			logFormat := viper.GetString(flags.FlagLogFormat)
@@ -1276,7 +1280,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			}
 
 			rpcSmartRouter := RPCSmartRouter{}
-			utils.LavaFormatInfo("lavap Binary Version: " + upgrade.GetCurrentVersion().ConsumerVersion)
+			utils.LavaFormatInfo("lavap Binary Version: " + protocoltypes.DefaultVersion.ConsumerTarget)
 			rand.InitRandomSeed()
 
 			var cache *performance.Cache = nil

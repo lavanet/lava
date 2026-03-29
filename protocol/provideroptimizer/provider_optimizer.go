@@ -833,9 +833,9 @@ func (po *ProviderOptimizer) GetReputationReportForProvider(providerAddress stri
 	}
 
 	report = &pairingtypes.QualityOfServiceReport{
-		Latency:      score.ConvertToDec(latency),
-		Availability: score.ConvertToDec(availability),
-		Sync:         score.ConvertToDec(sync),
+		Latency:      latency,
+		Availability: availability,
+		Sync:         sync,
 	}
 
 	utils.LavaFormatTrace("[Optimizer] QoS Excellence for provider",

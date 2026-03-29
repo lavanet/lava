@@ -9,7 +9,7 @@ import (
 
 	"github.com/goccy/go-json"
 	"github.com/gofiber/websocket/v2"
-	formatter "github.com/lavanet/lava/v5/ecosystem/cache/format"
+	"github.com/lavanet/lava/v5/protocol/chainlib/cacheformat"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/utils"
@@ -308,7 +308,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 		}
 
 		// Subscription flow
-		inputFormatter, outputFormatter := formatter.FormatterForRelayRequestAndResponse(protocolMessage.GetApiCollection().CollectionData.ApiInterface) // we use this to preserve the original jsonrpc id
+		inputFormatter, outputFormatter := cacheformat.FormatterForRelayRequestAndResponse(protocolMessage.GetApiCollection().CollectionData.ApiInterface) // we use this to preserve the original jsonrpc id
 		inputFormatter(protocolMessage.RelayPrivateData().Data)                                                                                          // set the extracted jsonrpc id
 
 		reply, subscriptionMsgsChan, err := cwm.wsSubscriptionManager.StartSubscription(webSocketCtx, protocolMessage, dappID, userIp, cwm.WebsocketConnectionUID, metricsData)

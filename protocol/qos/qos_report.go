@@ -3,14 +3,13 @@ package qos
 import (
 	"sync"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
 
 type QoSReport struct {
 	lastQoSReport           *pairingtypes.QualityOfServiceReport
 	lastReputationQoSReport *pairingtypes.QualityOfServiceReport
-	latencyScoreList        []sdk.Dec
+	latencyScoreList        []float64
 	syncScoreSum            int64
 	totalSyncScore          int64
 	totalRelays             uint64

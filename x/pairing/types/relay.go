@@ -219,6 +219,16 @@ type RelayReply struct {
 	Metadata              []Metadata `json:"metadata"`
 }
 
+// Marshal serialises RelayReply using JSON for use with protocopy.DeepCopyProtoObject.
+func (r *RelayReply) Marshal() ([]byte, error) {
+	return jsonMarshal(r)
+}
+
+// Unmarshal deserialises RelayReply from JSON.
+func (r *RelayReply) Unmarshal(dAtA []byte) error {
+	return jsonUnmarshal(dAtA, r)
+}
+
 func (r *RelayReply) GetData() []byte {
 	if r != nil {
 		return r.Data
@@ -554,6 +564,16 @@ func (r *RelayRequest) GetRelayData() *RelayPrivateData {
 		return r.RelayData
 	}
 	return nil
+}
+
+// Marshal serialises RelayRequest using JSON for use with protocopy.DeepCopyProtoObject.
+func (r *RelayRequest) Marshal() ([]byte, error) {
+	return jsonMarshal(r)
+}
+
+// Unmarshal deserialises RelayRequest from JSON.
+func (r *RelayRequest) Unmarshal(dAtA []byte) error {
+	return jsonUnmarshal(dAtA, r)
 }
 
 // RelayExchange pairs a request and reply for signing/verification by sigs.Sign.

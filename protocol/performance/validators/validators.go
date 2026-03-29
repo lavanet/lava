@@ -21,7 +21,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/lavanet/lava/v5/app"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
 	"github.com/spf13/cobra"
@@ -287,7 +286,7 @@ validator-performance valida*_monik* --regex 100 --node https://public-rpc.lavan
 	}
 	flags.AddQueryFlagsToCmd(cmd)
 	flags.AddKeyringFlags(cmd.Flags())
-	cmd.Flags().String(flags.FlagChainID, app.Name, "network chain id")
+	cmd.Flags().String(flags.FlagChainID, "lava", "network chain id")
 	cmd.Flags().Bool(exactFlagName, false, "turn on exact if the moniker needs to match perfectly")
 	cmd.Flags().Bool(validatorMonikerFlagName, false, "turn on regex parsing for the validator moniker instead of accepting a valoper")
 	cmd.Flags().String(outputFileFlagName, "", "flag that indicates an output csv file for the results")

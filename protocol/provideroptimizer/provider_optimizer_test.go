@@ -460,7 +460,12 @@ func TestReputation(t *testing.T) {
 	require.True(t, sampleTime.Equal(sampleTime1))
 	report2, sampleTime2 := providerOptimizer.GetReputationReportForProvider(providersGen.providersAddresses[1])
 	require.NotNil(t, report2)
-	require.Equal(t, report, report2)
+	// Two providers trained with identical data should have approximately equal scores.
+	// Use InDelta instead of Equal because float64 EWMA arithmetic can accumulate ULP-level
+	// rounding differences between independent accumulators.
+	require.InDelta(t, report.Latency, report2.Latency, 1e-9)
+	require.InDelta(t, report.Availability, report2.Availability, 1e-9)
+	require.InDelta(t, report.Sync, report2.Sync, 1e-9)
 	require.True(t, sampleTime.Equal(sampleTime2))
 }
 

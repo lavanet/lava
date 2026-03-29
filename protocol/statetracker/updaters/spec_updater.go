@@ -33,7 +33,6 @@ type SpecVerifier interface {
 
 type SpecUpdater struct {
 	lock             sync.RWMutex
-	eventTracker     *EventTracker
 	chainId          string
 	specGetter       SpecGetter
 	blockLastUpdated uint64
@@ -43,8 +42,8 @@ type SpecUpdater struct {
 	shouldUpdate     bool
 }
 
-func NewSpecUpdater(chainId string, specGetter SpecGetter, eventTracker *EventTracker) *SpecUpdater {
-	return &SpecUpdater{chainId: chainId, specGetter: specGetter, eventTracker: eventTracker, specUpdatables: map[string]*SpecUpdatable{}, specVerifiers: map[string]*SpecVerifier{}}
+func NewSpecUpdater(chainId string, specGetter SpecGetter) *SpecUpdater {
+	return &SpecUpdater{chainId: chainId, specGetter: specGetter, specUpdatables: map[string]*SpecUpdatable{}, specVerifiers: map[string]*SpecVerifier{}}
 }
 
 func (su *SpecUpdater) UpdaterKey() string {
@@ -153,13 +152,6 @@ func (su *SpecUpdater) Reset(latestBlock int64) {
 func (su *SpecUpdater) Update(latestBlock int64) {
 	su.lock.Lock()
 	defer su.lock.Unlock()
-	if su.shouldUpdate {
-		su.updateInner(latestBlock)
-	} else {
-		specUpdated, err := su.eventTracker.getLatestSpecModifyEvents(latestBlock)
-		if specUpdated || err != nil {
-			su.shouldUpdate = true
-			su.updateInner(latestBlock)
-		}
-	}
+	// Without an event tracker we always refresh the spec to catch on-chain updates.
+	su.updateInner(latestBlock)
 }

@@ -8,30 +8,21 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"strings"
-	"testing"
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/lavanet/lava/v5/utils"
-	"github.com/lavanet/lava/v5/utils/rand"
-	"github.com/lavanet/lava/v5/utils/sigs"
-
-	"github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/server/grpc/gogoreflection"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/cometbft/cometbft/proto/tendermint/types"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
+
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
-	testcommon "github.com/lavanet/lava/v5/testutil/common"
-	keepertest "github.com/lavanet/lava/v5/testutil/keeper"
 	specutils "github.com/lavanet/lava/v5/utils/keeper"
-	plantypes "github.com/lavanet/lava/v5/x/plans/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
+	"github.com/lavanet/lava/v5/utils"
 )
 
 type mockResponseWriter struct {
@@ -106,7 +97,6 @@ func genericWebSocketHandler() http.HandlerFunc {
 			messageType, message, err := conn.ReadMessage()
 			if err != nil {
 				// Don't panic here, just return to close the connection gracefully
-				// panic("got error in ReadMessage")
 				return
 			}
 			fmt.Println("got ws message", string(message), messageType)
@@ -114,6 +104,36 @@ func genericWebSocketHandler() http.HandlerFunc {
 			fmt.Println("writing ws message", string(message), messageType)
 		}
 	}
+}
+
+// CreateMockSpec returns a minimal spectypes.Spec suitable for unit tests.
+func CreateMockSpec() spectypes.Spec {
+	specName := "mockspec"
+	spec := spectypes.Spec{}
+	spec.Name = specName
+	spec.Index = specName
+	spec.Enabled = true
+	spec.ReliabilityThreshold = 4294967295
+	spec.BlockDistanceForFinalizedData = 0
+	spec.DataReliabilityEnabled = true
+	spec.ApiCollections = []*spectypes.ApiCollection{
+		{
+			Enabled: true,
+			CollectionData: spectypes.CollectionData{
+				ApiInterface: "stub",
+				Type:         "GET",
+			},
+			Apis: []*spectypes.Api{
+				{
+					Name:         specName + "API",
+					ComputeUnits: 100,
+					Enabled:      true,
+				},
+			},
+		},
+	}
+	spec.Shares = 1
+	return spec
 }
 
 // generates a chain parser, a chain fetcher messages based on it
@@ -135,7 +155,11 @@ func CreateChainLibMocks(
 		cancelConnector()
 	}
 
-	spec, err := specutils.GetASpec(specIndex, getToTopMostPath, nil, nil)
+	spec, err := specutils.GetSpecFromLocalDir(getToTopMostPath+"specs/mainnet-1/specs/", specIndex)
+	if err != nil {
+		// try testnet as fallback
+		spec, err = specutils.GetSpecFromLocalDir(getToTopMostPath+"specs/testnet-2/specs/", specIndex)
+	}
 	if err != nil {
 		cancelConnector()
 		return nil, nil, nil, nil, nil, err
@@ -239,72 +263,4 @@ func CreateChainLibMocks(
 	}
 	chainFetcher := NewChainFetcher(ctx, &ChainFetcherOptions{chainRouter, chainParser, endpoint, nil})
 	return chainParser, chainRouter, chainFetcher, closeServer, endpoint, err
-}
-
-type TestStruct struct {
-	Ctx       context.Context
-	Keepers   *keepertest.Keepers
-	Servers   *keepertest.Servers
-	Providers []sigs.Account
-	Spec      spectypes.Spec
-	Plan      plantypes.Plan
-	Consumer  sigs.Account
-	Validator sigs.Account
-}
-
-func (ts *TestStruct) BondDenom() string {
-	return ts.Keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ts.Ctx))
-}
-
-func SetupForTests(t *testing.T, numOfProviders int, specID string, getToTopMostPath string) TestStruct {
-	rand.InitRandomSeed()
-	ts := TestStruct{}
-	ts.Servers, ts.Keepers, ts.Ctx = keepertest.InitAllKeepers(t)
-
-	// init keepers state
-	var balance int64 = 100000000000
-
-	ts.Validator = testcommon.CreateNewAccount(ts.Ctx, *ts.Keepers, balance)
-	msg, err := stakingtypes.NewMsgCreateValidator(
-		sdk.ValAddress(ts.Validator.Addr),
-		ts.Validator.PubKey,
-		sdk.NewCoin(ts.BondDenom(), sdk.NewIntFromUint64(uint64(balance))),
-		stakingtypes.Description{},
-		stakingtypes.NewCommissionRates(sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(1, 1)),
-		sdk.ZeroInt(),
-	)
-	require.NoError(t, err)
-	_, err = ts.Servers.StakingServer.CreateValidator(ts.Ctx, msg)
-	require.NoError(t, err)
-	// setup consumer
-	ts.Consumer = testcommon.CreateNewAccount(ts.Ctx, *ts.Keepers, balance)
-
-	// setup providers
-	for i := 0; i < numOfProviders; i++ {
-		ts.Providers = append(ts.Providers, testcommon.CreateNewAccount(ts.Ctx, *ts.Keepers, balance))
-	}
-	sdkContext := sdk.UnwrapSDKContext(ts.Ctx)
-	spec, err := specutils.GetASpec(specID, getToTopMostPath, &sdkContext, &ts.Keepers.Spec)
-	if err != nil {
-		require.NoError(t, err)
-	}
-	ts.Spec = spec
-	ts.Keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.Ctx), ts.Spec)
-
-	ts.Plan = testcommon.CreateMockPlan()
-	ts.Keepers.Plans.AddPlan(sdk.UnwrapSDKContext(ts.Ctx), ts.Plan, false)
-
-	var stake int64 = 50000000000
-
-	// subscribe consumer
-	testcommon.BuySubscription(ts.Ctx, *ts.Keepers, *ts.Servers, ts.Consumer, ts.Plan.Index)
-
-	// stake providers
-	for _, provider := range ts.Providers {
-		testcommon.StakeAccount(t, ts.Ctx, *ts.Keepers, *ts.Servers, provider, ts.Spec, stake, ts.Validator)
-	}
-
-	// advance for the staking to be valid
-	ts.Ctx = keepertest.AdvanceEpoch(ts.Ctx, ts.Keepers)
-	return ts
 }

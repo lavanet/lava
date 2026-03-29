@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
@@ -22,9 +21,9 @@ type QoSMutatorRelaySuccess struct {
 	providerAddress  string
 }
 
-func (qoSMutatorRelaySuccess *QoSMutatorRelaySuccess) calculateAvailabilityScore(qosReport *QoSReport) (downtimePercentageRet, scaledAvailabilityScoreRet sdk.Dec) {
-	downtimePercentage := sdk.NewDecWithPrec(int64(qosReport.totalRelays-qosReport.answeredRelays), 0).Quo(sdk.NewDecWithPrec(int64(qosReport.totalRelays), 0))
-	scaledAvailabilityScore := sdk.MaxDec(sdk.ZeroDec(), AvailabilityPercentage.Sub(downtimePercentage).Quo(AvailabilityPercentage))
+func (qoSMutatorRelaySuccess *QoSMutatorRelaySuccess) calculateAvailabilityScore(qosReport *QoSReport) (downtimePercentageRet, scaledAvailabilityScoreRet float64) {
+	downtimePercentage := float64(qosReport.totalRelays-qosReport.answeredRelays) / float64(qosReport.totalRelays)
+	scaledAvailabilityScore := math.Max(0.0, (AvailabilityPercentage-downtimePercentage)/AvailabilityPercentage)
 	return downtimePercentage, scaledAvailabilityScore
 }
 
@@ -38,7 +37,7 @@ func (qoSMutatorRelaySuccess *QoSMutatorRelaySuccess) Mutate(report *QoSReport) 
 
 	downtimePercentage, scaledAvailabilityScore := qoSMutatorRelaySuccess.calculateAvailabilityScore(report)
 	report.lastQoSReport.Availability = scaledAvailabilityScore
-	if sdk.OneDec().GT(report.lastQoSReport.Availability) {
+	if 1.0 > report.lastQoSReport.Availability {
 		utils.LavaFormatDebug("QoS Availability report",
 			utils.LogAttr("availability", report.lastQoSReport.Availability),
 			utils.LogAttr("down_percent", downtimePercentage),
@@ -51,11 +50,11 @@ func (qoSMutatorRelaySuccess *QoSMutatorRelaySuccess) Mutate(report *QoSReport) 
 		qoSMutatorRelaySuccess.latency = 1 * time.Microsecond
 	}
 
-	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(sdk.NewInt(int64(qoSMutatorRelaySuccess.expectedLatency))).Quo(sdk.NewDecFromInt(sdk.NewInt(int64(qoSMutatorRelaySuccess.latency)))))
+	latencyScore := math.Min(1.0, float64(qoSMutatorRelaySuccess.expectedLatency)/float64(qoSMutatorRelaySuccess.latency))
 
-	insertSorted := func(list []sdk.Dec, value sdk.Dec) []sdk.Dec {
+	insertSorted := func(list []float64, value float64) []float64 {
 		index := sort.Search(len(list), func(i int) bool {
-			return list[i].GTE(value)
+			return list[i] >= value
 		})
 		if len(list) == index { // nil or empty slice or after last element
 			return append(list, value)
@@ -75,8 +74,8 @@ func (qoSMutatorRelaySuccess *QoSMutatorRelaySuccess) Mutate(report *QoSReport) 
 			report.syncScoreSum++
 		}
 		report.totalSyncScore++
-		report.lastQoSReport.Sync = sdk.NewDec(report.syncScoreSum).QuoInt64(report.totalSyncScore)
-		if sdk.OneDec().GT(report.lastQoSReport.Sync) {
+		report.lastQoSReport.Sync = float64(report.syncScoreSum) / float64(report.totalSyncScore)
+		if 1.0 > report.lastQoSReport.Sync {
 			utils.LavaFormatDebug("QoS Sync report",
 				utils.LogAttr("sync", report.lastQoSReport.Sync),
 				utils.LogAttr("block_diff", qoSMutatorRelaySuccess.blockHeightDiff),
@@ -87,6 +86,6 @@ func (qoSMutatorRelaySuccess *QoSMutatorRelaySuccess) Mutate(report *QoSReport) 
 		}
 	} else {
 		// we prefer to give them a score of 1 when there is no other data, since otherwise we damage their payments
-		report.lastQoSReport.Sync = sdk.NewDec(1)
+		report.lastQoSReport.Sync = 1.0
 	}
 }

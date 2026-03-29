@@ -23,15 +23,14 @@ type VersionValidationInf interface {
 
 type VersionUpdater struct {
 	Lock                 sync.RWMutex
-	eventTracker         *EventTracker
 	VersionStateQuery    VersionStateQuery
 	LastKnownVersion     *ProtocolVersionResponse
 	VersionValidationInf // embedding the interface, this tells: VersionUpdater has ValidateProtocolVersion method
 	shouldUpdate         bool
 }
 
-func NewVersionUpdater(versionStateQuery VersionStateQuery, eventTracker *EventTracker, version *protocoltypes.Version, versionValidator VersionValidationInf) *VersionUpdater {
-	return &VersionUpdater{VersionStateQuery: versionStateQuery, eventTracker: eventTracker, LastKnownVersion: &ProtocolVersionResponse{Version: version, BlockNumber: "uninitialized"}, VersionValidationInf: versionValidator}
+func NewVersionUpdater(versionStateQuery VersionStateQuery, version *protocoltypes.Version, versionValidator VersionValidationInf) *VersionUpdater {
+	return &VersionUpdater{VersionStateQuery: versionStateQuery, LastKnownVersion: &ProtocolVersionResponse{Version: version, BlockNumber: "uninitialized"}, VersionValidationInf: versionValidator}
 }
 
 func (vu *VersionUpdater) UpdaterKey() string {
@@ -76,15 +75,8 @@ func (vu *VersionUpdater) Reset(latestBlock int64) {
 func (vu *VersionUpdater) Update(latestBlock int64) {
 	vu.Lock.Lock()
 	defer vu.Lock.Unlock()
-	if vu.shouldUpdate {
-		vu.updateInner(latestBlock)
-	} else {
-		versionUpdated, err := vu.eventTracker.getLatestVersionEvents(latestBlock)
-		if versionUpdated || err != nil {
-			vu.shouldUpdate = true
-			vu.updateInner(latestBlock)
-		}
-	}
+	// Without an event tracker we always refresh the version to catch on-chain updates.
+	vu.updateInner(latestBlock)
 	// monitor protocol version on each new block even if it was not updated (used for logging purposes)
 	err := vu.ValidateProtocolVersion(vu.LastKnownVersion)
 	if err != nil {

@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"testing"
 
-	testcommon "github.com/lavanet/lava/v5/testutil/common"
 	"github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
@@ -75,7 +74,7 @@ func TestCraftChainMessage(t *testing.T) {
 			chainParser, err := NewChainParser(play.apiInterface)
 			require.NoError(t, err)
 
-			spec := testcommon.CreateMockSpec()
+			spec := CreateMockSpec()
 			spec.ApiCollections = []*types.ApiCollection{
 				{
 					Enabled: true,

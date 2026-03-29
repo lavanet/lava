@@ -21,7 +21,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
 	"github.com/lavanet/lava/v5/protocol/relaycore"
-	"github.com/lavanet/lava/v5/protocol/upgrade"
+	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/protocopy"
 
@@ -2302,7 +2302,7 @@ func (rpcss *RPCSmartRouterServer) appendHeadersToRelayResult(ctx context.Contex
 
 		version := pairingtypes.Metadata{
 			Name:  common.LAVAP_VERSION_HEADER_NAME,
-			Value: upgrade.GetCurrentVersion().ConsumerVersion,
+			Value: protocoltypes.DefaultVersion.ConsumerTarget,
 		}
 		relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, version)
 	}

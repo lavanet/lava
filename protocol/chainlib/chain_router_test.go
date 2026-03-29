@@ -18,7 +18,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
-	testcommon "github.com/lavanet/lava/v5/testutil/common"
 	"github.com/lavanet/lava/v5/utils"
 	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
@@ -42,7 +41,7 @@ func TestChainRouterWithDisabledWebSocketInSpec(t *testing.T) {
 	addonsOptions := []string{"-addon-", "-addon2-"}
 	extensionsOptions := []string{"-test-", "-test2-", "-test3-"}
 
-	spec := testcommon.CreateMockSpec()
+	spec := CreateMockSpec()
 	spec.ApiCollections = []*spectypes.ApiCollection{
 		{
 			Enabled: false,
@@ -400,7 +399,7 @@ func TestChainRouterWithEnabledWebSocketInSpec(t *testing.T) {
 	addonsOptions := []string{"-addon-", "-addon2-"}
 	extensionsOptions := []string{"-test-", "-test2-", "-test3-"}
 
-	spec := testcommon.CreateMockSpec()
+	spec := CreateMockSpec()
 	spec.ApiCollections = []*spectypes.ApiCollection{
 		{
 			Enabled: true,
@@ -793,7 +792,7 @@ func TestChainRouterWithMethodRoutes(t *testing.T) {
 	addonsOptions := []string{"-addon-", "-addon2-"}
 	extensionsOptions := []string{"-test-", "-test2-", "-test3-"}
 
-	spec := testcommon.CreateMockSpec()
+	spec := CreateMockSpec()
 	spec.ApiCollections = []*spectypes.ApiCollection{
 		{
 			Enabled: true,
@@ -2174,7 +2173,7 @@ func TestChainRouterWithInternalPaths(t *testing.T) {
 			chainParser, err := NewChainParser(play.apiInterface)
 			require.NoError(t, err)
 
-			spec := testcommon.CreateMockSpec()
+			spec := CreateMockSpec()
 			spec.ApiCollections = play.specApiCollections
 			chainParser.SetSpec(spec)
 

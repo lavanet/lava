@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
@@ -209,34 +208,21 @@ func (ws *WeightedSelector) SetDeterministicSeed(seed int64) {
 	}
 }
 
-// CalculateScore computes a composite score for a provider based on QoS metrics and stake
+// CalculateScore computes a composite score for a provider based on QoS metrics and stake.
+// stake and totalStake are raw stake amounts (e.g. in ulava).
 // Returns a normalized score between 0 and 1, where higher is better
 func (ws *WeightedSelector) CalculateScore(
 	qos *pairingtypes.QualityOfServiceReport,
-	stake sdk.Coin,
-	totalStake sdk.Coin,
+	stake float64,
+	totalStake float64,
 	providerAddress string,
 ) float64 {
 	// Extract individual scores from QoS report:
 	// - availability is in [0,1] (higher is better)
 	// - latency/sync are in seconds (lower is better) and are clamped by the optimizer
-	availability, err := qos.Availability.Float64()
-	if err != nil {
-		utils.LavaFormatWarning("could not parse availability score, using 0", err)
-		availability = 0
-	}
-
-	latency, err := qos.Latency.Float64()
-	if err != nil {
-		utils.LavaFormatWarning("could not parse latency score, using worst latency", err)
-		latency = score.WorstLatencyScore
-	}
-
-	sync, err := qos.Sync.Float64()
-	if err != nil {
-		utils.LavaFormatWarning("could not parse sync score, using worst sync", err)
-		sync = score.WorstSyncScore
-	}
+	availability := qos.Availability
+	latency := qos.Latency
+	sync := qos.Sync
 
 	// Normalize individual metrics to 0-1 range where higher is better
 	availabilityScore := ws.normalizeAvailability(availability) // Rescale [0.9, 1.0] → [0.0, 1.0]
@@ -279,7 +265,7 @@ func (ws *WeightedSelector) CalculateScore(
 		utils.LogAttr("raw_availability", availability),
 		utils.LogAttr("raw_latency_sec", latency),
 		utils.LogAttr("raw_sync_sec", sync),
-		utils.LogAttr("raw_stake", stake.String()),
+		utils.LogAttr("raw_stake", stake),
 		utils.LogAttr("normalized_availability", availabilityScore),
 		utils.LogAttr("normalized_latency", latencyScore),
 		utils.LogAttr("normalized_sync", syncScore),
@@ -550,16 +536,17 @@ func (ws *WeightedSelector) normalizeSync(syncLag float64) float64 {
 	return normalized
 }
 
-// normalizeStake converts stake to 0-1 range relative to total stake
+// normalizeStake converts stake to 0-1 range relative to total stake.
+// stake and totalStake are raw stake amounts.
 // Uses square root scaling to reduce whale dominance while maintaining incentives
-func (ws *WeightedSelector) normalizeStake(stake sdk.Coin, totalStake sdk.Coin) float64 {
-	if totalStake.IsZero() || stake.IsZero() {
+func (ws *WeightedSelector) normalizeStake(stake float64, totalStake float64) float64 {
+	if totalStake == 0 || stake == 0 {
 		return 0.0
 	}
 
 	// Calculate stake ratio
-	stakeFloat := float64(stake.Amount.Int64())
-	totalStakeFloat := float64(totalStake.Amount.Int64())
+	stakeFloat := stake
+	totalStakeFloat := totalStake
 
 	if totalStakeFloat == 0 {
 		return 0.0
@@ -759,7 +746,7 @@ func (ws *WeightedSelector) CalculateProviderScores(
 		totalStake += stakeGetter(addr)
 	}
 
-	totalStakeCoin := sdk.NewCoin("ulava", sdk.NewInt(totalStake))
+	totalStakeFloat := float64(totalStake)
 
 	// Calculate scores for each provider
 	for _, providerAddress := range allAddresses {
@@ -777,19 +764,21 @@ func (ws *WeightedSelector) CalculateProviderScores(
 		}
 
 		stake := stakeGetter(providerAddress)
-		stakeCoin := sdk.NewCoin("ulava", sdk.NewInt(stake))
+		stakeFloat := float64(stake)
 
 		// Extract individual scores for detailed reporting
-		latency, sync, availability := qos.GetScoresFloat64()
+		latency := qos.Latency
+		sync := qos.Sync
+		availability := qos.Availability
 
 		// Calculate normalized scores
 		availabilityScore := ws.normalizeAvailability(availability)
 		latencyScore := ws.normalizeLatency(latency)
 		syncScore := ws.normalizeSync(sync)
-		stakeScore := ws.normalizeStake(stakeCoin, totalStakeCoin)
+		stakeScore := ws.normalizeStake(stakeFloat, totalStakeFloat)
 
 		// Calculate composite score
-		compositeScore := ws.CalculateScore(qos, stakeCoin, totalStakeCoin, providerAddress)
+		compositeScore := ws.CalculateScore(qos, stakeFloat, totalStakeFloat, providerAddress)
 
 		providerScore := ProviderScore{
 			Address:         providerAddress,
@@ -834,7 +823,7 @@ func (ws *WeightedSelector) CalculateProviderScores(
 			utils.LogAttr("availability", availability),
 			utils.LogAttr("latency", latency),
 			utils.LogAttr("sync", sync),
-			utils.LogAttr("stake", stake),
+			utils.LogAttr("stake", stakeFloat),
 		)
 	}
 

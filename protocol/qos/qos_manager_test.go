@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
@@ -58,8 +57,8 @@ func TestSetLastReputationQoSReport(t *testing.T) {
 	sessionID := int64(1)
 
 	testReport := &pairingtypes.QualityOfServiceReport{
-		Latency:      sdk.NewDec(95),
-		Availability: sdk.NewDec(100),
+		Latency:      95,
+		Availability: 100,
 	}
 
 	qosManager.SetLastReputationQoSReport(epoch, sessionID, testReport)
@@ -189,8 +188,8 @@ func TestHighConcurrencyScenario(t *testing.T) {
 			defer wg.Done()
 			for j := 0; j < operationsPerGoroutine; j++ {
 				report := &pairingtypes.QualityOfServiceReport{
-					Latency:      sdk.NewDec(95),
-					Availability: sdk.NewDec(100),
+					Latency:      95,
+					Availability: 100,
 				}
 				qosManager.SetLastReputationQoSReport(uint64(routineID), int64(j), report)
 			}

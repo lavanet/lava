@@ -372,7 +372,7 @@ func TestSpecAggregation_FullReplacement(t *testing.T) {
 	require.Equal(t, "eth_blockNumber", specs1["ETH1"].ApiCollections[0].Apis[0].Name)
 	require.Equal(t, "Ethereum Mainnet Original", specs1["ETH1"].Name)
 	require.True(t, specs1["ETH1"].Enabled)
-	require.Equal(t, "5000000000", specs1["ETH1"].MinStakeProvider.Amount.String())
+	require.Equal(t, int64(5000000000), specs1["ETH1"].MinStakeProvider.Amount)
 
 	// Verify source2 has only 1 API
 	require.Len(t, specs2["ETH1"].ApiCollections, 1)
@@ -398,7 +398,7 @@ func TestSpecAggregation_FullReplacement(t *testing.T) {
 	require.False(t, finalSpec.Enabled)
 
 	// min_stake_provider should be from source2 (lower amount)
-	require.Equal(t, "1000000", finalSpec.MinStakeProvider.Amount.String())
+	require.Equal(t, int64(1000000), finalSpec.MinStakeProvider.Amount)
 
 	// reliability_threshold should be from source2
 	require.Equal(t, uint32(100), finalSpec.ReliabilityThreshold)

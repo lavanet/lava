@@ -8,9 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
@@ -18,14 +15,10 @@ import (
 // Helper function to create a QoS report
 func createQoSReport(availability, latency, sync float64) *pairingtypes.QualityOfServiceReport {
 	return &pairingtypes.QualityOfServiceReport{
-		Availability: math.LegacyMustNewDecFromStr(formatFloat(availability)),
-		Latency:      math.LegacyMustNewDecFromStr(formatFloat(latency)),
-		Sync:         math.LegacyMustNewDecFromStr(formatFloat(sync)),
+		Availability: availability,
+		Latency:      latency,
+		Sync:         sync,
 	}
-}
-
-func formatFloat(f float64) string {
-	return math.LegacyNewDec(int64(f * 1000000)).QuoInt64(1000000).String()
 }
 
 // TestNewWeightedSelector tests the creation of a new WeightedSelector
@@ -165,10 +158,8 @@ func TestCalculateScorePerfectProvider(t *testing.T) {
 	ws := NewWeightedSelector(config)
 
 	qos := createQoSReport(1.0, 0.0, 0.0) // Perfect availability, latency, sync
-	stake := sdk.NewCoin("ulava", math.NewInt(1000))
-	totalStake := sdk.NewCoin("ulava", math.NewInt(10000))
 
-	score := ws.CalculateScore(qos, stake, totalStake, "provider1")
+	score := ws.CalculateScore(qos, 1000, 10000, "provider1")
 
 	// Perfect provider should have high score (close to 1.0)
 	// availability: 1.0 * 0.3 = 0.3
@@ -185,10 +176,8 @@ func TestCalculateScorePoorProvider(t *testing.T) {
 	ws := NewWeightedSelector(config)
 
 	qos := createQoSReport(0.5, 30.0, 1200.0) // Poor availability, high latency, poor sync
-	stake := sdk.NewCoin("ulava", math.NewInt(100))
-	totalStake := sdk.NewCoin("ulava", math.NewInt(10000))
 
-	score := ws.CalculateScore(qos, stake, totalStake, "provider1")
+	score := ws.CalculateScore(qos, 100, 10000, "provider1")
 
 	// Poor provider should have lower score
 	// availability: below minimum threshold => 0
@@ -205,10 +194,8 @@ func TestCalculateScoreMinimumChance(t *testing.T) {
 	ws := NewWeightedSelector(config)
 
 	qos := createQoSReport(0.0, 10.0, 1000.0) // Terrible metrics
-	stake := sdk.NewCoin("ulava", math.NewInt(1))
-	totalStake := sdk.NewCoin("ulava", math.NewInt(1000000))
 
-	score := ws.CalculateScore(qos, stake, totalStake, "provider1")
+	score := ws.CalculateScore(qos, 1, 1000000, "provider1")
 
 	// Even terrible provider should get minimum chance
 	require.GreaterOrEqual(t, score, 0.01)
@@ -287,9 +274,7 @@ func TestNormalizeStake(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			stake := sdk.NewCoin("ulava", math.NewInt(tc.stake))
-			totalStake := sdk.NewCoin("ulava", math.NewInt(tc.totalStake))
-			normalized := ws.normalizeStake(stake, totalStake)
+			normalized := ws.normalizeStake(float64(tc.stake), float64(tc.totalStake))
 			require.InDelta(t, tc.expected, normalized, 0.01)
 		})
 	}
@@ -399,11 +384,8 @@ func TestNormalizeStakeMaxInt64DoesNotOverflowOrNaN(t *testing.T) {
 	config := DefaultWeightedSelectorConfig()
 	ws := NewWeightedSelector(config)
 
-	max := int64(stdmath.MaxInt64)
-	stake := sdk.NewCoin("ulava", math.NewInt(max))
-	totalStake := sdk.NewCoin("ulava", math.NewInt(max))
-
-	normalized := ws.normalizeStake(stake, totalStake)
+	max := float64(stdmath.MaxInt64)
+	normalized := ws.normalizeStake(max, max)
 	require.False(t, stdmath.IsNaN(normalized))
 	require.False(t, stdmath.IsInf(normalized, 0))
 	require.InDelta(t, 1.0, normalized, 0.000001)
@@ -655,12 +637,10 @@ func BenchmarkCalculateScore(b *testing.B) {
 	ws := NewWeightedSelector(config)
 
 	qos := createQoSReport(0.95, 0.15, 2.5)
-	stake := sdk.NewCoin("ulava", math.NewInt(5000))
-	totalStake := sdk.NewCoin("ulava", math.NewInt(50000))
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ws.CalculateScore(qos, stake, totalStake, "provider1")
+		ws.CalculateScore(qos, 5000, 50000, "provider1")
 	}
 }
 

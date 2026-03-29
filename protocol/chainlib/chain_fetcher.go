@@ -2,14 +2,14 @@ package chainlib
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"sync/atomic"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/golang/protobuf/proto"
-	formatter "github.com/lavanet/lava/v5/ecosystem/cache/format"
+	"github.com/lavanet/lava/v5/protocol/chainlib/cacheformat"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
@@ -653,7 +653,7 @@ func HashCacheRequest(relayData *pairingtypes.RelayPrivateData, chainId string) 
 	}()
 
 	// we need to remove some data from the request so the cache will hit properly.
-	inputFormatter, outputFormatter := formatter.FormatterForRelayRequestAndResponse(relayData.ApiInterface)
+	inputFormatter, outputFormatter := cacheformat.FormatterForRelayRequestAndResponse(relayData.ApiInterface)
 	relayData.Data = inputFormatter(relayData.Data) // remove id from request.
 	relayData.Salt = nil                            // remove salt
 	relayData.SeenBlock = 0                         // remove seen block
@@ -670,7 +670,7 @@ func HashCacheRequest(relayData *pairingtypes.RelayPrivateData, chainId string) 
 		Request: relayData,
 		ChainId: chainId,
 	}
-	cashHashBytes, err := proto.Marshal(cashHash)
+	cashHashBytes, err := json.Marshal(cashHash)
 	if err != nil {
 		return nil, outputFormatter, utils.LavaFormatError("Failed marshalling cash hash in HashCacheRequest", err)
 	}

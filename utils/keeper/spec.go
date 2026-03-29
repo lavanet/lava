@@ -9,71 +9,14 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"testing"
 
-	tmdb "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/libs/log"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/store"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
 	utils "github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/specfetcher"
-	specutils "github.com/lavanet/lava/v5/x/spec/client/utils"
-	"github.com/lavanet/lava/v5/x/spec/keeper"
 	"github.com/lavanet/lava/v5/x/spec/types"
-	"github.com/stretchr/testify/require"
 )
 
-func SpecKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
-	keep, ctx, err := specKeeper()
-	require.NoError(t, err)
-	return keep, ctx
-}
-
-func specKeeper() (*keeper.Keeper, sdk.Context, error) {
-	storeKey := sdk.NewKVStoreKey(types.StoreKey)
-	memStoreKey := storetypes.NewMemoryStoreKey(types.MemStoreKey)
-
-	db := tmdb.NewMemDB()
-	stateStore := store.NewCommitMultiStore(db)
-	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
-	stateStore.MountStoreWithDB(memStoreKey, storetypes.StoreTypeMemory, nil)
-	err := stateStore.LoadLatestVersion()
-	if err != nil {
-		return nil, sdk.Context{}, err
-	}
-
-	registry := codectypes.NewInterfaceRegistry()
-	cdc := codec.NewProtoCodec(registry)
-
-	paramsSubspace := typesparams.NewSubspace(cdc,
-		types.Amino,
-		storeKey,
-		memStoreKey,
-		"SpecParams",
-	)
-	k := keeper.NewKeeper(
-		cdc,
-		storeKey,
-		memStoreKey,
-		paramsSubspace,
-		nil,
-	)
-
-	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
-
-	// Initialize params
-	k.SetParams(ctx, types.DefaultParams())
-
-	return k, ctx, nil
-}
-
-func decodeProposal(path string) (specutils.SpecAddProposalJSON, error) {
-	proposal := specutils.SpecAddProposalJSON{}
+func decodeProposal(path string) (types.SpecAddProposalJSON, error) {
+	proposal := types.SpecAddProposalJSON{}
 	contents, err := os.ReadFile(path)
 	if err != nil {
 		return proposal, err
@@ -83,99 +26,6 @@ func decodeProposal(path string) (specutils.SpecAddProposalJSON, error) {
 
 	err = decoder.Decode(&proposal)
 	return proposal, err
-}
-
-func GetSpecFromPath(path string, specIndex string, ctxArg *sdk.Context, keeper *keeper.Keeper) (specRet types.Spec, err error) {
-	var ctx sdk.Context
-	if keeper == nil || ctxArg == nil {
-		keeper, ctx, err = specKeeper()
-		if err != nil {
-			return types.Spec{}, err
-		}
-	} else {
-		ctx = *ctxArg
-	}
-
-	proposal, err := decodeProposal(path)
-	if err != nil {
-		return types.Spec{}, err
-	}
-
-	for _, spec := range proposal.Proposal.Specs {
-		keeper.SetSpec(ctx, spec)
-		if specIndex != spec.Index {
-			continue
-		}
-		fullspec, err := keeper.ExpandSpec(ctx, spec)
-		if err != nil {
-			return types.Spec{}, err
-		}
-		return fullspec, nil
-	}
-	return types.Spec{}, fmt.Errorf("spec not found %s", path)
-}
-
-func GetASpec(specIndex, getToTopMostPath string, ctxArg *sdk.Context, keeper *keeper.Keeper) (specRet types.Spec, err error) {
-	var ctx sdk.Context
-	if keeper == nil || ctxArg == nil {
-		keeper, ctx, err = specKeeper()
-		if err != nil {
-			return types.Spec{}, err
-		}
-	} else {
-		ctx = *ctxArg
-	}
-
-	proposalDirectories := []string{
-		"specs/mainnet-1/specs/",
-		"specs/testnet-2/specs/",
-	}
-	baseProposalFiles := []string{
-		"ibc.json", "cosmoswasm.json", "tendermint.json", "cosmossdk.json",
-		"cosmossdkv45.json", "cosmossdkv50.json", "ethereum.json", "ethermint.json", "solana.json",
-	}
-
-	// Create a map of base files for quick lookup
-	baseFiles := make(map[string]struct{})
-	for _, f := range baseProposalFiles {
-		baseFiles[f] = struct{}{}
-	}
-
-	// Try each directory
-	for _, proposalDirectory := range proposalDirectories {
-		// Try base proposal files first
-		for _, fileName := range baseProposalFiles {
-			spec, err := GetSpecFromPath(getToTopMostPath+proposalDirectory+fileName, specIndex, &ctx, keeper)
-			if err == nil {
-				return spec, nil
-			}
-		}
-
-		// Read all files from the proposal directory
-		files, err := os.ReadDir(getToTopMostPath + proposalDirectory)
-		if err != nil {
-			continue // Skip to next directory if this one fails
-		}
-
-		// Try additional JSON files that aren't in baseProposalFiles
-		for _, file := range files {
-			fileName := file.Name()
-			// Skip if not a JSON file or if it's in baseProposalFiles
-			if !strings.HasSuffix(fileName, ".json") {
-				continue
-			}
-			if _, exists := baseFiles[fileName]; exists {
-				continue
-			}
-
-			spec, err := GetSpecFromPath(getToTopMostPath+proposalDirectory+fileName, specIndex, &ctx, keeper)
-			if err == nil {
-				return spec, nil
-			}
-		}
-	}
-
-	return types.Spec{}, fmt.Errorf("spec not found %s", specIndex)
 }
 
 // GetSpecFromGit fetches a spec from a GitHub repository (unauthenticated).
@@ -268,7 +118,7 @@ func expandSpecWithDependencies(specs map[string]types.Spec, index string) (*typ
 		return nil, fmt.Errorf("spec not found for chainId: %s (available specs: %v)", index, availableSpecs)
 	}
 
-	getBaseSpec := func(_ sdk.Context, idx string) (types.Spec, bool) {
+	getBaseSpec := func(_ context.Context, idx string) (types.Spec, bool) {
 		s, found := specs[idx]
 		return s, found
 	}
@@ -276,8 +126,7 @@ func expandSpecWithDependencies(specs map[string]types.Spec, index string) (*typ
 	depends := map[string]bool{index: true}
 	inherit := map[string]bool{}
 
-	ctx := sdk.Context{}
-	_, err := types.DoExpandSpec(ctx, &spec, depends, &inherit, spec.Index, getBaseSpec)
+	_, err := types.DoExpandSpec(context.Background(), &spec, depends, &inherit, spec.Index, getBaseSpec)
 	if err != nil {
 		return nil, fmt.Errorf("spec expand failed: %w", err)
 	}

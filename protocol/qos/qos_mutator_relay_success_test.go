@@ -3,13 +3,11 @@ package qos
 import (
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCalculateAvailabilityScore(t *testing.T) {
-	avialabilityAsFloat, err := AvailabilityPercentage.Float64()
-	require.NoError(t, err)
+	avialabilityAsFloat := AvailabilityPercentage
 	precision := uint64(10000)
 
 	qosReport := QoSReport{}
@@ -17,18 +15,12 @@ func TestCalculateAvailabilityScore(t *testing.T) {
 	qosReport.answeredRelays = precision - uint64(avialabilityAsFloat*float64(precision))
 	qoSMutatorRelaySuccess := QoSMutatorRelaySuccess{}
 	downTime, availabilityScore := qoSMutatorRelaySuccess.calculateAvailabilityScore(&qosReport)
-	downTimeFloat, err := downTime.Float64()
-	require.NoError(t, err)
-	require.Equal(t, downTimeFloat, avialabilityAsFloat)
-	require.Zero(t, availabilityScore.BigInt().Uint64())
+	require.Equal(t, downTime, avialabilityAsFloat)
+	require.Equal(t, availabilityScore, 0.0)
 
 	qosReport.totalRelays = 2 * precision
 	qosReport.answeredRelays = 2*precision - uint64(avialabilityAsFloat*float64(precision))
 	downTime, availabilityScore = qoSMutatorRelaySuccess.calculateAvailabilityScore(&qosReport)
-	downTimeFloat, err = downTime.Float64()
-	require.NoError(t, err)
-	halfDec, err := sdk.NewDecFromStr("0.5")
-	require.NoError(t, err)
-	require.Equal(t, downTimeFloat*2, avialabilityAsFloat)
-	require.Equal(t, halfDec, availabilityScore)
+	require.Equal(t, downTime*2, avialabilityAsFloat)
+	require.InDelta(t, availabilityScore, 0.5, 1e-9)
 }
