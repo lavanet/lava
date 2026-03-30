@@ -1,0 +1,169 @@
+{
+    "proposal": {
+        "title": "Add Specs: Movement",
+        "description": "Adding new specification support for relaying Movement data on Lava",
+        "specs": [
+            {
+                "index": "MOVEMENT",
+                "name": "movement mainnet",
+                "enabled": true,
+                "imports": [
+                    "APT1"
+                ],
+                "reliability_threshold": 268435455,
+                "data_reliability_enabled": true,
+                "block_distance_for_finalized_data": 0,
+                "blocks_in_finalization_proof": 1,
+                "average_block_time": 10000,
+                "allowed_block_lag_for_qos_sync": 50,
+                "shares": 1,
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "5000000000"
+                },
+                "api_collections": [
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "GET",
+                            "add_on": ""
+                        },
+                        "apis": [
+                            {
+                                "name": "/transactions/wait_by_hash/{txn_hash}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            }
+                        ],
+                        "headers": [
+                            {
+                                "name": "x-aptos-gas-used",
+                                "kind": "pass_reply"
+                            }
+                        ],
+                        "inheritance_apis": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "126"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 8640
+                                    },
+                                    {
+                                      "extension": "archive",
+                                      "expected_value": "0"
+                                    }
+                                ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 8280
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "contributor": [
+                  "lava@1w3qs6ksgzy66rjljmsjnetlqpvvhl9qkvntf0a"
+                ],
+                "contributor_percentage": "0.025"
+            },
+            {
+                "index": "MOVEMENTT",
+                "name": "movement testnet bardock",
+                "enabled": true,
+                "imports": [
+                    "MOVEMENT"
+                ],
+                "reliability_threshold": 268435455,
+                "data_reliability_enabled": true,
+                "block_distance_for_finalized_data": 0,
+                "blocks_in_finalization_proof": 1,
+                "average_block_time": 1000,
+                "allowed_block_lag_for_qos_sync": 30,
+                "shares": 1,
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "5000000000"
+                },
+                "api_collections": [
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "GET",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "250"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 86400
+                                    },
+                                    {
+                                      "extension": "archive",
+                                      "expected_value": "0"
+                                    }
+                                ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 82800
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "contributor": [
+                  "lava@1w3qs6ksgzy66rjljmsjnetlqpvvhl9qkvntf0a"
+                ],
+                "contributor_percentage": "0.025"
+            }
+        ]
+    },
+    "deposit": "1750000000ulava"
+}

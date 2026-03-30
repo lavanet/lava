@@ -1,0 +1,11 @@
+# Intellij
+.idea/
+
+# macOS
+.DS_Store
+
+# vscode
+.vscode/
+
+# vim
+.*.sw?

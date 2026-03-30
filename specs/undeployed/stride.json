@@ -1,0 +1,1856 @@
+{
+    "proposal": {
+      "title": "Add Specs: Stride",
+      "description": "Adding new specification support for relaying Stride data on Lava",
+      "specs": [
+        {
+          "index": "STRIDE",
+          "name": "stride mainnet",
+          "enabled": true,
+          "imports": [
+            "COSMOSSDK"
+          ],
+          "reliability_threshold": 268435455,
+          "data_reliability_enabled": true,
+          "block_distance_for_finalized_data": 0,
+          "blocks_in_finalization_proof": 1,
+          "average_block_time": 6000,
+          "allowed_block_lag_for_qos_sync": 2,
+          "shares": 1,
+          "min_stake_provider": {
+            "denom": "ulava",
+            "amount": "5000000000"
+          },
+          "api_collections": [
+            {
+              "enabled": true,
+              "collection_data": {
+                "api_interface": "rest",
+                "internal_path": "",
+                "type": "GET",
+                "add_on": ""
+              },
+              "apis": [
+                {
+                  "name": "/mint/v1beta1/epoch_provisions",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "/mint/v1beta1/params",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "/Stridelabs/stride/epochs",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "/Stridelabs/stride/epochs/current_epoch",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "/Stridelabs/stride/epochs/epoch_info",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "/Stride-Labs/stride/icacallbacks/callback_data",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "/Stride-Labs/stride/icacallbacks/callback_data/{callbackKey}",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "/Stride-Labs/stride/icacallbacks/params",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "/Stride-Labs/stride/records/deposit_record",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "/Stride-Labs/stride/records/deposit_record/{id}",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "/Stride-Labs/stride/records/epoch_unbonding_record",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "/Stride-Labs/stride/records/epoch_unbonding_record/{epochNumber}",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "/Stride-Labs/stride/records/user_redemption_record",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "/Stride-Labs/stride/records/user_redemption_record/{id}",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "/Stride-Labs/stride/records/user_redemption_record_for_user/{chainId}/{day}/{address}/{limit}",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "/StrideLabs/stride/records/params",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "/Stride-Labs/stride/stakeibc/epoch_tracker",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "/Stride-Labs/stride/stakeibc/epoch_tracker/{epochIdentifier}",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "/Stride-Labs/stride/stakeibc/host_zone",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "/Stride-Labs/stride/stakeibc/host_zone/{chain_id}",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "/Stride-Labs/stride/stakeibc/ica_account",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "/Stride-Labs/stride/stakeibc/module_address/{name}",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "/Stride-Labs/stride/stakeibc/validators/{chain_id}",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "/Stridelabs/stride/stakeibc/params",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                }
+              ],
+              "headers": [],
+              "inheritance_apis": [],
+              "parse_directives": [],
+              "verifications": [
+                {
+                  "name": "chain-id",
+                  "values": [
+                    {
+                      "expected_value": "stride-1"
+                    }
+                  ]
+                },
+                {
+                  "name": "pruning",
+                  "values": [
+                    {
+                      "latest_distance": 14400
+                    },
+                    {
+                      "extension": "archive",
+                      "latest_distance": 1
+                    }
+                  ]
+                }
+              ],
+              "extensions": [
+                {
+                  "name": "archive",
+                  "cu_multiplier": 5,
+                  "rule": {
+                    "block": 14250
+                  }
+                }
+              ]
+            },
+            {
+              "enabled": true,
+              "collection_data": {
+                "api_interface": "grpc",
+                "internal_path": "",
+                "type": "",
+                "add_on": ""
+              },
+              "apis": [
+                {
+                  "name": "interchain_security.ccv.consumer.v1.Query/QueryNextFeeDistribution",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "interchain_security.ccv.consumer.v1.Query/QueryParams",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "interchain_security.ccv.consumer.v1.Query/QueryProviderInfo",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "interchain_security.ccv.consumer.v1.Query/QueryThrottleState",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "packetforward.v1.Query/Params",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "ratelimit.v1.Query/AllBlacklistedDenoms",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "ratelimit.v1.Query/AllRateLimits",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "ratelimit.v1.Query/AllWhitelistedAdresses",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "ratelimit.v1.Query/RateLimit",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "ratelimit.v1.Query/RateLimitsByChainId",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "ratelimit.v1.Query/RateLimitsByChannelId",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.autopilot.Query/Params",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.claim.Query/ClaimMetadata",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.claim.Query/ClaimRecord",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.claim.Query/ClaimStatus",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.claim.Query/ClaimableForAction",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.claim.Query/DistributorAccountBalance",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.claim.Query/Params",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.claim.Query/TotalClaimable",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.claim.Query/UserVestings",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.epochs.Query/EpochInfo",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.epochs.Query/EpochInfos",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.epochs.Query/CurrentEpoch",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.icacallbacks.Query/CallbackData",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.icacallbacks.Query/CallbackDataAll",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.icacallbacks.Query/Params",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.icaoracle.Query/ActiveOracles",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.icaoracle.Query/AllOracles",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.icaoracle.Query/Metrics",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.icaoracle.Query/Oracle",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.mint.v1beta1.Query/EpochProvisions",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.mint.v1beta1.Query/Params",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.records.Query/DepositRecord",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.records.Query/DepositRecordAll",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.records.Query/DepositRecordByHost",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.records.Query/EpochUnbondingRecord",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.records.Query/EpochUnbondingRecordAll",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.records.Query/LSMDeposits",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.records.Query/Params",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.records.Query/UserRedemptionRecord",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.records.Query/UserRedemptionRecordAll",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.records.Query/UserRedemptionRecordForUser",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.stakedym.Query/DelegationRecords",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.stakedym.Query/HostZone",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.stakedym.Query/RedemptionRecord",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.stakedym.Query/RedemptionRecords",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.stakedym.Query/SlashRecords",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.stakedym.Query/UnbondingRecords",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.stakeibc.Query/AddressUnbondings",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.stakeibc.Query/AllTradeRoutes",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.stakeibc.Query/EpochTracker",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.stakeibc.Query/EpochTrackerAll",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.stakeibc.Query/HostZone",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.stakeibc.Query/HostZoneAll",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.stakeibc.Query/InterchainAccountFromAddress",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.stakeibc.Query/NextPacketSequence",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.stakeibc.Query/Params",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.stakeibc.Query/Validators",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.staketia.Query/DelegationRecords",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.staketia.Query/HostZone",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.staketia.Query/RedemptionRecord",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.staketia.Query/RedemptionRecords",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.staketia.Query/SlashRecords",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "stride.staketia.Query/UnbondingRecords",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                },
+                {
+                  "name": "vesting.v1.Query/Balances",
+                  "block_parsing": {
+                    "parser_arg": [
+                      "latest"
+                    ],
+                    "parser_func": "DEFAULT"
+                  },
+                  "compute_units": 10,
+                  "enabled": true,
+                  "category": {
+                    "deterministic": true,
+                    "local": false,
+                    "subscription": false,
+                    "stateful": 0
+                  },
+                  "extra_compute_units": 0
+                }
+              ],
+              "headers": [],
+              "inheritance_apis": [],
+              "parse_directives": [],
+              "verifications": [
+                {
+                  "name": "chain-id",
+                  "values": [
+                    {
+                      "expected_value": "stride-1"
+                    }
+                  ]
+                },
+                {
+                  "name": "pruning",
+                  "values": [
+                    {
+                      "latest_distance": 14900
+                    },
+                    {
+                      "extension": "archive",
+                      "latest_distance": 1
+                    }
+                  ]
+                }
+              ],
+              "extensions": [
+                {
+                  "name": "archive",
+                  "cu_multiplier": 5,
+                  "rule": {
+                    "block": 14250
+                  }
+                }
+              ]
+            },
+            {
+              "enabled": true,
+              "collection_data": {
+                "api_interface": "tendermintrpc",
+                "internal_path": "",
+                "type": "",
+                "add_on": ""
+              },
+              "apis": [],
+              "headers": [],
+              "inheritance_apis": [],
+              "parse_directives": [],
+              "verifications": [
+                {
+                  "name": "chain-id",
+                  "values": [
+                    {
+                      "expected_value": "stride-1"
+                    }
+                  ]
+                },
+                {
+                  "name": "pruning",
+                  "values": [
+                    {
+                      "latest_distance": 14400
+                    },
+                    {
+                      "extension": "archive",
+                      "latest_distance": 1
+                    }
+                  ]
+                }
+              ],
+              "extensions": [
+                {
+                  "name": "archive",
+                  "cu_multiplier": 5,
+                  "rule": {
+                    "block": 14250
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": "STRIDET",
+          "name": "stride testnet",
+          "enabled": true,
+          "imports": [
+            "STRIDE"
+          ],
+          "reliability_threshold": 268435455,
+          "data_reliability_enabled": true,
+          "block_distance_for_finalized_data": 0,
+          "blocks_in_finalization_proof": 1,
+          "average_block_time": 6500,
+          "allowed_block_lag_for_qos_sync": 2,
+          "shares": 1,
+          "min_stake_provider": {
+            "denom": "ulava",
+            "amount": "5000000000"
+          },
+          "api_collections": [
+            {
+              "enabled": true,
+              "collection_data": {
+                "api_interface": "rest",
+                "internal_path": "",
+                "type": "GET",
+                "add_on": ""
+              },
+              "apis": [],
+              "headers": [],
+              "inheritance_apis": [],
+              "parse_directives": [],
+              "verifications": [
+                {
+                  "name": "chain-id",
+                  "values": [
+                    {
+                      "expected_value": "stride-internal-1"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "enabled": true,
+              "collection_data": {
+                "api_interface": "grpc",
+                "internal_path": "",
+                "type": "",
+                "add_on": ""
+              },
+              "apis": [],
+              "headers": [],
+              "inheritance_apis": [],
+              "parse_directives": [],
+              "verifications": [
+                {
+                  "name": "chain-id",
+                  "values": [
+                    {
+                      "expected_value": "stride-internal-1"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "enabled": true,
+              "collection_data": {
+                "api_interface": "tendermintrpc",
+                "internal_path": "",
+                "type": "",
+                "add_on": ""
+              },
+              "apis": [],
+              "headers": [],
+              "inheritance_apis": [],
+              "parse_directives": [],
+              "verifications": [
+                {
+                  "name": "chain-id",
+                  "values": [
+                    {
+                      "expected_value": "stride-internal-1"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "deposit": "10000000ulava"
+  }
