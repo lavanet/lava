@@ -83,18 +83,16 @@ func (rs *RewardDB) BatchSave(rewardEntities []*RewardEntity) (err error) {
 			if len(rewards) > batchSize {
 				// possible rewards is too big, try to save it in chunks
 				for i := 0; i < len(rewards); i += batchSize {
-					end := i + batchSize
-					if len(rewards) < i+batchSize {
-						end = len(rewards)
-					}
+					end := min(i+batchSize, len(rewards))
 					chunk := rewards[i:end]
 					err = db.BatchSave(chunk)
 					if err != nil {
 						return err
 					}
 				}
+			} else {
+				return err
 			}
-			return err
 		}
 	}
 
