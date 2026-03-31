@@ -2,6 +2,7 @@ package provideroptimizer
 
 import (
 	"context"
+	"errors"
 	"math"
 	"strings"
 	"sync"
@@ -611,7 +612,7 @@ func (po *ProviderOptimizer) getProviderData(providerAddress string) (providerDa
 }
 
 func (po *ProviderOptimizer) validateUpdateError(err error, errorMsg string) error {
-	if !score.TimeConflictingScoresError.Is(err) {
+	if !errors.Is(err, score.TimeConflictingScoresError) {
 		utils.LavaFormatError(errorMsg, err)
 	}
 	return err

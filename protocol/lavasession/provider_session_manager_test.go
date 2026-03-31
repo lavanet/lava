@@ -48,7 +48,7 @@ func prepareSession(t *testing.T, ctx context.Context) (*ProviderSessionManager,
 	require.Empty(t, psm.sessionsWithAllConsumers)
 	require.Nil(t, sps)
 	require.Error(t, err)
-	require.True(t, ConsumerNotRegisteredYet.Is(err))
+	require.True(t, errors.Is(err, ConsumerNotRegisteredYet))
 
 	// expect session to be missing, so we need to register it for the first time
 	sps, err = psm.RegisterProviderSessionWithConsumer(ctx, consumerOneAddress, epoch1, sessionId, relayNumber, maxCu, pairedProviders, projectId)
@@ -82,7 +82,7 @@ func prepareSessionForVirtualEpochTests(t *testing.T, ctx context.Context) (*Pro
 	require.Empty(t, psm.sessionsWithAllConsumers)
 	require.Nil(t, sps)
 	require.Error(t, err)
-	require.True(t, ConsumerNotRegisteredYet.Is(err))
+	require.True(t, errors.Is(err, ConsumerNotRegisteredYet))
 
 	// expect session to be missing, so we need to register it for the first time
 	sps, err = psm.RegisterProviderSessionWithConsumer(ctx, consumerOneAddress, epoch1, sessionId, relayNumber, maxCuForVirtualEpoch, pairedProviders, projectId)
@@ -150,7 +150,7 @@ func TestMissingCuFailureOnThreshold(t *testing.T) {
 	// (relayCu * number of requests {2}) !=
 	sps.lock.Lock() // Lock session (usually should be locked by GetSession but in this test we set it manually)
 	err = sps.PrepareSessionForUsage(ctx, relayCu, relayCu, 0.01, 0)
-	require.True(t, ProviderConsumerCuMisMatch.Is(err))
+	require.True(t, errors.Is(err, ProviderConsumerCuMisMatch))
 }
 
 func TestMissingMultipleMissingAttempts(t *testing.T) {
@@ -271,7 +271,7 @@ func TestPSMUpdateCuMaxCuReached(t *testing.T) {
 	err = sps.PrepareSessionForUsage(ctx, relayCu, maxCu+relayCu, 0, 0)
 	require.Error(t, err)
 	sps.lock.Unlock()
-	require.True(t, MaximumCULimitReachedByConsumer.Is(err))
+	require.True(t, errors.Is(err, MaximumCULimitReachedByConsumer))
 }
 
 func TestHappyFlowPSMVirtualEpoch(t *testing.T) {
@@ -313,7 +313,7 @@ func TestPSMVirtualEpochUpdateCuMaxCuReached(t *testing.T) {
 	err = sps.PrepareSessionForUsage(ctx, relayCu, (virtualEpoch+1)*maxCuForVirtualEpoch+relayCu, 0, virtualEpoch)
 	require.Error(t, err)
 	sps.lock.Unlock()
-	require.True(t, MaximumCULimitReachedByConsumer.Is(err))
+	require.True(t, errors.Is(err, MaximumCULimitReachedByConsumer))
 }
 
 func TestVirtualEpochMissingCu(t *testing.T) {
@@ -351,7 +351,7 @@ func TestPSMCUMisMatch(t *testing.T) {
 	err = sps.PrepareSessionForUsage(ctx, relayCu+1, relayCu, 0, 0)
 	require.Error(t, err)
 	sps.lock.Unlock()
-	require.True(t, ProviderConsumerCuMisMatch.Is(err))
+	require.True(t, errors.Is(err, ProviderConsumerCuMisMatch))
 }
 
 type testSessionData struct {
@@ -418,7 +418,7 @@ func TestPSMUsageSync(t *testing.T) {
 					relayNumToGet := sessionStoreTest.relayNum + uint64(rand.Intn(3))
 					_, err := psm.GetSession(ctx, consumerAddress, sessionStoreTest.epoch, sessionStoreTest.sessionID, relayNumToGet)
 					require.Error(t, err)
-					require.False(t, ConsumerNotRegisteredYet.Is(err))
+					require.False(t, errors.Is(err, ConsumerNotRegisteredYet))
 					sessionStoreTest.history = append(sessionStoreTest.history, ",TryToUseAgain")
 				}
 			} else {
@@ -440,7 +440,7 @@ func TestPSMUsageSync(t *testing.T) {
 						// this can be a first relay or after an error, so allow not registered error
 						if err != nil {
 							// first relay
-							require.True(t, ConsumerNotRegisteredYet.Is(err))
+							require.True(t, errors.Is(err, ConsumerNotRegisteredYet))
 							require.True(t, needsRegister)
 							needsRegister = false
 							utils.LavaFormatInfo("registered session", utils.Attribute{Key: "sessionID", Value: sessionStoreTest.sessionID}, utils.Attribute{Key: "epoch", Value: sessionStoreTest.epoch})
@@ -514,7 +514,7 @@ func TestPSMUsageSync(t *testing.T) {
 	}
 	// .IsValidEpoch(uint64(request.RelaySession.Epoch))
 	// .GetSession(context.Background(),consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum)
-	// on err: lavasession.ConsumerNotRegisteredYet.Is(err)
+	// on err: lavasession.errors.Is(err, ConsumerNotRegisteredYet)
 	// // .RegisterProviderSessionWithConsumer(consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum, maxCuForConsumer, selfProviderIndex)
 	// .PrepareSessionForUsage(relayCU, request.RelaySession.CuSum, request.RelaySession.RelayNum)
 	// simulate error: .OnSessionFailure(relaySession)

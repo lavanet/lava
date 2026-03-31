@@ -2,6 +2,7 @@ package lavasession
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -43,7 +44,7 @@ func TestHappyFlowE2EEmergency(t *testing.T) {
 			require.NotEmpty(t, psm.sessionsWithAllConsumers)
 			require.NotNil(t, sps)
 			require.NoError(t, err)
-			require.False(t, ConsumerNotRegisteredYet.Is(err))
+			require.False(t, errors.Is(err, ConsumerNotRegisteredYet))
 
 			// prepare session for usage
 			// as some iterations are skipped so usedCu doesn't increase and relayRequestTotalCU won't change
@@ -107,7 +108,7 @@ func TestHappyFlowEmergencyInConsumer(t *testing.T) {
 		require.NotEmpty(t, psm.sessionsWithAllConsumers)
 		require.NotNil(t, sps)
 		require.NoError(t, err)
-		require.False(t, ConsumerNotRegisteredYet.Is(err))
+		require.False(t, errors.Is(err, ConsumerNotRegisteredYet))
 
 		// prepare session for usage
 		err = sps.PrepareSessionForUsage(ctx, maxCuForVirtualEpoch, cs.Session.LatestRelayCu, 0, 0)
@@ -172,7 +173,7 @@ func prepareSessionsWithFirstRelay(t *testing.T, cuForFirstRequest uint64) (*Con
 		require.Empty(t, psm.sessionsWithAllConsumers)
 		require.Nil(t, sps)
 		require.Error(t, err)
-		require.True(t, ConsumerNotRegisteredYet.Is(err))
+		require.True(t, errors.Is(err, ConsumerNotRegisteredYet))
 		// expect session to be missing, so we need to register it for the first time
 		sps, err = psm.RegisterProviderSessionWithConsumer(ctx, consumerOneAddress, cs.Session.Parent.PairingEpoch, uint64(cs.Session.SessionId), cs.Session.RelayNum, cs.Session.Parent.MaxComputeUnits, pairedProviders, "projectIdTest")
 		// validate session was added
