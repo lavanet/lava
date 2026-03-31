@@ -169,13 +169,13 @@ Each shortfall re-evaluated against the current `refactor/smart-router` branch s
 - The test was last significantly modified in commit `bd37dbff8` (on main) and `e3055cfe6`, both before the extraction work.
 - **Verdict**: Valid issue but not caused by Phase 1 work. Low priority for Phase 1 exit — this is a test robustness improvement, not a code correctness issue.
 
-### #4 — Dependency cleanup: MOSTLY RESOLVED
+### #4 — Dependency cleanup: RESOLVED
 - `cosmos-sdk` module is **fully removed** from `go.mod` (no require, no replace).
 - `x/` directory convention is **fully removed** — types now live under `types/relay`, `types/spec`, `types/epoch`, `types/plans`, `types/protocol`.
-- Two `cosmossdk.io` utility libraries remain as dependencies:
-  - `cosmossdk.io/errors` — lightweight error wrapping (no blockchain coupling, ~200 lines)
-  - `cosmossdk.io/math` — decimal math used by score computations (no blockchain coupling)
-- **Verdict**: These are standalone utility modules published independently from cosmos-sdk. They have no blockchain state, no Cosmos SDK imports, and no chain coupling. Removing them would require replacing their functionality with stdlib equivalents (possible but low value). **Acceptable for Phase 1 — defer full removal to a future cleanup pass if desired.**
+- `cosmossdk.io/errors` — **removed**. Replaced with `errors.New()` / `errors.Is()` / `fmt.Errorf(...%w)` across 14 files.
+- `cosmossdk.io/math` — **removed**. `ComputeReputation`/`ComputeQoS` now return `float64`. `math.LegacyDec` eliminated from all code paths.
+- **Zero `cosmossdk.io` references remain in codebase or go.mod.**
+- **No further action needed.**
 
 ### #5 — Dockerfile cosmos references: STILL OPEN (low priority)
 - `cmd/lavap/Dockerfile` still exists with cosmos-sdk ldflags references:
@@ -193,7 +193,7 @@ Each shortfall re-evaluated against the current `refactor/smart-router` branch s
 
 ---
 
-## Action Plan
+## Action Plan (updated 2026-03-31)
 
 ### Must-do for Phase 1 exit
 
@@ -206,13 +206,37 @@ Each shortfall re-evaluated against the current `refactor/smart-router` branch s
 | # | Task | Effort | Rationale |
 |---|------|--------|-----------|
 | 2 | Fix `TestEndpointSortingFlow` in lavasession — replace timing-based polling with deterministic signaling (e.g. channel/sync.WaitGroup) | Medium | Pre-existing flaky test; not a regression but hurts CI confidence |
-| 3 | Remove `cosmossdk.io/errors` dependency — replace with `fmt.Errorf` / stdlib error wrapping | Small | Eliminates last cosmossdk.io reference; low value but clean |
-| 4 | Remove `cosmossdk.io/math` dependency — replace `math.LegacyDec` usage with `float64` or `math/big` | Medium | Only used in score computations; float64 is sufficient |
+
+### Completed (previously open)
+
+| # | Task | Resolution |
+|---|------|-----------|
+| 3 | Remove `cosmossdk.io/errors` dependency | Done — replaced with `errors.New()` / `errors.Is()` across 14 files |
+| 4 | Remove `cosmossdk.io/math` dependency | Done — replaced with `float64` in QoS computation |
+| 5 | Rename `x/` directory to `types/` | Done — `types/relay`, `types/spec`, `types/epoch`, `types/plans`, `types/protocol` |
+| 6 | Fix spec JSON decode compatibility | Done — `Coin.Amount` string, `ProvidersTypes` numeric, `ContributorPercentage` string |
+| 7 | Add `cmd/smartrouter` standalone binary | Done — primary build target, Makefile updated |
 
 ### Deferred (Phase 2 / post-fork)
 
 | # | Task | Rationale |
 |---|------|-----------|
-| 5 | Rename Go module path from `github.com/lavanet/lava/v5` to `github.com/magma-devs/smart-router` | Deferred to actual repo creation |
-| 6 | Write migration guide: `lavap rpcsmartrouter` → `smart-router rpcsmartrouter` | Phase 2 deliverable |
-| 7 | Community/enterprise gating with build tags + license validation | Phase 2 scope |
+| 8 | Rename Go module path from `github.com/lavanet/lava/v5` to target repo path | Deferred to actual repo creation |
+| 9 | Write migration guide: `lavap rpcsmartrouter` → `smart-router rpcsmartrouter` | Phase 2 deliverable |
+| 10 | Community/enterprise gating with build tags + license validation | Phase 2 scope |
+
+---
+
+## Current Acceptance Checklist Status (2026-03-31)
+
+| Criteria | Status |
+|----------|--------|
+| `go build ./cmd/smartrouter` succeeds | PASS |
+| `go test ./protocol/rpcsmartrouter/...` passes | PASS (all tests green) |
+| `go test ./protocol/lavasession/...` passes | 1 pre-existing flaky test (`TestEndpointSortingFlow`) |
+| Static specs from `specs/` load without decode errors | PASS |
+| No `cosmos-sdk` in dependency graph | PASS (fully removed) |
+| No `cosmossdk.io/*` in dependency graph | PASS (fully removed) |
+| No `x/` directory convention | PASS (renamed to `types/`) |
+| Standalone `smart-router` binary | PASS |
+| Dockerfile updated for smart-router | Open |
