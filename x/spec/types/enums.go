@@ -372,6 +372,12 @@ func (s Spec_ProvidersTypes) MarshalJSON() ([]byte, error) {
 }
 
 func (s *Spec_ProvidersTypes) UnmarshalJSON(b []byte) error {
+	// Accept both numeric (e.g. 1) and string (e.g. "static") representations.
+	var num int32
+	if err := json.Unmarshal(b, &num); err == nil {
+		*s = Spec_ProvidersTypes(num)
+		return nil
+	}
 	var j string
 	if err := json.Unmarshal(b, &j); err != nil {
 		return err

@@ -189,11 +189,11 @@ func CreateChainLibMocks(
 		cancelConnector()
 	}
 
-	spec, err := specutils.GetSpecFromLocalDir(getToTopMostPath+"specs/mainnet-1/specs/", specIndex)
-	if err != nil {
-		// try testnet as fallback
-		spec, err = specutils.GetSpecFromLocalDir(getToTopMostPath+"specs/testnet-2/specs/", specIndex)
-	}
+	// Load specs from all directories so cross-directory imports (e.g. LAV1 -> COSMOSSDK) resolve.
+	spec, err := specutils.GetSpecFromLocalDirs([]string{
+		getToTopMostPath + "specs/mainnet-1/specs/",
+		getToTopMostPath + "specs/testnet-2/specs/",
+	}, specIndex)
 	if err != nil {
 		cancelConnector()
 		return nil, nil, nil, nil, nil, err

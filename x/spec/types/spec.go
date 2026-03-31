@@ -1,15 +1,79 @@
 package types
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 )
 
 // Coin is a simple token denomination and amount pair, replacing sdk.Coin with
-// no Cosmos SDK dependency.
+// no Cosmos SDK dependency. Custom UnmarshalJSON handles the protobuf JSON
+// convention where Amount is encoded as a quoted string (e.g. "5000000000").
 type Coin struct {
 	Denom  string `json:"denom"`
 	Amount int64  `json:"amount"`
+}
+
+// UnmarshalJSON handles both quoted-string and numeric Amount values.
+// Protobuf JSON encoding uses strings for large integers: {"denom":"ulava","amount":"5000000000"}
+func (c *Coin) UnmarshalJSON(b []byte) error {
+	// Try a flexible intermediate representation first.
+	var raw struct {
+		Denom  string          `json:"denom"`
+		Amount json.RawMessage `json:"amount"`
+	}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	c.Denom = raw.Denom
+
+	if len(raw.Amount) == 0 {
+		c.Amount = 0
+		return nil
+	}
+
+	// Try numeric first, then quoted string.
+	if err := json.Unmarshal(raw.Amount, &c.Amount); err != nil {
+		var s string
+		if err2 := json.Unmarshal(raw.Amount, &s); err2 != nil {
+			return fmt.Errorf("Coin.Amount: expected number or string, got %s", string(raw.Amount))
+		}
+		_, err3 := fmt.Sscanf(s, "%d", &c.Amount)
+		if err3 != nil {
+			return fmt.Errorf("Coin.Amount: cannot parse %q as int64: %w", s, err3)
+		}
+	}
+	return nil
+}
+
+// FlexFloat64 is a float64 that accepts both string and numeric JSON values.
+// Protobuf/cosmos JSON encoding uses strings for decimal types (e.g. "0.015").
+type FlexFloat64 float64
+
+func (f *FlexFloat64) UnmarshalJSON(b []byte) error {
+	var num float64
+	if err := json.Unmarshal(b, &num); err == nil {
+		*f = FlexFloat64(num)
+		return nil
+	}
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return fmt.Errorf("FlexFloat64: expected number or string, got %s", string(b))
+	}
+	_, err := fmt.Sscanf(s, "%g", &num)
+	if err != nil {
+		return fmt.Errorf("FlexFloat64: cannot parse %q: %w", s, err)
+	}
+	*f = FlexFloat64(num)
+	return nil
+}
+
+func (f FlexFloat64) MarshalJSON() ([]byte, error) {
+	return json.Marshal(float64(f))
+}
+
+func (f FlexFloat64) Float64() float64 {
+	return float64(f)
 }
 
 // IsValid reports whether the coin has a non-empty denomination.
@@ -36,7 +100,7 @@ type Spec struct {
 	Imports                       []string            `json:"imports,omitempty"`
 	ApiCollections                []*ApiCollection    `json:"api_collections,omitempty"`
 	Contributor                   []string            `json:"contributor,omitempty"`
-	ContributorPercentage         *float64            `json:"contributor_percentage,omitempty"`
+	ContributorPercentage         *FlexFloat64        `json:"contributor_percentage,omitempty"`
 	Shares                        uint64              `json:"shares,omitempty"`
 	Identity                      string              `json:"identity,omitempty"`
 }
@@ -150,7 +214,7 @@ func (m *Spec) GetContributor() []string {
 	return nil
 }
 
-func (m *Spec) GetContributorPercentage() *float64 {
+func (m *Spec) GetContributorPercentage() *FlexFloat64 {
 	if m != nil {
 		return m.ContributorPercentage
 	}

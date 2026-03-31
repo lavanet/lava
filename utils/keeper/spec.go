@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -21,10 +20,10 @@ func decodeProposal(path string) (types.SpecAddProposalJSON, error) {
 	if err != nil {
 		return proposal, err
 	}
-	decoder := json.NewDecoder(bytes.NewReader(contents))
-	decoder.DisallowUnknownFields() // This will make the unmarshal fail if there are unused fields
-
-	err = decoder.Decode(&proposal)
+	// Note: we intentionally allow unknown fields because our standalone types
+	// are a subset of the full protobuf-generated spec types. Spec JSON files
+	// may contain fields (e.g. deprecated fields) that we don't model.
+	err = json.Unmarshal(contents, &proposal)
 	return proposal, err
 }
 
@@ -50,6 +49,36 @@ func GetSpecFromGitLab(repoURL string, index string) (types.Spec, error) {
 // Deprecated: Use specfetcher.FetchSpecFromGitLab for new code.
 func GetSpecFromGitLabWithToken(repoURL string, index string, gitlabToken string) (types.Spec, error) {
 	return specfetcher.FetchSpecFromGitLab(context.Background(), repoURL, index, gitlabToken)
+}
+
+// GetSpecFromLocalDirs loads specs from multiple directories, merging them into
+// a single pool before resolving the requested spec and its dependencies.
+// Later directories override earlier ones for the same spec index.
+func GetSpecFromLocalDirs(specPaths []string, index string) (types.Spec, error) {
+	allSpecs := map[string]types.Spec{}
+	for _, specPath := range specPaths {
+		_ = filepath.WalkDir(specPath, func(path string, d fs.DirEntry, err error) error {
+			if err != nil || d.IsDir() {
+				return nil
+			}
+			proposal, err := decodeProposal(path)
+			if err != nil {
+				return nil // skip unparseable files
+			}
+			for _, spec := range proposal.Proposal.Specs {
+				allSpecs[spec.Index] = spec
+			}
+			return nil
+		})
+	}
+	if len(allSpecs) == 0 {
+		return types.Spec{}, fmt.Errorf("no specs loaded from any of %v", specPaths)
+	}
+	spec, err := expandSpecWithDependencies(allSpecs, index)
+	if err != nil {
+		return types.Spec{}, err
+	}
+	return *spec, nil
 }
 
 func GetSpecFromLocalDir(specPath string, index string) (types.Spec, error) {
