@@ -1837,9 +1837,8 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 
 		// Apply health tracking based on error classification
 		if shouldMarkUnhealthy && targetEndpoint != nil {
-			if targetEndpoint.MarkUnhealthy() {
-				rpcss.smartRouterEndpointMetrics.SetEndpointOverallHealth(rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface, endpointName, false)
-			}
+			targetEndpoint.MarkUnhealthy()
+			rpcss.smartRouterEndpointMetrics.SetEndpointOverallHealth(rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface, endpointName, false)
 		}
 
 		return relayLatency, err, needsBackoff
@@ -1853,9 +1852,8 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 		needsBackoff = true                        // Both should backoff/retry
 
 		if shouldMarkUnhealthy && targetEndpoint != nil {
-			if targetEndpoint.MarkUnhealthy() {
-				rpcss.smartRouterEndpointMetrics.SetEndpointOverallHealth(rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface, endpointName, false)
-			}
+			targetEndpoint.MarkUnhealthy()
+			rpcss.smartRouterEndpointMetrics.SetEndpointOverallHealth(rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface, endpointName, false)
 			utils.LavaFormatDebug("endpoint returned error status",
 				utils.LogAttr("status", statusCode),
 				utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
@@ -1873,9 +1871,8 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 
 	// Success - reset endpoint health
 	if targetEndpoint != nil {
-		if targetEndpoint.ResetHealth() {
-			rpcss.smartRouterEndpointMetrics.SetEndpointOverallHealth(rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface, endpointName, true)
-		}
+		targetEndpoint.ResetHealth()
+		rpcss.smartRouterEndpointMetrics.SetEndpointOverallHealth(rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface, endpointName, true)
 	}
 
 	// Update relayResult with the response

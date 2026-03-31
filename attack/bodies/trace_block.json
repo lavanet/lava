@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","method":"trace_block","params":["latest"],"id":1}

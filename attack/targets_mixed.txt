@@ -1,0 +1,329 @@
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_blockNumber.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_chainId.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_gasPrice.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_getBlockByNumber.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_getBlockByNumber_full.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_getBalance_archive_base.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_getCode_archive_base.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_call_archive_base.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_syncing.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/net_version.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/web3_clientVersion.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/net_listening.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_protocolVersion.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_accounts.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_feeHistory.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_maxPriorityFeePerGas.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_getTransactionCount_base.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_getLogs_base.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_getStorageAt_base.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_estimateGas_base.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_getBlockTransactionCountByNumber.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_call_latest_base.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_createAccessList_base.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_getBlockReceipts.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/debug_traceBlockByNumber_call.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/debug_traceBlockByNumber_prestate.json
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_blockNumber.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_chainId.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_gasPrice.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_getBlockByNumber.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_getBlockByNumber_full.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_getBalance_archive_eth.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_getCode_archive_eth.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_call_archive_eth.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_syncing.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/net_version.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/web3_clientVersion.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/net_listening.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_protocolVersion.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_accounts.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_feeHistory.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_maxPriorityFeePerGas.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_getTransactionCount_eth.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_getLogs_eth.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_getStorageAt_eth.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_estimateGas_eth.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_getBlockTransactionCountByNumber.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_call_latest_eth.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_createAccessList_eth.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/eth_getBlockReceipts.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/debug_traceBlockByNumber_call.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/debug_traceBlockByNumber_prestate.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/trace_block.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/trace_replayBlockTransactions.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/trace_replayBlockTransactions_vm.json
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getSlot.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getBlockHeight.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getHealth.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getVersion.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getLatestBlockhash.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getEpochInfo.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getRecentPerformanceSamples.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getBalance.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getAccountInfo.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getTokenAccountsByOwner.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getSignaturesForAddress.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getSupply.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getInflationRate.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getMinimumBalanceForRentExemption.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getGenesisHash.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getIdentity.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getFirstAvailableBlock.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getStakeMinimumDelegation.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getRecentPrioritizationFees.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getTokenSupply.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getMultipleAccounts.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_isBlockhashValid.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getProgramAccounts.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getBlockProduction.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getVoteAccounts.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getClusterNodes.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getLargestAccounts.json
+
+POST https://solana-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/sol_getLeaderSchedule.json

@@ -231,45 +231,43 @@ func (e *Endpoint) CheckSupportForServices(addon string, extensions []string) (s
 	return true
 }
 
-// MarkUnhealthy increments connection refusals and disables endpoint if threshold exceeded.
-// Returns true if the endpoint transitioned to disabled on this call.
-func (e *Endpoint) MarkUnhealthy() bool {
+// MarkUnhealthy increments connection refusals and disables endpoint if threshold exceeded
+func (e *Endpoint) MarkUnhealthy() {
 	e.mu.Lock()
 	e.ConnectionRefusals++
-	becameDisabled := false
-	if e.ConnectionRefusals >= MaxConsecutiveConnectionAttempts && e.Enabled {
+	disabled := e.ConnectionRefusals >= MaxConsecutiveConnectionAttempts
+	if disabled {
 		e.Enabled = false
-		becameDisabled = true
 	}
-	refusals := e.ConnectionRefusals
+	addr, refusals, isDirect := e.NetworkAddress, e.ConnectionRefusals, e.IsDirectRPC()
 	e.mu.Unlock()
 
-	if becameDisabled {
+	if disabled {
 		utils.LavaFormatWarning("disabled unhealthy endpoint", nil,
-			utils.LogAttr("endpoint", e.NetworkAddress),
+			utils.LogAttr("endpoint", addr),
 			utils.LogAttr("refusals", refusals),
-			utils.LogAttr("is_direct_rpc", e.IsDirectRPC()),
+			utils.LogAttr("is_direct_rpc", isDirect),
 		)
 	}
-	return becameDisabled
 }
 
 // ResetHealth resets connection refusals and re-enables endpoint.
-// Returns true if the endpoint was disabled and is now re-enabled.
-func (e *Endpoint) ResetHealth() bool {
+// No-ops silently when the endpoint is already healthy to avoid log spam on epoch transitions.
+func (e *Endpoint) ResetHealth() {
 	e.mu.Lock()
-	wasDisabled := !e.Enabled
+	if e.ConnectionRefusals == 0 && e.Enabled {
+		e.mu.Unlock()
+		return
+	}
 	e.ConnectionRefusals = 0
 	e.Enabled = true
+	addr, isDirect := e.NetworkAddress, e.IsDirectRPC()
 	e.mu.Unlock()
 
-	if wasDisabled {
-		utils.LavaFormatInfo("re-enabled healthy endpoint",
-			utils.LogAttr("endpoint", e.NetworkAddress),
-			utils.LogAttr("is_direct_rpc", e.IsDirectRPC()),
-		)
-	}
-	return wasDisabled
+	utils.LavaFormatInfo("re-enabled healthy endpoint",
+		utils.LogAttr("endpoint", addr),
+		utils.LogAttr("is_direct_rpc", isDirect),
+	)
 }
 
 type SessionWithProvider struct {
@@ -795,6 +793,17 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 				defer endpoint.mu.Unlock()
 
 				if err != nil {
+					// If the request context was canceled (client disconnect), don't
+					// penalize the provider endpoint — it's not a connection refusal.
+					if ctx.Err() != nil {
+						utils.LavaFormatDebug("skipping ConnectionRefusals increment: request context canceled",
+							utils.LogAttr("err", err),
+							utils.LogAttr("ctx_err", ctx.Err()),
+							utils.LogAttr("provider endpoint", networkAddress),
+							utils.LogAttr("GUID", ctx),
+						)
+						return nil, false
+					}
 					endpoint.ConnectionRefusals++
 					utils.LavaFormatInfo("error connecting to provider",
 						utils.LogAttr("err", err),

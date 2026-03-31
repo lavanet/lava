@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","method":"getProgramAccounts","params":["TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",{"encoding":"base64","dataSlice":{"offset":0,"length":0},"filters":[{"dataSize":165},{"memcmp":{"offset":32,"bytes":"CRFZscVLBpHswKRPwrd7XNdnqJsCXaq3gFMXTaUspm3k"}}]}],"id":1}

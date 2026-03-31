@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","method":"getTokenAccountsByOwner","params":["CRFZscVLBpHswKRPwrd7XNdnqJsCXaq3gFMXTaUspm3k",{"programId":"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"},{"encoding":"jsonParsed"}],"id":1}

@@ -1,0 +1,40 @@
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/debug_traceBlockByNumber_call.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/debug_traceBlockByNumber_prestate.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/trace_block.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/trace_replayBlockTransactions.json
+
+POST https://base-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/trace_replayBlockTransactions_vm.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/debug_traceBlockByNumber_call.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/debug_traceBlockByNumber_prestate.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/trace_block.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/trace_replayBlockTransactions.json
+
+POST https://eth-jsonrpc.nadav.magmadevs.com:443
+Content-Type: application/json
+@bodies/trace_replayBlockTransactions_vm.json
+
