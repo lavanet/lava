@@ -3,6 +3,7 @@ package rpcsmartrouter
 import (
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -1830,8 +1831,18 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 			}
 		} else {
 			// Non-HTTP errors (timeout, connection refused, network errors)
-			// These indicate endpoint/network issues - mark unhealthy and backoff
-			shouldMarkUnhealthy = true
+			// These indicate endpoint/network issues - mark unhealthy and backoff.
+			// Exception: context.Canceled with a canceled request context means the
+			// client disconnected — not a provider fault, don't mark unhealthy.
+			if errors.Is(err, context.Canceled) && ctx.Err() != nil {
+				utils.LavaFormatDebug("skipping MarkUnhealthy: request context canceled (client disconnect)",
+					utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
+					utils.LogAttr("ctx_err", ctx.Err()),
+					utils.LogAttr("GUID", ctx),
+				)
+			} else {
+				shouldMarkUnhealthy = true
+			}
 			needsBackoff = true
 		}
 

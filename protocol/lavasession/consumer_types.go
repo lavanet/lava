@@ -777,6 +777,15 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 				defer endpoint.mu.Unlock()
 
 				if err != nil {
+					if ctx.Err() != nil {
+						utils.LavaFormatDebug("skipping ConnectionRefusals increment: request context canceled",
+							utils.LogAttr("err", err),
+							utils.LogAttr("ctx_err", ctx.Err()),
+							utils.LogAttr("provider endpoint", networkAddress),
+							utils.LogAttr("GUID", ctx),
+						)
+						return nil, false
+					}
 					endpoint.ConnectionRefusals++
 					utils.LavaFormatInfo("error connecting to provider",
 						utils.LogAttr("err", err),
