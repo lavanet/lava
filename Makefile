@@ -5,9 +5,16 @@ BINDIR ?= $(GOPATH)/bin
 install-all: install
 
 install:
+	go install -mod=readonly ./cmd/smartrouter
 	go install -mod=readonly ./cmd/lavap
 
+install-smartrouter:
+	go install -mod=readonly ./cmd/smartrouter
+
 build:
+	go build -mod=readonly -o build/smart-router ./cmd/smartrouter
+
+build-lavap:
 	go build -mod=readonly -o build/lavap ./cmd/lavap
 
 test:
@@ -22,4 +29,4 @@ lint:
 clean:
 	rm -rf build/
 
-.PHONY: install install-all build test test-all lint clean
+.PHONY: install install-all install-smartrouter build build-lavap test test-all lint clean
