@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/gogo/status"
+	"github.com/lavanet/lava/v5/utils"
 	"google.golang.org/grpc/codes"
 )
 
 const (
 	TimePerCU                           = uint64(100 * time.Millisecond)
-	MinimumTimePerRelayDelay            = time.Second
 	CacheWriteTimeout                   = 5 * time.Second
 	AverageWorldLatency                 = 300 * time.Millisecond
 	CommunicateWithLocalLavaNodeTimeout = (3 * time.Second) + AverageWorldLatency
@@ -26,8 +26,55 @@ const (
 )
 
 // DefaultTimeout is the configurable default timeout for relay processing.
-// It can be overridden via the --default-timeout flag on consumer and smart router commands.
+// It can be overridden via the --default-processing-timeout flag on consumer and smart router commands.
 var DefaultTimeout = time.Duration(DefaultTimeoutSeconds) * time.Second
+
+// MinimumTimePerRelayDelay is the minimum relay timeout floor used by GetTimePerCu.
+// It can be overridden via the --min-relay-timeout flag on consumer and smart router commands.
+var MinimumTimePerRelayDelay = time.Second
+
+// ValidateAndCapMinRelayTimeout ensures both DefaultTimeout and MinimumTimePerRelayDelay
+// are positive and that MinimumTimePerRelayDelay < DefaultTimeout. Called once at startup
+// after flags are parsed.
+func ValidateAndCapMinRelayTimeout() {
+	// Guard DefaultTimeout <= 0: GetTimeoutForProcessing returns 0, which flows into
+	// CapContextTimeout(ctx, 0) and causes an immediate DeadlineExceeded on every relay.
+	if DefaultTimeout <= 0 {
+		reset := time.Duration(DefaultTimeoutSeconds) * time.Second
+		utils.LavaFormatWarning("default-processing-timeout is zero or negative, resetting to default",
+			nil,
+			utils.LogAttr("invalid_value", DefaultTimeout),
+			utils.LogAttr("reset_to", reset),
+		)
+		DefaultTimeout = reset
+	}
+
+	if MinimumTimePerRelayDelay >= DefaultTimeout {
+		capped := DefaultTimeout / 2
+		// Integer division of a very small DefaultTimeout (< 2ns) rounds to 0.
+		// Clamp to at least 1ms so the floor never becomes zero.
+		if capped <= 0 {
+			capped = time.Millisecond
+		}
+		utils.LavaFormatWarning("min-relay-timeout >= default-processing-timeout, capping to 50% of processing timeout",
+			nil,
+			utils.LogAttr("min_relay_timeout", MinimumTimePerRelayDelay),
+			utils.LogAttr("default_processing_timeout", DefaultTimeout),
+			utils.LogAttr("capped_to", capped),
+		)
+		MinimumTimePerRelayDelay = capped
+	}
+
+	// Guard MinimumTimePerRelayDelay <= 0: GetTimePerCu returns 0 for low-CU methods,
+	// which feeds into CapContextTimeout and causes immediate timeouts.
+	if MinimumTimePerRelayDelay <= 0 {
+		utils.LavaFormatWarning("min-relay-timeout is zero or negative, resetting to 1s",
+			nil,
+			utils.LogAttr("invalid_value", MinimumTimePerRelayDelay),
+		)
+		MinimumTimePerRelayDelay = time.Second
+	}
+}
 
 func LocalNodeTimePerCu(cu uint64) time.Duration {
 	return BaseTimePerCU(cu)

@@ -2,6 +2,7 @@ package lavasession
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -777,8 +778,11 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 				defer endpoint.mu.Unlock()
 
 				if err != nil {
-					if ctx.Err() != nil {
-						utils.LavaFormatDebug("skipping ConnectionRefusals increment: request context canceled",
+					// context.Canceled means the client disconnected — not a provider fault.
+					// context.DeadlineExceeded means the request timed out; the endpoint may
+					// be slow or unreachable, so refusals should still be incremented.
+					if errors.Is(err, context.Canceled) && errors.Is(ctx.Err(), context.Canceled) {
+						utils.LavaFormatDebug("skipping ConnectionRefusals increment: request context canceled (client disconnect)",
 							utils.LogAttr("err", err),
 							utils.LogAttr("ctx_err", ctx.Err()),
 							utils.LogAttr("provider endpoint", networkAddress),

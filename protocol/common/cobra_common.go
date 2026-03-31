@@ -114,6 +114,7 @@ const (
 	MemoryGCThresholdGBFlagName      = "memory-gc-threshold-gb"     // Memory GC threshold in GB (0 = disabled)
 	MaxSessionsPerProviderFlagName   = "max-sessions-per-provider"  // Max number of sessions allowed per provider
 	DefaultProcessingTimeoutFlagName = "default-processing-timeout" // default timeout for relay processing
+	MinRelayTimeoutFlagName          = "min-relay-timeout"          // minimum relay timeout floor (default 1s)
 )
 
 const (
