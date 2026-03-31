@@ -56,6 +56,10 @@ const (
 	// Note: -32007 (ledger jump to snapshot) IS retryable as another provider may have the data
 	SolanaMissingInLongTermStorageCode = -32009
 
+	// SolanaBlockNotAvailableCode is the JSON-RPC error code for
+	// "Block not available for slot X", indicating a skipped slot or propagation delay.
+	SolanaBlockNotAvailableCode = -32004
+
 	// Solana non-retryable error patterns (message-based)
 	SolanaMissingInLongTermStorage = "missing in long-term storage"
 )
