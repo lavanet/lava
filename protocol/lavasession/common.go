@@ -7,18 +7,18 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"errors"
 	"math/big"
 	"net"
 	"strings"
 	"time"
 
-	sdkerrors "cosmossdk.io/errors"
 	"golang.org/x/exp/slices"
 
 	"github.com/gogo/status"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/v5/utils"
 	planstypes "github.com/lavanet/lava/v5/types/plans"
+	"github.com/lavanet/lava/v5/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -57,7 +57,7 @@ const (
 
 func IsSessionSyncLoss(err error) bool {
 	code := status.Code(err)
-	return code == codes.Code(SessionOutOfSyncError.ABCICode()) || sdkerrors.IsOf(err, SessionOutOfSyncError)
+	return code == codes.Code(SessionOutOfSyncGRPCCode) || errors.Is(err, SessionOutOfSyncError)
 }
 
 func ConnectGRPCClient(ctx context.Context, address string, allowInsecure bool, skipTLS bool, allowCompression bool) (*grpc.ClientConn, error) {

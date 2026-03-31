@@ -1,7 +1,8 @@
 package rpcInterfaceMessages
 
 import (
-	sdkerrors "cosmossdk.io/errors"
+	"errors"
+
 	"github.com/goccy/go-json"
 
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
@@ -10,7 +11,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 )
 
-var WontCalculateBatchHash = sdkerrors.New("Wont calculate batch hash", 892, "wont calculate batch message hash") // on batches we just wont calculate hashes, meaning we wont retry.
+var WontCalculateBatchHash = errors.New("wont calculate batch message hash") // on batches we just wont calculate hashes, meaning we wont retry.
 
 type ParsableRPCInput struct {
 	Result json.RawMessage

@@ -1,10 +1,8 @@
 package performance
 
-import (
-	sdkerrors "cosmossdk.io/errors"
-)
+import "errors"
 
 var (
-	NotConnectedError   = sdkerrors.New("Not Connected Error", 700, "No Connection To grpc server")
-	NotInitializedError = sdkerrors.New("Not Initialized Error", 701, "to use cache run initCache")
+	NotConnectedError   = errors.New("No Connection To grpc server")
+	NotInitializedError = errors.New("to use cache run initCache")
 )

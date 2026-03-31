@@ -10,12 +10,13 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/itchyny/gojq"
 
-	sdkerrors "cosmossdk.io/errors"
+	"errors"
+
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v5/utils"
-	"github.com/lavanet/lava/v5/utils/lavaslices"
 	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 	spectypes "github.com/lavanet/lava/v5/types/spec"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
 )
 
 const (
@@ -25,7 +26,7 @@ const (
 	MinimumHashLength = 32 // minimum hash length is 32 bits, which is MD5. SHA-1=40, SHA256=64, SHA512=128.
 )
 
-var ValueNotSetError = sdkerrors.New("Value Not Set ", 6662, "when trying to parse, the value that we attempted to parse did not exist")
+var ValueNotSetError = errors.New("when trying to parse, the value that we attempted to parse did not exist")
 
 type RPCInput interface {
 	GetParams() interface{}

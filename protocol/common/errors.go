@@ -2,18 +2,17 @@ package common
 
 import (
 	"bytes"
-
-	sdkerrors "cosmossdk.io/errors"
+	"errors"
 )
 
 var (
-	ContextDeadlineExceededError                = sdkerrors.New("ContextDeadlineExceeded Error", 300, "context deadline exceeded")
-	StatusCodeError504                          = sdkerrors.New("Disallowed StatusCode Error", 504, "Disallowed status code error (504)")
-	StatusCodeError429                          = sdkerrors.New("Disallowed StatusCode Error", 429, "Disallowed status code error (429)")
-	StatusCodeErrorStrict                       = sdkerrors.New("Disallowed StatusCode Error", 800, "Disallowed status code error (800)")
-	APINotSupportedError                        = sdkerrors.New("APINotSupported Error", 900, "api not supported")
-	SubscriptionNotFoundError                   = sdkerrors.New("SubscriptionNotFoundError Error", 901, "subscription not found")
-	ProviderFinalizationDataAccountabilityError = sdkerrors.New("ProviderFinalizationDataAccountability Error", 3365, "provider returned invalid finalization data, with accountability")
+	ContextDeadlineExceededError                = errors.New("context deadline exceeded")
+	StatusCodeError504                          = errors.New("Disallowed status code error (504)")
+	StatusCodeError429                          = errors.New("Disallowed status code error (429)")
+	StatusCodeErrorStrict                       = errors.New("Disallowed status code error (800)")
+	APINotSupportedError                        = errors.New("api not supported")
+	SubscriptionNotFoundError                   = errors.New("subscription not found")
+	ProviderFinalizationDataAccountabilityError = errors.New("provider returned invalid finalization data, with accountability")
 )
 
 // Error pattern constants for unsupported method detection

@@ -9,7 +9,8 @@ import (
 	"strings"
 	"time"
 
-	sdkerrors "cosmossdk.io/errors"
+	"errors"
+
 	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
@@ -17,9 +18,9 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	common "github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/metrics"
-	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 	spectypes "github.com/lavanet/lava/v5/types/spec"
+	"github.com/lavanet/lava/v5/utils"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -38,10 +39,10 @@ const (
 var (
 	TrailersToAddToHeaderResponse      = []string{RPCProviderNodeExtension, RpcProviderLoadRateHeader}
 	InvalidResponses                   = []string{"null", "", "nil", "undefined"}
-	FailedSendingSubscriptionToClients = sdkerrors.New("failed Sending Subscription To Clients", 1015, "Failed Sending Subscription To Clients connection might have been closed by the user")
-	NoActiveSubscriptionFound          = sdkerrors.New("failed finding an active subscription on provider side", 1016, "no active subscriptions for hashed params.")
+	FailedSendingSubscriptionToClients = errors.New("Failed Sending Subscription To Clients connection might have been closed by the user")
+	NoActiveSubscriptionFound          = errors.New("no active subscriptions for hashed params.")
 	MaxBatchRequestSize                = 0 // configured via --max-batch-request-size flag, 0 means unlimited
-	ErrBatchRequestSizeExceeded        = sdkerrors.New("batch request size exceeded", 1017, "batch request size exceeded the configured limit")
+	ErrBatchRequestSizeExceeded        = errors.New("batch request size exceeded the configured limit")
 )
 
 type RelayReplyWrapper struct {

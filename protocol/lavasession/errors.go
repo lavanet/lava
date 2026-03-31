@@ -1,45 +1,47 @@
 package lavasession
 
-import (
-	sdkerrors "cosmossdk.io/errors"
-)
+import "errors"
 
 var ( // Consumer Side Errors
-	PairingListEmptyError                   = sdkerrors.New("pairingListEmpty Error", 665, "No pairings available.") // client could not connect to any provider.
-	UnreachableCodeError                    = sdkerrors.New("UnreachableCode Error", 666, "Should not get here.")
-	AllProviderEndpointsDisabledError       = sdkerrors.New("AllProviderEndpointsDisabled Error", 667, "All endpoints are not available.") // a provider is completely unresponsive all endpoints are not available
-	MaximumNumberOfSessionsExceededError    = sdkerrors.New("MaximumNumberOfSessionsExceeded Error", 668, "Provider reached maximum number of active sessions.")
-	MaxComputeUnitsExceededError            = sdkerrors.New("MaxComputeUnitsExceeded Error", 669, "Consumer is trying to exceed the maximum number of compute units available.")
-	EpochMismatchError                      = sdkerrors.New("ReportingAnOldEpoch Error", 670, "Tried to Report to an older epoch")
-	AddressIndexWasNotFoundError            = sdkerrors.New("AddressIndexWasNotFound Error", 671, "address index was not found in list")
-	LockMisUseDetectedError                 = sdkerrors.New("LockMisUseDetected Error", 672, "Faulty use of locks detected")
-	SessionIsAlreadyBlockListedError        = sdkerrors.New("SessionIsAlreadyBlockListed Error", 673, "Session is already in block list")
-	NegativeComputeUnitsAmountError         = sdkerrors.New("NegativeComputeUnitsAmount", 674, "Tried to subtract to negative compute units amount")
-	ReportAndBlockProviderError             = sdkerrors.New("ReportAndBlockProvider Error", 675, "Report and block the provider")
-	BlockProviderError                      = sdkerrors.New("BlockProvider Error", 676, "Block the provider")
-	SessionOutOfSyncError                   = sdkerrors.New("SessionOutOfSync Error", 677, "Session went out of sync with the provider") // do no change the name, before also fixing the consumerSessionManager.ts file as it relies on the error message
-	MaximumNumberOfBlockListedSessionsError = sdkerrors.New("MaximumNumberOfBlockListedSessions Error", 678, "Provider reached maximum number of block listed sessions.")
-	SendRelayError                          = sdkerrors.New("SendRelay Error", 679, "Failed To Send Relay")
-	ContextDoneNoNeedToLockSelectionError   = sdkerrors.New("ContextDoneNoNeedToLockSelection Error", 687, "Context deadline exceeded while trying to lock selection")
-	BlockEndpointError                      = sdkerrors.New("BlockEndpoint Error", 688, "Block the endpoint")
-	ConsistencyPreValidationError           = sdkerrors.New("ConsistencyPreValidation Error", 699, "endpoint failed pre-request consistency validation")
+	PairingListEmptyError                   = errors.New("No pairings available.") // client could not connect to any provider.
+	UnreachableCodeError                    = errors.New("Should not get here.")
+	AllProviderEndpointsDisabledError       = errors.New("All endpoints are not available.") // a provider is completely unresponsive all endpoints are not available
+	MaximumNumberOfSessionsExceededError    = errors.New("Provider reached maximum number of active sessions.")
+	MaxComputeUnitsExceededError            = errors.New("Consumer is trying to exceed the maximum number of compute units available.")
+	EpochMismatchError                      = errors.New("Tried to Report to an older epoch")
+	AddressIndexWasNotFoundError            = errors.New("address index was not found in list")
+	LockMisUseDetectedError                 = errors.New("Faulty use of locks detected")
+	SessionIsAlreadyBlockListedError        = errors.New("Session is already in block list")
+	NegativeComputeUnitsAmountError         = errors.New("Tried to subtract to negative compute units amount")
+	ReportAndBlockProviderError             = errors.New("Report and block the provider")
+	BlockProviderError                      = errors.New("Block the provider")
+	SessionOutOfSyncError                   = errors.New("Session went out of sync with the provider") // do no change the name, before also fixing the consumerSessionManager.ts file as it relies on the error message
+	MaximumNumberOfBlockListedSessionsError = errors.New("Provider reached maximum number of block listed sessions.")
+	SendRelayError                          = errors.New("Failed To Send Relay")
+	ContextDoneNoNeedToLockSelectionError   = errors.New("Context deadline exceeded while trying to lock selection")
+	BlockEndpointError                      = errors.New("Block the endpoint")
+	ConsistencyPreValidationError           = errors.New("endpoint failed pre-request consistency validation")
 )
 
 var ( // Provider Side Errors
-	InvalidEpochError                                = sdkerrors.New("InvalidEpoch Error", 881, "Requested Epoch Is Too Old")
-	NewSessionWithRelayNumError                      = sdkerrors.New("NewSessionWithRelayNum Error", 882, "Requested Session With Relay Number Is Invalid")
-	ConsumerIsBlockListed                            = sdkerrors.New("ConsumerIsBlockListed Error", 883, "This Consumer Is Blocked.")
-	ConsumerNotRegisteredYet                         = sdkerrors.New("ConsumerNotActive Error", 884, "This Consumer Is Not Currently In The Pool.")
-	SessionDoesNotExist                              = sdkerrors.New("SessionDoesNotExist Error", 885, "This Session Id Does Not Exist.")
-	MaximumCULimitReachedByConsumer                  = sdkerrors.New("MaximumCULimitReachedByConsumer Error", 886, "Consumer reached maximum cu limit")
-	ProviderConsumerCuMisMatch                       = sdkerrors.New("ProviderConsumerCuMisMatch Error", 887, "Provider and Consumer disagree on total cu for session")
-	RelayNumberMismatch                              = sdkerrors.New("RelayNumberMismatch Error", 888, "Provider and Consumer disagree on relay number for session")
-	SubscriptionInitiationError                      = sdkerrors.New("SubscriptionInitiationError Error", 889, "Provider failed initiating subscription")
-	EpochIsNotRegisteredError                        = sdkerrors.New("EpochIsNotRegisteredError Error", 890, "Epoch is not registered in provider session manager")
-	ConsumerIsNotRegisteredError                     = sdkerrors.New("ConsumerIsNotRegisteredError Error", 891, "Consumer is not registered in provider session manager")
-	SubscriptionAlreadyExistsError                   = sdkerrors.New("SubscriptionAlreadyExists Error", 892, "Subscription already exists in single provider session")
-	SubscriptionPointerIsNilError                    = sdkerrors.New("SubscriptionPointerIsNil Error", 896, "Trying to unsubscribe a nil pointer.")
-	CouldNotFindIndexAsConsumerNotYetRegisteredError = sdkerrors.New("CouldNotFindIndexAsConsumerNotYetRegistered Error", 897, "fetching provider index from psm failed")
-	ProviderIndexMisMatchError                       = sdkerrors.New("ProviderIndexMisMatch Error", 898, "provider index mismatch")
-	SessionIdNotFoundError                           = sdkerrors.New("SessionIdNotFound Error", 899, "Session Id not found")
+	InvalidEpochError                                = errors.New("Requested Epoch Is Too Old")
+	NewSessionWithRelayNumError                      = errors.New("Requested Session With Relay Number Is Invalid")
+	ConsumerIsBlockListed                            = errors.New("This Consumer Is Blocked.")
+	ConsumerNotRegisteredYet                         = errors.New("This Consumer Is Not Currently In The Pool.")
+	SessionDoesNotExist                              = errors.New("This Session Id Does Not Exist.")
+	MaximumCULimitReachedByConsumer                  = errors.New("Consumer reached maximum cu limit")
+	ProviderConsumerCuMisMatch                       = errors.New("Provider and Consumer disagree on total cu for session")
+	RelayNumberMismatch                              = errors.New("Provider and Consumer disagree on relay number for session")
+	SubscriptionInitiationError                      = errors.New("Provider failed initiating subscription")
+	EpochIsNotRegisteredError                        = errors.New("Epoch is not registered in provider session manager")
+	ConsumerIsNotRegisteredError                     = errors.New("Consumer is not registered in provider session manager")
+	SubscriptionAlreadyExistsError                   = errors.New("Subscription already exists in single provider session")
+	SubscriptionPointerIsNilError                    = errors.New("Trying to unsubscribe a nil pointer.")
+	CouldNotFindIndexAsConsumerNotYetRegisteredError = errors.New("fetching provider index from psm failed")
+	ProviderIndexMisMatchError                       = errors.New("provider index mismatch")
+	SessionIdNotFoundError                           = errors.New("Session Id not found")
 )
+
+// SessionOutOfSyncGRPCCode is the gRPC status code used when wrapping SessionOutOfSyncError
+// as a gRPC status error. This value was historically derived from the cosmos SDK error code (677).
+const SessionOutOfSyncGRPCCode = 677

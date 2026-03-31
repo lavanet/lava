@@ -5,7 +5,8 @@ import (
 
 	"github.com/goccy/go-json"
 
-	sdkerrors "cosmossdk.io/errors"
+	"errors"
+
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/parser"
@@ -13,7 +14,7 @@ import (
 	"github.com/lavanet/lava/v5/utils/sigs"
 )
 
-var ErrFailedToConvertMessage = sdkerrors.New("RPC error", 1000, "failed to convert a message")
+var ErrFailedToConvertMessage = errors.New("failed to convert a message")
 
 // BatchNodeErrorOnAny controls batch request error detection:
 // - false (default): batch is an error only if ALL sub-requests failed

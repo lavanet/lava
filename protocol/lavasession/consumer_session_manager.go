@@ -10,15 +10,16 @@ import (
 	"sync/atomic"
 	"time"
 
-	sdkerrors "cosmossdk.io/errors"
+	"errors"
+
 	"github.com/lavanet/lava/v5/protocol/common"
 	metrics "github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
 	"github.com/lavanet/lava/v5/protocol/qos"
-	"github.com/lavanet/lava/v5/utils"
-	"github.com/lavanet/lava/v5/utils/rand"
 	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 	spectypes "github.com/lavanet/lava/v5/types/spec"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/rand"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -1552,7 +1553,7 @@ func (csm *ConsumerSessionManager) blockProvider(ctx context.Context, address st
 func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsumerSession, errorReceived error) error {
 	// consumerSession must be locked when getting here.
 	if err := consumerSession.VerifyLock(); err != nil {
-		return sdkerrors.Wrapf(err, "OnSessionFailure, consumerSession.lock must be locked before accessing this method, additional info:")
+		return fmt.Errorf("OnSessionFailure, consumerSession.lock must be locked before accessing this method, additional info: %w", err)
 	}
 	// redemptionSession = true, if we got this provider from the blocked provider list.
 	// if so, it means we already reported this provider and blocked it we do not need to do it again.
@@ -1565,19 +1566,19 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 		// if consumer session is already blocklisted, free it and return an error.
 		// CRITICAL: Must call Free() to release the lock even when returning early
 		consumerSession.Free(errorReceived)
-		return sdkerrors.Wrapf(SessionIsAlreadyBlockListedError, "trying to report a session failure of a blocklisted consumer session")
+		return fmt.Errorf("trying to report a session failure of a blocklisted consumer session: %w", SessionIsAlreadyBlockListedError)
 	}
 
 	// check if need to block & report
 	var blockProvider, reportProvider bool
-	if sdkerrors.IsOf(errorReceived, ReportAndBlockProviderError) {
+	if errors.Is(errorReceived, ReportAndBlockProviderError) {
 		blockProvider = true
 		reportProvider = true
-	} else if sdkerrors.IsOf(errorReceived, BlockProviderError) {
+	} else if errors.Is(errorReceived, BlockProviderError) {
 		blockProvider = true
 	}
 
-	if sdkerrors.IsOf(errorReceived, BlockEndpointError) {
+	if errors.Is(errorReceived, BlockEndpointError) {
 		utils.LavaFormatTrace("Got BlockEndpointError, blocking endpoint and session",
 			utils.LogAttr("error", errorReceived),
 			utils.LogAttr("sessionID", consumerSession.SessionId),
@@ -1692,7 +1693,7 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 ) error {
 	// release locks, update CU, relaynum etc..
 	if err := consumerSession.VerifyLock(); err != nil {
-		return sdkerrors.Wrapf(err, "OnSessionDone, consumerSession.lock must be locked before accessing this method")
+		return fmt.Errorf("OnSessionDone, consumerSession.lock must be locked before accessing this method: %w", err)
 	}
 
 	if consumerSession.Parent.atomicReadBlockedStatus() == BlockedProviderSessionUsedStatus {
@@ -1804,7 +1805,7 @@ func (csm *ConsumerSessionManager) GetAtomicPairingAddressesLength() uint64 {
 // On a successful Subscribe relay
 func (csm *ConsumerSessionManager) OnSessionDoneIncreaseCUOnly(consumerSession *SingleConsumerSession, latestServicedBlock int64) error {
 	if err := consumerSession.VerifyLock(); err != nil {
-		return sdkerrors.Wrapf(err, "OnSessionDoneIncreaseRelayAndCu consumerSession.lock must be locked before accessing this method")
+		return fmt.Errorf("OnSessionDoneIncreaseRelayAndCu consumerSession.lock must be locked before accessing this method: %w", err)
 	}
 
 	defer consumerSession.Free(nil) // we need to be locked here, if we didn't get it locked we try lock anyway
