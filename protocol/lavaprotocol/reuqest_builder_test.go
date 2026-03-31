@@ -7,7 +7,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/qos"
 	"github.com/lavanet/lava/v5/utils/sigs"
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 	"github.com/stretchr/testify/require"
 )
 

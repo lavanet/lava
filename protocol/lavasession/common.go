@@ -18,7 +18,7 @@ import (
 	"github.com/gogo/status"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v5/utils"
-	planstypes "github.com/lavanet/lava/v5/x/plans/types"
+	planstypes "github.com/lavanet/lava/v5/types/plans"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"

@@ -1,4 +1,4 @@
-package types
+package spec
 
 // SpecAddProposal represents a governance proposal to add or update one or
 // more specs.  It mirrors the original protobuf-generated type that was

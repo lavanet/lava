@@ -10,7 +10,7 @@ import (
 	"github.com/lavanet/lava/v5/utils"
 	speckeeper "github.com/lavanet/lava/v5/utils/keeper"
 	"github.com/lavanet/lava/v5/utils/specfetcher"
-	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+	spectypes "github.com/lavanet/lava/v5/types/spec"
 )
 
 const (

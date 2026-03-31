@@ -22,7 +22,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/grpcproxy/dyncodec"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/utils"
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"

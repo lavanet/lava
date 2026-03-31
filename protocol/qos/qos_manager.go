@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 )
 
 type QoSManager struct {

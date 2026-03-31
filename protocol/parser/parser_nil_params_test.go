@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 	"github.com/stretchr/testify/assert"
 )
 

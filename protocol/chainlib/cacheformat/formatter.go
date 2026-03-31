@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/lavanet/lava/v5/utils"
-	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+	spectypes "github.com/lavanet/lava/v5/types/spec"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )

@@ -11,8 +11,8 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/parser"
 	"github.com/lavanet/lava/v5/utils"
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+	pairingtypes "github.com/lavanet/lava/v5/types/relay"
+	spectypes "github.com/lavanet/lava/v5/types/spec"
 )
 
 // EndpointChainFetcher implements chaintracker.ChainFetcher for direct RPC endpoints.

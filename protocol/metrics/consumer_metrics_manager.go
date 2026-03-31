@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/v5/utils"
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )

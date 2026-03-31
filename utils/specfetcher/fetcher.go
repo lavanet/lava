@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/v5/utils"
-	"github.com/lavanet/lava/v5/x/spec/types"
+	types "github.com/lavanet/lava/v5/types/spec"
 )
 
 // Default timeouts and concurrency settings

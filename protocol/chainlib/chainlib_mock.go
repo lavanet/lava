@@ -15,8 +15,8 @@ import (
 	extensionslib "github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	common "github.com/lavanet/lava/v5/protocol/common"
 	metrics "github.com/lavanet/lava/v5/protocol/metrics"
-	types "github.com/lavanet/lava/v5/x/pairing/types"
-	types0 "github.com/lavanet/lava/v5/x/spec/types"
+	types "github.com/lavanet/lava/v5/types/relay"
+	types0 "github.com/lavanet/lava/v5/types/spec"
 )
 
 // MockChainParser is a mock of ChainParser interface.

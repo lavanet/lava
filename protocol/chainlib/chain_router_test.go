@@ -19,8 +19,8 @@ import (
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/utils"
-	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
-	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+	epochstoragetypes "github.com/lavanet/lava/v5/types/epoch"
+	spectypes "github.com/lavanet/lava/v5/types/spec"
 	"github.com/stretchr/testify/require"
 )
 

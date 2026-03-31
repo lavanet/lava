@@ -15,7 +15,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
-	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
+	protocoltypes "github.com/lavanet/lava/v5/types/protocol"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

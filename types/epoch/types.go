@@ -1,4 +1,4 @@
-package types
+package epoch
 
 import (
 	"context"

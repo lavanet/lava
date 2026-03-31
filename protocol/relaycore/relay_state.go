@@ -11,7 +11,7 @@ import (
 	common "github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/utils"
 	slices "github.com/lavanet/lava/v5/utils/lavaslices"
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 )
 
 type RetryHashCacheInf interface {

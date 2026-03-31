@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/lavanet/lava/v5/utils/lavaslices"
-	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+	spectypes "github.com/lavanet/lava/v5/types/spec"
 )
 
 const (

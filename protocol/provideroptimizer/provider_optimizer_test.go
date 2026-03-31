@@ -12,7 +12,7 @@ import (
 	"github.com/lavanet/lava/v5/utils/lavaslices"
 	"github.com/lavanet/lava/v5/utils/rand"
 	"github.com/lavanet/lava/v5/utils/score"
-	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+	spectypes "github.com/lavanet/lava/v5/types/spec"
 	"github.com/stretchr/testify/require"
 )
 

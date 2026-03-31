@@ -14,8 +14,8 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/common"
 	specutils "github.com/lavanet/lava/v5/utils/keeper"
-	plantypes "github.com/lavanet/lava/v5/x/plans/types"
-	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+	plantypes "github.com/lavanet/lava/v5/types/plans"
+	spectypes "github.com/lavanet/lava/v5/types/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

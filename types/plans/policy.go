@@ -1,7 +1,7 @@
-package types
+package plans
 
 import (
-	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
+	epochstoragetypes "github.com/lavanet/lava/v5/types/epoch"
 )
 
 // ChainRequirement describes the addon and extension requirements for a single chain.

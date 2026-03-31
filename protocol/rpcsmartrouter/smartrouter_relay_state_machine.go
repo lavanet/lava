@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	common "github.com/lavanet/lava/v5/protocol/common"

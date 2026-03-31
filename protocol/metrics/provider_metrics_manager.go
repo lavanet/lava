@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/v5/utils"
-	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+	spectypes "github.com/lavanet/lava/v5/types/spec"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )

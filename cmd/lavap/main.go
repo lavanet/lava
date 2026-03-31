@@ -7,7 +7,7 @@ import (
 
 	"github.com/lavanet/lava/v5/protocol/performance/connection"
 	"github.com/lavanet/lava/v5/protocol/rpcsmartrouter"
-	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
+	protocoltypes "github.com/lavanet/lava/v5/types/protocol"
 	"github.com/spf13/cobra"
 )
 

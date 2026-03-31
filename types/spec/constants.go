@@ -1,4 +1,4 @@
-package types
+package spec
 
 const (
 	NOT_APPLICABLE  int64 = -1

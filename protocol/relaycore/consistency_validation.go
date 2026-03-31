@@ -3,7 +3,7 @@ package relaycore
 import (
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol/protocolerrors"
 	"github.com/lavanet/lava/v5/utils"
-	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+	spectypes "github.com/lavanet/lava/v5/types/spec"
 )
 
 // ShouldSkipConsistencyValidation returns true when consistency validation

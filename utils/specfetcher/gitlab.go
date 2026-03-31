@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/lavanet/lava/v5/utils"
-	"github.com/lavanet/lava/v5/x/spec/types"
+	types "github.com/lavanet/lava/v5/types/spec"
 )
 
 // fetchFromGitLab fetches all specs from a GitLab repository.

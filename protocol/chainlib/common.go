@@ -18,8 +18,8 @@ import (
 	common "github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/utils"
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+	pairingtypes "github.com/lavanet/lava/v5/types/relay"
+	spectypes "github.com/lavanet/lava/v5/types/spec"
 	"google.golang.org/grpc/metadata"
 )
 

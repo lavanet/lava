@@ -1,7 +1,7 @@
 package lavasession
 
 import (
-	planstypes "github.com/lavanet/lava/v5/x/plans/types"
+	planstypes "github.com/lavanet/lava/v5/types/plans"
 )
 
 const maxGeoLatency int64 = 10000

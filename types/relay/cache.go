@@ -1,4 +1,4 @@
-package types
+package relay
 
 // BlockHashToHeight maps a block hash to its height, used in cache entries.
 type BlockHashToHeight struct {

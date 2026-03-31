@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	spectypes "github.com/lavanet/lava/v5/x/spec/types"
-	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
+	spectypes "github.com/lavanet/lava/v5/types/spec"
+	protocoltypes "github.com/lavanet/lava/v5/types/protocol"
 )
 
 const (

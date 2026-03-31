@@ -16,9 +16,9 @@ import (
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/lavaslices"
 	"github.com/lavanet/lava/v5/utils/maps"
-	epochstorage "github.com/lavanet/lava/v5/x/epochstorage/types"
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+	epochstorage "github.com/lavanet/lava/v5/types/epoch"
+	pairingtypes "github.com/lavanet/lava/v5/types/relay"
+	spectypes "github.com/lavanet/lava/v5/types/spec"
 )
 
 var (

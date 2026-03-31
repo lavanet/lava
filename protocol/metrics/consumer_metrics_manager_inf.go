@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 )
 
 // NoOpConsumerMetrics is returned by SafeMetrics when the caller passes nil.

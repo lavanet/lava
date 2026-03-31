@@ -2,7 +2,7 @@ package chainlib
 
 import (
 	"github.com/lavanet/lava/v5/protocol/common"
-	"github.com/lavanet/lava/v5/x/spec/types"
+	types "github.com/lavanet/lava/v5/types/spec"
 )
 
 func ShouldSendToAllProviders(chainMessage ChainMessage) bool {

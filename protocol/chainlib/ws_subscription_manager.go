@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/lavanet/lava/v5/protocol/metrics"
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 )
 
 // WSSubscriptionManager defines the interface for WebSocket subscription management.

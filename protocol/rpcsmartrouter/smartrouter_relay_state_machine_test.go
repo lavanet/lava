@@ -19,9 +19,9 @@ import (
 	"github.com/lavanet/lava/v5/protocol/relaycoretest"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/lavaslices"
-	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+	epochstoragetypes "github.com/lavanet/lava/v5/types/epoch"
+	pairingtypes "github.com/lavanet/lava/v5/types/relay"
+	spectypes "github.com/lavanet/lava/v5/types/spec"
 	"github.com/stretchr/testify/require"
 )
 

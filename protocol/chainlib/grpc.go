@@ -18,7 +18,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/grpcproxy"
 	dyncodec "github.com/lavanet/lava/v5/protocol/chainlib/grpcproxy/dyncodec"
 	"github.com/lavanet/lava/v5/protocol/parser"
-	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
+	protocoltypes "github.com/lavanet/lava/v5/types/protocol"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -36,8 +36,8 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/utils"
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+	pairingtypes "github.com/lavanet/lava/v5/types/relay"
+	spectypes "github.com/lavanet/lava/v5/types/spec"
 	"google.golang.org/grpc/status"
 )
 

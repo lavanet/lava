@@ -1,12 +1,12 @@
-package types
+package relay
 
 import (
 	"context"
 	"time"
 
 	grpc1 "github.com/cosmos/gogoproto/grpc"
-	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
-	plantypes "github.com/lavanet/lava/v5/x/plans/types"
+	epochstoragetypes "github.com/lavanet/lava/v5/types/epoch"
+	plantypes "github.com/lavanet/lava/v5/types/plans"
 	"google.golang.org/grpc"
 )
 

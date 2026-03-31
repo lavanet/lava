@@ -3,7 +3,7 @@ package specfetcher
 import (
 	"context"
 
-	"github.com/lavanet/lava/v5/x/spec/types"
+	types "github.com/lavanet/lava/v5/types/spec"
 )
 
 // FetchSpecFromGitHub fetches a spec from a GitHub repository.

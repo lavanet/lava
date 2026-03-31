@@ -11,7 +11,7 @@ import (
 
 	utils "github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/specfetcher"
-	"github.com/lavanet/lava/v5/x/spec/types"
+	types "github.com/lavanet/lava/v5/types/spec"
 )
 
 func decodeProposal(path string) (types.SpecAddProposalJSON, error) {

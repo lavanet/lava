@@ -13,7 +13,7 @@ import (
 	reflect "reflect"
 
 	lavasession "github.com/lavanet/lava/v5/protocol/lavasession"
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 	gomock "go.uber.org/mock/gomock"
 )
 

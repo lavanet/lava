@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/lavanet/lava/v5/utils"
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

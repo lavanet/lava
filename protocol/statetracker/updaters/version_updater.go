@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/v5/utils"
-	protocoltypes "github.com/lavanet/lava/v5/x/protocol/types"
+	protocoltypes "github.com/lavanet/lava/v5/types/protocol"
 )
 
 const (

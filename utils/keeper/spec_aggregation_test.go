@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/lavanet/lava/v5/x/spec/types"
+	types "github.com/lavanet/lava/v5/types/spec"
 	"github.com/stretchr/testify/require"
 )
 

@@ -3,7 +3,7 @@ package extensionslib
 import (
 	"testing"
 
-	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+	spectypes "github.com/lavanet/lava/v5/types/spec"
 	"github.com/stretchr/testify/require"
 )
 

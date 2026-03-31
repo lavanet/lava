@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/v5/utils"
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
-	planstypes "github.com/lavanet/lava/v5/x/plans/types"
+	pairingtypes "github.com/lavanet/lava/v5/types/relay"
+	planstypes "github.com/lavanet/lava/v5/types/plans"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"

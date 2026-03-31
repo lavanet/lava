@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/lavanet/lava/v5/protocol/common"
-	"github.com/lavanet/lava/v5/x/spec/types"
+	types "github.com/lavanet/lava/v5/types/spec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
