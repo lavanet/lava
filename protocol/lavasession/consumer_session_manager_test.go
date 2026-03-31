@@ -1664,3 +1664,55 @@ func TestGetReportedProviders_ReconnectRace(t *testing.T) {
 			"stale provider from previous epoch should not appear in reported providers")
 	}
 }
+
+// TestCanceledContextDoesNotPenalizeEndpoint verifies that when a request's context
+// is canceled before ConnectRawClientWithTimeout succeeds, the endpoint's
+// ConnectionRefusals counter is NOT incremented. This prevents genuinely healthy
+// providers from being disabled due to client-side cancellations.
+func TestCanceledContextDoesNotPenalizeEndpoint(t *testing.T) {
+	// Create an endpoint with no existing connections so that
+	// fetchEndpointConnectionFromConsumerSessionWithProvider is forced into the
+	// ConnectRawClientWithTimeout path.
+	endpoint := &Endpoint{
+		NetworkAddress: grpcListener,
+		Enabled:        true,
+		Connections:    make([]*EndpointConnection, 0),
+	}
+
+	cswp := &ConsumerSessionsWithProvider{
+		PublicLavaAddress: "test-provider",
+		Endpoints:         []*Endpoint{endpoint},
+		Sessions:          map[int64]*SingleConsumerSession{},
+		MaxComputeUnits:   200,
+		PairingEpoch:      firstEpochHeight,
+	}
+
+	// Pre-cancel the context before calling fetch.
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	connected, endpoints, _, err := cswp.fetchEndpointConnectionFromConsumerSessionWithProvider(
+		ctx,
+		false, // retryDisabledEndpoints
+		false, // getAllEndpoints
+		"",    // addon
+		nil,   // extensionNames
+	)
+
+	// Connection should fail (context canceled), but the endpoint must not be penalized.
+	require.False(t, connected)
+	require.Empty(t, endpoints)
+	// err may or may not be set depending on whether allDisabled triggers, but
+	// the critical assertion is on ConnectionRefusals.
+	_ = err
+
+	endpoint.mu.RLock()
+	refusals := endpoint.ConnectionRefusals
+	enabled := endpoint.Enabled
+	endpoint.mu.RUnlock()
+
+	require.Equal(t, uint64(0), refusals,
+		"ConnectionRefusals should remain 0 when context is canceled")
+	require.True(t, enabled,
+		"Endpoint should remain enabled when context is canceled")
+}
