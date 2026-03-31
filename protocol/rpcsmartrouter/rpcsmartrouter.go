@@ -31,7 +31,9 @@ package rpcsmartrouter
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -293,6 +295,42 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 	rpsr.epochTimer.Start(ctx)
 
 	relaysMonitorAggregator.StartMonitoring(ctx)
+
+	// Start optional debug HTTP server for integration tests.
+	// Only starts when --debug-address flag is provided. Off by default.
+	if options.cmdFlags.DebugAddress != "" {
+		debugMux := http.NewServeMux()
+		debugMux.HandleFunc("/debug/time-warp", func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				http.Error(w, "POST only", http.StatusMethodNotAllowed)
+				return
+			}
+			var body struct {
+				OffsetSeconds float64 `json:"offset_seconds"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				http.Error(w, "invalid JSON", http.StatusBadRequest)
+				return
+			}
+			offset := time.Duration(body.OffsetSeconds * float64(time.Second))
+			optimizers.Range(func(chainID string, opt *provideroptimizer.ProviderOptimizer) bool {
+				if offset == 0 {
+					opt.NowFunc = nil
+				} else {
+					opt.NowFunc = func() time.Time { return time.Now().Add(offset) }
+				}
+				return true
+			})
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprintf(w, `{"offset_seconds":%v,"applied_to_chains":true}`, body.OffsetSeconds)
+		})
+		go func() {
+			utils.LavaFormatInfo("Debug HTTP server started", utils.LogAttr("address", options.cmdFlags.DebugAddress))
+			if err := http.ListenAndServe(options.cmdFlags.DebugAddress, debugMux); err != nil {
+				utils.LavaFormatError("Debug HTTP server stopped", err)
+			}
+		}()
+	}
 
 	utils.LavaFormatInfo("RPCSmartRouter done setting up all endpoints, ready for requests")
 
@@ -1346,6 +1384,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				GitLabToken:              viper.GetString(common.GitLabTokenFlag),
 				EpochDuration:            epochDuration,
 				EnableSelectionStats:     viper.GetBool(common.EnableSelectionStatsHeaderFlag),
+				DebugAddress:             viper.GetString("debug-address"),
 			}
 
 			rpcSmartRouterSharedState := viper.GetBool(common.SharedStateFlag)
@@ -1376,6 +1415,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().Uint64Var(&lavasession.MaximumStreamsOverASingleConnection, lavasession.MaximumStreamsOverASingleConnectionFlag, lavasession.DefaultMaximumStreamsOverASingleConnection, "maximum number of parallel streams over a single provider connection")
 	cmdRPCSmartRouter.Flags().Bool(common.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
 	cmdRPCSmartRouter.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
+	cmdRPCSmartRouter.Flags().String("debug-address", "", "debug HTTP server for integration tests, e.g. :9999 — exposes /debug/time-warp to shift QoS clock")
 	cmdRPCSmartRouter.Flags().String(performance.PyroscopeAddressFlagName, "", "pyroscope server address for continuous profiling (e.g., http://pyroscope:4040)")
 	cmdRPCSmartRouter.Flags().String(performance.PyroscopeAppNameFlagName, "lavap-smartrouter", "pyroscope application name for identifying this service")
 	cmdRPCSmartRouter.Flags().Int(performance.PyroscopeMutexProfileFractionFlagName, performance.DefaultMutexProfileFraction, "mutex profile sampling rate (1 in N mutex events)")
