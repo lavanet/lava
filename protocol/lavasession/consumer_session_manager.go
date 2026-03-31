@@ -65,6 +65,10 @@ type ConsumerSessionManager struct {
 	// backup providers - emergency fallback providers when no regular providers are available
 	backupProviders map[string]*ConsumerSessionsWithProvider // key == provider address
 
+	// blocked backup providers - backup providers blocked this epoch due to failures.
+	// Separate from currentlyBlockedProviderAddresses because backup providers are not in validAddresses.
+	blockedBackupProviders map[string]struct{}
+
 	addonAddresses    map[string][]string // key is RouterKey.String()
 	reportedProviders *ReportedProviders
 
@@ -202,6 +206,15 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 			utils.Attribute{Key: "toEpoch", Value: epoch},
 		)
 	}
+	for blockedAddr := range csm.blockedBackupProviders {
+		csm.previousEpochBlockedProviders[blockedAddr] = struct{}{}
+		utils.LavaFormatDebug("UpdateAllProviders: Preserving blocked backup provider from previous epoch",
+			utils.Attribute{Key: "provider", Value: blockedAddr},
+			utils.Attribute{Key: "fromEpoch", Value: previousEpoch},
+			utils.Attribute{Key: "toEpoch", Value: epoch},
+		)
+	}
+	csm.blockedBackupProviders = make(map[string]struct{})
 
 	csm.secondChanceGivenToAddresses = make(map[string]struct{})
 
@@ -257,6 +270,17 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	csm.backupProviders = make(map[string]*ConsumerSessionsWithProvider, len(backupProviderList))
 	for _, provider := range backupProviderList {
 		csm.backupProviders[provider.PublicLavaAddress] = provider
+	}
+
+	// Re-block backup providers that were blocked in previous epoch and still exist in new backup list
+	for blockedAddr := range csm.previousEpochBlockedProviders {
+		if _, exists := csm.backupProviders[blockedAddr]; exists {
+			csm.blockedBackupProviders[blockedAddr] = struct{}{}
+			utils.LavaFormatDebug("UpdateAllProviders: Re-blocking backup provider from previous epoch",
+				utils.Attribute{Key: "provider", Value: blockedAddr},
+				utils.Attribute{Key: "epoch", Value: epoch},
+			)
+		}
 	}
 
 	// Clean up expired sticky sessions
@@ -1301,8 +1325,13 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProviderFromBacku
 	// Get valid backup provider addresses that support the required addon and extensions
 	backupProviderAddresses := []string{}
 	for providerAddress, consumerSessionsWithProvider := range csm.backupProviders {
-		// Skip if provider is in ignored list (already tried or failed)
+		// Skip if provider is in ignored list (already tried or failed this request)
 		if _, exists := ignoredProviders.providers[providerAddress]; exists {
+			continue
+		}
+
+		// Skip if provider is blocked this epoch due to repeated failures
+		if _, blocked := csm.blockedBackupProviders[providerAddress]; blocked {
 			continue
 		}
 
@@ -1525,8 +1554,16 @@ func (csm *ConsumerSessionManager) blockProvider(ctx context.Context, address st
 	err := csm.removeAddressFromValidAddresses(address)
 	if err != nil {
 		if AddressIndexWasNotFoundError.Is(err) {
-			// in case index wasn't  found just continue with the method
-			utils.LavaFormatDebug("address was not found in valid addresses list", utils.Attribute{Key: "address", Value: address}, utils.Attribute{Key: "error", Value: err}, utils.Attribute{Key: "validAddresses", Value: csm.validAddresses}, utils.LogAttr("GUID", ctx))
+			// Address not in validAddresses — check if it's a backup provider and block it there.
+			if _, isBackup := csm.backupProviders[address]; isBackup {
+				csm.blockedBackupProviders[address] = struct{}{}
+				// Backup providers are not part of the on-chain pairing list so they are not
+				// subject to consensus-level reporting (reportedProviders.ReportProvider).
+				// Blocking is tracked locally in blockedBackupProviders only.
+				utils.LavaFormatInfo("🔒 BLOCKING BACKUP PROVIDER", utils.LogAttr("address", address), utils.LogAttr("GUID", ctx))
+			} else {
+				utils.LavaFormatDebug("address was not found in valid addresses list", utils.Attribute{Key: "address", Value: address}, utils.Attribute{Key: "error", Value: err}, utils.Attribute{Key: "validAddresses", Value: csm.validAddresses}, utils.LogAttr("GUID", ctx))
+			}
 		} else {
 			return err
 		}
@@ -1856,38 +1893,51 @@ func (csm *ConsumerSessionManager) checkAndUnblockHealthyReBlockedProviders(ctx 
 		csm.lock.Unlock()
 	}()
 
+	type reBlockedProviderInfo struct {
+		cswp     *ConsumerSessionsWithProvider
+		isBackup bool
+	}
+
 	csm.lock.Lock()
 
 	// First pass: Identify which re-blocked providers had successful probes
-	providersNeedingComprehensiveProbe := make(map[string]*ConsumerSessionsWithProvider)
+	providersNeedingComprehensiveProbe := make(map[string]reBlockedProviderInfo)
 
 	for blockedAddr := range csm.previousEpochBlockedProviders {
 		cswp, exists := csm.pairing[blockedAddr]
+		isBackup := false
 		if !exists {
-			continue // Provider not in current pairing
+			cswp, exists = csm.backupProviders[blockedAddr]
+			isBackup = true
+		}
+		if !exists {
+			continue // Provider not in current pairing or backup list
 		}
 
-		// Check if provider is in reported providers
-		// If probe FAILED in this epoch, provider would be in reportedProviders (line 1208)
-		// If probe SUCCEEDED in this epoch, provider would NOT be in reportedProviders
-		if !csm.reportedProviders.IsReported(blockedAddr) {
-			// Probe succeeded! Provider is healthy, immediately unblock
+		// reportedProviders reflects probe outcomes only for pairingList providers —
+		// probeProviders only probes pairingList, so backup providers are never probed
+		// and will never appear in reportedProviders. Using !IsReported for a backup
+		// provider would incorrectly signal a successful probe and unblock it without
+		// any real health check. Always run an explicit probe for backup providers.
+		if !isBackup && !csm.reportedProviders.IsReported(blockedAddr) {
+			// Non-backup provider whose probe succeeded (it wasn't added to reportedProviders).
+			// Unblock immediately.
 			utils.LavaFormatInfo("Re-blocked provider's probe succeeded, immediately unblocking",
 				utils.Attribute{Key: "provider", Value: blockedAddr},
+				utils.Attribute{Key: "isBackup", Value: isBackup},
 				utils.Attribute{Key: "epoch", Value: epoch},
 				utils.LogAttr("GUID", ctx),
 			)
 			csm.validateAndReturnBlockedProviderToValidAddressesListLocked(blockedAddr)
-
-			// Clean up: Remove from reported providers if it was there from previous epoch
-			// This prevents periodic reconnection attempts from trying this provider again
 			csm.reportedProviders.RemoveReport(blockedAddr)
 		} else {
-			// Probe failed with tryReconnect=false
-			// Mark for comprehensive probe with tryReconnect=true to retry disabled endpoints
-			providersNeedingComprehensiveProbe[blockedAddr] = cswp
-			utils.LavaFormatDebug("Re-blocked provider's initial probe failed, will try comprehensive probe",
+			// Either a backup provider (needs an actual probe since it was never probed
+			// by probeProviders), or a non-backup whose initial probe failed.
+			// In both cases, run a comprehensive probe with tryReconnect=true.
+			providersNeedingComprehensiveProbe[blockedAddr] = reBlockedProviderInfo{cswp: cswp, isBackup: isBackup}
+			utils.LavaFormatDebug("Re-blocked provider needs explicit probe",
 				utils.Attribute{Key: "provider", Value: blockedAddr},
+				utils.Attribute{Key: "isBackup", Value: isBackup},
 				utils.Attribute{Key: "epoch", Value: epoch},
 				utils.LogAttr("GUID", ctx),
 			)
@@ -1896,40 +1946,39 @@ func (csm *ConsumerSessionManager) checkAndUnblockHealthyReBlockedProviders(ctx 
 	csm.lock.Unlock()
 
 	// Second pass: For providers that failed initial probe, try comprehensive probe with reconnection
-	// This gives disabled endpoints a chance to be retried and re-enabled
-	for blockedAddr, cswp := range providersNeedingComprehensiveProbe {
+	for blockedAddr, info := range providersNeedingComprehensiveProbe {
 		utils.LavaFormatDebug("Attempting comprehensive probe with endpoint reconnection",
 			utils.Attribute{Key: "provider", Value: blockedAddr},
+			utils.Attribute{Key: "isBackup", Value: info.isBackup},
 			utils.Attribute{Key: "epoch", Value: epoch},
 			utils.LogAttr("GUID", ctx),
 		)
 
-		// Probe with tryReconnect=TRUE - retry disabled endpoints
-		_, providerAddress, err := csm.probeProvider(
-			ctx,
-			cswp,
-			epoch,
-			true, // tryReconnect=TRUE: Comprehensive probe, retries disabled endpoints
-		)
+		_, providerAddress, err := csm.probeProvider(ctx, info.cswp, epoch, true)
 
 		if err == nil {
-			// Comprehensive probe succeeded! Provider recovered, unblock immediately
 			utils.LavaFormatInfo("Re-blocked provider's comprehensive probe succeeded, immediately unblocking",
 				utils.Attribute{Key: "provider", Value: providerAddress},
+				utils.Attribute{Key: "isBackup", Value: info.isBackup},
 				utils.Attribute{Key: "epoch", Value: epoch},
 				utils.LogAttr("GUID", ctx),
 			)
-			csm.validateAndReturnBlockedProviderToValidAddressesList(providerAddress)
+			if info.isBackup {
+				csm.lock.Lock()
+				delete(csm.blockedBackupProviders, providerAddress)
+				csm.lock.Unlock()
+			} else {
+				csm.validateAndReturnBlockedProviderToValidAddressesList(providerAddress)
+			}
 			csm.reportedProviders.RemoveReport(providerAddress)
 		} else {
-			// Still failing even with comprehensive probe, keep blocked
 			utils.LavaFormatDebug("Re-blocked provider still unhealthy after comprehensive probe, keeping blocked",
 				utils.Attribute{Key: "provider", Value: providerAddress},
+				utils.Attribute{Key: "isBackup", Value: info.isBackup},
 				utils.Attribute{Key: "error", Value: err.Error()},
 				utils.Attribute{Key: "epoch", Value: epoch},
 				utils.LogAttr("GUID", ctx),
 			)
-			// Provider stays in reportedProviders and will be retried by periodic reconnection (30s)
 		}
 	}
 }
@@ -1948,6 +1997,7 @@ func NewConsumerSessionManager(
 		consumerPublicAddress:  consumerPublicAddress,
 		qosManager:             qos.NewQoSManager(),
 		getLavaBlockHeight:     func() int64 { return 0 }, // default to 0, should be set by caller
+		blockedBackupProviders: make(map[string]struct{}),
 	}
 	csm.rpcEndpoint = rpcEndpoint
 	csm.providerOptimizer = providerOptimizer

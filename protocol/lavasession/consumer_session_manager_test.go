@@ -1716,3 +1716,152 @@ func TestCanceledContextDoesNotPenalizeEndpoint(t *testing.T) {
 	require.True(t, enabled,
 		"Endpoint should remain enabled when context is canceled")
 }
+
+// createBackupProviderList creates a single-entry backup provider list pointing at the live gRPC server.
+func createBackupProviderList(addr string) map[uint64]*ConsumerSessionsWithProvider {
+	endpoints := []*Endpoint{{
+		Connections:        []*EndpointConnection{},
+		NetworkAddress:     addr,
+		Enabled:            true,
+		ConnectionRefusals: 0,
+	}}
+	cswp := NewConsumerSessionWithProvider(
+		"lava@backup1",
+		endpoints,
+		1000,
+		firstEpochHeight,
+		sdk.NewCoin("ulava", sdk.NewInt(100)),
+	)
+	return map[uint64]*ConsumerSessionsWithProvider{0: cswp}
+}
+
+// TestBlockProvider_BackupProviderIsTracked verifies that calling blockProvider for a backup provider
+// adds it to blockedBackupProviders (not silently dropped because it's not in validAddresses).
+func TestBlockProvider_BackupProviderIsTracked(t *testing.T) {
+	csm := CreateConsumerSessionManager()
+	backupList := createBackupProviderList(grpcListener)
+	err := csm.UpdateAllProviders(firstEpochHeight, nil, backupList)
+	require.NoError(t, err)
+
+	backupAddr := backupList[0].PublicLavaAddress
+
+	// Block the backup provider
+	err = csm.blockProvider(context.Background(), backupAddr, false, firstEpochHeight, 0, 0, false, nil, nil)
+	require.NoError(t, err)
+
+	csm.lock.RLock()
+	_, blocked := csm.blockedBackupProviders[backupAddr]
+	csm.lock.RUnlock()
+
+	require.True(t, blocked, "backup provider should be in blockedBackupProviders after blockProvider call")
+}
+
+// TestBlockProvider_BackupProviderFilteredFromSelection verifies that a blocked backup provider is
+// not returned by getValidConsumerSessionsWithProviderFromBackupProviderList.
+func TestBlockProvider_BackupProviderFilteredFromSelection(t *testing.T) {
+	csm := CreateConsumerSessionManager()
+	backupList := createBackupProviderList(grpcListener)
+	err := csm.UpdateAllProviders(firstEpochHeight, nil, backupList)
+	require.NoError(t, err)
+
+	backupAddr := backupList[0].PublicLavaAddress
+
+	// Directly mark it blocked
+	csm.lock.Lock()
+	csm.blockedBackupProviders[backupAddr] = struct{}{}
+	csm.lock.Unlock()
+
+	// Attempting to get backup sessions should fail — no eligible backup providers
+	ignored := &ignoredProviders{providers: make(map[string]struct{}), currentEpoch: firstEpochHeight}
+	_, err = csm.getValidConsumerSessionsWithProviderFromBackupProviderList(
+		context.Background(), ignored, 1, servicedBlockNumber, "", nil, 0, 0, NewUsedProviders(nil),
+	)
+	require.Error(t, err, "blocked backup provider should not be selectable")
+}
+
+// TestUpdateAllProviders_BlockedBackupProviderPersistedAcrossEpoch verifies that a backup provider
+// blocked in epoch N is re-blocked in epoch N+1 via previousEpochBlockedProviders.
+func TestUpdateAllProviders_BlockedBackupProviderPersistedAcrossEpoch(t *testing.T) {
+	csm := CreateConsumerSessionManager()
+	backupList := createBackupProviderList(grpcListener)
+	err := csm.UpdateAllProviders(firstEpochHeight, nil, backupList)
+	require.NoError(t, err)
+
+	backupAddr := backupList[0].PublicLavaAddress
+
+	// Block it in the first epoch
+	err = csm.blockProvider(context.Background(), backupAddr, false, firstEpochHeight, 0, 0, false, nil, nil)
+	require.NoError(t, err)
+
+	csm.lock.RLock()
+	_, blocked := csm.blockedBackupProviders[backupAddr]
+	csm.lock.RUnlock()
+	require.True(t, blocked, "backup provider should be blocked before epoch transition")
+
+	// Use a non-listening endpoint for epoch 2 so the background probe fails and
+	// the provider stays blocked (avoids a race between the assertion and the
+	// probe goroutine spawned by UpdateAllProviders).
+	backupListEpoch2 := map[uint64]*ConsumerSessionsWithProvider{
+		0: NewConsumerSessionWithProvider(
+			backupAddr,
+			[]*Endpoint{{Connections: []*EndpointConnection{}, NetworkAddress: "127.0.0.1:1", Enabled: true}},
+			1000,
+			secondEpochHeight,
+			sdk.NewCoin("ulava", sdk.NewInt(100)),
+		),
+	}
+	err = csm.UpdateAllProviders(secondEpochHeight, nil, backupListEpoch2)
+	require.NoError(t, err)
+
+	// Should still be blocked in the new epoch
+	csm.lock.RLock()
+	_, stillBlocked := csm.blockedBackupProviders[backupAddr]
+	csm.lock.RUnlock()
+	require.True(t, stillBlocked, "backup provider should remain blocked after epoch transition")
+}
+
+// TestUpdateAllProviders_NormalProviderBlockedAsBackupInNextEpoch verifies that a provider blocked
+// as a normal provider in epoch N is re-blocked as a backup provider in epoch N+1 if it moves to the backup list.
+func TestUpdateAllProviders_NormalProviderBlockedAsBackupInNextEpoch(t *testing.T) {
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil)
+	require.NoError(t, err)
+
+	// Block a normal provider
+	normalAddr := pairingList[0].PublicLavaAddress
+	err = csm.blockProvider(context.Background(), normalAddr, false, firstEpochHeight, 0, 0, false, nil, nil)
+	require.NoError(t, err)
+
+	csm.lock.RLock()
+	_, inBlockedList := func() (int, bool) {
+		for _, addr := range csm.currentlyBlockedProviderAddresses {
+			if addr == normalAddr {
+				return 0, true
+			}
+		}
+		return 0, false
+	}()
+	csm.lock.RUnlock()
+	require.True(t, inBlockedList, "normal provider should be in currentlyBlockedProviderAddresses")
+
+	// In next epoch the same provider appears only in the backup list.
+	// Use a non-listening endpoint so the background probe fails and the provider
+	// stays blocked (avoids a race with the probe goroutine spawned by UpdateAllProviders).
+	backupList := map[uint64]*ConsumerSessionsWithProvider{
+		0: NewConsumerSessionWithProvider(
+			normalAddr,
+			[]*Endpoint{{Connections: []*EndpointConnection{}, NetworkAddress: "127.0.0.1:1", Enabled: true}},
+			1000,
+			secondEpochHeight,
+			sdk.NewCoin("ulava", sdk.NewInt(100)),
+		),
+	}
+	err = csm.UpdateAllProviders(secondEpochHeight, nil, backupList)
+	require.NoError(t, err)
+
+	csm.lock.RLock()
+	_, blockedAsBackup := csm.blockedBackupProviders[normalAddr]
+	csm.lock.RUnlock()
+	require.True(t, blockedAsBackup, "previously-blocked normal provider should be re-blocked as backup in new epoch")
+}
