@@ -163,11 +163,12 @@ Each shortfall re-evaluated against the current `refactor/smart-router` branch s
   - Cross-directory spec imports (LAV1 → COSMOSSDK) failed — fixed with `GetSpecFromLocalDirs` multi-directory loader.
 - **No further action needed.**
 
-### #3 — lavasession failing test: STILL OPEN (pre-existing, low priority)
-- `TestEndpointSortingFlow` fails consistently — waits 20s for async probe-based endpoint sorting that never completes.
-- **This is a pre-existing issue**, not a regression from the extraction. The test depends on gRPC probe connections to a mock server succeeding within a timing window. The probe mechanism uses async goroutines with `time.Sleep` polling.
-- The test was last significantly modified in commit `bd37dbff8` (on main) and `e3055cfe6`, both before the extraction work.
-- **Verdict**: Valid issue but not caused by Phase 1 work. Low priority for Phase 1 exit — this is a test robustness improvement, not a code correctness issue.
+### #3 — lavasession failing test: RESOLVED
+- `TestEndpointSortingFlow` now passes consistently.
+- Root cause: gRPC Probe() calls failed with "failed to marshal, message is *relay.ProbeRequest, want proto.Message" because standalone types didn't implement `proto.Message`.
+- Fix: Added `proto_compat.go` with `Reset()`, `String()`, `ProtoMessage()`, `Marshal()`, `Unmarshal()` methods on all gRPC message types. Uses JSON serialization.
+- Also fixed `SentinelError.Is(err)` patterns → `errors.Is(err, SentinelError)` after `cosmossdk.io/errors` removal.
+- **No further action needed.**
 
 ### #4 — Dependency cleanup: RESOLVED
 - `cosmos-sdk` module is **fully removed** from `go.mod` (no require, no replace).
@@ -177,15 +178,11 @@ Each shortfall re-evaluated against the current `refactor/smart-router` branch s
 - **Zero `cosmossdk.io` references remain in codebase or go.mod.**
 - **No further action needed.**
 
-### #5 — Dockerfile cosmos references: STILL OPEN (low priority)
-- `cmd/lavap/Dockerfile` still exists with cosmos-sdk ldflags references:
-  ```
-  -X github.com/cosmos/cosmos-sdk/version.Name="lava"
-  -X github.com/cosmos/cosmos-sdk/version.AppName="lavap"
-  -X github.com/cosmos/cosmos-sdk/version.Version=${GIT_VERSION}
-  ```
-- These ldflags reference a module that no longer exists in go.mod, so they are **silently ignored** (the linker skips unknown -X paths). The Docker build still works but the version metadata won't be embedded.
-- **Verdict**: Valid issue. The Dockerfile should be updated to build `cmd/smartrouter` and use local version ldflags. Low priority — no runtime impact.
+### #5 — Dockerfile cosmos references: RESOLVED
+- Old `cmd/lavap/Dockerfile` deleted.
+- New `Dockerfile` at repo root builds `cmd/smartrouter` with no cosmos-sdk ldflags.
+- ENTRYPOINT is `smart-router`, exposes ports 3360 (listener) and 7779 (metrics).
+- **No further action needed.**
 
 ### #6 — Branch hygiene: RESOLVED (N/A for implementation)
 - This is a team workflow item, not a code issue.
@@ -195,22 +192,12 @@ Each shortfall re-evaluated against the current `refactor/smart-router` branch s
 
 ## Action Plan (updated 2026-03-31)
 
-### Must-do for Phase 1 exit
-
-| # | Task | Effort | Status |
-|---|------|--------|--------|
-| 1 | Update `cmd/lavap/Dockerfile` to build `cmd/smartrouter`, remove cosmos-sdk ldflags, update ENTRYPOINT to `smart-router` | Small | Open |
-
-### Should-do (recommended but not blocking)
-
-| # | Task | Effort | Rationale |
-|---|------|--------|-----------|
-| 2 | Fix `TestEndpointSortingFlow` in lavasession — replace timing-based polling with deterministic signaling (e.g. channel/sync.WaitGroup) | Medium | Pre-existing flaky test; not a regression but hurts CI confidence |
-
-### Completed (previously open)
+### All Phase 1 items completed
 
 | # | Task | Resolution |
 |---|------|-----------|
+| 1 | Update Dockerfile for smart-router | Done — new root `Dockerfile` builds `cmd/smartrouter`, no cosmos-sdk ldflags |
+| 2 | Fix `TestEndpointSortingFlow` | Done — added gRPC proto compat methods; fixed `.Is()` patterns |
 | 3 | Remove `cosmossdk.io/errors` dependency | Done — replaced with `errors.New()` / `errors.Is()` across 14 files |
 | 4 | Remove `cosmossdk.io/math` dependency | Done — replaced with `float64` in QoS computation |
 | 5 | Rename `x/` directory to `types/` | Done — `types/relay`, `types/spec`, `types/epoch`, `types/plans`, `types/protocol` |
@@ -233,10 +220,12 @@ Each shortfall re-evaluated against the current `refactor/smart-router` branch s
 |----------|--------|
 | `go build ./cmd/smartrouter` succeeds | PASS |
 | `go test ./protocol/rpcsmartrouter/...` passes | PASS (all tests green) |
-| `go test ./protocol/lavasession/...` passes | 1 pre-existing flaky test (`TestEndpointSortingFlow`) |
+| `go test ./protocol/lavasession/...` passes | PASS (all tests green, including TestEndpointSortingFlow) |
 | Static specs from `specs/` load without decode errors | PASS |
 | No `cosmos-sdk` in dependency graph | PASS (fully removed) |
 | No `cosmossdk.io/*` in dependency graph | PASS (fully removed) |
 | No `x/` directory convention | PASS (renamed to `types/`) |
 | Standalone `smart-router` binary | PASS |
-| Dockerfile updated for smart-router | Open |
+| Dockerfile updated for smart-router | PASS |
+
+**All Phase 1 acceptance criteria are met.**
