@@ -2,6 +2,7 @@ package rpcconsumer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -253,6 +254,42 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	}
 
 	relaysMonitorAggregator.StartMonitoring(ctx)
+
+	// Start optional debug HTTP server for integration tests.
+	// Only starts when --debug-address flag is provided. Off by default.
+	if options.cmdFlags.DebugAddress != "" {
+		debugMux := http.NewServeMux()
+		debugMux.HandleFunc("/debug/time-warp", func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodPost {
+				http.Error(w, "POST only", http.StatusMethodNotAllowed)
+				return
+			}
+			var body struct {
+				OffsetSeconds float64 `json:"offset_seconds"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				http.Error(w, "invalid JSON", http.StatusBadRequest)
+				return
+			}
+			offset := time.Duration(body.OffsetSeconds * float64(time.Second))
+			optimizers.Range(func(chainID string, opt *provideroptimizer.ProviderOptimizer) bool {
+				if offset == 0 {
+					opt.NowFunc = nil
+				} else {
+					opt.NowFunc = func() time.Time { return time.Now().Add(offset) }
+				}
+				return true
+			})
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprintf(w, `{"offset_seconds":%v,"applied_to_chains":true}`, body.OffsetSeconds)
+		})
+		go func() {
+			utils.LavaFormatInfo("Debug HTTP server started", utils.LogAttr("address", options.cmdFlags.DebugAddress))
+			if err := http.ListenAndServe(options.cmdFlags.DebugAddress, debugMux); err != nil {
+				utils.LavaFormatError("Debug HTTP server stopped", err)
+			}
+		}()
+	}
 
 	utils.LavaFormatDebug("Starting Policy Updaters for all chains")
 	for chainId := range chainMutexes {
@@ -658,6 +695,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				GitHubToken:              viper.GetString(common.GitHubTokenFlag),
 				GitLabToken:              viper.GetString(common.GitLabTokenFlag),
 				EnableSelectionStats:     viper.GetBool(common.EnableSelectionStatsHeaderFlag),
+				DebugAddress:             viper.GetString("debug-address"),
 			}
 
 			rpcConsumerSharedState := viper.GetBool(common.SharedStateFlag)
@@ -690,6 +728,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().Uint64Var(&lavasession.MaximumStreamsOverASingleConnection, lavasession.MaximumStreamsOverASingleConnectionFlag, lavasession.DefaultMaximumStreamsOverASingleConnection, "maximum number of parallel streams over a single provider connection")
 	cmdRPCConsumer.Flags().Bool(common.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
 	cmdRPCConsumer.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
+	cmdRPCConsumer.Flags().String("debug-address", "", "debug HTTP server for integration tests, e.g. :9999 — exposes /debug/time-warp to shift QoS clock")
 	cmdRPCConsumer.Flags().String(performance.PyroscopeAddressFlagName, "", "pyroscope server address for continuous profiling (e.g., http://pyroscope:4040)")
 	cmdRPCConsumer.Flags().String(performance.PyroscopeAppNameFlagName, "lavap-consumer", "pyroscope application name for identifying this service")
 	cmdRPCConsumer.Flags().Int(performance.PyroscopeMutexProfileFractionFlagName, performance.DefaultMutexProfileFraction, "mutex profile sampling rate (1 in N mutex events)")
