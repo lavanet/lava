@@ -18,16 +18,16 @@ const (
 	EventPrefix = "lava_"
 )
 
-// wrappedLavaError wraps a cause error and preserves compatibility with
-// cosmossdk's causer-based error chain traversal (used by sdkerrors.Error.Is).
+// wrappedLavaError wraps a cause error and preserves error chain traversal
+// for callers using errors.Is() or pkg-errors Cause().
 type wrappedLavaError struct {
 	msg   string
 	cause error
 }
 
-func (e *wrappedLavaError) Error() string  { return e.msg }
-func (e *wrappedLavaError) Cause() error   { return e.cause }
-func (e *wrappedLavaError) Unwrap() error  { return e.cause }
+func (e *wrappedLavaError) Error() string { return e.msg }
+func (e *wrappedLavaError) Cause() error  { return e.cause }
+func (e *wrappedLavaError) Unwrap() error { return e.cause }
 
 const (
 	LAVA_LOG_TRACE = iota
@@ -392,8 +392,8 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 		rollingLoggerEvent.Msg(description)
 	}
 	// Return a wrappedLavaError that supports both Unwrap() (stdlib) and
-	// Cause() (cosmossdk/pkg-errors causer interface), preserving error chain
-	// traversal for callers using sdkerrors.Error.Is() or errors.Is().
+	// Cause() (pkg-errors causer interface), preserving error chain
+	// traversal for callers using errors.Is().
 	if err != nil {
 		return &wrappedLavaError{msg: output, cause: err}
 	}
