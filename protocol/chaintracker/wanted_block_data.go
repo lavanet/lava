@@ -48,7 +48,7 @@ func (wbd *WantedBlocksData) New(fromBlock, toBlock, specificBlock, latestBlock,
 			toBlockArg := fromBlockArg // [from,to] with only one block
 			wbd.specificBlock, err = NewBlockRange(fromBlockArg, toBlockArg, earliestBlockSaved, latestBlock)
 			if err != nil {
-				return InvalidRequestedSpecificBlock.Wrapf("specific %s", err.Error())
+				return fmt.Errorf("specific %s: %w", err.Error(), InvalidRequestedSpecificBlock)
 			}
 		}
 	} else {
@@ -102,16 +102,16 @@ func (wbd *WantedBlocksData) String() string {
 
 func NewBlockRange(fromBlock, toBlock, earliestBlockSaved, latestBlock int64) (br *BlockRange, err error) {
 	if fromBlock < 0 || toBlock < 0 || earliestBlockSaved < 0 {
-		return nil, RequestedBlocksOutOfRange.Wrapf("invalid input block range: from=%d to=%d earliest=%d latest=%d", fromBlock, toBlock, earliestBlockSaved, latestBlock)
+		return nil, fmt.Errorf("invalid input block range: from=%d to=%d earliest=%d latest=%d: %w", fromBlock, toBlock, earliestBlockSaved, latestBlock, RequestedBlocksOutOfRange)
 	}
 	if toBlock < fromBlock { // if we don't have a range, it should be set with NOT_APPLICABLE
-		return nil, InvalidRequestedBlocks.Wrapf("invalid input block range: from=%d to=%d earliest=%d latest=%d", fromBlock, toBlock, earliestBlockSaved, latestBlock)
+		return nil, fmt.Errorf("invalid input block range: from=%d to=%d earliest=%d latest=%d: %w", fromBlock, toBlock, earliestBlockSaved, latestBlock, InvalidRequestedBlocks)
 	}
 	if fromBlock < earliestBlockSaved {
-		return nil, RequestedBlocksOutOfRange.Wrapf("invalid input block fromBlock: from=%d to=%d earliest=%d latest=%d", fromBlock, toBlock, earliestBlockSaved, latestBlock)
+		return nil, fmt.Errorf("invalid input block fromBlock: from=%d to=%d earliest=%d latest=%d: %w", fromBlock, toBlock, earliestBlockSaved, latestBlock, RequestedBlocksOutOfRange)
 	}
 	if toBlock > latestBlock {
-		return nil, RequestedBlocksOutOfRange.Wrapf("invalid input block toBlock: from=%d to=%d latest=%d", fromBlock, toBlock, latestBlock)
+		return nil, fmt.Errorf("invalid input block toBlock: from=%d to=%d latest=%d: %w", fromBlock, toBlock, latestBlock, RequestedBlocksOutOfRange)
 	}
 	blockRange := &BlockRange{}
 	blockRange.fromBlock = fromBlock

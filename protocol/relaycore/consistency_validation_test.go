@@ -1,6 +1,7 @@
 package relaycore
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -158,7 +159,7 @@ func TestValidateEndpointCapability_TooFarBehind(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := ValidateEndpointCapability(tt.endpointLatestBlock, tt.seenBlock, tt.requestedBlock, config)
 			require.Error(t, err)
-			require.True(t, protocolerrors.ConsistencyError.Is(err), "error should be ConsistencyError")
+			require.True(t, errors.Is(err, protocolerrors.ConsistencyError), "error should be ConsistencyError")
 		})
 	}
 }

@@ -3,6 +3,7 @@ package chainlib
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -380,7 +381,7 @@ func TestJsonRpcBatchSizeLimit(t *testing.T) {
 	batchExceedingLimit := `[{"jsonrpc":"2.0","id":1,"method":"eth_chainId"},{"jsonrpc":"2.0","id":2,"method":"eth_chainId"},{"jsonrpc":"2.0","id":3,"method":"eth_chainId"}]`
 	_, err = chainParser.ParseMsg("", []byte(batchExceedingLimit), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 	require.Error(t, err)
-	require.True(t, ErrBatchRequestSizeExceeded.Is(err))
+	require.True(t, errors.Is(err, ErrBatchRequestSizeExceeded))
 
 	// Test: single request should always succeed regardless of limit
 	singleRequest := `{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}`

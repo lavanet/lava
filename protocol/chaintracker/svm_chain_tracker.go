@@ -93,7 +93,7 @@ func (cs *SVMChainTracker) FetchLatestBlockNum(ctx context.Context) (int64, erro
 
 func (cs *SVMChainTracker) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
 	if blockNum < cs.dataFetcher.GetAtomicLatestBlockNum()-int64(cs.dataFetcher.GetServerBlockMemory()) {
-		return "", ErrorFailedToFetchTooEarlyBlock.Wrapf("requested Block: %d, latest block: %d, server memory %d", blockNum, cs.dataFetcher.GetAtomicLatestBlockNum(), cs.dataFetcher.GetServerBlockMemory())
+		return "", fmt.Errorf("requested Block: %d, latest block: %d, server memory %d: %w", blockNum, cs.dataFetcher.GetAtomicLatestBlockNum(), cs.dataFetcher.GetServerBlockMemory(), ErrorFailedToFetchTooEarlyBlock)
 	}
 	blockHash, ok := cs.hashCache.Get(blockNum)
 	if ok {

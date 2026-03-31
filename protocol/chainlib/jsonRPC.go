@@ -465,12 +465,12 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		go apil.logger.AddMetricForHttp(metricsData, err, metadataValues)
 		if err != nil {
 			// Check if batch size limit exceeded - return 429 rate limit error
-			if ErrBatchRequestSizeExceeded.Is(err) {
+			if errors.Is(err, ErrBatchRequestSizeExceeded) {
 				errorResponse, _ := json.Marshal(common.JsonRpcBatchSizeExceededError)
 				return fiberCtx.Status(fiber.StatusTooManyRequests).SendString(string(errorResponse))
 			}
 
-			if common.APINotSupportedError.Is(err) {
+			if errors.Is(err, common.APINotSupportedError) {
 				// Convert error to JSON string and add headers
 				errorResponse, _ := json.Marshal(common.JsonRpcMethodNotFoundError)
 				return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(errorResponse))
@@ -707,7 +707,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		rpcMessage, nodeErr = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, true, nodeMessage.GetDisableErrorHandling())
 		if nodeErr != nil {
 			// here we are getting an error for every code that is not 200-300
-			if common.StatusCodeError504.Is(nodeErr) || common.StatusCodeError429.Is(nodeErr) || common.StatusCodeErrorStrict.Is(nodeErr) {
+			if errors.Is(nodeErr, common.StatusCodeError504) || errors.Is(nodeErr, common.StatusCodeError429) || errors.Is(nodeErr, common.StatusCodeErrorStrict) {
 				return nil, "", nil, utils.LavaFormatWarning("Received invalid status code", nodeErr, utils.Attribute{Key: "chainID", Value: cp.BaseChainProxy.ChainID}, utils.Attribute{Key: "apiName", Value: chainMessage.GetApi().Name})
 			}
 			// Validate if the error is related to the provider connection to the node or it is a valid error

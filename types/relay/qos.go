@@ -3,8 +3,6 @@ package relay
 import (
 	"fmt"
 	"math"
-
-	cosmosmath "cosmossdk.io/math"
 )
 
 // NewQualityOfServiceReport creates a QualityOfServiceReport with default zero values.
@@ -48,10 +46,9 @@ func defaultReputationConfig() reputationConfig {
 // Option configures a reputationConfig.
 type Option func(*reputationConfig)
 
-func WithSyncFactor(factor cosmosmath.LegacyDec) Option {
+func WithSyncFactor(factor float64) Option {
 	return func(c *reputationConfig) {
-		f, _ := factor.Float64()
-		c.syncFactor = f
+		c.syncFactor = factor
 	}
 }
 
@@ -61,17 +58,15 @@ func WithFailureCost(cost int64) Option {
 	}
 }
 
-func WithStrategyFactor(factor cosmosmath.LegacyDec) Option {
+func WithStrategyFactor(factor float64) Option {
 	return func(c *reputationConfig) {
-		f, _ := factor.Float64()
-		c.strategyFactor = f
+		c.strategyFactor = factor
 	}
 }
 
-func WithBlockErrorProbability(probability cosmosmath.LegacyDec) Option {
+func WithBlockErrorProbability(probability float64) Option {
 	return func(c *reputationConfig) {
-		f, _ := probability.Float64()
-		c.blockErrorProbability = f
+		c.blockErrorProbability = probability
 	}
 }
 
@@ -97,10 +92,10 @@ func (q *QualityOfServiceReport) Validate() error {
 //
 //	score = latency + sync*syncFactor*strategyFactor + ((1/availability) - 1) * failureCost
 //
-// Returns a math.LegacyDec for backward compatibility with callers.
-func (q *QualityOfServiceReport) ComputeReputation(opts ...Option) (cosmosmath.LegacyDec, error) {
+// Returns a float64 score.
+func (q *QualityOfServiceReport) ComputeReputation(opts ...Option) (float64, error) {
 	if err := q.Validate(); err != nil {
-		return cosmosmath.LegacyZeroDec(), err
+		return 0, err
 	}
 
 	cfg := defaultReputationConfig()
@@ -119,37 +114,23 @@ func (q *QualityOfServiceReport) ComputeReputation(opts ...Option) (cosmosmath.L
 	availabilityComponent := ((1.0 / q.Availability) - 1.0) * float64(cfg.failureCost)
 
 	total := latency + syncComponent + availabilityComponent
-
-	// Convert to LegacyDec: multiply by 10^18 precision then use NewDecWithPrec
-	const precision = 18
-	scaled := int64(math.Round(total * math.Pow(10, float64(precision))))
-	return cosmosmath.LegacyNewDecWithPrec(scaled, precision), nil
+	return total, nil
 }
 
-// ComputeReputationFloat64 is a convenience wrapper returning float64.
+// ComputeReputationFloat64 is an alias for ComputeReputation for backward compatibility.
 func (q *QualityOfServiceReport) ComputeReputationFloat64(opts ...Option) (float64, error) {
-	dec, err := q.ComputeReputation(opts...)
-	if err != nil {
-		return 0, err
-	}
-	f, err := dec.Float64()
-	if err != nil {
-		return 0, err
-	}
-	return f, nil
+	return q.ComputeReputation(opts...)
 }
 
 // ComputeQoS computes the geometric mean of availability, latency, and sync
 // scores (all expected in [0,1]). Returns an error if any score is out of range.
-func (q *QualityOfServiceReport) ComputeQoS() (cosmosmath.LegacyDec, error) {
+func (q *QualityOfServiceReport) ComputeQoS() (float64, error) {
 	if q.Availability > 1 || q.Availability < 0 ||
 		q.Latency > 1 || q.Latency < 0 ||
 		q.Sync > 1 || q.Sync < 0 {
-		return cosmosmath.LegacyZeroDec(), fmt.Errorf("QoS scores is not between 0-1")
+		return 0, fmt.Errorf("QoS scores is not between 0-1")
 	}
 
 	result := math.Cbrt(q.Availability * q.Sync * q.Latency)
-	const precision = 18
-	scaled := int64(math.Round(result * math.Pow(10, float64(precision))))
-	return cosmosmath.LegacyNewDecWithPrec(scaled, precision), nil
+	return result, nil
 }

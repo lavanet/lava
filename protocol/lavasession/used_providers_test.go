@@ -2,6 +2,7 @@ package lavasession
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -37,7 +38,7 @@ func TestUsedProviders(t *testing.T) {
 		require.Len(t, unwanted, 4)
 		require.Equal(t, 4, usedProviders.CurrentlyUsed())
 		// one provider gives a retry
-		usedProviders.RemoveUsed("test", NewRouterKey(nil), status.Error(codes.Code(SessionOutOfSyncError.ABCICode()), ""))
+		usedProviders.RemoveUsed("test", NewRouterKey(nil), status.Error(codes.Code(SessionOutOfSyncGRPCCode), ""))
 		require.Equal(t, 3, usedProviders.CurrentlyUsed())
 		unwanted = usedProviders.GetUnwantedProvidersToSend(NewRouterKey(nil))
 		require.Len(t, unwanted, 3)
@@ -109,7 +110,7 @@ func TestUsedProviderContextTimeout(t *testing.T) {
 		defer cancel()
 		canUseAgain := usedProviders.TryLockSelection(ctx)
 		require.Error(t, canUseAgain)
-		require.True(t, ContextDoneNoNeedToLockSelectionError.Is(canUseAgain))
+		require.True(t, errors.Is(canUseAgain, ContextDoneNoNeedToLockSelectionError))
 	})
 }
 
@@ -129,7 +130,7 @@ func TestShouldRetryWithThisError(t *testing.T) {
 	})
 
 	t.Run("Should retry session sync loss", func(t *testing.T) {
-		err := status.Error(codes.Code(SessionOutOfSyncError.ABCICode()), "session out of sync")
+		err := status.Error(codes.Code(SessionOutOfSyncGRPCCode), "session out of sync")
 		result := shouldRetryWithThisError(err)
 		require.True(t, result, "Should retry session sync loss")
 	})

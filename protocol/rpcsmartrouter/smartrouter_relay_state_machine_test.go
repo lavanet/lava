@@ -2,6 +2,7 @@ package rpcsmartrouter
 
 import (
 	context "context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -373,7 +374,7 @@ func TestSmartRouterStateMachineCircuitBreakerOnPairingErrors(t *testing.T) {
 				// Should be done - circuit breaker stopped retries
 				require.True(t, task.IsDone())
 				require.Error(t, task.Err)
-				require.True(t, lavasession.PairingListEmptyError.Is(task.Err))
+				require.True(t, errors.Is(task.Err, lavasession.PairingListEmptyError))
 				return // Test successful
 			default:
 				require.Fail(t, "Circuit breaker should have stopped retries after 2 pairing errors")

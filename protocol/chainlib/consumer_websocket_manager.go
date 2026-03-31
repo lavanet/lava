@@ -2,6 +2,7 @@ package chainlib
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"sync/atomic"
@@ -327,7 +328,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 			}
 
 			// Handle the case when the error is a method not found error
-			if common.APINotSupportedError.Is(err) {
+			if errors.Is(err, common.APINotSupportedError) {
 				msgData, err := json.Marshal(common.JsonRpcMethodNotFoundError)
 				if err != nil {
 					continue

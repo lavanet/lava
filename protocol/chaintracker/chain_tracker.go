@@ -3,6 +3,7 @@ package chaintracker
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -84,7 +85,7 @@ func (cs *DefaultChainTrackerFetcher) FetchLatestBlockNum(ctx context.Context) (
 
 func (cs *DefaultChainTrackerFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
 	if blockNum < cs.dataFetcher.GetAtomicLatestBlockNum()-int64(cs.dataFetcher.GetServerBlockMemory()) {
-		return "", ErrorFailedToFetchTooEarlyBlock.Wrapf("requested Block: %d, latest block: %d, server memory %d", blockNum, cs.dataFetcher.GetAtomicLatestBlockNum(), cs.dataFetcher.GetServerBlockMemory())
+		return "", fmt.Errorf("requested Block: %d, latest block: %d, server memory %d: %w", blockNum, cs.dataFetcher.GetAtomicLatestBlockNum(), cs.dataFetcher.GetServerBlockMemory(), ErrorFailedToFetchTooEarlyBlock)
 	}
 	return cs.chainFetcher.FetchBlockHashByNum(ctx, blockNum)
 }
@@ -489,7 +490,7 @@ func (cs *ChainTracker) fetchInitDataWithRetry(ctx context.Context) (err error) 
 	}
 	if err != nil {
 		// Add suggestion if error is due to context deadline exceeded
-		if common.ContextDeadlineExceededError.Is(err) {
+		if errors.Is(err, common.ContextDeadlineExceededError) {
 			utils.LavaFormatError("suggestion -- If you encounter a 'context deadline exceeded' error, consider increasing the timeout configuration in the 'node-url' config option. Sometimes, the initial HTTPS/WSS communication takes a long time to establish a connection.", nil)
 		}
 		return utils.LavaFormatError("critical -- failed fetching data from the node, chain tracker creation error", err, utils.Attribute{Key: "endpoint", Value: cs.endpoint})
@@ -503,7 +504,7 @@ func (cs *ChainTracker) fetchInitDataWithRetry(ctx context.Context) (err error) 
 	}
 	if err != nil {
 		// Add suggestion if error is due to context deadline exceeded
-		if common.ContextDeadlineExceededError.Is(err) {
+		if errors.Is(err, common.ContextDeadlineExceededError) {
 			utils.LavaFormatError("suggestion -- If you encounter a 'context deadline exceeded' error, consider increasing the timeout configuration in the 'node-url' config option. Sometimes, the initial HTTPS/WSS communication takes a long time to establish a connection.", nil)
 		}
 		return utils.LavaFormatError("critical -- failed fetching data from the node, chain tracker creation error", err, utils.Attribute{Key: "endpoint", Value: cs.endpoint})

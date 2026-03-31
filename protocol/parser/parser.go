@@ -3,15 +3,13 @@ package parser
 import (
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/goccy/go-json"
 	"github.com/itchyny/gojq"
-
-	"errors"
-
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 	spectypes "github.com/lavanet/lava/v5/types/spec"
@@ -267,7 +265,7 @@ func legacyParse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSourc
 	}
 
 	if err != nil {
-		if ValueNotSetError.Is(err) && blockParser.DefaultValue != "" {
+		if errors.Is(err, ValueNotSetError) && blockParser.DefaultValue != "" {
 			// means this parsing failed because the value did not exist on an optional param
 			retval = appendInterfaceToInterfaceArray(blockParser.DefaultValue)
 			usedDefaultValue = true
@@ -650,8 +648,8 @@ func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 					return nil, fmt.Errorf("invalid parser input format, expected numeric array index but got: %s, error: %s", key, err)
 				}
 				if uint64(len(blockContainerArray)) <= arrayIndex {
-					return nil, ValueNotSetError.Wrapf("invalid parser input format, array index out of bounds. "+
-						"params=%v method=%v arrayLength=%d index=%d", rpcInput.GetParams(), rpcInput.GetMethod(), len(blockContainerArray), arrayIndex)
+					return nil, fmt.Errorf("invalid parser input format, array index out of bounds. params=%v method=%v arrayLength=%d index=%d: %w",
+						rpcInput.GetParams(), rpcInput.GetMethod(), len(blockContainerArray), arrayIndex, ValueNotSetError)
 				}
 				blockContainer = blockContainerArray[arrayIndex]
 				continue
@@ -659,16 +657,16 @@ func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 
 			// type assertion for blockContainer
 			if blockContainer, ok := blockContainer.(map[string]interface{}); !ok {
-				return nil, ValueNotSetError.Wrapf("invalid parser input format, blockContainer is not map[string]interface{}. "+
-					"params=%v method=%v blockContainer=%v key=%s unmarshaledDataTyped=%v", rpcInput.GetParams(), rpcInput.GetMethod(), blockContainer, key, unmarshalledDataTyped)
+				return nil, fmt.Errorf("invalid parser input format, blockContainer is not map[string]interface{}. params=%v method=%v blockContainer=%v key=%s unmarshaledDataTyped=%v: %w",
+					rpcInput.GetParams(), rpcInput.GetMethod(), blockContainer, key, unmarshalledDataTyped, ValueNotSetError)
 			}
 
 			// assertion for key
 			if container, ok := blockContainer.(map[string]interface{})[key]; ok {
 				blockContainer = container
 			} else {
-				return nil, ValueNotSetError.Wrapf("invalid parser input format, blockContainer does not have the field searched inside."+
-					"params=%v method=%v blockContainer=%v key=%s unmarshaledDataTyped=%v", rpcInput.GetParams(), rpcInput.GetMethod(), blockContainer, key, unmarshalledDataTyped)
+				return nil, fmt.Errorf("invalid parser input format, blockContainer does not have the field searched inside. params=%v method=%v blockContainer=%v key=%s unmarshaledDataTyped=%v: %w",
+					rpcInput.GetParams(), rpcInput.GetMethod(), blockContainer, key, unmarshalledDataTyped, ValueNotSetError)
 			}
 		}
 		retArr := make([]interface{}, 0)
@@ -706,7 +704,7 @@ func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 						return nil, fmt.Errorf("invalid parser input format, expected numeric array index but got: %s, error: %s", nextKey, err)
 					}
 					if uint64(len(v)) <= arrayIndex {
-						return nil, ValueNotSetError.Wrapf("invalid parser input format, array index out of bounds. arrayLength=%d index=%d", len(v), arrayIndex)
+						return nil, fmt.Errorf("invalid parser input format, array index out of bounds. arrayLength=%d index=%d: %w", len(v), arrayIndex, ValueNotSetError)
 					}
 					// Get the element from array and check if it's the last element
 					arrayElement := v[arrayIndex]

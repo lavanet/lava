@@ -1,6 +1,8 @@
 package relaycore
 
 import (
+	"fmt"
+
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol/protocolerrors"
 	"github.com/lavanet/lava/v5/utils"
 	spectypes "github.com/lavanet/lava/v5/types/spec"
@@ -103,10 +105,8 @@ func ValidateEndpointCapability(
 			utils.LogAttr("threshold", config.EndpointLagThreshold),
 			utils.LogAttr("requestedBlock", requestedBlock),
 		)
-		return protocolerrors.ConsistencyError.Wrapf(
-			"endpoint block %d is too far behind (seen block: %d, lag: %d blocks, threshold: %d)",
-			endpointLatestBlock, seenBlock, lag, config.EndpointLagThreshold,
-		)
+		return fmt.Errorf("endpoint block %d is too far behind (seen block: %d, lag: %d blocks, threshold: %d): %w",
+			endpointLatestBlock, seenBlock, lag, config.EndpointLagThreshold, protocolerrors.ConsistencyError)
 	}
 
 	// Lag is within acceptable threshold

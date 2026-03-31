@@ -2,6 +2,7 @@ package rpcsmartrouter
 
 import (
 	context "context"
+	"errors"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -334,7 +335,7 @@ func (srsm *SmartRouterRelayStateMachine) GetRelayTaskChannel() (chan RelayState
 					consecutiveBatchErrors++ // Increase consecutive error counter
 
 					// Circuit breaker: Check if this is a pairing error
-					if lavasession.PairingListEmptyError.Is(err) {
+					if errors.Is(err, lavasession.PairingListEmptyError) {
 						srsm.consecutivePairingErrors++
 						utils.LavaFormatDebug("[StateMachine] Detected PairingListEmptyError",
 							utils.LogAttr("GUID", srsm.ctx),

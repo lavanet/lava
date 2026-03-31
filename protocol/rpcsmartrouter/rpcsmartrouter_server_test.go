@@ -2,6 +2,7 @@ package rpcsmartrouter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -1824,7 +1825,7 @@ func TestFilterEndpointsByConsistency_ReturnsFailedSessions(t *testing.T) {
 
 		valid, failed, err := rpcss.filterEndpointsByConsistency(ctx, sessions, protocolMsg)
 		require.Error(t, err)
-		require.True(t, lavasession.ConsistencyPreValidationError.Is(err))
+		require.True(t, errors.Is(err, lavasession.ConsistencyPreValidationError))
 		require.Nil(t, valid)
 		require.Len(t, failed, 2)
 	})

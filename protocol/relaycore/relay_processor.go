@@ -270,7 +270,7 @@ func (rp *RelayProcessor) HasUnsupportedMethodErrors() bool {
 			return true
 		}
 		// Epoch mismatch errors should be retried, not treated as unsupported
-		if lavasession.EpochMismatchError.Is(protocolError.GetError()) {
+		if errors.Is(protocolError.GetError(), lavasession.EpochMismatchError) {
 			continue
 		}
 		// Check if this is a non-retryable error (indicates unsupported or permanent failure)
@@ -310,7 +310,7 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 	_, _, protocolErrorResults := rp.GetResultsData()
 	hasEpochMismatchError := false
 	for _, protocolError := range protocolErrorResults {
-		if lavasession.EpochMismatchError.Is(protocolError.GetError()) {
+		if errors.Is(protocolError.GetError(), lavasession.EpochMismatchError) {
 			hasEpochMismatchError = true
 			break
 		}

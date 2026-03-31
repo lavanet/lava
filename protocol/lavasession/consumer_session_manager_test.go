@@ -555,7 +555,7 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			if len(csm.validAddresses) == 0 && PairingListEmptyError.Is(err) { // wait for all pairings to be blocked.
+			if len(csm.validAddresses) == 0 && errors.Is(err, PairingListEmptyError) { // wait for all pairings to be blocked.
 				break
 			}
 		}
@@ -1054,7 +1054,7 @@ func TestNoPairingsError(t *testing.T) {
 	time.Sleep(5 * time.Millisecond) // let probes finish
 	_, err = csm.getValidProviderAddresses(context.Background(), 1, map[string]struct{}{}, 10, 100, "invalid", nil, common.NO_STATE, "", "")
 	require.Error(t, err)
-	require.True(t, PairingListEmptyError.Is(err))
+	require.True(t, errors.Is(err, PairingListEmptyError))
 }
 
 func TestPairingWithStateful(t *testing.T) {

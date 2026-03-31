@@ -245,7 +245,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 	)
 
 	subscriptionId, err = pnsm.checkForActiveSubscriptionsWithLock(ctx, hashedParams, consumerAddr, consumerProcessGuid, params, chainMessage, consumerChannel, request)
-	if NoActiveSubscriptionFound.Is(err) {
+	if errors.Is(err, NoActiveSubscriptionFound) {
 		// This for loop will break when there is a successful queue lock, allowing us to avoid racing new subscription creation when
 		// there is a failed subscription. the loop will break for the first routine the manages to lock and create the pendingSubscriptionsBroadcastManager
 		for {

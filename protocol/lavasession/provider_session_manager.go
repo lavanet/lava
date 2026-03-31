@@ -2,6 +2,7 @@ package lavasession
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"sync/atomic"
 
@@ -139,7 +140,7 @@ func (psm *ProviderSessionManager) writeConsumerToPairedWithProjectMap(consumerA
 func (psm *ProviderSessionManager) RegisterProviderSessionWithConsumer(ctx context.Context, consumerAddress string, epoch, sessionId, relayNumber, maxCuForConsumer uint64, pairedProviders int64, projectId string) (*SingleProviderSession, error) {
 	_, err := psm.IsActiveProject(epoch, projectId)
 	if err != nil {
-		if ConsumerNotRegisteredYet.Is(err) {
+		if errors.Is(err, ConsumerNotRegisteredYet) {
 			_, err = psm.registerNewConsumer(consumerAddress, projectId, epoch, maxCuForConsumer, pairedProviders)
 			if err != nil {
 				return nil, utils.LavaFormatError("RegisterProviderSessionWithConsumer Failed to registerNewSession", err)
@@ -180,7 +181,7 @@ func (psm *ProviderSessionManager) getSessionFromAnActiveConsumer(ctx context.Co
 	session, err := providerSessionsWithConsumer.getExistingSession(ctx, sessionId)
 	if err == nil {
 		return session, nil
-	} else if SessionDoesNotExist.Is(err) {
+	} else if errors.Is(err, SessionDoesNotExist) {
 		// if we don't have a session we need to create a new one.
 		return providerSessionsWithConsumer.createNewSingleProviderSession(ctx, sessionId, epoch)
 	} else {

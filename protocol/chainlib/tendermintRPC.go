@@ -476,12 +476,12 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 
 		if err != nil {
 			// Check if batch size limit exceeded - return 429 rate limit error
-			if ErrBatchRequestSizeExceeded.Is(err) {
+			if errors.Is(err, ErrBatchRequestSizeExceeded) {
 				errorResponse, _ := json.Marshal(common.JsonRpcBatchSizeExceededError)
 				return fiberCtx.Status(fiber.StatusTooManyRequests).SendString(string(errorResponse))
 			}
 
-			if common.APINotSupportedError.Is(err) {
+			if errors.Is(err, common.APINotSupportedError) {
 				// Convert error to JSON string and add headers
 				errorResponse, _ := json.Marshal(common.JsonRpcMethodNotFoundError)
 				return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(errorResponse))
@@ -786,7 +786,7 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		// perform the rpc call
 		rpcMessage, nodeErr = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, false, nodeMessage.GetDisableErrorHandling())
 		if nodeErr != nil {
-			if common.StatusCodeError504.Is(nodeErr) || common.StatusCodeError429.Is(nodeErr) || common.StatusCodeErrorStrict.Is(nodeErr) {
+			if errors.Is(nodeErr, common.StatusCodeError504) || errors.Is(nodeErr, common.StatusCodeError429) || errors.Is(nodeErr, common.StatusCodeErrorStrict) {
 				return nil, "", nil, utils.LavaFormatWarning("Received invalid status code", nodeErr, utils.Attribute{Key: "chainID", Value: cp.BaseChainProxy.ChainID}, utils.Attribute{Key: "apiName", Value: chainMessage.GetApi().Name})
 			}
 			// Validate if the error is related to the provider connection to the node or it is a valid error

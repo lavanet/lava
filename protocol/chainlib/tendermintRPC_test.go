@@ -3,6 +3,7 @@ package chainlib
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"testing"
@@ -191,7 +192,7 @@ func TestTendermintRpcBatchSizeLimit(t *testing.T) {
 	batchExceedingLimit := `[{"jsonrpc":"2.0","id":1,"method":"block","params":{"height":"99"}},{"jsonrpc":"2.0","id":2,"method":"block","params":{"height":"100"}},{"jsonrpc":"2.0","id":3,"method":"block","params":{"height":"101"}}]`
 	_, err = chainParser.ParseMsg("", []byte(batchExceedingLimit), "", nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 	require.Error(t, err)
-	require.True(t, ErrBatchRequestSizeExceeded.Is(err))
+	require.True(t, errors.Is(err, ErrBatchRequestSizeExceeded))
 
 	// Test: single request should always succeed regardless of limit
 	singleRequest := `{"jsonrpc":"2.0","id":1,"method":"block","params":{"height":"99"}}`

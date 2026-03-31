@@ -2,6 +2,7 @@ package lavasession
 
 import (
 	"context"
+	"errors"
 	"math"
 	"testing"
 	"time"
@@ -213,7 +214,7 @@ func TestPSMEpochChange(t *testing.T) {
 
 	// expect an error as we tried to get a session from a blocked epoch
 	require.Error(t, err)
-	require.True(t, InvalidEpochError.Is(err))
+	require.True(t, errors.Is(err, InvalidEpochError))
 	require.Nil(t, sps)
 }
 

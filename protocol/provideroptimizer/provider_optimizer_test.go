@@ -2,12 +2,12 @@ package provideroptimizer
 
 import (
 	"context"
+	"fmt"
 	stdmath "math"
 	"strconv"
 	"testing"
 	"time"
 
-	"cosmossdk.io/math"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/lavaslices"
 	"github.com/lavanet/lava/v5/utils/rand"
@@ -332,7 +332,7 @@ func TestProviderOptimizerUpdatingLatency(t *testing.T) {
 		require.NotNil(t, qos)
 		newScore, err := qos.ComputeReputation()
 		require.NoError(t, err)
-		require.True(t, newScore.LT(score), "newScore: "+newScore.String()+", score: "+score.String())
+		require.True(t, newScore < score, fmt.Sprintf("newScore: %v, score: %v", newScore, score))
 	}
 
 	// add an average latency probe relay to determine average score
@@ -357,7 +357,7 @@ func TestProviderOptimizerUpdatingLatency(t *testing.T) {
 		require.NotNil(t, qos)
 		newScore, err := qos.ComputeReputation()
 		require.NoError(t, err)
-		require.True(t, newScore.LT(score), "newScore: "+newScore.String()+", score: "+score.String())
+		require.True(t, newScore < score, fmt.Sprintf("newScore: %v, score: %v", newScore, score))
 	}
 }
 
@@ -890,7 +890,7 @@ func TestProviderOptimizerLatencySyncScore(t *testing.T) {
 	providerOptimizer.appendRelayData(providersGen.providersAddresses[1], improvedLatency, true, cu, syncBlock, sampleTime.Add(TEST_AVERAGE_BLOCK_TIME))
 
 	// verify both providers have the same score
-	scores := []math.LegacyDec{}
+	scores := []float64{}
 	for _, provider := range providersGen.providersAddresses {
 		qos, _ := providerOptimizer.GetReputationReportForProvider(provider)
 		require.NotNil(t, qos)
@@ -899,11 +899,7 @@ func TestProviderOptimizerLatencySyncScore(t *testing.T) {
 		scores = append(scores, score)
 	}
 	require.Len(t, scores, 2)
-	s0, err := scores[0].Float64()
-	require.NoError(t, err)
-	s1, err := scores[1].Float64()
-	require.NoError(t, err)
-	require.InDelta(t, s0, s1, 0.01)
+	require.InDelta(t, scores[0], scores[1], 0.01)
 
 	// choose many times - since their scores should be the same, they should be picked in a similar amount
 	iterations := 1000
