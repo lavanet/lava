@@ -2,6 +2,7 @@ package relaycore
 
 import (
 	"context"
+	"time"
 
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/common"
@@ -51,4 +52,26 @@ type RelayStateSendInstructions struct {
 
 func (rssi *RelayStateSendInstructions) IsDone() bool {
 	return rssi.Done || rssi.Err != nil
+}
+
+// RelaySenderInf is the unified interface for relay senders (Consumer and SmartRouter).
+// Both ConsumerRelaySender and SmartRouterRelaySender have identical signatures.
+type RelaySenderInf interface {
+	RelayParserInf
+	GetProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration)
+	GetChainIdAndApiInterface() (string, string)
+}
+
+// StateMachineConfig configures behavior differences between Consumer and SmartRouter state machines
+type StateMachineConfig struct {
+	// EnableCircuitBreaker enables the PairingListEmptyError circuit breaker (SmartRouter only)
+	EnableCircuitBreaker bool
+	// CircuitBreakerThreshold is the number of consecutive pairing errors before tripping (default: 2)
+	CircuitBreakerThreshold int
+	// EnableTimeoutPriority enables priority timeout checks before each select case (SmartRouter only)
+	EnableTimeoutPriority bool
+	// MaxRetries is the maximum number of ticker relay retries
+	MaxRetries int
+	// SendRelayAttempts is the number of consecutive batch errors before giving up
+	SendRelayAttempts int
 }

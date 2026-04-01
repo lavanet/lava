@@ -1205,7 +1205,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 			// unique per dappId and ip
 			consumerToken := common.GetUniqueToken(userData)
-			processingTimeout, expectedRelayTimeoutForQOS := rpccs.getProcessingTimeout(protocolMessage)
+			processingTimeout, expectedRelayTimeoutForQOS := rpccs.GetProcessingTimeout(protocolMessage)
 			deadline, ok := ctx.Deadline()
 			if ok { // we have ctx deadline. we cant go past it.
 				processingTimeout = time.Until(deadline)
@@ -1797,7 +1797,7 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 // This function was responsible for sending verification relays to secondary providers
 // and detecting conflicts between provider responses
 
-func (rpccs *RPCConsumerServer) getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
+func (rpccs *RPCConsumerServer) GetProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
 	_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()
 	relayTimeout = chainlib.GetRelayTimeout(chainMessage, averageBlockTime)
 	processingTimeout = common.GetTimeoutForProcessing(relayTimeout, chainlib.GetTimeoutInfo(chainMessage))
