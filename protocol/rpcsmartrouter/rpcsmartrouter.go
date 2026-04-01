@@ -299,6 +299,7 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 	// Start optional debug HTTP server for integration tests.
 	// Only starts when --debug-address flag is provided. Off by default.
 	if options.cmdFlags.DebugAddress != "" {
+		var currentOffsetSeconds float64
 		debugMux := http.NewServeMux()
 		debugMux.HandleFunc("/debug/time-warp", func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != http.MethodPost {
@@ -313,6 +314,7 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 				return
 			}
 			offset := time.Duration(body.OffsetSeconds * float64(time.Second))
+			currentOffsetSeconds = body.OffsetSeconds
 			optimizers.Range(func(chainID string, opt *provideroptimizer.ProviderOptimizer) bool {
 				if offset == 0 {
 					opt.NowFunc = nil
@@ -323,6 +325,16 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 			})
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprintf(w, `{"offset_seconds":%v,"applied_to_chains":true}`, body.OffsetSeconds)
+		})
+		// GET /debug/time — returns real and effective time so callers can verify the clock moved.
+		debugMux.HandleFunc("/debug/time", func(w http.ResponseWriter, r *http.Request) {
+			now := time.Now()
+			effective := now.Add(time.Duration(currentOffsetSeconds * float64(time.Second)))
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprintf(w, `{"real_time":%q,"effective_time":%q,"offset_seconds":%v}`,
+				now.UTC().Format(time.RFC3339),
+				effective.UTC().Format(time.RFC3339),
+				currentOffsetSeconds)
 		})
 		go func() {
 			utils.LavaFormatInfo("Debug HTTP server started", utils.LogAttr("address", options.cmdFlags.DebugAddress))
