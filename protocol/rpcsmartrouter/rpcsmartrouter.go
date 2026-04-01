@@ -1414,8 +1414,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allow insecure provider-dialing. used for development and testing")
 	cmdRPCSmartRouter.Flags().Bool("skip-policy-verification", false, "skip policy verification (no-op for smart router)")
 	cmdRPCSmartRouter.Flags().Bool("skip-relay-signing", false, "skip relay signing (no-op for smart router)")
-	cmdRPCSmartRouter.Flags().Bool("skip-websocket-verification", false, "skip websocket verification (no-op for smart router)")
-	cmdRPCSmartRouter.Flags().Int("set-relay-retry-limit", 0, "relay retry limit (no-op for smart router)")
 	cmdRPCSmartRouter.Flags().Uint64Var(&lavasession.MaximumStreamsOverASingleConnection, lavasession.MaximumStreamsOverASingleConnectionFlag, lavasession.DefaultMaximumStreamsOverASingleConnection, "maximum number of parallel streams over a single provider connection")
 	cmdRPCSmartRouter.Flags().Bool(common.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
 	cmdRPCSmartRouter.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
