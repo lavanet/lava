@@ -2,13 +2,11 @@ package common
 
 import (
 	"context"
-	"encoding/base64"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/lavanet/lava/v5/utils"
-	"github.com/lavanet/lava/v5/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 	spectypes "github.com/lavanet/lava/v5/types/spec"
 	"google.golang.org/grpc/metadata"
@@ -428,22 +426,3 @@ func GetIpFromGrpcContext(ctx context.Context) string {
 	return ""
 }
 
-func GetTokenFromGrpcContext(ctx context.Context) string {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if ok {
-		ipforwardingHeader := md.Get(IP_FORWARDING_HEADER_NAME)
-		if len(ipforwardingHeader) > 0 {
-			return ipforwardingHeader[0]
-		}
-	}
-	grpcPeer, exists := peer.FromContext(ctx)
-	if exists {
-		return grpcPeer.Addr.String()
-	}
-	return ""
-}
-
-func GetUniqueToken(userData UserData) string {
-	data := []byte(userData.DappId + userData.ConsumerIp)
-	return base64.StdEncoding.EncodeToString(sigs.HashMsg(data))
-}

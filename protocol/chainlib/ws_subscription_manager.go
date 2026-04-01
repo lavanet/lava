@@ -56,5 +56,3 @@ type WSSubscriptionManager interface {
 	) error
 }
 
-// Compile-time interface compliance check
-var _ WSSubscriptionManager = (*ConsumerWSSubscriptionManager)(nil)

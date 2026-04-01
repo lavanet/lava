@@ -13,15 +13,6 @@ import (
 	spectypes "github.com/lavanet/lava/v5/types/spec"
 )
 
-const (
-	MAINNET_SPEC = "LAVA"
-	TESTNET_SPEC = "LAV1"
-)
-
-var (
-	// LavaSpecOptions lists the chain IDs that identify the Lava native chain.
-	LavaSpecOptions = []string{TESTNET_SPEC, MAINNET_SPEC}
-)
 
 // SpecUpdaterInf is implemented by state-tracker types that can register a
 // SpecUpdatable for live on-chain spec updates.  Callers that do not need live
@@ -180,12 +171,3 @@ func loadAllSpecsFromRemoteRepo(ctx context.Context, repoURL, githubToken, gitla
 	return specs, nil
 }
 
-// IsLavaNativeSpec returns true when the given chain ID is the Lava native chain.
-func IsLavaNativeSpec(checked string) bool {
-	for _, nativeLavaChain := range LavaSpecOptions {
-		if checked == nativeLavaChain {
-			return true
-		}
-	}
-	return false
-}

@@ -19,7 +19,6 @@ require (
 )
 
 require (
-	github.com/btcsuite/btcd/btcec/v2 v2.3.2
 	github.com/caio/go-tdigest/v5 v5.0.0
 	github.com/cosmos/gogoproto v1.4.10
 	github.com/dgraph-io/ristretto/v2 v2.3.0
@@ -34,7 +33,6 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/json-iterator/go v1.1.12
 	github.com/newrelic/go-agent/v3 v3.20.4
-	github.com/spf13/pflag v1.0.5
 	github.com/tidwall/gjson v1.16.0
 	github.com/tidwall/sjson v1.2.5
 	go.uber.org/goleak v1.3.0
@@ -48,7 +46,6 @@ require (
 require (
 	github.com/bufbuild/protocompile v0.4.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
-	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 // indirect
 	github.com/gin-gonic/gin v1.8.1 // indirect
 	github.com/go-playground/validator/v10 v10.11.1 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
@@ -67,6 +64,7 @@ require (
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
@@ -82,7 +80,6 @@ require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/cosmos/btcutil v1.0.5
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/deckarep/golang-set v1.8.0
 	github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f // indirect
