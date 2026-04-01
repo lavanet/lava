@@ -140,6 +140,7 @@ type ConsumerCmdFlags struct {
 	GitLabToken              string        // GitLab personal access token for accessing private repositories
 	EpochDuration            time.Duration // duration of each epoch for time-based epoch system (standalone mode)
 	EnableSelectionStats     bool          // enables selection stats header for debugging provider selection
+	DebugAddress             string        // address for the debug HTTP server, e.g. ":9999". Empty = disabled.
 }
 
 // default rolling logs behavior (if enabled) will store 3 files each 100MB for up to 1 day every time.

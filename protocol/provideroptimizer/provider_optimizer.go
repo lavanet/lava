@@ -56,6 +56,7 @@ type ProviderOptimizer struct {
 	globalLatencyCalculator         *score.AdaptiveMaxCalculator // Global T-Digest for all providers' latency samples
 	globalSyncCalculator            *score.AdaptiveMaxCalculator // Global T-Digest for all providers' sync samples
 	adaptiveLock                    sync.RWMutex                 // Lock for accessing adaptive calculators
+	NowFunc func()                  time.Time                   // NowFunc overrides the clock used for score updates nil = use real time.Now()
 }
 
 type ProviderData struct {
@@ -186,14 +187,23 @@ func (po *ProviderOptimizer) UpdateWeights(weights map[string]int64, epoch uint6
 	}
 }
 
+// now returns the current time, using NowFunc if set (for testing) or time.Now() otherwise
+// This allows us to control time in tests for deterministic behavior
+func (po *ProviderOptimizer) now() time.Time {
+   if po.NowFunc != nil {
+       return po.NowFunc()
+   }
+   return time.Now()
+}
+
 // AppendRelayFailure updates a provider's QoS metrics for a failed relay
 func (po *ProviderOptimizer) AppendRelayFailure(provider string) {
-	po.appendRelayData(provider, 0, false, 0, 0, time.Now())
+	po.appendRelayData(provider, 0, false, 0, 0, po.now())
 }
 
 // AppendRelayData updates a provider's QoS metrics for a successful relay
 func (po *ProviderOptimizer) AppendRelayData(provider string, latency time.Duration, cu, syncBlock uint64) {
-	po.appendRelayData(provider, latency, true, cu, syncBlock, time.Now())
+	po.appendRelayData(provider, latency, true, cu, syncBlock, po.now())
 }
 
 // appendRelayData gets three new QoS metrics samples and updates the provider's metrics using a decaying weighted average
@@ -246,7 +256,7 @@ func (po *ProviderOptimizer) appendRelayData(provider string, latency time.Durat
 // AppendProbeRelayData updates a provider's QoS metrics for a probe relay message
 func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latency time.Duration, success bool) {
 	providerData, _ := po.getProviderData(providerAddress)
-	sampleTime := time.Now()
+	sampleTime := po.now()
 	halfTime := po.calculateHalfTime(providerAddress, sampleTime)
 	weight := score.ProbeUpdateWeight
 	var updateErr error
