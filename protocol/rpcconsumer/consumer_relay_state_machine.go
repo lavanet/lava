@@ -7,6 +7,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/relaycore"
+	"github.com/lavanet/lava/v5/protocol/relaypolicy"
 )
 
 // Using interfaces from relaycore
@@ -35,8 +36,20 @@ func ConsumerStateMachineConfig() relaycore.StateMachineConfig {
 	}
 }
 
+// ConsumerPolicyConfig returns the PolicyConfig for Consumer mode
+func ConsumerPolicyConfig() relaypolicy.PolicyConfig {
+	return relaypolicy.PolicyConfig{
+		MaxRetries:              MaximumNumberOfTickerRelayRetries,
+		RelayRetryLimit:         relaycore.RelayRetryLimit,
+		DisableBatchRetry:       relaycore.DisableBatchRequestRetry,
+		EnableCircuitBreaker:    false,
+		CircuitBreakerThreshold: 0,
+		SendRelayAttempts:       SendRelayAttempts,
+	}
+}
+
 // NewRelayStateMachine creates a Consumer-mode unified state machine.
-// This is a convenience wrapper that passes the Consumer config.
+// This is a convenience wrapper that passes the Consumer config and policy.
 func NewRelayStateMachine(
 	ctx context.Context,
 	usedProviders *lavasession.UsedProviders,
@@ -45,6 +58,7 @@ func NewRelayStateMachine(
 	analytics *metrics.RelayMetrics,
 	debugRelays bool,
 ) (RelayStateMachine, error) {
+	policy := relaypolicy.NewPolicy(ConsumerPolicyConfig())
 	return relaycore.NewUnifiedRelayStateMachine(
 		ctx,
 		usedProviders,
@@ -53,5 +67,6 @@ func NewRelayStateMachine(
 		analytics,
 		debugRelays,
 		ConsumerStateMachineConfig(),
+		policy,
 	)
 }

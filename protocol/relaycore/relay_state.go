@@ -38,6 +38,14 @@ type ArchiveStatus struct {
 	isEarliestUsed atomic.Bool
 }
 
+func (as *ArchiveStatus) IsArchive() bool {
+	return as.isArchive.Load()
+}
+
+func (as *ArchiveStatus) IsUpgraded() bool {
+	return as.isUpgraded.Load()
+}
+
 func (as *ArchiveStatus) Copy() *ArchiveStatus {
 	archiveStatus := &ArchiveStatus{}
 	archiveStatus.isArchive.Store(as.isArchive.Load())

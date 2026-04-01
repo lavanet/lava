@@ -32,6 +32,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/parser"
 	"github.com/lavanet/lava/v5/protocol/performance"
 	"github.com/lavanet/lava/v5/protocol/relaycore"
+	"github.com/lavanet/lava/v5/protocol/relaypolicy"
 
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
@@ -1285,22 +1286,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			// gas, invalid signature, double spend, unsupported method, ...),
 			// IsUnsupportedMethod gates the zero-CU + caching carve-out.
 			if isNodeError {
-				family := common.ChainFamilyUnknown
-				if f, ok := common.GetChainFamily(rpccs.listenEndpoint.ChainID); ok {
-					family = f
+				var replyData []byte
+				if localRelayResult.Reply != nil {
+					replyData = localRelayResult.Reply.Data
 				}
-				transport := common.ApiInterfaceToTransport(rpccs.listenEndpoint.ApiInterface)
-				// JSON-RPC node errors typically come back as HTTP 200 with the
-				// real code in error.code (e.g. -32601, -32004). The registry's
-				// code-based JSON-RPC matchers only fire if we feed them that
-				// body code rather than the HTTP status.
-				errorCode := localRelayResult.StatusCode
-				if transport == common.TransportJsonRPC && localRelayResult.Reply != nil {
-					if jsonrpcCode := common.ExtractJSONRPCErrorCode(localRelayResult.Reply.Data); jsonrpcCode != 0 {
-						errorCode = jsonrpcCode
-					}
-				}
-				classification := common.ClassifyNodeErrorForRetry(family, transport, errorCode, errorMessage)
+				classification := relaypolicy.ClassifyNodeError(rpccs.listenEndpoint.ChainID, rpccs.listenEndpoint.ApiInterface, localRelayResult.StatusCode, errorMessage, replyData)
 				localRelayResult.IsNonRetryable = classification.IsNonRetryable
 				localRelayResult.IsUnsupportedMethod = classification.IsUnsupportedMethod
 

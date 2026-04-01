@@ -62,6 +62,76 @@ type RelaySenderInf interface {
 	GetChainIdAndApiInterface() (string, string)
 }
 
+// ResultsSummary is pure data reported by the RelayProcessor for the policy engine.
+type ResultsSummary struct {
+	SuccessCount              int
+	NodeErrors                int
+	SpecialNodeErrors         int
+	ProtocolErrors            int
+	HasUnsupportedMethod      bool  // any node error with IsUnsupportedMethod flag
+	HasUserError              bool  // any node error with IsUserError flag (new in error registry)
+	HasPermanentProtocolError bool  // any non-retryable protocol error (excluding epoch mismatch)
+	HasEpochMismatch          bool  // any protocol error is epoch mismatch
+	HashErr                   error // hash computation error (nil = hash OK)
+}
+
+// Action represents the post-relay decision action.
+type Action int
+
+const (
+	ActionRetry Action = iota
+	ActionStop
+)
+
+// SendResult represents the pre-relay send result decision.
+type SendResult int
+
+const (
+	SendSuccess SendResult = iota
+	SendRetry
+	SendStop
+)
+
+// ArchiveAction represents the archive mutation to apply.
+type ArchiveAction int
+
+const (
+	ArchiveNoChange ArchiveAction = iota
+	ArchiveAdd
+	ArchiveRemove
+)
+
+// MutationOutput holds archive + cache side effects.
+type MutationOutput struct {
+	ArchiveAction ArchiveAction
+	CacheHashes   bool
+}
+
+// DecisionOutput tells the state machine what to do.
+type DecisionOutput struct {
+	Action   Action
+	Mutation MutationOutput
+	Reason   string
+}
+
+// DecisionInput is assembled by the state machine for the policy engine.
+type DecisionInput struct {
+	Selection     Selection
+	AttemptNumber int
+	IsBatch       bool
+	Summary       ResultsSummary
+	ArchiveStatus *ArchiveStatus
+	NodeErrors    uint64
+	IsTickerHedge bool // true when called from ticker.C (hedge), false from gotResults (retry)
+}
+
+// RelayPolicyInf is the interface that the policy engine must implement.
+type RelayPolicyInf interface {
+	Decide(input DecisionInput) DecisionOutput
+	OnSendRelayResult(err error, isPairingListEmpty bool) SendResult
+	GetConsecutiveBatchErrors() int
+}
+
 // StateMachineConfig configures behavior differences between Consumer and SmartRouter state machines
 type StateMachineConfig struct {
 	// EnableCircuitBreaker enables the PairingListEmptyError circuit breaker (SmartRouter only)
