@@ -2276,32 +2276,34 @@ func TestCrossValidationRequiresNonNilParams(t *testing.T) {
 }
 
 func TestHasRequiredNodeResults_RelayRetryLimit(t *testing.T) {
+	// After the policy refactor, HasRequiredNodeResults always returns false
+	// when there are no successful results. Retry decisions are made by policy.Decide().
 	tests := []struct {
 		name               string
 		retryLimit         int
 		nodeErrorsToSend   int
-		expectedDone       bool // true = stop retrying, false = keep retrying
+		expectedDone       bool // always false when no successes (policy decides retry)
 		expectedNodeErrors int
 	}{
 		{
-			name:               "under limit - keep retrying",
+			name:               "under limit - no success signals false",
 			retryLimit:         3,
 			nodeErrorsToSend:   2,
 			expectedDone:       false,
 			expectedNodeErrors: 2,
 		},
 		{
-			name:               "over limit - stop retrying",
+			name:               "over limit - no success signals false",
 			retryLimit:         2,
 			nodeErrorsToSend:   3,
-			expectedDone:       true,
+			expectedDone:       false,
 			expectedNodeErrors: 3,
 		},
 		{
-			name:               "disabled (0) - stop immediately",
+			name:               "disabled (0) - no success signals false",
 			retryLimit:         0,
 			nodeErrorsToSend:   1,
-			expectedDone:       true,
+			expectedDone:       false,
 			expectedNodeErrors: 1,
 		},
 	}
@@ -2357,32 +2359,34 @@ func TestHasRequiredNodeResults_RelayRetryLimit(t *testing.T) {
 }
 
 func TestHasRequiredNodeResults_RelayRetryLimitProtocolError(t *testing.T) {
+	// After the policy refactor, HasRequiredNodeResults always returns false
+	// when there are no successful results. Retry decisions are made by policy.Decide().
 	tests := []struct {
 		name                 string
 		retryLimit           int
 		protocolErrorsToSend int
-		expectedDone         bool // true = stop retrying, false = keep retrying
+		expectedDone         bool // always false when no successes (policy decides retry)
 		expectedNodeErrors   int
 	}{
 		{
-			name:                 "under limit - keep retrying",
+			name:                 "under limit - no success signals false",
 			retryLimit:           3,
 			protocolErrorsToSend: 2,
 			expectedDone:         false,
 			expectedNodeErrors:   0,
 		},
 		{
-			name:                 "over limit - stop retrying",
+			name:                 "over limit - no success signals false",
 			retryLimit:           2,
 			protocolErrorsToSend: 3,
-			expectedDone:         true,
+			expectedDone:         false,
 			expectedNodeErrors:   0,
 		},
 		{
-			name:                 "disabled (0) - stop immediately",
+			name:                 "disabled (0) - no success signals false",
 			retryLimit:           0,
 			protocolErrorsToSend: 1,
-			expectedDone:         true,
+			expectedDone:         false,
 			expectedNodeErrors:   0,
 		},
 	}
@@ -2437,16 +2441,18 @@ func TestHasRequiredNodeResults_RelayRetryLimitProtocolError(t *testing.T) {
 }
 
 func TestHasRequiredNodeResults_RelayRetryLimitMixed(t *testing.T) {
+	// After the policy refactor, HasRequiredNodeResults always returns false
+	// when there are no successful results. Retry decisions are made by policy.Decide().
 	tests := []struct {
 		name                 string
 		relayRetryLimit      int
 		nodeErrorsToSend     int
 		protocolErrorsToSend int
-		expectedDone         bool // true = stop retrying, false = keep retrying
+		expectedDone         bool // always false when no successes (policy decides retry)
 		expectedNodeErrors   int
 	}{
 		{
-			name:                 "total within limit - keep retrying",
+			name:                 "total within limit - no success signals false",
 			relayRetryLimit:      5,
 			nodeErrorsToSend:     2,
 			protocolErrorsToSend: 2,
@@ -2454,15 +2460,15 @@ func TestHasRequiredNodeResults_RelayRetryLimitMixed(t *testing.T) {
 			expectedNodeErrors:   2,
 		},
 		{
-			name:                 "total exceeds limit - stop retrying",
+			name:                 "total exceeds limit - no success signals false",
 			relayRetryLimit:      3,
 			nodeErrorsToSend:     2,
 			protocolErrorsToSend: 2,
-			expectedDone:         true,
+			expectedDone:         false,
 			expectedNodeErrors:   2,
 		},
 		{
-			name:                 "total at exact limit - keep retrying",
+			name:                 "total at exact limit - no success signals false",
 			relayRetryLimit:      4,
 			nodeErrorsToSend:     2,
 			protocolErrorsToSend: 2,

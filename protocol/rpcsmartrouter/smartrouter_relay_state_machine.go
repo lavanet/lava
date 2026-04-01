@@ -7,6 +7,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/relaycore"
+	"github.com/lavanet/lava/v5/protocol/relaypolicy"
 )
 
 // Using interfaces from relaycore
@@ -38,8 +39,21 @@ func SmartRouterStateMachineConfig() relaycore.StateMachineConfig {
 	}
 }
 
+// SmartRouterPolicyConfig returns the PolicyConfig for SmartRouter mode
+func SmartRouterPolicyConfig() relaypolicy.PolicyConfig {
+	return relaypolicy.PolicyConfig{
+		MaxRetries:              MaximumNumberOfTickerRelayRetries,
+		RelayRetryLimit:         relaycore.RelayRetryLimit,
+		DisableBatchRetry:       relaycore.DisableBatchRequestRetry,
+		EnableCircuitBreaker:    true,
+		CircuitBreakerThreshold: 2,
+		SendRelayAttempts:       SendRelayAttempts,
+		EnableUnsupportedCheck:  false,
+	}
+}
+
 // NewSmartRouterRelayStateMachine creates a SmartRouter-mode unified state machine.
-// This is a convenience wrapper that passes the SmartRouter config.
+// This is a convenience wrapper that passes the SmartRouter config and policy.
 func NewSmartRouterRelayStateMachine(
 	ctx context.Context,
 	usedProviders *lavasession.UsedProviders,
@@ -49,6 +63,7 @@ func NewSmartRouterRelayStateMachine(
 	debugRelays bool,
 	tickerMetricSetter tickerMetricSetterInf,
 ) (RelayStateMachine, error) {
+	policy := relaypolicy.NewPolicy(SmartRouterPolicyConfig())
 	return relaycore.NewUnifiedRelayStateMachine(
 		ctx,
 		usedProviders,
@@ -58,5 +73,6 @@ func NewSmartRouterRelayStateMachine(
 		debugRelays,
 		tickerMetricSetter,
 		SmartRouterStateMachineConfig(),
+		policy,
 	)
 }

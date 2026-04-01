@@ -247,6 +247,57 @@ func (rp *RelayProcessor) isBatchRequest() bool {
 	return rp.RelayStateMachine.GetProtocolMessage().IsBatch()
 }
 
+// GetResultsSummary returns a pure data summary for the policy engine. No decisions.
+func (rp *RelayProcessor) GetResultsSummary() ResultsSummary {
+	if rp == nil {
+		return ResultsSummary{}
+	}
+	rp.lock.RLock()
+	defer rp.lock.RUnlock()
+
+	resultsCount, nodeErrors, specialNodeErrors, protocolErrors := rp.GetResults()
+	_, nodeErrorResults, protocolErrorResults := rp.GetResultsData()
+	hash, hashErr := rp.getInputMsgInfoHashString()
+	_ = hash
+
+	// Check node errors for unsupported method flag
+	hasUnsupportedMethod := false
+	for _, result := range nodeErrorResults {
+		if result.IsUnsupportedMethod {
+			hasUnsupportedMethod = true
+			break
+		}
+	}
+
+	// Check protocol errors for permanent failures and epoch mismatch
+	hasPermanentProtocolError := false
+	hasEpochMismatch := false
+	for _, protocolError := range protocolErrorResults {
+		if lavasession.EpochMismatchError.Is(protocolError.GetError()) {
+			hasEpochMismatch = true
+			continue
+		}
+		if chainlib.IsUnsupportedMethodError(protocolError.GetError()) {
+			hasPermanentProtocolError = true
+			continue
+		}
+		if !chainlib.ShouldRetryError(protocolError.GetError()) {
+			hasPermanentProtocolError = true
+		}
+	}
+
+	return ResultsSummary{
+		SuccessCount:              resultsCount,
+		NodeErrors:                nodeErrors,
+		SpecialNodeErrors:         specialNodeErrors,
+		ProtocolErrors:            protocolErrors,
+		HasUnsupportedMethod:      hasUnsupportedMethod,
+		HasPermanentProtocolError: hasPermanentProtocolError,
+		HasEpochMismatch:          hasEpochMismatch,
+		HashErr:                   hashErr,
+	}
+}
+
 // HasUnsupportedMethodErrors checks if any of the current errors are unsupported method errors.
 // Note: We only check nodeErrors and protocolErrors, not successResults, because:
 // - The IsUnsupportedMethod flag is only set when isNodeError=true (in consumer/smartrouter)
@@ -411,14 +462,11 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 		return true, nodeErrors
 	}
 
-	// No successful results — check if we should keep retrying based on
-	// selection mode and RelayRetryLimit.
-	shouldRetry := rp.shouldRetryRelay(resultsCount, hashErr, nodeErrors, specialNodeErrors, protocolErrors)
-
+	// No successful results — signal false unconditionally.
+	// The state machine calls policy.Decide() to determine whether to retry.
 	if rp.debugRelay {
-		utils.LavaFormatDebug("HasRequiredNodeResults shouldRetry",
+		utils.LavaFormatDebug("HasRequiredNodeResults no success, signaling false",
 			utils.LogAttr("GUID", rp.guid),
-			utils.LogAttr("shouldRetry", shouldRetry),
 			utils.LogAttr("tries", tries),
 			utils.LogAttr("resultsCount", resultsCount),
 			utils.LogAttr("nodeErrors", nodeErrors),
@@ -426,7 +474,7 @@ func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 			utils.LogAttr("protocolErrors", protocolErrors),
 		)
 	}
-	return !shouldRetry, nodeErrors
+	return false, nodeErrors
 }
 
 func (rp *RelayProcessor) handleResponse(response *RelayResponse) {

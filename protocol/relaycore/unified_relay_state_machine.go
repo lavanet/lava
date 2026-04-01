@@ -16,23 +16,24 @@ import (
 
 // UnifiedRelayStateMachine is the single state machine implementation used by both
 // Consumer and SmartRouter. Behavior differences are controlled via StateMachineConfig.
+// Retry decisions are centralized in the policy engine (RelayPolicyInf).
 type UnifiedRelayStateMachine struct {
-	ctx                      context.Context
-	relaySender              RelaySenderInf
-	resultsChecker           ResultsCheckerInf
-	analytics                *metrics.RelayMetrics
-	selection                Selection
-	crossValidationParams    *common.CrossValidationParams
-	debugRelays              bool
-	tickerMetricSetter       TickerMetricSetterInf
-	batchUpdate              chan error
-	usedProviders            *lavasession.UsedProviders
-	relayRetriesManager      *lavaprotocol.RelayRetriesManager
-	relayState               []*RelayState
-	protocolMessage          chainlib.ProtocolMessage
-	relayStateLock           sync.RWMutex
-	consecutivePairingErrors int // Used only when config.EnableCircuitBreaker is true
-	config                   StateMachineConfig
+	ctx                   context.Context
+	relaySender           RelaySenderInf
+	resultsChecker        ResultsCheckerInf
+	analytics             *metrics.RelayMetrics
+	selection             Selection
+	crossValidationParams *common.CrossValidationParams
+	debugRelays           bool
+	tickerMetricSetter    TickerMetricSetterInf
+	batchUpdate           chan error
+	usedProviders         *lavasession.UsedProviders
+	relayRetriesManager   *lavaprotocol.RelayRetriesManager
+	relayState            []*RelayState
+	protocolMessage       chainlib.ProtocolMessage
+	relayStateLock        sync.RWMutex
+	config                StateMachineConfig
+	policy                RelayPolicyInf
 }
 
 func NewUnifiedRelayStateMachine(
@@ -44,9 +45,8 @@ func NewUnifiedRelayStateMachine(
 	debugRelays bool,
 	tickerMetricSetter TickerMetricSetterInf,
 	config StateMachineConfig,
+	policy RelayPolicyInf,
 ) (RelayStateMachine, error) {
-	// Check cross-validation headers FIRST (highest priority)
-	// This is the SINGLE SOURCE OF TRUTH for determining if cross-validation is enabled
 	crossValidationParams, headersPresent, err := protocolMessage.GetCrossValidationParameters()
 
 	var selection Selection
@@ -80,6 +80,7 @@ func NewUnifiedRelayStateMachine(
 		batchUpdate:           make(chan error, config.MaxRetries),
 		relayState:            make([]*RelayState, 0),
 		config:                config,
+		policy:                policy,
 	}, nil
 }
 
@@ -136,71 +137,32 @@ func (sm *UnifiedRelayStateMachine) stateTransition(relayState *RelayState, numb
 	sm.appendRelayState(nextState)
 }
 
-func (sm *UnifiedRelayStateMachine) shouldRetry(numberOfNodeErrors uint64) bool {
-	batchNumber := sm.usedProviders.BatchNumber()
-	shouldRetry := sm.retryCondition(batchNumber)
-	if shouldRetry {
-		sm.stateTransition(sm.getLatestState(), numberOfNodeErrors)
-	}
-
-	utils.LavaFormatDebug("[StateMachine] shouldRetry called",
-		utils.LogAttr("GUID", sm.ctx),
-		utils.LogAttr("numberOfNodeErrors", numberOfNodeErrors),
-		utils.LogAttr("batchNumber", sm.usedProviders.BatchNumber()),
-		utils.LogAttr("selection", sm.selection),
-		utils.LogAttr("shouldRetry", shouldRetry),
-	)
-
-	return shouldRetry
-}
-
-// hasUnsupportedMethodErrorsInStateMachine checks if we have unsupported method errors at state machine level.
-// Only active when config.EnableUnsupportedMethodCheck is true (Consumer mode).
-func (sm *UnifiedRelayStateMachine) hasUnsupportedMethodErrorsInStateMachine() bool {
-	if !sm.config.EnableUnsupportedMethodCheck {
-		return false
-	}
+// getResultsSummary retrieves the ResultsSummary from the results checker.
+func (sm *UnifiedRelayStateMachine) getResultsSummary() ResultsSummary {
 	if sm.resultsChecker == nil {
-		return false
+		return ResultsSummary{}
 	}
 	if relayProcessor, ok := sm.resultsChecker.(*RelayProcessor); ok {
-		return relayProcessor.HasUnsupportedMethodErrors()
+		return relayProcessor.GetResultsSummary()
 	}
-	return false
+	return ResultsSummary{}
 }
 
-func (sm *UnifiedRelayStateMachine) retryCondition(numberOfRetriesLaunched int) bool {
-	utils.LavaFormatTrace("[StateMachine] retryCondition", utils.LogAttr("numberOfRetriesLaunched", numberOfRetriesLaunched), utils.LogAttr("GUID", sm.ctx), utils.LogAttr("batchNumber", sm.usedProviders.BatchNumber()), utils.LogAttr("selection", sm.selection))
+// buildDecisionInput assembles the DecisionInput for the policy engine.
+func (sm *UnifiedRelayStateMachine) buildDecisionInput(numberOfNodeErrors uint64) DecisionInput {
+	latestState := sm.getLatestState()
+	var archiveStatus *ArchiveStatus
+	if latestState != nil {
+		archiveStatus = latestState.GetArchiveStatus()
+	}
 
-	switch sm.selection {
-	case CrossValidation:
-		// No retries - each provider gets exactly one chance (Consumer only, SmartRouter falls to default)
-		utils.LavaFormatTrace("[StateMachine] retryCondition: CrossValidation mode, no retry", utils.LogAttr("GUID", sm.ctx))
-		return false
-
-	case Stateful:
-		utils.LavaFormatTrace("[StateMachine] retryCondition: Stateful mode, no retry", utils.LogAttr("GUID", sm.ctx))
-		return false
-
-	case Stateless:
-		if DisableBatchRequestRetry && sm.protocolMessage.IsBatch() {
-			utils.LavaFormatTrace("[StateMachine] retryCondition: batch request retry disabled, no retry", utils.LogAttr("GUID", sm.ctx))
-			return false
-		}
-		if sm.hasUnsupportedMethodErrorsInStateMachine() {
-			utils.LavaFormatTrace("[StateMachine] retryCondition: unsupported method detected, no retry", utils.LogAttr("GUID", sm.ctx))
-			return false
-		}
-		if numberOfRetriesLaunched >= sm.config.MaxRetries {
-			utils.LavaFormatTrace("[StateMachine] retryCondition: max retries reached, no retry", utils.LogAttr("GUID", sm.ctx), utils.LogAttr("numberOfRetriesLaunched", numberOfRetriesLaunched))
-			return false
-		}
-		utils.LavaFormatTrace("[StateMachine] retryCondition: Stateless mode, will retry", utils.LogAttr("GUID", sm.ctx))
-		return true
-
-	default:
-		utils.LavaFormatTrace("[StateMachine] retryCondition: unknown selection, no retry", utils.LogAttr("GUID", sm.ctx), utils.LogAttr("selection", sm.selection))
-		return false
+	return DecisionInput{
+		Selection:     sm.selection,
+		AttemptNumber: sm.usedProviders.BatchNumber(),
+		IsBatch:       sm.protocolMessage.IsBatch(),
+		Summary:       sm.getResultsSummary(),
+		ArchiveStatus: archiveStatus,
+		NodeErrors:    numberOfNodeErrors,
 	}
 }
 
@@ -217,12 +179,10 @@ func (sm *UnifiedRelayStateMachine) GetProtocolMessage() chainlib.ProtocolMessag
 }
 
 // checkAndHandleTimeout checks if processingCtx has expired and handles cleanup if so.
-// Only used when config.EnableTimeoutPriority is true (SmartRouter mode).
 func (sm *UnifiedRelayStateMachine) checkAndHandleTimeout(
 	processingCtx context.Context,
 	relayTaskChannel chan RelayStateSendInstructions,
 	processingTimeout time.Duration,
-	consecutiveBatchErrors int,
 	location string,
 ) bool {
 	if processingCtx.Err() == nil {
@@ -239,7 +199,7 @@ func (sm *UnifiedRelayStateMachine) checkAndHandleTimeout(
 		utils.LogAttr("api", sm.GetProtocolMessage().GetApi().Name),
 		utils.LogAttr("GUID", sm.ctx),
 		utils.LogAttr("batchNumber", sm.usedProviders.BatchNumber()),
-		utils.LogAttr("consecutiveBatchErrors", consecutiveBatchErrors),
+		utils.LogAttr("consecutiveBatchErrors", sm.policy.GetConsecutiveBatchErrors()),
 	)
 
 	relayTaskChannel <- RelayStateSendInstructions{Err: processingCtx.Err(), Done: true}
@@ -302,91 +262,67 @@ func (sm *UnifiedRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSendIn
 		// Initialize parameters
 		startNewBatchTicker := time.NewTicker(relayTimeout)
 		defer startNewBatchTicker.Stop()
-		consecutiveBatchErrors := 0
 
 		// Start the relay state machine
 		for {
 			// SmartRouter: Priority check for processing timeout before select
 			if sm.config.EnableTimeoutPriority {
-				if sm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, consecutiveBatchErrors, "priority_check") {
+				if sm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, "priority_check") {
 					return
 				}
 			}
 
 			select {
 			case err := <-sm.batchUpdate:
-				if err != nil {
-					utils.LavaFormatTrace("[StateMachine] err := <-sm.batchUpdate", utils.LogAttr("err", err), utils.LogAttr("batch", sm.usedProviders.BatchNumber()), utils.LogAttr("consecutiveBatchErrors", consecutiveBatchErrors), utils.LogAttr("GUID", sm.ctx))
-					consecutiveBatchErrors++
+				isPairingListEmpty := err != nil && lavasession.PairingListEmptyError.Is(err)
+				result := sm.policy.OnSendRelayResult(err, isPairingListEmpty)
 
-					// Circuit breaker logic (SmartRouter only)
-					if sm.config.EnableCircuitBreaker {
-						if lavasession.PairingListEmptyError.Is(err) {
-							sm.consecutivePairingErrors++
-							utils.LavaFormatDebug("[StateMachine] Detected PairingListEmptyError",
-								utils.LogAttr("GUID", sm.ctx),
-								utils.LogAttr("consecutivePairingErrors", sm.consecutivePairingErrors),
-								utils.LogAttr("batchNumber", sm.usedProviders.BatchNumber()),
-							)
-							if sm.consecutivePairingErrors >= sm.config.CircuitBreakerThreshold {
-								utils.LavaFormatWarning("Circuit breaker triggered: All providers exhausted, stopping retries",
-									nil,
-									utils.LogAttr("GUID", sm.ctx),
-									utils.LogAttr("consecutivePairingErrors", sm.consecutivePairingErrors),
-									utils.LogAttr("batchNumber", sm.usedProviders.BatchNumber()),
-									utils.LogAttr("timesSaved", "~8 seconds of futile retries avoided"),
-								)
-								go validateReturnCondition(err)
-								continue
-							}
-						} else {
-							sm.consecutivePairingErrors = 0
+				switch result {
+				case SendSuccess:
+					// continue to select loop
+				case SendStop:
+					if sm.usedProviders.BatchNumber() == 0 && sm.policy.GetConsecutiveBatchErrors() == sm.config.SendRelayAttempts+1 {
+						utils.LavaFormatWarning("Failed Sending First Message", err, utils.LogAttr("consecutive errors", sm.policy.GetConsecutiveBatchErrors()), utils.LogAttr("GUID", sm.ctx))
+					}
+					go validateReturnCondition(err)
+				case SendRetry:
+					// SmartRouter: Check timeout before retry
+					if sm.config.EnableTimeoutPriority {
+						if sm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, "batchUpdate_error") {
+							return
 						}
 					}
-
-					if consecutiveBatchErrors > sm.config.SendRelayAttempts {
-						if sm.usedProviders.BatchNumber() == 0 && consecutiveBatchErrors == sm.config.SendRelayAttempts+1 {
-							utils.LavaFormatWarning("Failed Sending First Message", err, utils.LogAttr("consecutive errors", consecutiveBatchErrors), utils.LogAttr("GUID", sm.ctx))
-						}
-						go validateReturnCondition(err)
-					} else {
-						// SmartRouter: Check timeout before retry
-						if sm.config.EnableTimeoutPriority {
-							if sm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, consecutiveBatchErrors, "batchUpdate_error") {
-								return
-							}
-						}
-						utils.LavaFormatTrace("[StateMachine] batchUpdate - err != nil - batch fail retry attempt", utils.LogAttr("batch", sm.usedProviders.BatchNumber()), utils.LogAttr("consecutiveBatchErrors", consecutiveBatchErrors), utils.LogAttr("GUID", sm.ctx))
-						relayTaskChannel <- RelayStateSendInstructions{RelayState: sm.getLatestState(), NumOfProviders: 1}
-					}
-					continue
-				}
-				// Successfully sent message
-				consecutiveBatchErrors = 0
-				if sm.config.EnableCircuitBreaker {
-					sm.consecutivePairingErrors = 0
+					utils.LavaFormatTrace("[StateMachine] batchUpdate - send retry", utils.LogAttr("batch", sm.usedProviders.BatchNumber()), utils.LogAttr("GUID", sm.ctx))
+					relayTaskChannel <- RelayStateSendInstructions{RelayState: sm.getLatestState(), NumOfProviders: 1}
 				}
 
 			case success := <-gotResults:
 				utils.LavaFormatTrace("[StateMachine] success := <-gotResults", utils.LogAttr("batch", sm.usedProviders.BatchNumber()), utils.LogAttr("GUID", sm.ctx))
 				if success {
 					utils.LavaFormatTrace("[StateMachine] successfully sent message", utils.LogAttr("GUID", sm.ctx))
-					if sm.config.EnableCircuitBreaker {
-						sm.consecutivePairingErrors = 0
-					}
 					relayTaskChannel <- RelayStateSendInstructions{Done: true}
 					return
 				}
 
 				// SmartRouter: Check timeout before retry
 				if sm.config.EnableTimeoutPriority {
-					if sm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, consecutiveBatchErrors, "gotResults_retry") {
+					if sm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, "gotResults_retry") {
 						return
 					}
 				}
 
-				if sm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
-					utils.LavaFormatTrace("[StateMachine] success := <-gotResults - sm.ShouldRetry(batchNumber)", utils.LogAttr("batch", sm.usedProviders.BatchNumber()), utils.LogAttr("GUID", sm.ctx))
+				// Use policy.Decide() for all post-relay retry decisions
+				nodeErrors := numberOfNodeErrorsAtomic.Load()
+				output := sm.policy.Decide(sm.buildDecisionInput(nodeErrors))
+				utils.LavaFormatDebug("[StateMachine] policy.Decide",
+					utils.LogAttr("GUID", sm.ctx),
+					utils.LogAttr("action", output.Action),
+					utils.LogAttr("reason", output.Reason),
+					utils.LogAttr("batchNumber", sm.usedProviders.BatchNumber()),
+				)
+
+				if output.Action == ActionRetry {
+					sm.stateTransition(sm.getLatestState(), nodeErrors)
 					relayTaskChannel <- RelayStateSendInstructions{RelayState: sm.getLatestState(), NumOfProviders: 1}
 				} else {
 					go validateReturnCondition(nil)
@@ -396,12 +332,16 @@ func (sm *UnifiedRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSendIn
 			case <-startNewBatchTicker.C:
 				// SmartRouter: Check timeout before retry
 				if sm.config.EnableTimeoutPriority {
-					if sm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, consecutiveBatchErrors, "ticker_retry") {
+					if sm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, "ticker_retry") {
 						return
 					}
 				}
-				if sm.shouldRetry(numberOfNodeErrorsAtomic.Load()) {
+
+				nodeErrors := numberOfNodeErrorsAtomic.Load()
+				output := sm.policy.Decide(sm.buildDecisionInput(nodeErrors))
+				if output.Action == ActionRetry {
 					utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", sm.usedProviders.BatchNumber()), utils.LogAttr("GUID", sm.ctx))
+					sm.stateTransition(sm.getLatestState(), nodeErrors)
 					relayTaskChannel <- RelayStateSendInstructions{RelayState: sm.getLatestState(), NumOfProviders: 1}
 					go sm.tickerMetricSetter.SetRelaySentByNewBatchTickerMetric(sm.relaySender.GetChainIdAndApiInterface())
 				}
@@ -413,10 +353,8 @@ func (sm *UnifiedRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSendIn
 
 			case <-processingCtx.Done():
 				if sm.config.EnableTimeoutPriority {
-					// Backup case for SmartRouter - should rarely trigger due to priority checks
-					sm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, consecutiveBatchErrors, "processingCtx_done_backup")
+					sm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, "processingCtx_done_backup")
 				} else {
-					// Consumer: standard timeout handling
 					userData := sm.GetProtocolMessage().GetUserData()
 					utils.LavaFormatWarning("Relay Got processingCtx timeout", nil,
 						utils.LogAttr("processingTimeout", processingTimeout),
@@ -425,7 +363,7 @@ func (sm *UnifiedRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSendIn
 						utils.LogAttr("protocolMessage.GetApi().Name", sm.GetProtocolMessage().GetApi().Name),
 						utils.LogAttr("GUID", sm.ctx),
 						utils.LogAttr("batchNumber", sm.usedProviders.BatchNumber()),
-						utils.LogAttr("consecutiveBatchErrors", consecutiveBatchErrors),
+						utils.LogAttr("consecutiveBatchErrors", sm.policy.GetConsecutiveBatchErrors()),
 					)
 					relayTaskChannel <- RelayStateSendInstructions{Err: processingCtx.Err(), Done: true}
 				}
