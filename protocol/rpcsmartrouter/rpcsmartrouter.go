@@ -1091,6 +1091,12 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			viper.AddConfigPath("./config")
 			viper.AddConfigPath(lavaDefaultNodeHome)
 
+			// Bind all cobra flags to viper so viper.GetString/GetBool works.
+			// Previously Cosmos SDK's AddTxFlagsToCmd did this automatically.
+			if err := viper.BindPFlags(cmd.Flags()); err != nil {
+				return err
+			}
+
 			// set log format
 			logFormat := viper.GetString("log-format")
 			utils.JsonFormat = logFormat == "json"
