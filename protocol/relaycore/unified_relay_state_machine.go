@@ -216,6 +216,7 @@ func (sm *UnifiedRelayStateMachine) checkAndHandleTimeout(
 	processingCtx context.Context,
 	relayTaskChannel chan RelayStateSendInstructions,
 	processingTimeout time.Duration,
+	consecutiveBatchErrors int,
 	location string,
 ) bool {
 	if processingCtx.Err() == nil {
@@ -232,6 +233,7 @@ func (sm *UnifiedRelayStateMachine) checkAndHandleTimeout(
 		utils.LogAttr("api", sm.GetProtocolMessage().GetApi().Name),
 		utils.LogAttr("GUID", sm.ctx),
 		utils.LogAttr("batchNumber", sm.usedProviders.BatchNumber()),
+		utils.LogAttr("consecutiveBatchErrors", consecutiveBatchErrors),
 	)
 
 	relayTaskChannel <- RelayStateSendInstructions{Err: processingCtx.Err(), Done: true}
@@ -300,7 +302,7 @@ func (sm *UnifiedRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSendIn
 		for {
 			// SmartRouter: Priority check for processing timeout before select
 			if sm.config.EnableTimeoutPriority {
-				if sm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, "priority_check") {
+				if sm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, consecutiveBatchErrors, "priority_check") {
 					return
 				}
 			}
@@ -344,7 +346,7 @@ func (sm *UnifiedRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSendIn
 					} else {
 						// SmartRouter: Check timeout before retry
 						if sm.config.EnableTimeoutPriority {
-							if sm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, "batchUpdate_error") {
+							if sm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, consecutiveBatchErrors, "batchUpdate_error") {
 								return
 							}
 						}
@@ -372,7 +374,7 @@ func (sm *UnifiedRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSendIn
 
 				// SmartRouter: Check timeout before retry
 				if sm.config.EnableTimeoutPriority {
-					if sm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, "gotResults_retry") {
+					if sm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, consecutiveBatchErrors, "gotResults_retry") {
 						return
 					}
 				}
@@ -388,7 +390,7 @@ func (sm *UnifiedRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSendIn
 			case <-startNewBatchTicker.C:
 				// SmartRouter: Check timeout before retry
 				if sm.config.EnableTimeoutPriority {
-					if sm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, "ticker_retry") {
+					if sm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, consecutiveBatchErrors, "ticker_retry") {
 						return
 					}
 				}
@@ -405,7 +407,7 @@ func (sm *UnifiedRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSendIn
 			case <-processingCtx.Done():
 				if sm.config.EnableTimeoutPriority {
 					// Backup case for SmartRouter - should rarely trigger due to priority checks
-					sm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, "processingCtx_done_backup")
+					sm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, consecutiveBatchErrors, "processingCtx_done_backup")
 				} else {
 					// Consumer: standard timeout handling
 					userData := sm.GetProtocolMessage().GetUserData()
