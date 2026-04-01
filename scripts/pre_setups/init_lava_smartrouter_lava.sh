@@ -230,7 +230,7 @@ echo "[Test Setup] starting Smart Router (DIRECT RPC mode, REST + gRPC + Tenderm
 screen -d -m -S smartrouter bash -c "cd \"$PROJECT_ROOT\" && source ~/.bashrc; lavap rpcsmartrouter \
 smartrouter_lava.yml \
 --geolocation 1 \
---log_level trace \
+--log-level trace \
 --cache-be \"127.0.0.1:20100\" \
 --use-static-spec \"$SPECS_DIR\" \
 --metrics-listen-address ':7779' 2>&1 | tee \"$LOGS_DIR/SMARTROUTER_LAVA.log\"" && sleep 0.25

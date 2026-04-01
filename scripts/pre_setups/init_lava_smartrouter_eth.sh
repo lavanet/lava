@@ -257,7 +257,7 @@ echo ""
 screen -d -m -S smartrouter bash -c "cd $PROJECT_ROOT && source ~/.bashrc; lavap rpcsmartrouter \
 smartrouter_eth.yml \
 --geolocation 1 \
---log_level debug \
+--log-level debug \
 --cache-be \"127.0.0.1:20100\" \
 --use-static-spec $SPECS_DIR \
 --skip-websocket-verification \
