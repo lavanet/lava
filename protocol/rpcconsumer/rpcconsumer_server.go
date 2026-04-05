@@ -275,8 +275,8 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 
 	// Validate that maxParticipants doesn't exceed available providers when CrossValidation is enabled
 	if stateMachine.GetSelection() == relaycore.CrossValidation && crossValidationParams != nil && crossValidationParams.MaxParticipants > rpccs.consumerSessionManager.GetNumberOfValidProviders() {
-		return false, utils.LavaFormatError("requested cross-validation maxParticipants exceeds available providers",
-			lavasession.PairingListEmptyError,
+		return false, common.LogCodedWarning("requested cross-validation maxParticipants exceeds available providers",
+			lavasession.PairingListEmptyError, common.LavaErrorInsufficientProviders, rpccs.listenEndpoint.ChainID, 0, "",
 			utils.LogAttr("maxParticipants", crossValidationParams.MaxParticipants),
 			utils.LogAttr("availableProviders", rpccs.consumerSessionManager.GetNumberOfValidProviders()),
 			utils.LogAttr("GUID", ctx))
@@ -307,11 +307,11 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 			err = rpccs.sendRelayToProvider(ctx, 1, relaycore.GetEmptyRelayState(ctx, protocolMessage), relayProcessor, nil)
 		}
 		if err != nil {
-			utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "GUID", Value: ctx}, {Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
+			utils.LavaFormatWarning("[-] failed sending init relay", err, []utils.Attribute{{Key: "GUID", Value: ctx}, {Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
 		} else {
 			err := relayProcessor.WaitForResults(ctx)
 			if err != nil {
-				utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "GUID", Value: ctx}, {Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
+				utils.LavaFormatWarning("[-] failed sending init relay", err, []utils.Attribute{{Key: "GUID", Value: ctx}, {Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
 			} else {
 				relayResult, err := relayProcessor.ProcessingResult()
 				if err == nil && relayResult != nil && relayResult.Reply != nil {
@@ -334,9 +334,9 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 						break
 					}
 				} else if err != nil {
-					utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "GUID", Value: ctx}, {Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
+					utils.LavaFormatWarning("[-] failed sending init relay", err, []utils.Attribute{{Key: "GUID", Value: ctx}, {Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
 				} else {
-					utils.LavaFormatError("[-] failed sending init relay - nil result", nil, []utils.Attribute{{Key: "GUID", Value: ctx}, {Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
+					utils.LavaFormatWarning("[-] failed sending init relay - nil result", nil, []utils.Attribute{{Key: "GUID", Value: ctx}, {Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
 				}
 			}
 		}
@@ -469,7 +469,7 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 	if err != nil && (relayProcessor == nil || !relayProcessor.HasResults()) {
 		userData := protocolMessage.GetUserData()
 		// we can't send anymore, and we don't have any responses
-		utils.LavaFormatError("failed getting responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()), utils.LogAttr("userIp", userData.ConsumerIp), utils.LogAttr("relayProcessor", relayProcessor))
+		common.LogCodedWarning("failed getting responses from providers", err, common.LavaErrorNoResponseTimeout, rpccs.listenEndpoint.ChainID, 0, "", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()), utils.LogAttr("userIp", userData.ConsumerIp), utils.LogAttr("relayProcessor", relayProcessor))
 
 		return nil, err
 	}
@@ -478,7 +478,8 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 	consistencyEnforced := protocolMessage.RelayPrivateData().SeenBlock > 0
 	rpccs.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, protocolMessage, protocolMessage.GetApi().GetName(), analytics, err == nil, consistencyEnforced)
 	if err != nil {
-		return returnedResult, utils.LavaFormatError("failed processing responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()))
+		common.LogCodedWarning("failed processing responses from providers", err, common.LavaErrorRelayProcessingFailed, rpccs.listenEndpoint.ChainID, 0, "", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()))
+		return returnedResult, err
 	}
 
 	if analytics != nil {
@@ -521,8 +522,8 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 
 	// Validate that maxParticipants doesn't exceed available providers when CrossValidation is enabled
 	if stateMachine.GetSelection() == relaycore.CrossValidation && crossValidationParams != nil && crossValidationParams.MaxParticipants > rpccs.consumerSessionManager.GetNumberOfValidProviders() {
-		return nil, utils.LavaFormatError("requested cross-validation maxParticipants exceeds available providers",
-			lavasession.PairingListEmptyError,
+		return nil, common.LogCodedWarning("requested cross-validation maxParticipants exceeds available providers",
+			lavasession.PairingListEmptyError, common.LavaErrorInsufficientProviders, rpccs.listenEndpoint.ChainID, 0, "",
 			utils.LogAttr("maxParticipants", crossValidationParams.MaxParticipants),
 			utils.LogAttr("availableProviders", rpccs.consumerSessionManager.GetNumberOfValidProviders()),
 			utils.LogAttr("GUID", ctx))
@@ -848,7 +849,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				var cacheReply *pairingtypes.CacheRelayReply
 				hashKey, outputFormatter, err := protocolMessage.HashCacheRequest(chainId)
 				if err != nil {
-					utils.LavaFormatError("sendRelayToProvider Failed getting Hash for cache request", err, utils.LogAttr("GUID", ctx))
+					utils.LavaFormatWarning("sendRelayToProvider Failed getting Hash for cache request", err, utils.LogAttr("GUID", ctx))
 				} else {
 					utils.LavaFormatDebug("Cache lookup hash generated",
 						utils.LogAttr("GUID", ctx),
@@ -1015,7 +1016,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	if err != nil {
 		if lavasession.PairingListEmptyError.Is(err) {
 			if addon != "" {
-				return utils.LavaFormatError("No Providers For Addon", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", userData.ConsumerIp), utils.LogAttr("GUID", ctx))
+				return common.LogCodedWarning("No Providers For Addon", err, common.LavaErrorInsufficientProviders, rpccs.listenEndpoint.ChainID, 0, "", utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", userData.ConsumerIp), utils.LogAttr("GUID", ctx))
 			} else if len(extensions) > 0 && relayProcessor.GetAllowSessionDegradation() { // if we have no providers for that extension, use a regular provider, otherwise return the extension results
 				sessions, err = rpccs.consumerSessionManager.GetSessions(ctx, numOfProviders, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, []*spectypes.Extension{}, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness, "")
 				if err != nil {
@@ -1054,8 +1055,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		// Verify we have enough sessions to meet the agreement threshold
 		// If not, fail early with a clear error rather than proceeding knowing consensus is impossible
 		if crossValidationParams != nil && len(sessions) < crossValidationParams.AgreementThreshold {
-			return utils.LavaFormatError("insufficient sessions for cross-validation consensus",
-				lavasession.PairingListEmptyError,
+			return common.LogCodedWarning("insufficient sessions for cross-validation consensus",
+				lavasession.PairingListEmptyError, common.LavaErrorInsufficientProviders, rpccs.listenEndpoint.ChainID, 0, "",
 				utils.LogAttr("agreementThreshold", crossValidationParams.AgreementThreshold),
 				utils.LogAttr("sessionsAcquired", len(sessions)),
 				utils.LogAttr("GUID", ctx))
@@ -1275,16 +1276,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 			// Check if this node error is an unsupported method
 			if isNodeError {
-				isUnsupported := common.IsUnsupportedMethodMessage(errorMessage)
-
-				// Additional check for REST APIs
-				if !isUnsupported && protocolMessage.GetApiCollection() != nil {
-					if strings.EqualFold(protocolMessage.GetApiCollection().CollectionData.ApiInterface, "rest") {
-						if localRelayResult.StatusCode == http.StatusNotFound || localRelayResult.StatusCode == http.StatusMethodNotAllowed {
-							isUnsupported = true
-						}
-					}
-				}
+				isUnsupported := common.ClassifyMessage(localRelayResult.StatusCode, errorMessage).SubCategory.IsUnsupportedMethod()
 
 				localRelayResult.IsUnsupportedMethod = isUnsupported
 
