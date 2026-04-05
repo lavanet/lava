@@ -50,23 +50,23 @@ func (rm *RestMessage) GetRawRequestHash() ([]byte, error) {
 }
 
 func (jm RestMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
-	// Treat 5xx and 429 as node errors (triggers retries)
+	// Treat 5xx and 429 as node errors (triggers retries).
+	// Using status-code ranges here (rather than the error registry) is intentional:
+	// the registry only maps a fixed set of known codes, so registry-gated filtering
+	// would silently turn unmapped 5xx variants into successes.
 	if httpStatusCode >= 500 || httpStatusCode == 429 {
-		// Server error or rate limit - treat as node error for retry logic
-		errorMsg := extractErrorMessage(data, httpStatusCode)
-		return true, errorMsg
+		return true, extractErrorMessage(data, httpStatusCode)
 	}
 
-	// Check Cosmos SDK transaction errors (HTTP 2xx with error code in JSON)
+	// Check Cosmos SDK transaction errors (HTTP 2xx with error code in JSON body)
 	if httpStatusCode >= 200 && httpStatusCode < 300 {
-		if hasError, errMsg := checkCosmosTxError(data); hasError {
-			return hasError, errMsg
+		if cosmosTxErr, errMsg := checkCosmosTxError(data); cosmosTxErr {
+			return cosmosTxErr, errMsg
 		}
-		// HTTP status code is 2xx and no Cosmos SDK error, treat as success
 		return false, ""
 	}
 
-	// 4xx (except 429) are client errors - not node errors, pass through to consumer
+	// 4xx (except 429) are client errors — not node errors, pass through to consumer
 	return false, ""
 }
 

@@ -554,7 +554,7 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 		BaseChainProxy: BaseChainProxy{
 			averageBlockTime: averageBlockTime,
 			NodeUrl:          nodeUrl,
-			ErrorHandler:     &JsonRPCErrorHandler{},
+			ErrorHandler:     &JsonRPCErrorHandler{chainFamily: common.GetChainFamilyOrDefault(rpcProviderEndpoint.ChainID), chainID: rpcProviderEndpoint.ChainID},
 			ChainID:          rpcProviderEndpoint.ChainID,
 		},
 		conn: nil,

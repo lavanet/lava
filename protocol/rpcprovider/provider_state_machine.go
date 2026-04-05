@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"net/http"
 	"strings"
 	"time"
 
@@ -111,14 +110,7 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg c
 		}
 
 		// Check if this is an unsupported method error based on known patterns/status codes
-		isUnsupported := common.IsUnsupportedMethodMessage(errorMessage)
-		if !isUnsupported && chainMsg != nil && chainMsg.GetApiCollection() != nil {
-			if strings.EqualFold(chainMsg.GetApiCollection().CollectionData.ApiInterface, "rest") {
-				if replyWrapper.StatusCode == http.StatusNotFound || replyWrapper.StatusCode == http.StatusMethodNotAllowed {
-					isUnsupported = true
-				}
-			}
-		}
+		isUnsupported := common.IsUnsupportedMethodError(psm.chainId, replyWrapper.StatusCode, errorMessage)
 
 		if isUnsupported {
 			// Extract method name if available
@@ -369,7 +361,7 @@ func (psm *ProviderStateMachine) generateUnsupportedMethodResponse(chainMsg chai
 	switch apiInterface {
 	case "jsonrpc", "tendermintrpc":
 		// Generate JSON-RPC method not found error (code -32601)
-		// This matches the pattern that common.IsUnsupportedMethodMessage() detects
+		// The error registry classifies -32601 as NODE_METHOD_NOT_FOUND / SubCategoryUnsupportedMethod
 		return fmt.Sprintf(`{"jsonrpc":"2.0","id":1,"error":{"code":-32601,"message":"Method not found: %s"}}`, apiMethod), 200
 
 	case "rest":

@@ -619,7 +619,7 @@ func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEnd
 			BaseChainProxy: BaseChainProxy{
 				averageBlockTime: averageBlockTime,
 				NodeUrl:          nodeUrl,
-				ErrorHandler:     &TendermintRPCErrorHandler{},
+				ErrorHandler:     &TendermintRPCErrorHandler{chainFamily: common.GetChainFamilyOrDefault(rpcProviderEndpoint.ChainID), chainID: rpcProviderEndpoint.ChainID},
 				ChainID:          rpcProviderEndpoint.ChainID,
 			},
 			conn: nil,

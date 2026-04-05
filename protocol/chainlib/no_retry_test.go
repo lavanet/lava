@@ -46,9 +46,12 @@ func TestShouldRetryError(t *testing.T) {
 			shouldRetry: false,
 		},
 		{
-			name:        "Solana -32009 missing in long-term storage should not retry",
+			// ShouldRetryError uses chainFamily=-1; without chain context the Solana Tier 2
+			// matcher never fires, so the error is treated as unknown and allowed to retry.
+			// Use ShouldRetryErrorWithContext(err, ChainFamilySolana, TransportJsonRPC) for accurate detection.
+			name:        "Solana -32009 missing in long-term storage — retried without chain context",
 			err:         errors.New("Slot 397535724 was skipped, or missing in long-term storage"),
-			shouldRetry: false,
+			shouldRetry: true,
 		},
 		// Solana retryable errors - these SHOULD retry
 		{
@@ -134,9 +137,9 @@ func TestIsSolanaNonRetryableErrorType(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:     "UnsupportedMethodError is not SolanaNonRetryableError",
+			name:     "UnsupportedMethodError is also non-retryable",
 			err:      NewUnsupportedMethodError(errors.New("method not found"), "eth_test"),
-			expected: false,
+			expected: true, // unsupported methods are non-retryable
 		},
 	}
 
@@ -199,21 +202,10 @@ func TestSolanaNonRetryableError_ErrorMessage(t *testing.T) {
 	originalErr := errors.New("Slot 397535724 was skipped, or missing in long-term storage")
 	wrappedErr := NewSolanaNonRetryableError(originalErr)
 
-	require.Contains(t, wrappedErr.Error(), "solana non-retryable error")
 	require.Contains(t, wrappedErr.Error(), "missing in long-term storage")
 
-	// Test Unwrap
-	require.Equal(t, originalErr, wrappedErr.Unwrap())
-}
-
-func TestSolanaNonRetryableErrorCodes(t *testing.T) {
-	// Verify the error codes are correctly defined
-	// These are the JSON-RPC error codes that should NOT trigger retries
-	t.Run("InvalidParamsCode is -32602", func(t *testing.T) {
-		require.Equal(t, -32602, int(common.JSONRPCInvalidParamsCode))
-	})
-
-	t.Run("MissingInLongTermStorageCode is -32009", func(t *testing.T) {
-		require.Equal(t, -32009, int(common.SolanaMissingInLongTermStorageCode))
-	})
+	// Test Unwrap returns the underlying LavaError
+	unwrapped := errors.Unwrap(wrappedErr)
+	require.NotNil(t, unwrapped)
+	require.True(t, errors.Is(wrappedErr, common.LavaErrorChainSolanaMissingLongTerm))
 }
