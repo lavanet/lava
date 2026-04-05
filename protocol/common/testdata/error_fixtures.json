@@ -1,0 +1,839 @@
+{
+  "_comment": "Real error responses from blockchain nodes, used by fixture tests to validate ClassifyError. Add new entries when UNKNOWN_ERROR appears in production.",
+  "fixtures": [
+    {
+      "_comment": "--- Ethereum / EVM (Geth) ---",
+      "name": "geth_method_not_found",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32601,
+      "error_message": "Method not found",
+      "expected_lava_code": 2001,
+      "expected_name": "NODE_METHOD_NOT_FOUND"
+    },
+    {
+      "name": "geth_method_not_available",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32601,
+      "error_message": "The method eth_someUnsupportedMethod does not exist/is not available. See available methods at https://docs.example.com/api",
+      "expected_lava_code": 2001,
+      "expected_name": "NODE_METHOD_NOT_FOUND"
+    },
+    {
+      "name": "geth_nonce_too_low",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "nonce too low",
+      "expected_lava_code": 3001,
+      "expected_name": "CHAIN_NONCE_TOO_LOW"
+    },
+    {
+      "name": "geth_nonce_too_low_verbose",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "nonce too low: next nonce 5, tx nonce 3",
+      "expected_lava_code": 3001,
+      "expected_name": "CHAIN_NONCE_TOO_LOW"
+    },
+    {
+      "name": "geth_insufficient_funds",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "insufficient funds for gas * price + value",
+      "expected_lava_code": 3003,
+      "expected_name": "CHAIN_INSUFFICIENT_FUNDS"
+    },
+    {
+      "name": "geth_execution_reverted",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": 3,
+      "error_message": "execution reverted",
+      "expected_lava_code": 3101,
+      "expected_name": "CHAIN_EXECUTION_REVERTED"
+    },
+    {
+      "name": "geth_execution_reverted_with_reason",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": 3,
+      "error_message": "execution reverted: NFT not found",
+      "expected_lava_code": 3101,
+      "expected_name": "CHAIN_EXECUTION_REVERTED"
+    },
+    {
+      "name": "geth_already_known",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "already known",
+      "expected_lava_code": 3007,
+      "expected_name": "CHAIN_TX_ALREADY_KNOWN"
+    },
+    {
+      "name": "geth_intrinsic_gas_too_low",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "intrinsic gas too low",
+      "expected_lava_code": 3004,
+      "expected_name": "CHAIN_GAS_TOO_LOW"
+    },
+    {
+      "name": "geth_tx_underpriced",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "transaction underpriced",
+      "expected_lava_code": 3006,
+      "expected_name": "CHAIN_TX_UNDERPRICED"
+    },
+    {
+      "name": "geth_replacement_tx_underpriced",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "replacement transaction underpriced",
+      "expected_lava_code": 3008,
+      "expected_name": "CHAIN_TX_REPLACEMENT_UNDERPRICED"
+    },
+    {
+      "name": "geth_txpool_full",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "txpool is full",
+      "expected_lava_code": 3009,
+      "expected_name": "CHAIN_MEMPOOL_FULL"
+    },
+    {
+      "name": "geth_max_fee_below_base",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "max fee per gas less than block base fee",
+      "expected_lava_code": 3011,
+      "expected_name": "CHAIN_MAX_FEE_BELOW_BASE"
+    },
+    {
+      "name": "geth_out_of_gas",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "out of gas",
+      "expected_lava_code": 3102,
+      "expected_name": "CHAIN_OUT_OF_GAS"
+    },
+    {
+      "name": "geth_missing_trie_node",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "missing trie node 0a1b2c3d (path )",
+      "expected_lava_code": 3204,
+      "expected_name": "CHAIN_STATE_PRUNED"
+    },
+    {
+      "name": "geth_parse_error",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32700,
+      "error_message": "Parse error",
+      "expected_lava_code": 4001,
+      "expected_name": "USER_PARSE_ERROR"
+    },
+    {
+      "name": "geth_invalid_params",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32602,
+      "error_message": "invalid argument 0: hex string without 0x prefix",
+      "expected_lava_code": 4003,
+      "expected_name": "USER_INVALID_PARAMS"
+    },
+    {
+      "name": "geth_internal_error",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32603,
+      "error_message": "Internal error",
+      "expected_lava_code": 2003,
+      "expected_name": "NODE_INTERNAL_ERROR"
+    },
+    {
+      "name": "geth_rate_limit",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": 0,
+      "error_message": "rate limit exceeded",
+      "expected_lava_code": 2005,
+      "expected_name": "NODE_RATE_LIMITED"
+    },
+    {
+      "name": "geth_server_error",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "Server error",
+      "expected_lava_code": 2004,
+      "expected_name": "NODE_SERVER_ERROR"
+    },
+    {
+      "name": "geth_limit_exceeded",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32005,
+      "error_message": "query returned more than 10000 results",
+      "expected_lava_code": 2011,
+      "expected_name": "NODE_LIMIT_EXCEEDED"
+    },
+    {
+      "name": "evm_block_not_found",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": 0,
+      "error_message": "block not found",
+      "expected_lava_code": 3201,
+      "expected_name": "CHAIN_BLOCK_NOT_FOUND"
+    },
+    {
+      "name": "evm_http_429",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": 0,
+      "error_message": "HTTP status 429: Too Many Requests",
+      "expected_lava_code": 2005,
+      "expected_name": "NODE_RATE_LIMITED"
+    },
+    {
+      "_comment": "--- EIP-1474 server error codes ---",
+      "name": "evm_resource_not_found",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32001,
+      "error_message": "Resource not found",
+      "expected_lava_code": 2012,
+      "expected_name": "NODE_RESOURCE_NOT_FOUND"
+    },
+    {
+      "name": "evm_resource_unavailable",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32002,
+      "error_message": "Resource unavailable",
+      "expected_lava_code": 2013,
+      "expected_name": "NODE_RESOURCE_UNAVAILABLE"
+    },
+    {
+      "name": "evm_tx_rejected",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32003,
+      "error_message": "Transaction rejected",
+      "expected_lava_code": 3014,
+      "expected_name": "CHAIN_TX_REJECTED"
+    },
+    {
+      "name": "evm_method_not_supported",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32004,
+      "error_message": "Method not supported",
+      "expected_lava_code": 2002,
+      "expected_name": "NODE_METHOD_NOT_SUPPORTED"
+    },
+    {
+      "name": "evm_execution_reverted_code_3",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": 3,
+      "error_message": "execution reverted: ERC20: transfer amount exceeds balance",
+      "expected_lava_code": 3101,
+      "expected_name": "CHAIN_EXECUTION_REVERTED"
+    },
+    {
+      "name": "evm_http_503",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": 0,
+      "error_message": "HTTP status 503: Service Unavailable",
+      "expected_lava_code": 2006,
+      "expected_name": "NODE_SERVICE_UNAVAILABLE"
+    },
+
+    {
+      "_comment": "--- Erigon ---",
+      "name": "erigon_insufficient_funds",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "insufficient funds",
+      "expected_lava_code": 3003,
+      "expected_name": "CHAIN_INSUFFICIENT_FUNDS"
+    },
+    {
+      "name": "erigon_intrinsic_gas",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "IntrinsicGas",
+      "expected_lava_code": 3004,
+      "expected_name": "CHAIN_GAS_TOO_LOW"
+    },
+    {
+      "name": "erigon_underpriced",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "underpriced",
+      "expected_lava_code": 3006,
+      "expected_name": "CHAIN_TX_UNDERPRICED"
+    },
+    {
+      "name": "erigon_fee_too_low",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "fee too low",
+      "expected_lava_code": 3006,
+      "expected_name": "CHAIN_TX_UNDERPRICED"
+    },
+    {
+      "name": "erigon_could_not_replace",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "could not replace existing tx",
+      "expected_lava_code": 3008,
+      "expected_name": "CHAIN_TX_REPLACEMENT_UNDERPRICED"
+    },
+
+    {
+      "_comment": "--- Nethermind ---",
+      "name": "nethermind_insufficient_funds",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "InsufficientFunds",
+      "expected_lava_code": 3003,
+      "expected_name": "CHAIN_INSUFFICIENT_FUNDS"
+    },
+    {
+      "name": "nethermind_insufficient_funds_verbose",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "insufficient MaxFeePerGas for sender balance",
+      "expected_lava_code": 3003,
+      "expected_name": "CHAIN_INSUFFICIENT_FUNDS"
+    },
+    {
+      "name": "nethermind_already_known",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "AlreadyKnown",
+      "expected_lava_code": 3007,
+      "expected_name": "CHAIN_TX_ALREADY_KNOWN"
+    },
+    {
+      "name": "nethermind_gas_limit_below_intrinsic",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "gas limit below intrinsic gas",
+      "expected_lava_code": 3004,
+      "expected_name": "CHAIN_GAS_TOO_LOW"
+    },
+    {
+      "name": "nethermind_nonce_too_low",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "nonce too low",
+      "expected_lava_code": 3001,
+      "expected_name": "CHAIN_NONCE_TOO_LOW"
+    },
+    {
+      "name": "nethermind_nonce_too_low_processor",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "transaction nonce is too low",
+      "expected_lava_code": 3001,
+      "expected_name": "CHAIN_NONCE_TOO_LOW"
+    },
+
+    {
+      "_comment": "--- Solana (Agave) ---",
+      "name": "solana_slot_skipped",
+      "chain_family": "Solana",
+      "transport": "jsonrpc",
+      "error_code": -32000,
+      "error_message": "Slot was skipped",
+      "expected_lava_code": 2004,
+      "expected_name": "NODE_SERVER_ERROR",
+      "_note": "Generic -32000 without chain-specific Tier 2 match falls to Tier 1"
+    },
+    {
+      "name": "solana_missing_long_term",
+      "chain_family": "Solana",
+      "transport": "jsonrpc",
+      "error_code": -32009,
+      "error_message": "Slot 1234 was skipped, or missing in long-term storage",
+      "expected_lava_code": 3302,
+      "expected_name": "CHAIN_SOLANA_MISSING_LONG_TERM"
+    },
+    {
+      "name": "solana_ledger_jump",
+      "chain_family": "Solana",
+      "transport": "jsonrpc",
+      "error_code": -32007,
+      "error_message": "Slot 124 was skipped, or missing due to ledger jump to recent snapshot",
+      "expected_lava_code": 3303,
+      "expected_name": "CHAIN_SOLANA_LEDGER_JUMP"
+    },
+    {
+      "name": "solana_node_unhealthy",
+      "chain_family": "Solana",
+      "transport": "jsonrpc",
+      "error_code": -32005,
+      "error_message": "Node is unhealthy",
+      "expected_lava_code": 2150,
+      "expected_name": "NODE_SOLANA_UNHEALTHY"
+    },
+    {
+      "name": "solana_node_behind",
+      "chain_family": "Solana",
+      "transport": "jsonrpc",
+      "error_code": -32005,
+      "error_message": "Node is behind by 42 slots",
+      "expected_lava_code": 2150,
+      "expected_name": "NODE_SOLANA_UNHEALTHY"
+    },
+    {
+      "name": "solana_block_not_available",
+      "chain_family": "Solana",
+      "transport": "jsonrpc",
+      "error_code": -32004,
+      "error_message": "Block not available for slot 12345",
+      "expected_lava_code": 3201,
+      "expected_name": "CHAIN_BLOCK_NOT_FOUND"
+    },
+    {
+      "name": "solana_block_cleaned_up",
+      "chain_family": "Solana",
+      "transport": "jsonrpc",
+      "error_code": -32001,
+      "error_message": "Block 12345 cleaned up, does not exist on node. First available block: 10000",
+      "expected_lava_code": 3204,
+      "expected_name": "CHAIN_STATE_PRUNED"
+    },
+    {
+      "name": "solana_simulation_failed",
+      "chain_family": "Solana",
+      "transport": "jsonrpc",
+      "error_code": -32002,
+      "error_message": "Transaction simulation failed: Blockhash not found",
+      "expected_lava_code": 3305,
+      "expected_name": "CHAIN_SOLANA_SIMULATION_FAILED"
+    },
+    {
+      "name": "solana_signature_verify_failed",
+      "chain_family": "Solana",
+      "transport": "jsonrpc",
+      "error_code": -32003,
+      "error_message": "Signature verification failure",
+      "expected_lava_code": 3306,
+      "expected_name": "CHAIN_SOLANA_SIGNATURE_VERIFY_FAILED"
+    },
+    {
+      "name": "solana_excluded_from_index",
+      "chain_family": "Solana",
+      "transport": "jsonrpc",
+      "error_code": -32010,
+      "error_message": "Excluded from account secondary indexes",
+      "expected_lava_code": 3307,
+      "expected_name": "CHAIN_SOLANA_EXCLUDED_FROM_INDEX"
+    },
+    {
+      "name": "solana_signature_length_mismatch",
+      "chain_family": "Solana",
+      "transport": "jsonrpc",
+      "error_code": -32013,
+      "error_message": "Incorrectly formatted signature",
+      "expected_lava_code": 3308,
+      "expected_name": "CHAIN_SOLANA_SIGNATURE_LENGTH_MISMATCH"
+    },
+    {
+      "name": "solana_block_status_unavailable",
+      "chain_family": "Solana",
+      "transport": "jsonrpc",
+      "error_code": -32014,
+      "error_message": "Block status unavailable",
+      "expected_lava_code": 3309,
+      "expected_name": "CHAIN_SOLANA_BLOCK_STATUS_UNAVAILABLE"
+    },
+    {
+      "name": "solana_tx_version_unsupported",
+      "chain_family": "Solana",
+      "transport": "jsonrpc",
+      "error_code": -32015,
+      "error_message": "Transaction version not supported",
+      "expected_lava_code": 3310,
+      "expected_name": "CHAIN_SOLANA_TX_VERSION_UNSUPPORTED"
+    },
+    {
+      "name": "solana_min_context_slot",
+      "chain_family": "Solana",
+      "transport": "jsonrpc",
+      "error_code": -32016,
+      "error_message": "Minimum context slot not reached",
+      "expected_lava_code": 3311,
+      "expected_name": "CHAIN_SOLANA_MIN_CONTEXT_SLOT_NOT_REACHED"
+    },
+    {
+      "name": "solana_invalid_params",
+      "chain_family": "Solana",
+      "transport": "jsonrpc",
+      "error_code": -32602,
+      "error_message": "Invalid params: bad input values",
+      "expected_lava_code": 4003,
+      "expected_name": "USER_INVALID_PARAMS"
+    },
+
+    {
+      "_comment": "--- Bitcoin Core ---",
+      "name": "bitcoin_warmup",
+      "chain_family": "Bitcoin",
+      "transport": "jsonrpc",
+      "error_code": -28,
+      "error_message": "Loading block index...",
+      "expected_lava_code": 2101,
+      "expected_name": "NODE_BITCOIN_WARMUP"
+    },
+    {
+      "name": "bitcoin_warmup_verifying",
+      "chain_family": "Bitcoin",
+      "transport": "jsonrpc",
+      "error_code": -28,
+      "error_message": "Verifying blocks...",
+      "expected_lava_code": 2101,
+      "expected_name": "NODE_BITCOIN_WARMUP"
+    },
+    {
+      "name": "bitcoin_initial_download",
+      "chain_family": "Bitcoin",
+      "transport": "jsonrpc",
+      "error_code": -10,
+      "error_message": "Bitcoin Core is in initial sync and waiting for blocks...",
+      "expected_lava_code": 2102,
+      "expected_name": "NODE_BITCOIN_INITIAL_DOWNLOAD"
+    },
+    {
+      "name": "bitcoin_not_connected",
+      "chain_family": "Bitcoin",
+      "transport": "jsonrpc",
+      "error_code": -9,
+      "error_message": "Shutting down",
+      "expected_lava_code": 2103,
+      "expected_name": "NODE_BITCOIN_NOT_CONNECTED"
+    },
+    {
+      "name": "bitcoin_verify_error",
+      "chain_family": "Bitcoin",
+      "transport": "jsonrpc",
+      "error_code": -25,
+      "error_message": "TestBlockValidity failed: bad-txns-inputs-missingorspent",
+      "expected_lava_code": 3341,
+      "expected_name": "CHAIN_BITCOIN_VERIFY_ERROR"
+    },
+    {
+      "name": "bitcoin_verify_rejected",
+      "chain_family": "Bitcoin",
+      "transport": "jsonrpc",
+      "error_code": -26,
+      "error_message": "non-mandatory-script-verify-flag",
+      "expected_lava_code": 3342,
+      "expected_name": "CHAIN_BITCOIN_VERIFY_REJECTED"
+    },
+    {
+      "name": "bitcoin_already_in_chain",
+      "chain_family": "Bitcoin",
+      "transport": "jsonrpc",
+      "error_code": -27,
+      "error_message": "transaction already in block chain",
+      "expected_lava_code": 3343,
+      "expected_name": "CHAIN_BITCOIN_ALREADY_IN_CHAIN"
+    },
+    {
+      "name": "bitcoin_wallet_insufficient_funds",
+      "chain_family": "Bitcoin",
+      "transport": "jsonrpc",
+      "error_code": -6,
+      "error_message": "Insufficient funds",
+      "expected_lava_code": 3344,
+      "expected_name": "CHAIN_BITCOIN_WALLET_INSUFFICIENT_FUNDS"
+    },
+    {
+      "name": "bitcoin_block_height_out_of_range",
+      "chain_family": "Bitcoin",
+      "transport": "jsonrpc",
+      "error_code": -8,
+      "error_message": "Block height out of range",
+      "expected_lava_code": 0,
+      "expected_name": "UNKNOWN_ERROR",
+      "_note": "Bitcoin -8 (RPC_INVALID_PARAMETER) not mapped — falls to unknown"
+    },
+
+    {
+      "_comment": "--- Starknet ---",
+      "name": "starknet_class_not_found",
+      "chain_family": "Starknet",
+      "transport": "jsonrpc",
+      "error_code": 28,
+      "error_message": "Class hash not found",
+      "expected_lava_code": 3321,
+      "expected_name": "CHAIN_STARKNET_CLASS_NOT_FOUND"
+    },
+    {
+      "name": "starknet_contract_error",
+      "chain_family": "Starknet",
+      "transport": "jsonrpc",
+      "error_code": 40,
+      "error_message": "Contract error",
+      "expected_lava_code": 3324,
+      "expected_name": "CHAIN_STARKNET_CONTRACT_ERROR"
+    },
+    {
+      "name": "starknet_compilation_failed",
+      "chain_family": "Starknet",
+      "transport": "jsonrpc",
+      "error_code": 56,
+      "error_message": "Compilation failed",
+      "expected_lava_code": 3322,
+      "expected_name": "CHAIN_STARKNET_COMPILATION_FAILED"
+    },
+    {
+      "name": "starknet_failed_to_receive_tx",
+      "chain_family": "Starknet",
+      "transport": "jsonrpc",
+      "error_code": 1,
+      "error_message": "Failed to receive transaction",
+      "expected_lava_code": 3320,
+      "expected_name": "CHAIN_STARKNET_FAILED_TO_RECEIVE_TX"
+    },
+    {
+      "name": "starknet_contract_not_found",
+      "chain_family": "Starknet",
+      "transport": "jsonrpc",
+      "error_code": 20,
+      "error_message": "Contract not found",
+      "expected_lava_code": 3330,
+      "expected_name": "CHAIN_STARKNET_CONTRACT_NOT_FOUND"
+    },
+    {
+      "name": "starknet_block_not_found",
+      "chain_family": "Starknet",
+      "transport": "jsonrpc",
+      "error_code": 24,
+      "error_message": "Block not found",
+      "expected_lava_code": 3331,
+      "expected_name": "CHAIN_STARKNET_BLOCK_NOT_FOUND"
+    },
+    {
+      "name": "starknet_tx_hash_not_found",
+      "chain_family": "Starknet",
+      "transport": "jsonrpc",
+      "error_code": 29,
+      "error_message": "Transaction hash not found",
+      "expected_lava_code": 3332,
+      "expected_name": "CHAIN_STARKNET_TX_HASH_NOT_FOUND"
+    },
+    {
+      "name": "starknet_tx_exec_error",
+      "chain_family": "Starknet",
+      "transport": "jsonrpc",
+      "error_code": 41,
+      "error_message": "Transaction execution error",
+      "expected_lava_code": 3325,
+      "expected_name": "CHAIN_STARKNET_TX_EXEC_ERROR"
+    },
+    {
+      "name": "starknet_invalid_nonce",
+      "chain_family": "Starknet",
+      "transport": "jsonrpc",
+      "error_code": 52,
+      "error_message": "Invalid transaction nonce",
+      "expected_lava_code": 3326,
+      "expected_name": "CHAIN_STARKNET_INVALID_NONCE"
+    },
+    {
+      "name": "starknet_insufficient_fee",
+      "chain_family": "Starknet",
+      "transport": "jsonrpc",
+      "error_code": 53,
+      "error_message": "Insufficient max fee",
+      "expected_lava_code": 3327,
+      "expected_name": "CHAIN_STARKNET_INSUFFICIENT_FEE"
+    },
+    {
+      "name": "starknet_insufficient_balance",
+      "chain_family": "Starknet",
+      "transport": "jsonrpc",
+      "error_code": 54,
+      "error_message": "Insufficient account balance",
+      "expected_lava_code": 3328,
+      "expected_name": "CHAIN_STARKNET_INSUFFICIENT_BALANCE"
+    },
+    {
+      "name": "starknet_duplicate_tx",
+      "chain_family": "Starknet",
+      "transport": "jsonrpc",
+      "error_code": 59,
+      "error_message": "Duplicate transaction",
+      "expected_lava_code": 3333,
+      "expected_name": "CHAIN_STARKNET_DUPLICATE_TX"
+    },
+    {
+      "name": "starknet_unsupported_tx_version",
+      "chain_family": "Starknet",
+      "transport": "jsonrpc",
+      "error_code": 61,
+      "error_message": "Unsupported transaction version",
+      "expected_lava_code": 3334,
+      "expected_name": "CHAIN_STARKNET_TX_VERSION_UNSUPPORTED"
+    },
+    {
+      "name": "starknet_unexpected_error",
+      "chain_family": "Starknet",
+      "transport": "jsonrpc",
+      "error_code": 63,
+      "error_message": "Unexpected error",
+      "expected_lava_code": 3335,
+      "expected_name": "CHAIN_STARKNET_UNEXPECTED_ERROR"
+    },
+
+    {
+      "_comment": "--- NEAR ---",
+      "name": "near_unknown_block",
+      "chain_family": "NEAR",
+      "transport": "jsonrpc",
+      "error_code": 0,
+      "error_message": "UNKNOWN_BLOCK: Block not found",
+      "expected_lava_code": 3360,
+      "expected_name": "CHAIN_NEAR_UNKNOWN_BLOCK"
+    },
+    {
+      "name": "near_unknown_chunk",
+      "chain_family": "NEAR",
+      "transport": "jsonrpc",
+      "error_code": 0,
+      "error_message": "UNKNOWN_CHUNK: Chunk not found in database",
+      "expected_lava_code": 3361,
+      "expected_name": "CHAIN_NEAR_UNKNOWN_CHUNK"
+    },
+    {
+      "name": "near_invalid_shard_id",
+      "chain_family": "NEAR",
+      "transport": "jsonrpc",
+      "error_code": 0,
+      "error_message": "INVALID_SHARD_ID: Shard ID 99 does not exist",
+      "expected_lava_code": 3362,
+      "expected_name": "CHAIN_NEAR_INVALID_SHARD_ID"
+    },
+    {
+      "name": "near_not_synced_yet",
+      "chain_family": "NEAR",
+      "transport": "jsonrpc",
+      "error_code": 0,
+      "error_message": "NOT_SYNCED_YET: Node still syncing",
+      "expected_lava_code": 3363,
+      "expected_name": "CHAIN_NEAR_NOT_SYNCED_YET"
+    },
+
+    {
+      "_comment": "--- Cosmos SDK (gRPC) ---",
+      "name": "cosmos_grpc_unavailable",
+      "chain_family": "CosmosSDK",
+      "transport": "grpc",
+      "error_code": 14,
+      "error_message": "connection refused",
+      "expected_lava_code": 2006,
+      "expected_name": "NODE_SERVICE_UNAVAILABLE"
+    },
+    {
+      "name": "cosmos_grpc_unimplemented",
+      "chain_family": "CosmosSDK",
+      "transport": "grpc",
+      "error_code": 12,
+      "error_message": "unknown service cosmos.bank.v1beta1.Query",
+      "expected_lava_code": 2008,
+      "expected_name": "NODE_UNIMPLEMENTED"
+    },
+
+    {
+      "_comment": "--- REST ---",
+      "name": "rest_404_not_found",
+      "chain_family": "Aptos",
+      "transport": "rest",
+      "error_code": 0,
+      "error_message": "HTTP 404: Not Found",
+      "expected_lava_code": 2009,
+      "expected_name": "NODE_ENDPOINT_NOT_FOUND"
+    },
+    {
+      "name": "rest_429_rate_limit",
+      "chain_family": "Aptos",
+      "transport": "rest",
+      "error_code": 0,
+      "error_message": "HTTP 429: Too Many Requests",
+      "expected_lava_code": 2005,
+      "expected_name": "NODE_RATE_LIMITED"
+    },
+    {
+      "name": "rest_503_unavailable",
+      "chain_family": "Stellar",
+      "transport": "rest",
+      "error_code": 0,
+      "error_message": "HTTP 503: Service Unavailable",
+      "expected_lava_code": 2006,
+      "expected_name": "NODE_SERVICE_UNAVAILABLE"
+    },
+
+    {
+      "_comment": "--- Solana blockhash expiry ---",
+      "name": "solana_blockhash_not_found",
+      "chain_family": "Solana",
+      "transport": "jsonrpc",
+      "error_code": -32002,
+      "error_message": "Transaction simulation failed: Blockhash not found",
+      "expected_lava_code": 3305,
+      "expected_name": "CHAIN_SOLANA_SIMULATION_FAILED",
+      "_note": "With the -32002 code present the Tier-2 code matcher wins (SimulationFailed). The blockhash-specific fixture below uses the message path."
+    },
+    {
+      "name": "solana_blockhash_not_found_message_only",
+      "chain_family": "Solana",
+      "transport": "jsonrpc",
+      "error_code": 0,
+      "error_message": "Blockhash not found",
+      "expected_lava_code": 3304,
+      "expected_name": "CHAIN_SOLANA_BLOCKHASH_NOT_FOUND"
+    },
+    {
+      "_comment": "--- Unknown / passthrough ---",
+      "name": "unknown_error_passthrough",
+      "chain_family": "EVM",
+      "transport": "jsonrpc",
+      "error_code": 0,
+      "error_message": "some completely unknown error from the node",
+      "expected_lava_code": 0,
+      "expected_name": "UNKNOWN_ERROR"
+    }
+  ]
+}

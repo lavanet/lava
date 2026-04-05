@@ -2,7 +2,6 @@ package lavasession
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -10,6 +9,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
 	"github.com/lavanet/lava/v5/protocol/qos"
 	"github.com/lavanet/lava/v5/utils"
@@ -796,10 +796,14 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 				defer endpoint.mu.Unlock()
 
 				if err != nil {
-					// context.Canceled means the client disconnected — not a provider fault.
-					// context.DeadlineExceeded means the request timed out; the endpoint may
-					// be slow or unreachable, so refusals should still be incremented.
-					if errors.Is(err, context.Canceled) && errors.Is(ctx.Err(), context.Canceled) {
+					// Client-side cancellations (relay race loser / client disconnect)
+					// are not a provider fault — skip the refusal counter. Uses the
+					// shared rule from common.IsClientCancellation so the consumer
+					// session, smart-router health, and refusal counter all agree on
+					// what "the client cancelled" means. Note: context.DeadlineExceeded
+					// is NOT exempt here — a slow/unreachable endpoint should still
+					// increment refusals.
+					if common.IsClientCancellation(err, ctx) {
 						utils.LavaFormatDebug("skipping ConnectionRefusals increment: request context canceled (client disconnect)",
 							utils.LogAttr("err", err),
 							utils.LogAttr("ctx_err", ctx.Err()),

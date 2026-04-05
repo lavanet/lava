@@ -161,12 +161,11 @@ func TestTestModeUnsupportedMethodDetection(t *testing.T) {
 					"gRPC response should contain unimplemented patterns")
 			}
 
-			// Most importantly, verify that common.IsUnsupportedMethodMessage
-			// would detect this as an unsupported method
+			// Most importantly, verify that the registry would detect this as an unsupported method
 			if tc.apiInterface != "rest" { // REST relies on status code detection
-				isUnsupported := common.IsUnsupportedMethodMessage(responseData)
+				isUnsupported := common.IsUnsupportedMethodError("", 0, responseData)
 				require.True(t, isUnsupported,
-					"Generated response should be detected as unsupported method by common.IsUnsupportedMethodMessage")
+					"Generated response should be detected as unsupported method by the registry")
 			}
 		})
 	}

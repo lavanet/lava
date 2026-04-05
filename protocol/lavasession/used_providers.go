@@ -57,6 +57,23 @@ type UsedProviders struct {
 	selecting                 bool
 	sessionsLatestBatch       int
 	batchNumber               int
+	// chainID is used by shouldRetryWithThisError to do chain-aware
+	// unsupported-method detection (so chain-native messages don't collide
+	// with broad Tier-1 substring matchers). Empty means the chain is not
+	// known and classification falls back to Tier-1 only.
+	chainID string
+}
+
+// SetChainID attaches a chain ID to this UsedProviders instance so that
+// session-layer error classification (e.g. shouldRetryWithThisError) can
+// consult chain-specific Tier-2 matchers. Safe to call once after NewUsedProviders.
+func (up *UsedProviders) SetChainID(chainID string) {
+	if up == nil {
+		return
+	}
+	up.lock.Lock()
+	defer up.lock.Unlock()
+	up.chainID = chainID
 }
 
 func (up *UsedProviders) CurrentlyUsed() int {
@@ -169,7 +186,7 @@ func (up *UsedProviders) RemoveUsed(provider string, routerKey RouterKey, err er
 
 	// Check if this is a NEW sync loss that should be retried
 	_, alreadyBlocked := uniqueUsedProviders.blockOnSyncLoss[provider]
-	isNewSyncLoss := err != nil && shouldRetryWithThisError(err) && !alreadyBlocked
+	isNewSyncLoss := err != nil && up.shouldRetryWithThisError(err) && !alreadyBlocked
 
 	if isNewSyncLoss {
 		// First sync loss for this provider - allow one retry
@@ -288,9 +305,18 @@ func (up *UsedProviders) GetUnwantedProvidersToSend(routerKey RouterKey) map[str
 	return unwantedProvidersToSend
 }
 
-func shouldRetryWithThisError(err error) bool {
-	// Never retry unsupported method errors
-	if common.IsUnsupportedMethodMessage(err.Error()) {
+// shouldRetryWithThisError is called from RemoveUsed with up.lock already held
+// for writing, so it reads up.chainID directly without additional locking.
+// Never call this from an unlocked context.
+func (up *UsedProviders) shouldRetryWithThisError(err error) bool {
+	chainID := ""
+	if up != nil {
+		chainID = up.chainID
+	}
+	// Never retry unsupported method errors. Passing chainID enables Tier-2
+	// lookups so chain-native messages that happen to overlap broad Tier-1
+	// substring matchers are not misclassified as unsupported-method.
+	if common.IsUnsupportedMethodError(chainID, 0, err.Error()) {
 		return false
 	}
 

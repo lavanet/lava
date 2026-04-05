@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -27,10 +28,11 @@ func TestSpecificErrorFromUser(t *testing.T) {
 		require.True(t, result, "Should detect unsupported method from gRPC Unknown status")
 	})
 
-	// Test ShouldRetryError function
+	// Test ShouldRetryErrorWithContext — this is a gRPC error ("rpc error: code = Unknown desc = ..."),
+	// so the gRPC transport must be specified for the registry to detect "Not Implemented".
 	t.Run("ShouldRetryError with user error", func(t *testing.T) {
 		err := errors.New(errorMsg)
-		result := ShouldRetryError(err)
+		result := ShouldRetryErrorWithContext(err, -1, common.TransportGRPC)
 		require.False(t, result, "Should NOT retry with unsupported method error")
 	})
 }
