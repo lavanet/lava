@@ -56,6 +56,7 @@ func (r *RelayErrors) AddError(err RelayError) {
 func (r *RelayErrors) GetBestErrorMessageForUser() RelayError {
 	bestIndex := -1
 	bestResult := github_com_cosmos_cosmos_sdk_types.ZeroDec()
+	bestIsExternal := false
 	errorMap := make(map[string][]int)
 	for idx, relayError := range r.RelayErrors {
 		errorMessage := r.sanitizeError(relayError.Err)
@@ -64,9 +65,20 @@ func (r *RelayErrors) GetBestErrorMessageForUser() RelayError {
 			continue
 		}
 		currentResult := relayError.ProviderInfo.ProviderReputationSummary.MulInt(relayError.ProviderInfo.ProviderStake.Amount)
-		if currentResult.GTE(bestResult) { // 0 or 1 here are valid replacements, so even 0 scores will return the error value
+		isExternal := relayError.LavaError != nil && relayError.LavaError.Category == common.CategoryExternal
+
+		// Prefer external errors (node/chain) over internal errors (protocol)
+		// — external errors are what the user should see
+		if isExternal && !bestIsExternal {
+			// External always beats internal regardless of score
 			bestResult.Set(currentResult)
 			bestIndex = idx
+			bestIsExternal = true
+		} else if isExternal == bestIsExternal && currentResult.GTE(bestResult) {
+			// Same category — use score tiebreak
+			bestResult.Set(currentResult)
+			bestIndex = idx
+			bestIsExternal = isExternal
 		}
 	}
 
@@ -115,7 +127,7 @@ func (r *RelayErrors) mergeAllErrors() error {
 	allErrorsLength := len(allErrors)
 	for idx, message := range allErrors {
 		mergedMessage += strconv.Itoa(idx) + ". " + message.Error()
-		if idx < allErrorsLength {
+		if idx < allErrorsLength-1 {
 			mergedMessage += ", "
 		}
 	}
@@ -133,6 +145,7 @@ type RelayError struct {
 	Err          error
 	ProviderInfo common.ProviderInfo
 	Response     *RelayResponse
+	LavaError    *common.LavaError // classified error code (nil if not yet classified)
 }
 
 func (re RelayError) String() string {

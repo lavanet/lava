@@ -1772,10 +1772,16 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 	// Create direct RPC relay sender
 	// Use provider name (configured name) instead of raw URL to avoid leaking API keys
 	endpointName := singleConsumerSession.Parent.PublicLavaAddress
+	// Resolve chain family for Tier 2 error classification
+	senderChainFamily := common.ChainFamily(-1)
+	if family, ok := common.GetChainFamily(rpcss.listenEndpoint.ChainID); ok {
+		senderChainFamily = family
+	}
 	directSender := &DirectRPCRelaySender{
 		directConnection:    directConnection,
 		endpointName:        endpointName,
 		originalRequestData: originalRequestData,
+		chainFamily:         senderChainFamily,
 	}
 
 	// Send relay directly to RPC endpoint
@@ -1797,43 +1803,49 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 			utils.LogAttr("GUID", ctx),
 		)
 
-		// Classify error and decide on health tracking
-		shouldMarkUnhealthy := false
-		needsBackoff = false
-
-		// Check if this is an HTTP status error
-		if httpErr, ok := err.(*lavasession.HTTPStatusError); ok {
-			statusCode := httpErr.StatusCode
-
-			switch {
-			case statusCode >= 500:
-				// 5xx errors indicate server/node issues - mark unhealthy and backoff
-				shouldMarkUnhealthy = true
-				needsBackoff = true
-				utils.LavaFormatDebug("endpoint returned server error",
-					utils.LogAttr("status", statusCode),
-					utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
-				)
-			case statusCode == 429:
-				// Rate limit - backoff but DON'T mark unhealthy (endpoint is healthy, just busy)
-				needsBackoff = true
-				utils.LavaFormatDebug("endpoint rate limited",
-					utils.LogAttr("status", statusCode),
-					utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
-				)
-			case statusCode >= 400:
-				// 4xx errors are client errors - don't mark unhealthy, don't backoff
-				utils.LavaFormatDebug("client error",
-					utils.LogAttr("status", statusCode),
-					utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
-				)
+		// Classify error using the error registry and decide on health tracking
+		// Try to extract LavaError from classifiedError (already classified by classifyAndWrap)
+		classified := extractLavaError(err)
+		if classified == nil {
+			// Fallback: derive transport and chain family, classify from scratch
+			transport := common.TransportJsonRPC
+			switch directConnection.GetProtocol() {
+			case lavasession.DirectRPCProtocolGRPC:
+				transport = common.TransportGRPC
+			case lavasession.DirectRPCProtocolHTTP, lavasession.DirectRPCProtocolHTTPS:
+				// HTTP could be JSON-RPC or REST — use the endpoint's API interface
+				if rpcss.listenEndpoint.ApiInterface == "rest" {
+					transport = common.TransportREST
+				}
 			}
-		} else {
-			// Non-HTTP errors (timeout, connection refused, network errors)
-			// These indicate endpoint/network issues - mark unhealthy and backoff
-			shouldMarkUnhealthy = true
-			needsBackoff = true
+
+			// Resolve chain family for Tier 2 matchers
+			chainFamily := common.ChainFamily(-1)
+			if family, ok := common.GetChainFamily(rpcss.listenEndpoint.ChainID); ok {
+				chainFamily = family
+			}
+
+			errorCode := 0
+			if httpErr, ok := err.(*lavasession.HTTPStatusError); ok {
+				errorCode = httpErr.StatusCode
+			}
+			classified = common.ClassifyError(common.DetectConnectionError(err), chainFamily, transport, errorCode, err.Error())
 		}
+
+		// PROTOCOL_CONTEXT_CANCELED is expected in two cases:
+		// 1. Relay race: multiple goroutines race in parallel; when one wins, ProcessRelaySend
+		//    returns and its defer cancel() cancels the parent ctx, which cancels all still-in-flight
+		//    goroutines — those see context.Canceled as a result.
+		// 2. Client disconnect: the upstream caller closed the connection before we responded.
+		// Neither case is a provider fault.
+		common.LogCodedError("direct RPC relay error", err, classified,
+			rpcss.listenEndpoint.ChainID, 0, err.Error(),
+			utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
+		)
+
+		// Decide endpoint health based on error classification
+		var shouldMarkUnhealthy bool
+		shouldMarkUnhealthy, needsBackoff = classifyEndpointHealth(classified)
 
 		// Apply health tracking based on error classification
 		if shouldMarkUnhealthy && targetEndpoint != nil {

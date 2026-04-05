@@ -194,6 +194,7 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.chainTrackers = &common.SafeSyncMap[string, chaintracker.IChainTracker]{}
 	rpcp.parallelConnections = options.parallelConnections
 	rpcp.cache = options.cache
+	metrics.InitErrorMetrics()
 	rpcp.providerMetricsManager = metrics.NewProviderMetricsManager(options.metricsListenAddress) // start up prometheus metrics
 	rpcp.providerMetricsManager.SetVersion(upgrade.GetCurrentVersion().ProviderVersion)
 	rpcp.rpcProviderListeners = make(map[string]*ProviderListener)

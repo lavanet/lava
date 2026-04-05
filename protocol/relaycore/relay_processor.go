@@ -72,10 +72,11 @@ func NewRelayProcessor(
 		}
 	}
 
+	chainID, _ := chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
 	relayProcessor := &RelayProcessor{
 		crossValidationParams:        crossValidationParams,
 		responses:                    make(chan *RelayResponse, MaxCallsPerRelay), // buffered to prevent blocking
-		ResultsManager:               NewResultsManager(guid),
+		ResultsManager:               NewResultsManager(guid, chainID),
 		guid:                         guid,
 		consistency:                  consistency,
 		debugRelay:                   relayStateMachine.GetDebugState(),
@@ -790,21 +791,32 @@ func (rp *RelayProcessor) buildFailureResult(
 	returnedResult := &common.RelayResult{StatusCode: http.StatusInternalServerError}
 	var processingError error
 
+	var bestLavaError *common.LavaError
 	if nodeErrorCount > 0 {
 		// Prefer node errors over protocol errors
 		nodeErr := rp.GetBestNodeErrorMessageForUser()
 		processingError = nodeErr.Err
+		bestLavaError = nodeErr.LavaError
 		if nodeErr.Response != nil {
 			returnedResult = &nodeErr.Response.RelayResult
 		}
 	} else if protocolErrorCount > 0 {
 		protocolErr := rp.GetBestProtocolErrorMessageForUser()
 		processingError = protocolErr.Err
+		bestLavaError = protocolErr.LavaError
 		if protocolErr.Response != nil {
 			returnedResult = &protocolErr.Response.RelayResult
 		}
 	}
 
 	returnedResult.ProviderInfo.ProviderAddress = strings.Join(allProvidersAddresses, ",")
+
+	// Log with classified error code for metrics/observability
+	if bestLavaError != nil {
+		chainID, _ := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
+		common.LogCodedError("failed relay, insufficient results", processingError, bestLavaError,
+			chainID, 0, "", utils.LogAttr("GUID", rp.guid))
+	}
+
 	return returnedResult, utils.LavaFormatError("failed relay, insufficient results", processingError, utils.LogAttr("GUID", rp.guid))
 }

@@ -179,7 +179,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	rpcps.chainTracker = chainTracker
 	rpcps.providerSessionManager = providerSessionManager
 	if rewardServer == nil {
-		utils.LavaFormatError("disabled rewards for provider, reward server not defined", nil)
+		utils.LavaFormatWarning("disabled rewards for provider, reward server not defined", nil)
 		rewardServer = &rewardserver.DisabledRewardServer{}
 	}
 	rpcps.rewardServer = rewardServer
@@ -474,24 +474,22 @@ func (rpcps *RPCProviderServer) finalizeSession(isRelayError bool, ctx context.C
 		}
 
 		// Check if this is an unsupported method error
-		var unsupportedMethodError *chainlib.UnsupportedMethodError
-		if errors.As(err, &unsupportedMethodError) {
+		if chainlib.IsUnsupportedMethodErrorType(err) {
 			utils.LavaFormatInfo("CU rolled back for unsupported method error returned to consumer",
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("session_id", request.RelaySession.SessionId),
 				utils.LogAttr("relay_num", request.RelaySession.RelayNum),
-				utils.LogAttr("method", unsupportedMethodError.GetMethodName()),
-				utils.LogAttr("error", unsupportedMethodError.Error()),
+				utils.LogAttr("error", err.Error()),
 			)
 		} else {
-			err = utils.LavaFormatError("TryRelay Failed", err,
+			common.LogCodedWarning("TryRelay Failed", err, chainlib.ExtractLavaError(err), request.RelaySession.SpecId, 0, "",
 				utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
 				utils.Attribute{Key: "request.userAddr", Value: consumerAddress},
 				utils.Attribute{Key: "GUID", Value: ctx},
 				utils.Attribute{Key: "timed_out", Value: common.ContextOutOfTime(ctx)},
 			)
 		}
-		err = utils.LavaFormatError("TryRelay Failed", err,
+		common.LogCodedWarning("TryRelay Failed", err, chainlib.ExtractLavaError(err), request.RelaySession.SpecId, 0, "",
 			utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
 			utils.Attribute{Key: "request.userAddr", Value: consumerAddress},
 			utils.Attribute{Key: "GUID", Value: ctx},
@@ -511,7 +509,7 @@ func (rpcps *RPCProviderServer) finalizeSession(isRelayError bool, ctx context.C
 	// For successful relays, call OnSessionDone to update session state
 	relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, request.RelaySession.RelayNum)
 	if relayError != nil {
-		utils.LavaFormatError("OnSession Done failure", relayError, utils.LogAttr("GUID", ctx))
+		common.LogCodedError("OnSession Done failure", relayError, common.LavaErrorSessionAccountingFailed, request.RelaySession.SpecId, 0, "", utils.LogAttr("GUID", ctx))
 	} else if sendRewards {
 		// SendProof gets the request copy, as in the case of data reliability enabled the request.blockNumber is changed.
 		// Therefore the signature changes, so we need the original copy to extract the address from it.
@@ -559,7 +557,7 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 		// If PrepareSessionForUsage, session lose sync.
 		// We then wrap the error with the SessionOutOfSyncError that has a unique error code.
 		// The consumer knows the session lost sync using the code and will create a new session.
-		return nil, nil, nil, utils.LavaFormatError("Session Out of sync", lavasession.SessionOutOfSyncError, utils.Attribute{Key: "PrepareSessionForUsage_Error", Value: err.Error()}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx})
+		return nil, nil, nil, common.LogCodedWarning("Session Out of sync", lavasession.SessionOutOfSyncError, common.LavaErrorSessionOutOfSync, request.RelaySession.SpecId, 0, "", utils.Attribute{Key: "PrepareSessionForUsage_Error", Value: err.Error()}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx})
 	}
 	return relaySession, consumerAddress, chainMessage, nil
 }
@@ -586,7 +584,7 @@ func (rpcps *RPCProviderServer) ValidateRequest(chainMessage chainlib.ChainMessa
 	}
 	seenBlock := request.RelayData.GetSeenBlock()
 	if seenBlock < 0 {
-		return utils.LavaFormatError("invalid seen block", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "seenBlock", Value: seenBlock})
+		return common.LogCodedWarning("invalid seen block", nil, common.LavaErrorInvalidRelayRequest, request.RelaySession.SpecId, 0, "", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "seenBlock", Value: seenBlock})
 	}
 	reqBlock, _ := chainMessage.RequestedBlock()
 	if reqBlock != request.RelayData.RequestBlock {
@@ -610,7 +608,7 @@ func (rpcps *RPCProviderServer) ValidateRequest(chainMessage chainlib.ChainMessa
 				utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx})
 			// TODO, we need to return an error here, this was disabled so relays will pass, but it will cause data reliability issues.
 			// once we understand the issue return the error.
-			utils.LavaFormatError("requested block mismatch between consumer and provider", nil,
+			common.LogCodedWarning("requested block mismatch between consumer and provider", nil, common.LavaErrorRequestBlockMismatch, request.RelaySession.SpecId, 0, "",
 				utils.LogAttr("request data", string(request.RelayData.Data)),
 				utils.LogAttr("request path", request.RelayData.ApiUrl),
 				utils.LogAttr("method", chainMessage.GetApi().Name),
@@ -630,7 +628,7 @@ func (rpcps *RPCProviderServer) ValidateRequest(chainMessage chainlib.ChainMessa
 
 func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer) error {
 	if request.RelayData == nil || request.RelaySession == nil {
-		return utils.LavaFormatError("invalid relay subscribe request, internal fields are nil", nil)
+		return common.LogCodedWarning("invalid relay subscribe request, internal fields are nil", nil, common.LavaErrorInvalidRelayRequest, rpcps.rpcProviderEndpoint.ChainID, 0, "")
 	}
 
 	ctx := utils.AppendUniqueIdentifier(context.Background(), lavaprotocol.GetSalt(request.RelayData))
@@ -658,7 +656,7 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 		err = nil // we don't want to return an error here
 	} else {
 		// we didn't even manage to subscribe
-		err = utils.LavaFormatError("failed subscribing", lavasession.SubscriptionInitiationError,
+		err = common.LogCodedWarning("failed subscribing", lavasession.SubscriptionInitiationError, common.LavaErrorSubscriptionInitFailed, request.RelaySession.SpecId, 0, "",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("error", err),
 		)
@@ -671,7 +669,7 @@ func (rpcps *RPCProviderServer) SendProof(ctx context.Context, epoch uint64, req
 	storedCU, updatedWithProof := rpcps.rewardServer.SendNewProof(ctx, request.RelaySession, epoch, consumerAddress.String(), apiInterface)
 	if !updatedWithProof && storedCU > request.RelaySession.CuSum {
 		rpcps.providerSessionManager.UpdateSessionCU(consumerAddress.String(), epoch, request.RelaySession.SessionId, storedCU)
-		err := utils.LavaFormatError("Cu in relay smaller than existing proof", lavasession.ProviderConsumerCuMisMatch, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "session_cu_sum", Value: request.RelaySession.CuSum}, utils.Attribute{Key: "existing_proof_cu", Value: storedCU}, utils.Attribute{Key: "sessionId", Value: request.RelaySession.SessionId}, utils.Attribute{Key: "chainID", Value: request.RelaySession.SpecId})
+		err := common.LogCodedError("Cu in relay smaller than existing proof", lavasession.ProviderConsumerCuMisMatch, common.LavaErrorCUMismatch, request.RelaySession.SpecId, 0, "", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "session_cu_sum", Value: request.RelaySession.CuSum}, utils.Attribute{Key: "existing_proof_cu", Value: storedCU}, utils.Attribute{Key: "sessionId", Value: request.RelaySession.SessionId}, utils.Attribute{Key: "chainID", Value: request.RelaySession.SpecId})
 		return rpcps.handleRelayErrorStatus(err)
 	}
 	return nil
@@ -707,7 +705,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 
 				err := rpcps.providerNodeSubscriptionManager.RemoveConsumer(ctx, chainMessage, consumerAddress, true, consumerProcessGuid)
 				if err != nil {
-					errRet = utils.LavaFormatError("Error RemoveConsumer", err, utils.LogAttr("GUID", ctx))
+					errRet = common.LogCodedError("Error RemoveConsumer", err, common.LavaErrorSubscriptionCleanupFailed, rpcps.rpcProviderEndpoint.ChainID, 0, "", utils.LogAttr("GUID", ctx))
 				}
 				return
 			case subscribeReply, ok := <-subscribeRepliesChan:
@@ -718,7 +716,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 					)
 					err := rpcps.providerNodeSubscriptionManager.RemoveConsumer(ctx, chainMessage, consumerAddress, false, consumerProcessGuid) // false because the channel is already closed
 					if err != nil {
-						errRet = utils.LavaFormatError("Error RemoveConsumer", err, utils.LogAttr("GUID", ctx))
+						errRet = common.LogCodedError("Error RemoveConsumer", err, common.LavaErrorSubscriptionCleanupFailed, rpcps.rpcProviderEndpoint.ChainID, 0, "", utils.LogAttr("GUID", ctx))
 					}
 					return
 				}
@@ -730,7 +728,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 					if strings.Contains(errRet.Error(), "Canceled desc = context canceled") {
 						errRet = utils.LavaFormatWarning("Client closed connection", errRet, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx})
 					} else {
-						errRet = utils.LavaFormatError("Got error from srv.Send()", errRet, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx})
+						errRet = common.LogCodedWarning("Got error from srv.Send()", errRet, common.ClassifyLegacyError(errRet, common.TransportGRPC), "", 0, "", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx})
 					}
 
 					return
@@ -753,7 +751,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 		if relaySession != nil {
 			relayError := rpcps.providerSessionManager.OnSessionFailure(relaySession, relayNumber)
 			if relayError != nil {
-				utils.LavaFormatError("Error OnSessionFailure", relayError)
+				common.LogCodedError("Error OnSessionFailure", relayError, common.LavaErrorSessionAccountingFailed, rpcps.rpcProviderEndpoint.ChainID, 0, "")
 			}
 		}
 
@@ -767,7 +765,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 	if relaySession != nil {
 		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, relayNumber)
 		if relayError != nil {
-			utils.LavaFormatError("Error OnSessionDone", relayError)
+			common.LogCodedError("Error OnSessionDone", relayError, common.LavaErrorSessionAccountingFailed, rpcps.rpcProviderEndpoint.ChainID, 0, "")
 		}
 
 		bgCtx := context.Background()
@@ -851,7 +849,7 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 				)
 			}
 			if !valid {
-				return nil, utils.LavaFormatError("VerifyPairing, this consumer address is not valid with this provider", nil,
+				return nil, common.LogCodedWarning("VerifyPairing, this consumer address is not valid with this provider", nil, common.LavaErrorInvalidRelayRequest, request.SpecId, 0, "",
 					utils.Attribute{Key: "GUID", Value: ctx},
 					utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx},
 					utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx},
@@ -865,7 +863,7 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 			}
 			maxCuForConsumer, getMaxCuError := rpcps.stateTracker.GetMaxCuForUser(ctx, consumerAddressString, request.SpecId, uint64(request.Epoch))
 			if getMaxCuError != nil {
-				return nil, utils.LavaFormatError("ConsumerNotRegisteredYet: GetMaxCuForUser failed", getMaxCuError,
+				return nil, common.LogCodedWarning("ConsumerNotRegisteredYet: GetMaxCuForUser failed", getMaxCuError, common.LavaErrorConsumerNotRegistered, request.SpecId, 0, "",
 					utils.Attribute{Key: "GUID", Value: ctx},
 					utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx},
 					utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx},
@@ -880,7 +878,7 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 			// After validating the consumer we can register it with provider session manager.
 			singleProviderSession, err = rpcps.providerSessionManager.RegisterProviderSessionWithConsumer(ctx, consumerAddressString, uint64(request.Epoch), request.SessionId, request.RelayNum, maxCuForConsumer, pairedProviders, projectId)
 			if err != nil {
-				return nil, utils.LavaFormatError("Failed to RegisterProviderSessionWithConsumer", err,
+				return nil, common.LogCodedWarning("Failed to RegisterProviderSessionWithConsumer", err, common.LavaErrorSessionNotFound, request.SpecId, 0, "",
 					utils.Attribute{Key: "GUID", Value: ctx},
 					utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx},
 					utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx},
@@ -891,7 +889,7 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 				)
 			}
 		} else {
-			return nil, utils.LavaFormatError("Failed to get a provider session", err,
+			return nil, common.LogCodedWarning("Failed to get a provider session", err, common.LavaErrorSessionNotFound, request.SpecId, 0, "",
 				utils.Attribute{Key: "GUID", Value: ctx},
 				utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx},
 				utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx},
@@ -908,17 +906,17 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 func (rpcps *RPCProviderServer) verifyRelayRequestMetaData(ctx context.Context, requestSession *pairingtypes.RelaySession, relayData *pairingtypes.RelayPrivateData) error {
 	providerAddress := rpcps.providerAddress.String()
 	if requestSession.Provider != providerAddress {
-		return utils.LavaFormatError("request had the wrong provider", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "providerAddress", Value: providerAddress}, utils.Attribute{Key: "request_provider", Value: requestSession.Provider})
+		return common.LogCodedWarning("request had the wrong provider", nil, common.LavaErrorInvalidRelayRequest, requestSession.SpecId, 0, "", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "providerAddress", Value: providerAddress}, utils.Attribute{Key: "request_provider", Value: requestSession.Provider})
 	}
 	if requestSession.SpecId != rpcps.rpcProviderEndpoint.ChainID {
-		return utils.LavaFormatError("request had the wrong specID", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "request_specID", Value: requestSession.SpecId}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
+		return common.LogCodedWarning("request had the wrong specID", nil, common.LavaErrorInvalidRelayRequest, requestSession.SpecId, 0, "", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "request_specID", Value: requestSession.SpecId}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
 	}
 	if requestSession.LavaChainId != rpcps.lavaChainID {
-		return utils.LavaFormatError("request had the wrong lava chain ID", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "request_lavaChainID", Value: requestSession.LavaChainId}, utils.Attribute{Key: "lava chain id", Value: rpcps.lavaChainID})
+		return common.LogCodedWarning("request had the wrong lava chain ID", nil, common.LavaErrorInvalidRelayRequest, requestSession.SpecId, 0, "", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "request_lavaChainID", Value: requestSession.LavaChainId}, utils.Attribute{Key: "lava chain id", Value: rpcps.lavaChainID})
 	}
 
 	if !bytes.Equal(requestSession.ContentHash, sigs.HashMsg(relayData.GetContentHashData())) {
-		return utils.LavaFormatError("content hash mismatch between consumer and provider", nil,
+		return common.LogCodedWarning("content hash mismatch between consumer and provider", nil, common.LavaErrorInvalidRelayRequest, requestSession.SpecId, 0, "",
 			utils.Attribute{Key: "ApiInterface", Value: relayData.ApiInterface},
 			utils.Attribute{Key: "ApiUrl", Value: relayData.ApiUrl},
 			utils.Attribute{Key: "RequestBlock", Value: relayData.RequestBlock},
@@ -1057,7 +1055,7 @@ func (rpcps *RPCProviderServer) tryGetRelayReplyFromCache(ctx context.Context, r
 	cache := rpcps.cache
 	hashKey, outPutFormatter, hashErr := chainlib.HashCacheRequest(request.RelayData, rpcps.rpcProviderEndpoint.ChainID)
 	if hashErr != nil {
-		utils.LavaFormatError("TryRelay Failed computing hash for cache request", hashErr)
+		utils.LavaFormatWarning("TryRelay Failed computing hash for cache request", hashErr)
 		return nil, nil, nil
 	}
 	cacheCtx, cancel := context.WithTimeout(ctx, common.CacheTimeout)
@@ -1142,7 +1140,7 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 
 		go func() {
 			if hashErr != nil {
-				utils.LavaFormatError("Failed hashing cache request", nil, utils.LogAttr("hashErr", hashErr))
+				utils.LavaFormatWarning("Failed hashing cache request", nil, utils.LogAttr("hashErr", hashErr))
 				return
 			}
 			new_ctx := context.Background()
