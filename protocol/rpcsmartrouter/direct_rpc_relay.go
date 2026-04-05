@@ -26,8 +26,9 @@ import (
 // (bypassing the Lava provider-relay protocol)
 type DirectRPCRelaySender struct {
 	directConnection    lavasession.DirectRPCConnection
-	endpointName        string // Sanitized endpoint name (no API keys)
-	originalRequestData []byte // Original request bytes (for batch support)
+	endpointName        string             // Sanitized endpoint name (no API keys)
+	originalRequestData []byte             // Original request bytes (for batch support)
+	chainFamily         common.ChainFamily // Chain family for Tier 2 classification (-1 if unknown)
 }
 
 // maxResponseSizeForBlockExtraction is the threshold above which we skip JSON parsing
@@ -341,7 +342,7 @@ func (d *DirectRPCRelaySender) sendJSONRPCRelay(
 			utils.LogAttr("error", err.Error()),
 			utils.LogAttr("latency", latency),
 		)
-		return nil, MapDirectRPCError(err, d.directConnection.GetProtocol())
+		return nil, classifyAndWrap(err, d.chainFamily, common.TransportJsonRPC)
 	}
 
 	statusCode := response.StatusCode
@@ -354,11 +355,12 @@ func (d *DirectRPCRelaySender) sendJSONRPCRelay(
 			utils.LogAttr("status", statusCode),
 			utils.LogAttr("latency", latency),
 		)
-		return nil, MapDirectRPCError(&lavasession.HTTPStatusError{
+		httpErr := &lavasession.HTTPStatusError{
 			StatusCode: statusCode,
 			Status:     fmt.Sprintf("%d", statusCode),
 			Body:       responseData,
-		}, d.directConnection.GetProtocol())
+		}
+		return nil, classifyAndWrap(httpErr, d.chainFamily, common.TransportJsonRPC)
 	}
 
 	utils.LavaFormatTrace("direct RPC request succeeded",
@@ -470,7 +472,7 @@ func (d *DirectRPCRelaySender) sendRESTRelay(
 
 	// Handle transport errors
 	if err != nil {
-		return nil, MapDirectRPCError(err, d.directConnection.GetProtocol())
+		return nil, classifyAndWrap(err, d.chainFamily, common.TransportREST)
 	}
 
 	// Proper error classification (don't treat all 4xx as node errors)
@@ -617,7 +619,7 @@ func (d *DirectRPCRelaySender) sendGRPCRelay(
 			}, nil
 		}
 
-		return nil, MapDirectRPCError(err, d.directConnection.GetProtocol())
+		return nil, classifyAndWrap(err, d.chainFamily, common.TransportGRPC)
 	}
 
 	utils.LavaFormatTrace("direct gRPC request succeeded",

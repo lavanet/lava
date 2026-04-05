@@ -1496,24 +1496,20 @@ func TestHasUnsupportedMethodErrors(t *testing.T) {
 		require.True(t, result.IsNodeError, "Should still be a node error")
 
 		// Verify the message itself would not be classified as unsupported
-		isUnsupported := common.IsUnsupportedMethodMessage(string(result.Reply.Data))
+		isUnsupported := common.ClassifyMessage(0, string(result.Reply.Data)).SubCategory.IsUnsupportedMethod()
 		require.False(t, isUnsupported, "Smart contract 'identity not found' should NOT match unsupported patterns")
 	})
 
-	t.Run("Backward compatibility - message pattern check still works", func(t *testing.T) {
-		// Verify that the old message-based detection still works
-		// for backward compatibility
-
-		// Actual unsupported method messages
+	t.Run("Registry-based classification", func(t *testing.T) {
+		// Actual unsupported method messages (SubCategoryUnsupportedMethod)
+		// Note: "method not supported" (-32004) is retryable on another provider — not in this list
 		unsupportedMessages := []string{
 			"method not found",
 			"endpoint not found",
-			"method not supported",
-			"-32601",
 		}
 
 		for _, msg := range unsupportedMessages {
-			isUnsupported := common.IsUnsupportedMethodMessage(msg)
+			isUnsupported := common.ClassifyMessage(0, msg).SubCategory.IsUnsupportedMethod()
 			require.True(t, isUnsupported, "Message '%s' should be detected as unsupported", msg)
 		}
 
@@ -1525,7 +1521,7 @@ func TestHasUnsupportedMethodErrors(t *testing.T) {
 		}
 
 		for _, msg := range smartContractMessages {
-			isUnsupported := common.IsUnsupportedMethodMessage(msg)
+			isUnsupported := common.ClassifyMessage(0, msg).SubCategory.IsUnsupportedMethod()
 			require.False(t, isUnsupported, "Smart contract message '%s' should NOT be detected as unsupported", msg)
 		}
 	})

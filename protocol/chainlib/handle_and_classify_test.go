@@ -1,0 +1,125 @@
+package chainlib
+
+import (
+	"context"
+	"errors"
+	"testing"
+
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+)
+
+func TestHandleAndClassify_UnsupportedMethod(t *testing.T) {
+	// GIVEN a "method not found" error
+	// WHEN handleAndClassify processes it
+	// THEN it returns an UnsupportedMethodError wrapper
+	err := errors.New("method not found")
+	result := handleAndClassify(context.Background(), err, common.TransportJsonRPC, common.ChainFamilyEVM, "", &genericErrorHandler{})
+	require.NotNil(t, result)
+	assert.True(t, IsUnsupportedMethodErrorType(result))
+}
+
+func TestHandleAndClassify_NonRetryableError(t *testing.T) {
+	// GIVEN a non-retryable node error (e.g., nonce too low)
+	// WHEN handleAndClassify processes it
+	// THEN it returns a SolanaNonRetryableError wrapper (non-retryable indicator)
+	err := errors.New("nonce too low")
+	result := handleAndClassify(context.Background(), err, common.TransportJsonRPC, common.ChainFamilyEVM, "", &genericErrorHandler{})
+	require.NotNil(t, result)
+	assert.True(t, IsSolanaNonRetryableErrorType(result))
+}
+
+func TestHandleAndClassify_RetryableError(t *testing.T) {
+	// GIVEN a retryable error (e.g., rate limit)
+	// WHEN handleAndClassify processes it
+	// THEN it is wrapped (classified) but not as unsupported-method or non-retryable
+	err := errors.New("rate limit exceeded")
+	result := handleAndClassify(context.Background(), err, common.TransportJsonRPC, common.ChainFamilyEVM, "", &genericErrorHandler{})
+	require.NotNil(t, result)
+	assert.True(t, errors.Is(result, common.LavaErrorNodeRateLimited))
+	assert.False(t, IsUnsupportedMethodErrorType(result))
+	assert.False(t, IsSolanaNonRetryableErrorType(result))
+}
+
+func TestHandleAndClassify_UnknownError(t *testing.T) {
+	// GIVEN a completely unknown error
+	// WHEN handleAndClassify processes it
+	// THEN it falls through to handleGenericErrors (no special wrapping)
+	err := errors.New("something completely unexpected")
+	result := handleAndClassify(context.Background(), err, common.TransportJsonRPC, common.ChainFamilyEVM, "", &genericErrorHandler{})
+	assert.False(t, IsUnsupportedMethodErrorType(result))
+	assert.False(t, IsSolanaNonRetryableErrorType(result))
+}
+
+func TestClassifyNodeError_NilError(t *testing.T) {
+	result := ClassifyNodeError(nil, -1, common.TransportJsonRPC)
+	assert.Nil(t, result)
+}
+
+func TestClassifyNodeError_PlainError(t *testing.T) {
+	result := ClassifyNodeError(errors.New("nonce too low"), common.ChainFamilyEVM, common.TransportJsonRPC)
+	require.NotNil(t, result)
+	assert.Equal(t, common.LavaErrorChainNonceTooLow, result)
+}
+
+func TestClassifyNodeError_GRPCStatusError(t *testing.T) {
+	// gRPC Unimplemented should classify as unsupported method
+	grpcErr := status.Error(codes.Unimplemented, "method not implemented")
+	result := ClassifyNodeError(grpcErr, -1, common.TransportGRPC)
+	require.NotNil(t, result)
+	assert.True(t, result.SubCategory.IsUnsupportedMethod())
+}
+
+func TestClassifyNodeError_HTTPError(t *testing.T) {
+	// HTTPError with JSON-RPC body containing error code
+	httpErr := rpcclient.HTTPError{
+		StatusCode: 200,
+		Body:       []byte(`{"jsonrpc":"2.0","id":1,"error":{"code":-32601,"message":"Method not found"}}`),
+	}
+	result := ClassifyNodeError(httpErr, -1, common.TransportJsonRPC)
+	require.NotNil(t, result)
+	assert.Equal(t, common.LavaErrorNodeMethodNotFound, result)
+}
+
+func TestUnwrapLavaError_FromWrapped(t *testing.T) {
+	err := common.NewLavaError(common.LavaErrorChainNonceTooLow, "test")
+	le := unwrapLavaError(err)
+	require.NotNil(t, le)
+	assert.Equal(t, common.LavaErrorChainNonceTooLow, le)
+}
+
+func TestUnwrapLavaError_FromPlainError(t *testing.T) {
+	le := unwrapLavaError(errors.New("plain"))
+	assert.Nil(t, le)
+}
+
+func TestUnwrapLavaError_Nil(t *testing.T) {
+	le := unwrapLavaError(nil)
+	assert.Nil(t, le)
+}
+
+func TestHandleAndClassify_JsonRPCMethodNotFound(t *testing.T) {
+	// GIVEN a "method not found" error (message-based match)
+	// WHEN classified with TransportJsonRPC
+	// THEN it's detected as unsupported method via SubCategory
+	err := errors.New("method not found")
+	result := handleAndClassify(context.Background(), err, common.TransportJsonRPC, common.ChainFamilyEVM, "", &genericErrorHandler{})
+	require.NotNil(t, result)
+	assert.True(t, IsUnsupportedMethodErrorType(result))
+}
+
+func TestHandleAndClassify_MethodNotSupported(t *testing.T) {
+	// GIVEN a "method not supported" error (retryable — disabled on this node, try another)
+	// WHEN handleAndClassify processes it
+	// THEN it is wrapped so callers can observe the Retryable=true signal via errors.Is
+	err := errors.New("method not supported")
+	result := handleAndClassify(context.Background(), err, common.TransportJsonRPC, common.ChainFamilyEVM, "", &genericErrorHandler{})
+	require.NotNil(t, result, "retryable classified errors must be wrapped, not silently dropped")
+	assert.True(t, errors.Is(result, common.LavaErrorNodeMethodNotSupported))
+	assert.False(t, IsUnsupportedMethodErrorType(result), "method not supported is retryable, not a hard unsupported-method")
+	assert.True(t, ShouldRetryError(result), "Retryable=true must be surfaced to the retry logic")
+}

@@ -290,7 +290,7 @@ func (up *UsedProviders) GetUnwantedProvidersToSend(routerKey RouterKey) map[str
 
 func shouldRetryWithThisError(err error) bool {
 	// Never retry unsupported method errors
-	if common.IsUnsupportedMethodMessage(err.Error()) {
+	if common.ClassifyMessage(0, err.Error()).SubCategory.IsUnsupportedMethod() {
 		return false
 	}
 

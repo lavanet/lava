@@ -27,8 +27,7 @@ type MockChainTracker struct {
 // Test the error handling logic directly without needing a full ProviderSessionManager
 func testUnsupportedMethodErrorHandling(inputError error) error {
 	// This function replicates the error handling logic from finalizeSession
-	var unsupportedMethodError *chainlib.UnsupportedMethodError
-	if errors.As(inputError, &unsupportedMethodError) {
+	if chainlib.IsUnsupportedMethodErrorType(inputError) {
 		// In the actual code, this would log an info message
 		// For testing, we just return the original error without wrapping
 		return inputError
@@ -150,10 +149,10 @@ func TestUnsupportedMethodErrorHandling(t *testing.T) {
 
 			// Additional verification for UnsupportedMethodError
 			if tt.expectLogInfo {
-				var unsupportedMethodError *chainlib.UnsupportedMethodError
-				if errors.As(tt.inputError, &unsupportedMethodError) {
-					require.Equal(t, tt.methodName, unsupportedMethodError.GetMethodName())
-					require.NotEmpty(t, unsupportedMethodError.Error())
+				require.True(t, chainlib.IsUnsupportedMethodErrorType(tt.inputError))
+				require.NotEmpty(t, tt.inputError.Error())
+				if tt.methodName != "" {
+					require.Contains(t, tt.inputError.Error(), tt.methodName)
 				}
 			}
 		})
@@ -161,36 +160,38 @@ func TestUnsupportedMethodErrorHandling(t *testing.T) {
 }
 
 func TestUnsupportedMethodErrorProperties(t *testing.T) {
-	// Test the UnsupportedMethodError type properties and methods
+	// Test the LavaWrappedError properties when created via NewUnsupportedMethodError
 	t.Run("Error with method name", func(t *testing.T) {
 		originalErr := errors.New("method not found")
 		methodName := "eth_unsupportedMethod"
 		err := chainlib.NewUnsupportedMethodError(originalErr, methodName)
 
-		require.Equal(t, methodName, err.GetMethodName())
 		require.Contains(t, err.Error(), methodName)
-		require.Contains(t, err.Error(), originalErr.Error())
-		require.Equal(t, originalErr, err.Unwrap())
+		require.True(t, chainlib.IsUnsupportedMethodErrorType(err))
+		// Unwrap returns the underlying LavaError, not the original error
+		unwrapped := errors.Unwrap(err)
+		require.NotNil(t, unwrapped)
 	})
 
 	t.Run("Error without method name", func(t *testing.T) {
 		originalErr := errors.New("method not found")
 		err := chainlib.NewUnsupportedMethodError(originalErr, "")
 
-		require.Equal(t, "", err.GetMethodName())
-		require.Contains(t, err.Error(), originalErr.Error())
-		require.Equal(t, originalErr, err.Unwrap())
+		require.Contains(t, err.Error(), "unsupported method")
+		require.True(t, chainlib.IsUnsupportedMethodErrorType(err))
+		unwrapped := errors.Unwrap(err)
+		require.NotNil(t, unwrapped)
 	})
 
-	t.Run("Error with method name using WithMethod", func(t *testing.T) {
+	t.Run("Different method names produce different error messages", func(t *testing.T) {
 		originalErr := errors.New("method not found")
-		err := chainlib.NewUnsupportedMethodError(originalErr, "")
-		err = err.WithMethod("eth_customMethod")
+		err1 := chainlib.NewUnsupportedMethodError(originalErr, "eth_call")
+		err2 := chainlib.NewUnsupportedMethodError(originalErr, "eth_customMethod")
 
-		require.Equal(t, "eth_customMethod", err.GetMethodName())
-		require.Contains(t, err.Error(), "eth_customMethod")
-		require.Contains(t, err.Error(), originalErr.Error())
-		require.Equal(t, originalErr, err.Unwrap())
+		require.Contains(t, err1.Error(), "eth_call")
+		require.Contains(t, err2.Error(), "eth_customMethod")
+		require.True(t, chainlib.IsUnsupportedMethodErrorType(err1))
+		require.True(t, chainlib.IsUnsupportedMethodErrorType(err2))
 	})
 }
 
