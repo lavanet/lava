@@ -33,7 +33,6 @@ func SmartRouterStateMachineConfig() relaycore.StateMachineConfig {
 		EnableCircuitBreaker:         true,
 		CircuitBreakerThreshold:      2,
 		EnableTimeoutPriority:        true,
-		EnableUnsupportedMethodCheck: false,
 		MaxRetries:                   MaximumNumberOfTickerRelayRetries,
 		SendRelayAttempts:            SendRelayAttempts,
 	}
@@ -48,7 +47,6 @@ func SmartRouterPolicyConfig() relaypolicy.PolicyConfig {
 		EnableCircuitBreaker:    true,
 		CircuitBreakerThreshold: 2,
 		SendRelayAttempts:       SendRelayAttempts,
-		EnableUnsupportedCheck:  false,
 	}
 }
 

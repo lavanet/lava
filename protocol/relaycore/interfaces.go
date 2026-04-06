@@ -128,6 +128,7 @@ type DecisionInput struct {
 	Summary       ResultsSummary
 	ArchiveStatus *ArchiveStatus
 	NodeErrors    uint64
+	IsTickerHedge bool // true when called from ticker.C (hedge), false from gotResults (retry)
 }
 
 // RelayPolicyInf is the interface that the policy engine must implement.
@@ -147,8 +148,6 @@ type StateMachineConfig struct {
 	CircuitBreakerThreshold int
 	// EnableTimeoutPriority enables priority timeout checks before each select case (SmartRouter only)
 	EnableTimeoutPriority bool
-	// EnableUnsupportedMethodCheck enables checking for unsupported method errors before retry (Consumer only)
-	EnableUnsupportedMethodCheck bool
 	// MaxRetries is the maximum number of ticker relay retries
 	MaxRetries int
 	// SendRelayAttempts is the number of consecutive batch errors before giving up

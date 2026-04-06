@@ -33,7 +33,6 @@ func ConsumerStateMachineConfig() relaycore.StateMachineConfig {
 		EnableCircuitBreaker:         false,
 		CircuitBreakerThreshold:      0,
 		EnableTimeoutPriority:        false,
-		EnableUnsupportedMethodCheck: true,
 		MaxRetries:                   MaximumNumberOfTickerRelayRetries,
 		SendRelayAttempts:            SendRelayAttempts,
 	}
@@ -48,7 +47,6 @@ func ConsumerPolicyConfig() relaypolicy.PolicyConfig {
 		EnableCircuitBreaker:    false,
 		CircuitBreakerThreshold: 0,
 		SendRelayAttempts:       SendRelayAttempts,
-		EnableUnsupportedCheck:  true,
 	}
 }
 

@@ -31,6 +31,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/parser"
 	"github.com/lavanet/lava/v5/protocol/performance"
 	"github.com/lavanet/lava/v5/protocol/relaycore"
+	"github.com/lavanet/lava/v5/protocol/relaypolicy"
 
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
@@ -1258,22 +1259,16 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			isNodeError, errorMessage := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
 			localRelayResult.IsNodeError = isNodeError
 
-			// Check if this node error is an unsupported method
+			// Classify node error using the policy classification function
 			if isNodeError {
-				isUnsupported := common.IsUnsupportedMethodMessage(errorMessage)
-
-				// Additional check for REST APIs
-				if !isUnsupported && protocolMessage.GetApiCollection() != nil {
-					if strings.EqualFold(protocolMessage.GetApiCollection().CollectionData.ApiInterface, "rest") {
-						if localRelayResult.StatusCode == http.StatusNotFound || localRelayResult.StatusCode == http.StatusMethodNotAllowed {
-							isUnsupported = true
-						}
-					}
+				apiInterface := ""
+				if protocolMessage.GetApiCollection() != nil {
+					apiInterface = protocolMessage.GetApiCollection().CollectionData.ApiInterface
 				}
+				classification := relaypolicy.ClassifyNodeError(errorMessage, localRelayResult.StatusCode, apiInterface)
+				localRelayResult.IsUnsupportedMethod = classification.IsUnsupportedMethod
 
-				localRelayResult.IsUnsupportedMethod = isUnsupported
-
-				if isUnsupported {
+				if classification.IsUnsupportedMethod {
 					utils.LavaFormatInfo("unsupported method detected in relay result",
 						utils.LogAttr("GUID", ctx),
 						utils.LogAttr("method", protocolMessage.GetApi().Name),

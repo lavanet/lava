@@ -43,7 +43,6 @@ type PolicyConfig struct {
 	EnableCircuitBreaker    bool // provider exhaustion detection (SmartRouter only)
 	CircuitBreakerThreshold int  // consecutive pairing errors before tripping
 	SendRelayAttempts       int  // consecutive batch errors before giving up
-	EnableUnsupportedCheck  bool // unsupported method detection on node errors (Consumer only)
 }
 
 // EligibilityResult is returned by DecideEligibility.

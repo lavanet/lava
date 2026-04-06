@@ -48,14 +48,19 @@ func (p *Policy) Decide(input DecisionInput) DecisionOutput {
 		return DecisionOutput{Action: Retry, Reason: "EpochMismatch"}
 	}
 
-	// 5. HASH ERROR CHECK
-	if input.Summary.HashErr != nil {
-		return DecisionOutput{Action: Stop, Reason: "HashComputationFailed"}
-	}
+	// Steps 5-6 only apply to post-relay retry decisions (gotResults path).
+	// Ticker hedges skip these — the old retryCondition() never checked error
+	// tolerance or hash errors, only mode/limits/unsupported.
+	if !input.IsTickerHedge {
+		// 5. HASH ERROR CHECK
+		if input.Summary.HashErr != nil {
+			return DecisionOutput{Action: Stop, Reason: "HashComputationFailed"}
+		}
 
-	totalErrors := input.Summary.NodeErrors + input.Summary.SpecialNodeErrors + input.Summary.ProtocolErrors
-	if totalErrors > p.config.RelayRetryLimit {
-		return DecisionOutput{Action: Stop, Reason: "ErrorToleranceExceeded"}
+		totalErrors := input.Summary.NodeErrors + input.Summary.SpecialNodeErrors + input.Summary.ProtocolErrors
+		if totalErrors > p.config.RelayRetryLimit {
+			return DecisionOutput{Action: Stop, Reason: "ErrorToleranceExceeded"}
+		}
 	}
 
 	// 6. ARCHIVE MUTATION

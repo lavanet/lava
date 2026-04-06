@@ -167,7 +167,9 @@ func (up *UsedProviders) RemoveUsed(provider string, routerKey RouterKey, err er
 		uniqueUsedProviders.erroredProviders[provider] = struct{}{}
 	}
 
-	// Check if this is a NEW sync loss that should be retried
+	// Eligibility decision: identical logic to relaypolicy.DecideEligibility().
+	// Not called directly due to circular import (relaypolicy imports lavasession).
+	// Both implement: unsupported → unwanted, first sync loss → allow retry, else → unwanted.
 	_, alreadyBlocked := uniqueUsedProviders.blockOnSyncLoss[provider]
 	isNewSyncLoss := err != nil && shouldRetryWithThisError(err) && !alreadyBlocked
 

@@ -123,7 +123,10 @@ func (sm *UnifiedRelayStateMachine) getLatestState() *RelayState {
 	return sm.relayState[len(sm.relayState)-1]
 }
 
-func (sm *UnifiedRelayStateMachine) stateTransition(relayState *RelayState, numberOfNodeErrors uint64) {
+// stateTransition creates the next relay state. If the policy returned a mutation,
+// it is applied here via applyMutation. Otherwise falls back to UpgradeToArchiveIfNeeded
+// for backward compatibility during incremental migration.
+func (sm *UnifiedRelayStateMachine) stateTransition(relayState *RelayState, numberOfNodeErrors uint64, mutation *MutationOutput) {
 	batchNumber := sm.usedProviders.BatchNumber()
 	var nextState *RelayState
 	if relayState == nil {
@@ -131,10 +134,45 @@ func (sm *UnifiedRelayStateMachine) stateTransition(relayState *RelayState, numb
 	} else {
 		protocolMessage := sm.GetProtocolMessage()
 		archiveStatus := relayState.GetArchiveStatus()
-		upgradedProtocolMessage := UpgradeToArchiveIfNeeded(sm.ctx, protocolMessage, archiveStatus, sm.relaySender, sm.relayRetriesManager, batchNumber, numberOfNodeErrors)
+
+		var upgradedProtocolMessage chainlib.ProtocolMessage
+		if mutation != nil && mutation.ArchiveAction != ArchiveNoChange {
+			upgradedProtocolMessage = sm.applyMutation(protocolMessage, archiveStatus, *mutation)
+		} else {
+			// No mutation from policy — use legacy archive path
+			upgradedProtocolMessage = UpgradeToArchiveIfNeeded(sm.ctx, protocolMessage, archiveStatus, sm.relaySender, sm.relayRetriesManager, batchNumber, numberOfNodeErrors)
+		}
+
 		nextState = NewRelayState(sm.ctx, upgradedProtocolMessage, relayState.GetStateNumber()+1, sm.relayRetriesManager, sm.relaySender, archiveStatus)
 	}
 	sm.appendRelayState(nextState)
+}
+
+// applyMutation applies the policy's archive/cache mutation to the protocol message.
+func (sm *UnifiedRelayStateMachine) applyMutation(protocolMessage chainlib.ProtocolMessage, archiveStatus *ArchiveStatus, mutation MutationOutput) chainlib.ProtocolMessage {
+	if mutation.CacheHashes {
+		hashes := protocolMessage.GetRequestedBlocksHashes()
+		if archiveStatus.isHashCached.CompareAndSwap(false, true) {
+			for _, hash := range hashes {
+				sm.relayRetriesManager.AddHashToCache(hash)
+			}
+		}
+	}
+
+	switch mutation.ArchiveAction {
+	case ArchiveAdd:
+		upgraded := UpgradeToArchiveIfNeeded(sm.ctx, protocolMessage, archiveStatus, sm.relaySender, sm.relayRetriesManager, 1, 0)
+		return upgraded
+	case ArchiveRemove:
+		// Remove archive by calling with attempt 2 and upgraded status
+		if archiveStatus.IsUpgraded() {
+			removed := UpgradeToArchiveIfNeeded(sm.ctx, protocolMessage, archiveStatus, sm.relaySender, sm.relayRetriesManager, 2, 0)
+			return removed
+		}
+		return protocolMessage
+	default:
+		return protocolMessage
+	}
 }
 
 // getResultsSummary retrieves the ResultsSummary from the results checker.
@@ -149,7 +187,7 @@ func (sm *UnifiedRelayStateMachine) getResultsSummary() ResultsSummary {
 }
 
 // buildDecisionInput assembles the DecisionInput for the policy engine.
-func (sm *UnifiedRelayStateMachine) buildDecisionInput(numberOfNodeErrors uint64) DecisionInput {
+func (sm *UnifiedRelayStateMachine) buildDecisionInput(numberOfNodeErrors uint64, isTickerHedge bool) DecisionInput {
 	latestState := sm.getLatestState()
 	var archiveStatus *ArchiveStatus
 	if latestState != nil {
@@ -163,6 +201,7 @@ func (sm *UnifiedRelayStateMachine) buildDecisionInput(numberOfNodeErrors uint64
 		Summary:       sm.getResultsSummary(),
 		ArchiveStatus: archiveStatus,
 		NodeErrors:    numberOfNodeErrors,
+		IsTickerHedge: isTickerHedge,
 	}
 }
 
@@ -242,7 +281,7 @@ func (sm *UnifiedRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSendIn
 		}
 
 		// initialize relay state
-		sm.stateTransition(nil, 0)
+		sm.stateTransition(nil, 0, nil)
 
 		// Determine number of providers for initial batch
 		var numProviders int
@@ -311,9 +350,9 @@ func (sm *UnifiedRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSendIn
 					}
 				}
 
-				// Use policy.Decide() for all post-relay retry decisions
+				// Use policy.Decide() for post-relay retry decisions
 				nodeErrors := numberOfNodeErrorsAtomic.Load()
-				output := sm.policy.Decide(sm.buildDecisionInput(nodeErrors))
+				output := sm.policy.Decide(sm.buildDecisionInput(nodeErrors, false))
 				utils.LavaFormatDebug("[StateMachine] policy.Decide",
 					utils.LogAttr("GUID", sm.ctx),
 					utils.LogAttr("action", output.Action),
@@ -322,12 +361,17 @@ func (sm *UnifiedRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSendIn
 				)
 
 				if output.Action == ActionRetry {
-					sm.stateTransition(sm.getLatestState(), nodeErrors)
+					sm.stateTransition(sm.getLatestState(), nodeErrors, &output.Mutation)
 					relayTaskChannel <- RelayStateSendInstructions{RelayState: sm.getLatestState(), NumOfProviders: 1}
+					go readResultsFromProcessor()
 				} else {
-					go validateReturnCondition(nil)
+					// Policy says stop — return whatever results we have.
+					// This matches the old behavior where shouldRetryRelay=false
+					// caused HasRequiredNodeResults to return true (done), ending
+					// the relay with the best available result (success or error).
+					relayTaskChannel <- RelayStateSendInstructions{Done: true}
+					return
 				}
-				go readResultsFromProcessor()
 
 			case <-startNewBatchTicker.C:
 				// SmartRouter: Check timeout before retry
@@ -338,10 +382,10 @@ func (sm *UnifiedRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSendIn
 				}
 
 				nodeErrors := numberOfNodeErrorsAtomic.Load()
-				output := sm.policy.Decide(sm.buildDecisionInput(nodeErrors))
+				output := sm.policy.Decide(sm.buildDecisionInput(nodeErrors, true))
 				if output.Action == ActionRetry {
 					utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", sm.usedProviders.BatchNumber()), utils.LogAttr("GUID", sm.ctx))
-					sm.stateTransition(sm.getLatestState(), nodeErrors)
+					sm.stateTransition(sm.getLatestState(), nodeErrors, &output.Mutation)
 					relayTaskChannel <- RelayStateSendInstructions{RelayState: sm.getLatestState(), NumOfProviders: 1}
 					go sm.tickerMetricSetter.SetRelaySentByNewBatchTickerMetric(sm.relaySender.GetChainIdAndApiInterface())
 				}
