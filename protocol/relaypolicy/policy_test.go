@@ -169,3 +169,91 @@ func TestOnSendRelayResult(t *testing.T) {
 		require.Equal(t, SendRetry, result) // only 1 consecutive, threshold is 2
 	})
 }
+
+func TestDecide_IsTickerHedge(t *testing.T) {
+	t.Run("ticker hedge skips error tolerance", func(t *testing.T) {
+		policy := NewPolicy(PolicyConfig{MaxRetries: 10, RelayRetryLimit: 2, SendRelayAttempts: 3})
+		// 3 errors exceeds limit of 2 — gotResults path would stop
+		input := DecisionInput{
+			Selection: relaycore.Stateless,
+			Summary:   ResultsSummary{NodeErrors: 3},
+		}
+		output := policy.Decide(input)
+		require.Equal(t, Stop, output.Action)
+		require.Equal(t, "ErrorToleranceExceeded", output.Reason)
+
+		// Same input but as ticker hedge — should still retry
+		input.IsTickerHedge = true
+		output = policy.Decide(input)
+		require.Equal(t, Retry, output.Action)
+		require.Equal(t, "Default", output.Reason)
+	})
+
+	t.Run("ticker hedge skips hash error", func(t *testing.T) {
+		policy := NewPolicy(PolicyConfig{MaxRetries: 10, RelayRetryLimit: 5, SendRelayAttempts: 3})
+		input := DecisionInput{
+			Selection: relaycore.Stateless,
+			Summary:   ResultsSummary{HashErr: fmt.Errorf("hash failed"), NodeErrors: 1},
+		}
+		output := policy.Decide(input)
+		require.Equal(t, Stop, output.Action)
+		require.Equal(t, "HashComputationFailed", output.Reason)
+
+		input.IsTickerHedge = true
+		output = policy.Decide(input)
+		require.Equal(t, Retry, output.Action)
+	})
+
+	t.Run("ticker hedge still respects mode and limit checks", func(t *testing.T) {
+		policy := NewPolicy(PolicyConfig{MaxRetries: 5, RelayRetryLimit: 2, SendRelayAttempts: 3})
+		// MaxRetries should still stop ticker hedges
+		input := DecisionInput{
+			Selection:     relaycore.Stateless,
+			AttemptNumber: 5,
+			IsTickerHedge: true,
+			Summary:       ResultsSummary{NodeErrors: 1},
+		}
+		output := policy.Decide(input)
+		require.Equal(t, Stop, output.Action)
+		require.Equal(t, "MaxRetriesReached", output.Reason)
+
+		// Unsupported method should still stop ticker hedges
+		input2 := DecisionInput{
+			Selection:     relaycore.Stateless,
+			IsTickerHedge: true,
+			Summary:       ResultsSummary{HasUnsupportedMethod: true},
+		}
+		output = policy.Decide(input2)
+		require.Equal(t, Stop, output.Action)
+		require.Equal(t, "UnsupportedMethod", output.Reason)
+	})
+}
+
+func TestDecide_ArchiveMutation(t *testing.T) {
+	t.Run("first retry adds archive", func(t *testing.T) {
+		policy := NewPolicy(PolicyConfig{MaxRetries: 10, RelayRetryLimit: 5, SendRelayAttempts: 3})
+		archiveStatus := &relaycore.ArchiveStatus{}
+		output := policy.Decide(DecisionInput{
+			Selection:     relaycore.Stateless,
+			AttemptNumber: 1,
+			Summary:       ResultsSummary{NodeErrors: 1},
+			ArchiveStatus: archiveStatus,
+			NodeErrors:    1,
+		})
+		require.Equal(t, Retry, output.Action)
+		require.Equal(t, AddArchive, output.Mutation.ArchiveAction)
+		require.False(t, output.Mutation.CacheHashes)
+	})
+
+	t.Run("no archive status returns no mutation", func(t *testing.T) {
+		policy := NewPolicy(PolicyConfig{MaxRetries: 10, RelayRetryLimit: 5, SendRelayAttempts: 3})
+		output := policy.Decide(DecisionInput{
+			Selection:     relaycore.Stateless,
+			AttemptNumber: 1,
+			Summary:       ResultsSummary{NodeErrors: 1},
+			ArchiveStatus: nil,
+		})
+		require.Equal(t, Retry, output.Action)
+		require.Equal(t, NoChange, output.Mutation.ArchiveAction)
+	})
+}

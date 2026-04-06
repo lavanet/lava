@@ -21,6 +21,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
 	"github.com/lavanet/lava/v5/protocol/relaycore"
+	"github.com/lavanet/lava/v5/protocol/relaypolicy"
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/protocopy"
@@ -860,6 +861,17 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 
 				// Cache write for successful responses (non-blocking)
 				rpcss.tryCacheWrite(goroutineCtx, protocolMessage, localRelayResult)
+			}
+
+			// Classify node errors using the policy classification function
+			if localRelayResult.IsNodeError && localRelayResult.Reply != nil {
+				_, errorMessage := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
+				apiInterface := ""
+				if protocolMessage.GetApiCollection() != nil {
+					apiInterface = protocolMessage.GetApiCollection().CollectionData.ApiInterface
+				}
+				classification := relaypolicy.ClassifyNodeError(errorMessage, localRelayResult.StatusCode, apiInterface)
+				localRelayResult.IsUnsupportedMethod = classification.IsUnsupportedMethod
 			}
 
 			// Update session manager with result
