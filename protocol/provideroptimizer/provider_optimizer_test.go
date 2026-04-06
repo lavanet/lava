@@ -1173,3 +1173,93 @@ func TestProviderOptimizerBlockAvailabilityIntegration(t *testing.T) {
 		})
 	}
 }
+
+// TestProviderOptimizer_ResetState_AllowsRealTimeSamplesAfterClockReset is a regression
+// test for the "frozen optimizer after debug clock reset" bug.
+//
+// Root cause (guard that rejects the samples):
+//
+//	utils/score/score_store.go:196
+//	  if ss.Time.After(sampleTime) { return TimeConflictingScoresError }
+//
+// Sequence that triggers the bug:
+//  1. Debug server shifts the clock +24 h  (NowFunc = realNow + 24h).
+//  2. Relay data is recorded; every ScoreStore.Time is set to "tomorrow".
+//  3. Debug server resets the clock (NowFunc = nil → po.now() = real time = "today").
+//  4. New relay samples carry "today" timestamps.
+//  5. ScoreStore.Update rejects them because stored Time ("tomorrow") > sampleTime ("today").
+//  6. The optimizer silently drops ALL new samples for the next 24 hours.
+//
+// The fix: call ResetState() when offset is set back to 0.  ResetState purges the
+// future-dated cache entries so fresh real-time writes are accepted immediately.
+func TestProviderOptimizer_ResetState_AllowsRealTimeSamplesAfterClockReset(t *testing.T) {
+	po := setupProviderOptimizer(1)
+	addr := "lava@test_reset"
+	cu := uint64(10)
+	syncBlock := uint64(1000)
+
+	realNow := time.Now()
+
+	// ── Step 1: simulate a +24 h clock warp ────────────────────────────────────
+	// Record relays at the shifted time so ScoreStore.Time = "tomorrow" in cache.
+	po.NowFunc = func() time.Time { return realNow.Add(24 * time.Hour) }
+	for i := 0; i < 5; i++ {
+		po.appendRelayData(addr, TEST_BASE_WORLD_LATENCY, true, cu, syncBlock, po.now())
+	}
+	time.Sleep(4 * time.Millisecond) // wait for ristretto async write
+
+	data, found := po.getProviderData(addr)
+	require.True(t, found, "provider data should be cached after shifted writes")
+	futureTimestamp := data.Latency.GetLastUpdateTime()
+	require.True(t, futureTimestamp.After(realNow.Add(23*time.Hour)),
+		"stored latency timestamp should be ~24h in the future; got %v", futureTimestamp)
+
+	// ── Step 2: reset clock (mirrors POST /debug/time-warp {"offset_seconds":0}) ─
+	po.NowFunc = nil
+
+	// ── Step 3: reproduce the bug ────────────────────────────────────────────────
+	// Call updateDecayingWeightedAverage directly with real-time sampleTime so we
+	// can capture the exact error that AppendRelayData silently swallows.
+	halfTime := po.calculateHalfTime(addr, realNow)
+	_, updateErr := po.updateDecayingWeightedAverage(
+		data, score.LatencyScoreType,
+		TEST_BASE_WORLD_LATENCY.Seconds(),
+		score.RelayUpdateWeight, halfTime, cu,
+		realNow, // "today" — earlier than the stored "tomorrow" ScoreStore.Time
+	)
+	// Without ResetState the guard at utils/score/score_store.go:196 fires:
+	//   ss.Time ("tomorrow") > sampleTime ("today") → TimeConflictingScoresError
+	require.True(t, score.TimeConflictingScoresError.Is(updateErr),
+		"BUG: without ResetState, real-time sample must be rejected by "+
+			"ScoreStore.Update (utils/score/score_store.go:196); got: %v", updateErr)
+
+	// ── Step 4: apply the fix ────────────────────────────────────────────────────
+	po.ResetState()
+	time.Sleep(4 * time.Millisecond) // wait for ristretto async clear
+
+	// Cache must be empty — every ScoreStore entry has been purged.
+	_, foundAfterReset := po.getProviderData(addr)
+	require.False(t, foundAfterReset,
+		"after ResetState, stale provider data should be gone from the cache")
+
+	// latestSyncData must be zeroed.
+	po.latestSyncData.Lock.Lock()
+	require.Zero(t, po.latestSyncData.Block, "latestSyncData.Block should be reset to 0")
+	require.True(t, po.latestSyncData.Time.IsZero(), "latestSyncData.Time should be reset to zero")
+	po.latestSyncData.Lock.Unlock()
+
+	// ── Step 5: verify real-time writes are now accepted ─────────────────────────
+	po.appendRelayData(addr, TEST_BASE_WORLD_LATENCY, true, cu, syncBlock, time.Now())
+	time.Sleep(4 * time.Millisecond)
+
+	dataAfter, foundAfter := po.getProviderData(addr)
+	require.True(t, foundAfter,
+		"after ResetState, new relay data should be written and retrievable from cache")
+
+	newTimestamp := dataAfter.Latency.GetLastUpdateTime()
+	require.True(t, newTimestamp.After(realNow.Add(-time.Second)),
+		"new write should carry a real-time timestamp; got %v", newTimestamp)
+	require.False(t, newTimestamp.After(realNow.Add(time.Hour)),
+		"new write should NOT carry the old future timestamp; got %v", newTimestamp)
+}
+
