@@ -1837,8 +1837,7 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 
 		// Apply health tracking based on error classification
 		if shouldMarkUnhealthy && targetEndpoint != nil {
-			targetEndpoint.MarkUnhealthy()
-			if !targetEndpoint.Enabled { // only emit metric when endpoint actually becomes disabled
+			if targetEndpoint.MarkUnhealthy() {
 				rpcss.smartRouterEndpointMetrics.SetEndpointOverallHealth(rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface, endpointName, false)
 			}
 		}
@@ -1854,8 +1853,7 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 		needsBackoff = true                        // Both should backoff/retry
 
 		if shouldMarkUnhealthy && targetEndpoint != nil {
-			targetEndpoint.MarkUnhealthy()
-			if !targetEndpoint.Enabled { // only emit metric when endpoint actually becomes disabled
+			if targetEndpoint.MarkUnhealthy() {
 				rpcss.smartRouterEndpointMetrics.SetEndpointOverallHealth(rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface, endpointName, false)
 			}
 			utils.LavaFormatDebug("endpoint returned error status",
@@ -1874,10 +1872,8 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 	}
 
 	// Success - reset endpoint health
-	if targetEndpoint != nil && targetEndpoint.ConnectionRefusals > 0 {
-		wasDisabled := !targetEndpoint.Enabled
-		targetEndpoint.ResetHealth()
-		if wasDisabled { // only emit metric when recovering from a disabled state
+	if targetEndpoint != nil {
+		if targetEndpoint.ResetHealth() {
 			rpcss.smartRouterEndpointMetrics.SetEndpointOverallHealth(rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface, endpointName, true)
 		}
 	}

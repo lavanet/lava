@@ -231,27 +231,50 @@ func (e *Endpoint) CheckSupportForServices(addon string, extensions []string) (s
 	return true
 }
 
-// MarkUnhealthy increments connection refusals and disables endpoint if threshold exceeded
-func (e *Endpoint) MarkUnhealthy() {
+// MarkUnhealthy increments connection refusals and disables endpoint if threshold exceeded.
+// Returns true if the endpoint transitioned to disabled on this call.
+func (e *Endpoint) MarkUnhealthy() bool {
+	e.mu.Lock()
 	e.ConnectionRefusals++
-	if e.ConnectionRefusals >= MaxConsecutiveConnectionAttempts {
+	becameDisabled := false
+	if e.ConnectionRefusals >= MaxConsecutiveConnectionAttempts && e.Enabled {
 		e.Enabled = false
+		becameDisabled = true
+	}
+	refusals := e.ConnectionRefusals
+	e.mu.Unlock()
+
+	if becameDisabled {
 		utils.LavaFormatWarning("disabled unhealthy endpoint", nil,
 			utils.LogAttr("endpoint", e.NetworkAddress),
-			utils.LogAttr("refusals", e.ConnectionRefusals),
+			utils.LogAttr("refusals", refusals),
 			utils.LogAttr("is_direct_rpc", e.IsDirectRPC()),
 		)
 	}
+	return becameDisabled
 }
 
-// ResetHealth resets connection refusals and re-enables endpoint
-func (e *Endpoint) ResetHealth() {
+// ResetHealth resets connection refusals and re-enables endpoint.
+// Returns true if the endpoint was disabled and is now re-enabled.
+func (e *Endpoint) ResetHealth() bool {
+	e.mu.Lock()
+	if e.Enabled && e.ConnectionRefusals == 0 {
+		e.mu.Unlock()
+		return false // already healthy, no-op
+	}
+	wasDisabled := !e.Enabled
 	e.ConnectionRefusals = 0
 	e.Enabled = true
-	utils.LavaFormatInfo("re-enabled healthy endpoint",
-		utils.LogAttr("endpoint", e.NetworkAddress),
-		utils.LogAttr("is_direct_rpc", e.IsDirectRPC()),
-	)
+	addr, isDirect := e.NetworkAddress, e.IsDirectRPC()
+	e.mu.Unlock()
+
+	if wasDisabled {
+		utils.LavaFormatInfo("re-enabled healthy endpoint",
+			utils.LogAttr("endpoint", addr),
+			utils.LogAttr("is_direct_rpc", isDirect),
+		)
+	}
+	return wasDisabled
 }
 
 type SessionWithProvider struct {
