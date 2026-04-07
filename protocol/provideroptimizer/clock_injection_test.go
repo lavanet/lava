@@ -89,4 +89,3 @@ func TestProviderOptimizer_ClockInjectionScoreDecay(t *testing.T) {
 	// optimizer is still functional after reset
 	po.AppendRelayData(provider, 10*time.Millisecond, 100, 100)
 }
-

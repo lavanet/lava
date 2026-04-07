@@ -1262,4 +1262,3 @@ func TestProviderOptimizer_ResetState_AllowsRealTimeSamplesAfterClockReset(t *te
 	require.False(t, newTimestamp.After(realNow.Add(time.Hour)),
 		"new write should NOT carry the old future timestamp; got %v", newTimestamp)
 }
-

@@ -59,7 +59,7 @@ type ProviderOptimizer struct {
 	globalLatencyCalculator         *score.AdaptiveMaxCalculator // Global T-Digest for all providers' latency samples
 	globalSyncCalculator            *score.AdaptiveMaxCalculator // Global T-Digest for all providers' sync samples
 	adaptiveLock                    sync.RWMutex                 // Lock for accessing adaptive calculators
-	NowFunc func()                  time.Time                   // NowFunc overrides the clock used for score updates nil = use real time.Now()
+	NowFunc                         func() time.Time             // NowFunc overrides the clock used for score updates nil = use real time.Now()
 }
 
 type ProviderData struct {
