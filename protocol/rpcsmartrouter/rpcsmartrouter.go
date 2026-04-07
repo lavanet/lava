@@ -54,6 +54,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/relaycore"
 	"github.com/lavanet/lava/v5/protocol/rpcprovider"
 	"github.com/lavanet/lava/v5/protocol/statetracker"
+	"github.com/lavanet/lava/v5/protocol/tracing"
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
@@ -1349,6 +1350,22 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			}
 
 			rpcSmartRouterSharedState := viper.GetBool(common.SharedStateFlag)
+
+			// Initialise OTel tracing. Standard OTel SDK environment variables drive
+			// all configuration (endpoint, sampler, service name, etc.); see the
+			// tracing.TraceBodyFlag doc-comment for the full list. The SDK is enabled
+			// unless OTEL_SDK_DISABLED=true or OTEL_TRACES_EXPORTER=none; when no OTLP
+			// endpoint is configured the SDK falls back to the spec default
+			// (localhost:4317 for gRPC, localhost:4318 for HTTP).
+			traceCfg := tracing.TraceConfig{
+				TraceBody: viper.GetBool(tracing.TraceBodyFlag),
+			}
+			traceManager, err := tracing.New(ctx, traceCfg)
+			if err != nil {
+				return err
+			}
+			defer traceManager.Shutdown()
+
 			err = rpcSmartRouter.Start(ctx, &rpcSmartRouterStartOptions{
 				rpcEndpoints:             rpcEndpoints,
 				cache:                    cache,
@@ -1461,6 +1478,19 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	// batch request size limit
 	cmdRPCSmartRouter.Flags().IntVar(&chainlib.MaxBatchRequestSize, common.MaxBatchRequestSizeFlag, common.DefaultMaxBatchRequestSize, "max number of requests allowed within a batch request, 0 means unlimited")
 	cmdRPCSmartRouter.Flags().BoolVar(&relaycore.DisableBatchRequestRetry, common.DisableBatchRequestRetryFlag, true, "disable retries for batch requests (JSON-RPC batches)")
+
+	// OpenTelemetry tracing.
+	// All standard OTel knobs (endpoint, sampler, service name, TLS, headers, etc.)
+	// come from OTEL_* environment variables per the SDK spec — see the
+	// tracing.TraceBodyFlag doc-comment for the full list. Tracing is enabled
+	// unless OTEL_SDK_DISABLED=true or OTEL_TRACES_EXPORTER=none; when no OTLP
+	// endpoint is configured the SDK falls back to the spec default
+	// (localhost:4317 for gRPC, localhost:4318 for HTTP).
+	// --otel-trace-body is the only Lava-specific knob, exposed as a CLI flag
+	// because it's a per-invocation debug toggle rather than deployment
+	// configuration. Body size is delegated to the SDK via
+	// OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT (SDK default: unlimited).
+	cmdRPCSmartRouter.Flags().Bool(tracing.TraceBodyFlag, false, "record request/response bodies on trace spans (size limit delegated to OTel SDK via OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT)")
 
 	common.AddRollingLogConfig(cmdRPCSmartRouter)
 	return cmdRPCSmartRouter
