@@ -105,7 +105,6 @@ func TestDebugTimeWarp_OffsetBoundaryValidation(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			var offsetNano atomic.Int64
 			mux := buildDebugMux(newEmptyOptimizers(), &offsetNano)
