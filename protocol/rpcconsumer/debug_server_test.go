@@ -175,4 +175,3 @@ func TestDebugTimeWarp_ErrorMessageContainsNewCeiling(t *testing.T) {
 		"old ceiling value must not appear in the error message after this PR")
 	require.Contains(t, rr.Body.String(), "24h")
 }
-
