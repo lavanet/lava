@@ -53,9 +53,27 @@ func (r *RelayErrors) AddError(err RelayError) {
 	r.RelayErrors = append(r.RelayErrors, err)
 }
 
+// GetBestErrorMessageForUser picks the single error to return to the user
+// out of all failed relays. Precedence, in order:
+//
+//  1. MAJORITY CONSENSUS: if a single error string appears on at least half the
+//     failed providers, return it regardless of category or score. Agreement
+//     across providers is the strongest signal we have.
+//  2. EXTERNAL PREFERENCE: among scored candidates (non-nil reputation+stake),
+//     external errors (node/chain) beat internal errors (protocol/transport)
+//     regardless of score — the user can act on an external error.
+//  3. SCORE TIEBREAK: within the same category, the provider with the highest
+//     reputation × stake wins.
+//  4. FALLBACK: if nothing scored, return the first error or merge all.
+//
+// NOTE: the external preference is second-class — a Category=Internal majority
+// will beat a solo Category=External error. That matches "trust consensus over
+// individual signals", and flipping it would require a behavioral change the
+// relay-race design isn't ready for.
 func (r *RelayErrors) GetBestErrorMessageForUser() RelayError {
 	bestIndex := -1
 	bestResult := github_com_cosmos_cosmos_sdk_types.ZeroDec()
+	bestIsExternal := false
 	errorMap := make(map[string][]int)
 	for idx, relayError := range r.RelayErrors {
 		errorMessage := r.sanitizeError(relayError.Err)
@@ -64,24 +82,33 @@ func (r *RelayErrors) GetBestErrorMessageForUser() RelayError {
 			continue
 		}
 		currentResult := relayError.ProviderInfo.ProviderReputationSummary.MulInt(relayError.ProviderInfo.ProviderStake.Amount)
-		if currentResult.GTE(bestResult) { // 0 or 1 here are valid replacements, so even 0 scores will return the error value
+		isExternal := relayError.LavaError != nil && relayError.LavaError.Category == common.CategoryExternal
+
+		// Scored candidate: apply external-beats-internal preference, then
+		// score tiebreak. This result is only consulted if step 1 (majority
+		// consensus) finds no majority — see the precedence block above.
+		if isExternal && !bestIsExternal {
 			bestResult.Set(currentResult)
 			bestIndex = idx
+			bestIsExternal = true
+		} else if isExternal == bestIsExternal && currentResult.GTE(bestResult) {
+			bestResult.Set(currentResult)
+			bestIndex = idx
+			bestIsExternal = isExternal
 		}
 	}
 
+	// Step 1: majority consensus wins unconditionally.
 	errorCount, index := r.findMaxAppearances(errorMap)
 	if index >= 0 && errorCount >= (len(r.RelayErrors)/2) {
-		// we have majority of errors we can return this error.
 		if r.RelayErrors[index].Response != nil {
 			r.RelayErrors[index].Response.RelayResult.CrossValidation = errorCount
 		}
 		return r.RelayErrors[index]
 	}
 
+	// Step 2+3: external preference with score tiebreak (populated above).
 	if bestIndex != -1 {
-		// Return the chosen error.
-		// Print info for the consumer to know which errors happened
 		utils.LavaFormatDebug("Failed all relays", utils.LogAttr("error_map", errorMap))
 		return r.RelayErrors[bestIndex]
 	}
@@ -115,7 +142,7 @@ func (r *RelayErrors) mergeAllErrors() error {
 	allErrorsLength := len(allErrors)
 	for idx, message := range allErrors {
 		mergedMessage += strconv.Itoa(idx) + ". " + message.Error()
-		if idx < allErrorsLength {
+		if idx < allErrorsLength-1 {
 			mergedMessage += ", "
 		}
 	}
@@ -133,6 +160,7 @@ type RelayError struct {
 	Err          error
 	ProviderInfo common.ProviderInfo
 	Response     *RelayResponse
+	LavaError    *common.LavaError // classified error code (nil if not yet classified)
 }
 
 func (re RelayError) String() string {

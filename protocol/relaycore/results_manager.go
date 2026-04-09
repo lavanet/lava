@@ -12,6 +12,19 @@ import (
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
+// transportFromProtocolMessage derives the TransportType from the protocol message's API collection.
+func transportFromProtocolMessage(pm chainlib.ProtocolMessage) common.TransportType {
+	if collection := pm.GetApiCollection(); collection != nil {
+		switch collection.CollectionData.ApiInterface {
+		case "rest":
+			return common.TransportREST
+		case "grpc":
+			return common.TransportGRPC
+		}
+	}
+	return common.TransportJsonRPC // default for jsonrpc and tendermintrpc
+}
+
 type ResultsManager interface {
 	String() string
 	NodeResults() []common.RelayResult
@@ -32,11 +45,13 @@ type ResultsManagerInst struct {
 	successResults         []common.RelayResult
 	lock                   sync.RWMutex
 	guid                   uint64
+	chainID                string
 }
 
-func NewResultsManager(guid uint64) ResultsManager {
+func NewResultsManager(guid uint64, chainID string) ResultsManager {
 	return &ResultsManagerInst{
 		guid:                   guid,
+		chainID:                chainID,
 		nodeResponseErrors:     RelayErrors{RelayErrors: []RelayError{}},
 		protocolResponseErrors: RelayErrors{RelayErrors: []RelayError{}, OnFailureMergeAll: true},
 	}
@@ -45,16 +60,21 @@ func NewResultsManager(guid uint64) ResultsManager {
 func (rp *ResultsManagerInst) setErrorResponse(response *RelayResponse) {
 	rp.lock.Lock()
 	defer rp.lock.Unlock()
-	utils.LavaFormatDebug("could not send relay to provider", utils.Attribute{Key: "GUID", Value: rp.guid}, utils.Attribute{Key: "provider", Value: response.RelayResult.ProviderInfo.ProviderAddress}, utils.Attribute{Key: "error", Value: response.Err.Error()})
-	utils.LavaFormatError(
-		"could not send relay to provider",
-		response.Err,
+	// Protocol errors come from the lavasession/protocolerrors packages and carry an sdkerrors ABCI
+	// code — use ClassifyLegacyError to extract it. These errors travel over gRPC (provider →
+	// consumer), so TransportGRPC is used for the message-based fallback path.
+	classified := common.ClassifyLegacyError(response.Err, common.TransportGRPC)
+	// This is a protocol-layer error (session not found, consumer blocked, etc.),
+	// not a node-side error. Pass "" as chainErrorMessage so the chain_error_message
+	// structured field doesn't get polluted with sdkerrors strings. The full
+	// error still surfaces via the err argument.
+	common.LogCodedError("could not send relay to provider", response.Err, classified, rp.chainID, 0, "",
 		utils.Attribute{Key: "GUID", Value: rp.guid},
 		utils.Attribute{Key: "provider", Value: response.RelayResult.ProviderInfo.ProviderAddress},
 		utils.Attribute{Key: "statusCode", Value: response.RelayResult.StatusCode},
 		utils.Attribute{Key: "providerTrailer", Value: response.RelayResult.ProviderTrailer},
 	)
-	rp.protocolResponseErrors.AddError(RelayError{Err: response.Err, ProviderInfo: response.RelayResult.ProviderInfo, Response: response})
+	rp.protocolResponseErrors.AddError(RelayError{Err: response.Err, ProviderInfo: response.RelayResult.ProviderInfo, Response: response, LavaError: classified})
 }
 
 // only when locked
@@ -127,9 +147,24 @@ func (rp *ResultsManagerInst) setValidResponse(response *RelayResponse, protocol
 			requestUrl = protocolMessage.RelayPrivateData().ApiUrl
 		}
 
-		utils.LavaFormatError(
-			"received node error reply from provider",
-			err,
+		// Derive transport from the protocol message's API collection
+		transport := transportFromProtocolMessage(protocolMessage)
+		// Use the HTTP status code for classification; for JSON-RPC, the HTTP status is 200
+		// even on errors, so extract the actual JSON-RPC error code from the response body.
+		errorCode := response.RelayResult.StatusCode
+		if transport == common.TransportJsonRPC && response.RelayResult.Reply.Data != nil {
+			if code := common.ExtractJSONRPCErrorCode(response.RelayResult.Reply.Data); code != 0 {
+				errorCode = code
+			}
+		}
+		// Resolve chain family so Tier-2 chain-specific matchers win over
+		// Tier-1 generic ones. Without this, chain-native codes like Solana's
+		// -32004 (block-not-yet-propagated, retryable) would get classified
+		// through the JSON-RPC generic bucket as NODE_METHOD_NOT_SUPPORTED
+		// (zero CU, no retry) — a silent retry-starvation bug.
+		chainFamily := common.GetChainFamilyOrDefault(rp.chainID)
+		nodeClassified := common.ClassifyError(common.DetectConnectionError(err), chainFamily, transport, errorCode, err.Error())
+		common.LogCodedError("received node error reply from provider", err, nodeClassified, rp.chainID, errorCode, err.Error(),
 			utils.LogAttr("GUID", rp.guid),
 			utils.LogAttr("provider", response.RelayResult.ProviderInfo),
 			utils.LogAttr("statusCode", response.RelayResult.StatusCode),
@@ -140,7 +175,7 @@ func (rp *ResultsManagerInst) setValidResponse(response *RelayResponse, protocol
 			utils.LogAttr("requestPayload", parser.CapStringLen(reqPayload)),
 			utils.LogAttr("requestHeaders", reqHeaders),
 		)
-		rp.nodeResponseErrors.AddError(RelayError{Err: err, ProviderInfo: response.RelayResult.ProviderInfo, Response: response})
+		rp.nodeResponseErrors.AddError(RelayError{Err: err, ProviderInfo: response.RelayResult.ProviderInfo, Response: response, LavaError: nodeClassified})
 		return err
 	}
 	rp.successResults = append(rp.successResults, response.RelayResult)

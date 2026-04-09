@@ -383,6 +383,11 @@ type RelayResult struct {
 	IsNodeError         bool
 	ResponseHash        [32]byte // cached SHA256 hash of Reply.Data for cross-validation comparison, zero-value if not computed
 	IsUnsupportedMethod bool     // Indicates this node error is an unsupported method
+	// IsUserError indicates this node error is caused by invalid client input
+	// (Layer D USER_* codes). Behavioral contract mirrors IsUnsupportedMethod:
+	// zero retries, zero CU, no provider scoring. User errors are NOT cached
+	// because the next request from the same client may carry valid input.
+	IsUserError bool
 }
 
 func (rr *RelayResult) GetReplyServer() pairingtypes.Relayer_RelaySubscribeClient {

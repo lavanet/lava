@@ -64,6 +64,16 @@ jobs:
             | go-junit-report -parser gojson -set-exit-code -out x-report.xml
           jq -r 'select(.Action=="output") | .Output' x-test.json > x-test.log || true
 
+      - name: Print failed test output
+        if: failure()
+        run: |
+          for f in utils-test.json common-test.json x-test.json; do
+            if [ -f "$f" ]; then
+              echo "=== Failed tests from $f ==="
+              jq -r 'select(.Action=="output") | .Output' "$f" 2>/dev/null | tail -200
+            fi
+          done
+
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
@@ -121,6 +131,16 @@ jobs:
             | go-junit-report -parser gojson -set-exit-code -out cache-report.xml
           jq -r 'select(.Action=="output") | .Output' cache-test.json > cache-test.log || true
 
+      - name: Print failed test output
+        if: failure()
+        run: |
+          for f in protocol-test.json cache-test.json; do
+            if [ -f "$f" ]; then
+              echo "=== Failed tests from $f ==="
+              jq -r 'select(.Action=="output") | .Output' "$f" 2>/dev/null | tail -200
+            fi
+          done
+
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
@@ -171,6 +191,12 @@ jobs:
             | grep -v '"Action":"output"' \
             | go-junit-report -parser gojson -set-exit-code -out protocol-e2e-report.xml  # 20mins
           jq -r 'select(.Action=="output") | .Output' protocol-e2e-test.json > protocol-e2e-test.log || true
+
+      - name: Print failed test output
+        if: failure()
+        run: |
+          echo "=== Failed test output ==="
+          jq -r 'select(.Action=="output") | .Output' protocol-e2e-test.json 2>/dev/null | tail -200 || echo "No test output found"
 
       - name: Upload Test Results
         if: always()
@@ -308,6 +334,12 @@ jobs:
             | grep -v '"Action":"output"' \
             | go-junit-report -parser gojson -set-exit-code -out payment-e2e-report.xml # 20mins
           jq -r 'select(.Action=="output") | .Output' payment-e2e-test.json > payment-e2e-test.log || true
+
+      - name: Print failed test output
+        if: failure()
+        run: |
+          echo "=== Failed tests from payment-e2e-test.json ==="
+          jq -r 'select(.Action=="output") | .Output' payment-e2e-test.json 2>/dev/null | tail -200 || echo "No test output found"
 
       - name: Upload Test Results
         if: always()
