@@ -4,7 +4,7 @@ source "$__dir"/../useful_commands.sh
 . "${__dir}"/../vars/variables.sh
 
 # Use absolute paths for logs
-LOGS_DIR=${__dir}/../../testutil/debugging/logs
+LOGS_DIR=${__dir}/../../debugging/logs
 mkdir -p $LOGS_DIR
 LOGS_DIR=$(cd "$LOGS_DIR" && pwd)
 rm $LOGS_DIR/*.log 2>/dev/null || true
@@ -71,74 +71,46 @@ echo "Using static specs: $SPECS_DIR"
 # Export RPC endpoint URLs as environment variables
 # Set these before running the script:
 #
-# HTTP/HTTPS endpoints (required):
+# HTTP/HTTPS endpoints (required — at least 2, 3rd is optional):
 #   export ETH_RPC_URL_1="https://mainnet.infura.io/v3/YOUR_INFURA_KEY"
 #   export ETH_RPC_URL_2="https://eth-mainnet.g.alchemy.com/v2/YOUR_ALCHEMY_KEY"
+#   export ETH_RPC_URL_3="https://ethereum-rpc.publicnode.com"
 #
 # WebSocket endpoints (required for subscription support):
 #   export ETH_WS_URL_1="wss://mainnet.infura.io/ws/v3/YOUR_INFURA_KEY"
 #   export ETH_WS_URL_2="wss://eth-mainnet.g.alchemy.com/v2/YOUR_ALCHEMY_KEY"
+#   export ETH_WS_URL_3="wss://ethereum-rpc.publicnode.com"
 
 # Set defaults if not already exported (placeholders will fail to connect)
 export ETH_RPC_URL_1="${ETH_RPC_URL_1:-https://eth.llamarpc.com}"
 export ETH_RPC_URL_2="${ETH_RPC_URL_2:-https://json-rpc.8zfcse2amst1lajmh299uq4jn.blockchainnodeengine.com/?key=AIzaSyDyUtm6b-e-xKDQgVWzlroHdVTytiXEDik}"
+export ETH_RPC_URL_3="${ETH_RPC_URL_3:-https://ethereum-rpc.publicnode.com}"
 
 # WebSocket endpoints (required for subscriptions)
 #   export ETH_WS_URL_1="wss://mainnet.infura.io/ws/v3/YOUR_INFURA_KEY"
 #   export ETH_WS_URL_2="wss://eth-mainnet.g.alchemy.com/v2/YOUR_ALCHEMY_KEY"
+#   export ETH_WS_URL_3="wss://ethereum-rpc.publicnode.com"
 export ETH_WS_URL_1="${ETH_WS_URL_1:-wss://g.w.lavanet.xyz:443/gateway/eth/rpc/4926f3fd246058892909cdda0c88f8c7}"
 export ETH_WS_URL_2="${ETH_WS_URL_2:-wss://g.w.lavanet.xyz:443/gateway/eth/rpc/4926f3fd246058892909cdda0c88f8c7}"
+export ETH_WS_URL_3="${ETH_WS_URL_3:-wss://ethereum-rpc.publicnode.com}"
 
-# Validate that real HTTP URLs are set (not placeholders)
-if [[ "$ETH_RPC_URL_1" == *"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"* ]]; then
-    echo "ERROR: ETH_RPC_URL_1 contains placeholder!"
-    echo ""
-    echo "Set real Ethereum RPC endpoints before running:"
-    echo "  export ETH_RPC_URL_1='https://mainnet.infura.io/v3/YOUR_INFURA_KEY'"
-    echo "  export ETH_RPC_URL_2='https://eth-mainnet.g.alchemy.com/v2/YOUR_ALCHEMY_KEY'"
-    echo ""
-    echo "Required WebSocket endpoints (for subscriptions):"
-    echo "  export ETH_WS_URL_1='wss://mainnet.infura.io/ws/v3/YOUR_INFURA_KEY'"
-    echo "  export ETH_WS_URL_2='wss://eth-mainnet.g.alchemy.com/v2/YOUR_ALCHEMY_KEY'"
-    echo ""
-    echo "Then run: $0"
-    exit 1
-fi
-
-if [[ "$ETH_RPC_URL_2" == *"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"* ]]; then
-    echo "ERROR: ETH_RPC_URL_2 contains placeholder!"
-    echo ""
-    echo "Set real Ethereum RPC endpoints before running:"
-    echo "  export ETH_RPC_URL_1='https://mainnet.infura.io/v3/YOUR_INFURA_KEY'"
-    echo "  export ETH_RPC_URL_2='https://eth-mainnet.g.alchemy.com/v2/YOUR_ALCHEMY_KEY'"
-    echo ""
-    echo "Required WebSocket endpoints (for subscriptions):"
-    echo "  export ETH_WS_URL_1='wss://mainnet.infura.io/ws/v3/YOUR_INFURA_KEY'"
-    echo "  export ETH_WS_URL_2='wss://eth-mainnet.g.alchemy.com/v2/YOUR_ALCHEMY_KEY'"
-    echo ""
-    echo "Then run: $0"
-    exit 1
-fi
-
-if [[ "$ETH_WS_URL_1" == *"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"* ]]; then
-    echo "ERROR: ETH_WS_URL_1 contains placeholder!"
-    echo "Set real Ethereum WebSocket endpoints before running:"
-    echo "  export ETH_WS_URL_1='wss://mainnet.infura.io/ws/v3/YOUR_INFURA_KEY'"
-    echo "  export ETH_WS_URL_2='wss://eth-mainnet.g.alchemy.com/v2/YOUR_ALCHEMY_KEY'"
-    echo ""
-    echo "Then run: $0"
-    exit 1
-fi
-
-if [[ "$ETH_WS_URL_2" == *"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"* ]]; then
-    echo "ERROR: ETH_WS_URL_2 contains placeholder!"
-    echo "Set real Ethereum WebSocket endpoints before running:"
-    echo "  export ETH_WS_URL_1='wss://mainnet.infura.io/ws/v3/YOUR_INFURA_KEY'"
-    echo "  export ETH_WS_URL_2='wss://eth-mainnet.g.alchemy.com/v2/YOUR_ALCHEMY_KEY'"
-    echo ""
-    echo "Then run: $0"
-    exit 1
-fi
+# Validate that real URLs are set (not placeholders)
+for var_name in ETH_RPC_URL_1 ETH_RPC_URL_2 ETH_RPC_URL_3 ETH_WS_URL_1 ETH_WS_URL_2 ETH_WS_URL_3; do
+    if [[ "${!var_name}" == *"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"* ]]; then
+        echo "ERROR: $var_name contains placeholder!"
+        echo ""
+        echo "Set real Ethereum endpoints before running:"
+        echo "  export ETH_RPC_URL_1='https://mainnet.infura.io/v3/YOUR_KEY'"
+        echo "  export ETH_RPC_URL_2='https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY'"
+        echo "  export ETH_RPC_URL_3='https://ethereum-rpc.publicnode.com'"
+        echo "  export ETH_WS_URL_1='wss://mainnet.infura.io/ws/v3/YOUR_KEY'"
+        echo "  export ETH_WS_URL_2='wss://eth-mainnet.g.alchemy.com/v2/YOUR_KEY'"
+        echo "  export ETH_WS_URL_3='wss://ethereum-rpc.publicnode.com'"
+        echo ""
+        echo "Then run: $0"
+        exit 1
+    fi
+done
 
 # Generate smart router config only if missing or REGENERATE_CONFIG=1 (keeps manual edits otherwise)
 if [[ -f "$CONFIG_FILE" && "$REGENERATE_CONFIG" != "1" ]]; then
@@ -150,20 +122,23 @@ else
 echo "Generating smart router config: $CONFIG_FILE"
 echo ""
 echo "Direct RPC Configuration:"
-echo "  HTTP Endpoint 1 (Infura):  ${ETH_RPC_URL_1:0:50}..."
-echo "  HTTP Endpoint 2 (Alchemy): ${ETH_RPC_URL_2:0:50}..."
+echo "  HTTP Endpoint 1: ${ETH_RPC_URL_1:0:50}..."
+echo "  HTTP Endpoint 2: ${ETH_RPC_URL_2:0:50}..."
+echo "  HTTP Endpoint 3: ${ETH_RPC_URL_3:0:50}..."
 echo ""
 echo "  WebSocket Endpoints (Phase 5 - Subscriptions):"
 echo "    WS Endpoint 1: ${ETH_WS_URL_1:0:50}..."
 echo "    WS Endpoint 2: ${ETH_WS_URL_2:0:50}..."
+echo "    WS Endpoint 3: ${ETH_WS_URL_3:0:50}..."
 echo ""
 echo "IMPORTANT: This is DIRECT RPC mode"
 echo "    - Smart router connects DIRECTLY to Ethereum RPC endpoints"
 echo "    - NO Lava providers in the middle!"
+echo "    - 3 endpoints enable cross-validation testing (2-of-3 / 3-of-3)"
 echo "    - Testing Phases 1-5 implementation"
 echo ""
 
-# Build the config file
+# Build the config file — each provider is a separate direct-rpc entry
 cat > $CONFIG_FILE <<EOF
 # Smart Router Direct RPC Configuration
 # Testing Phases 1-5: JSON-RPC over HTTP/HTTPS + WebSocket Subscriptions
@@ -173,37 +148,59 @@ endpoints:
   - listen-address: "0.0.0.0:3360"
     chain-id: "ETH1"
     api-interface: "jsonrpc"
-    network-address: "0.0.0.0:3360"  # Simple string format
+    network-address: "0.0.0.0:3360"
 
 direct-rpc:
-  # Endpoint 1: Infura (primary)
-  - name: "infura-eth-mainnet"
+  # HTTP Endpoint 1
+  - name: "eth-rpc-1"
     chain-id: "ETH1"
     api-interface: "jsonrpc"
     node-urls:
       - url: "$ETH_RPC_URL_1"
-        addons:
-          - archive  # Infura typically provides archive data
-EOF
+        skip-verifications:
+          - chain-id
+          - pruning
 
-# Add WebSocket URL for Infura
-cat >> $CONFIG_FILE <<EOF
-      # WebSocket endpoint for subscriptions (Phase 5)
+  # HTTP Endpoint 2
+  - name: "eth-rpc-2"
+    chain-id: "ETH1"
+    api-interface: "jsonrpc"
+    node-urls:
+      - url: "$ETH_RPC_URL_2"
+        skip-verifications:
+          - chain-id
+          - pruning
+
+  # HTTP Endpoint 3
+  - name: "eth-rpc-3"
+    chain-id: "ETH1"
+    api-interface: "jsonrpc"
+    node-urls:
+      - url: "$ETH_RPC_URL_3"
+        skip-verifications:
+          - chain-id
+          - pruning
+
+  # WebSocket Endpoint 1 (Phase 5 - Subscriptions)
+  - name: "eth-ws-1"
+    chain-id: "ETH1"
+    api-interface: "websocket"
+    node-urls:
       - url: "$ETH_WS_URL_1"
-        addons:
-          - archive
-EOF
 
-
-
-# Add WebSocket URL for second endpoint
-cat >> $CONFIG_FILE <<EOF
-      # WebSocket endpoint for subscriptions (Phase 5)
+  # WebSocket Endpoint 2 (Phase 5 - Subscriptions)
+  - name: "eth-ws-2"
+    chain-id: "ETH1"
+    api-interface: "websocket"
+    node-urls:
       - url: "$ETH_WS_URL_2"
-        addons:
-          - archive
-          - debug
-          - trace
+
+  # WebSocket Endpoint 3 (Phase 5 - Subscriptions)
+  - name: "eth-ws-3"
+    chain-id: "ETH1"
+    api-interface: "websocket"
+    node-urls:
+      - url: "$ETH_WS_URL_3"
 EOF
 
 # Verify config file was created
@@ -240,14 +237,18 @@ if [[ "$WS_ENABLED" == "true" ]]; then
 else
     echo "   - WebSocket: DISABLED (set ETH_WS_URL_1/2 to enable)"
 fi
-echo "   - HTTP Endpoints: 2 endpoints (parallel relay)"
-echo "     Infura: ${ETH_RPC_URL_1:0:40}..."
+echo "   - HTTP Endpoints: 3 endpoints (parallel relay + cross-validation)"
+echo "     Endpoint 1: ${ETH_RPC_URL_1:0:40}..."
 echo "     Endpoint 2: ${ETH_RPC_URL_2:0:40}..."
+echo "     Endpoint 3: ${ETH_RPC_URL_3:0:40}..."
 if [[ -n "$ETH_WS_URL_1" ]]; then
     echo "   - WS Endpoint 1: ${ETH_WS_URL_1:0:40}..."
 fi
 if [[ -n "$ETH_WS_URL_2" ]]; then
     echo "   - WS Endpoint 2: ${ETH_WS_URL_2:0:40}..."
+fi
+if [[ -n "$ETH_WS_URL_3" ]]; then
+    echo "   - WS Endpoint 3: ${ETH_WS_URL_3:0:40}..."
 fi
 echo "   - Cache: Enabled (127.0.0.1:20100)"
 echo "   - Specs: Static (no blockchain connection)"
@@ -286,9 +287,10 @@ echo "============================================"
 echo "Cache:         127.0.0.1:20100 (metrics: 20200)"
 echo "Smart Router:  0.0.0.0:3360 (metrics: 7779)"
 echo ""
-echo "Direct RPC Endpoints (Parallel Relay):"
-echo "  HTTP 1 (Infura):     ${ETH_RPC_URL_1:0:50}..."
-echo "  HTTP 2 (Endpoint 2): ${ETH_RPC_URL_2:0:50}..."
+echo "Direct RPC Endpoints (Parallel Relay + Cross-Validation):"
+echo "  HTTP 1: ${ETH_RPC_URL_1:0:50}..."
+echo "  HTTP 2: ${ETH_RPC_URL_2:0:50}..."
+echo "  HTTP 3: ${ETH_RPC_URL_3:0:50}..."
 if [[ "$WS_ENABLED" == "true" ]]; then
     echo ""
     echo "WebSocket Endpoints (Subscriptions):"
@@ -298,10 +300,14 @@ if [[ "$WS_ENABLED" == "true" ]]; then
     if [[ -n "$ETH_WS_URL_2" ]]; then
         echo "  WS 2: ${ETH_WS_URL_2:0:50}..."
     fi
+    if [[ -n "$ETH_WS_URL_3" ]]; then
+        echo "  WS 3: ${ETH_WS_URL_3:0:50}..."
+    fi
 fi
 echo ""
-echo "Parallel Relay: Requests sent to BOTH endpoints simultaneously"
+echo "Parallel Relay: Requests sent to ALL 3 endpoints simultaneously"
 echo "   First successful response wins (lower latency!)"
+echo "   Cross-validation: use lava-cross-validation-* headers for consensus"
 echo ""
 echo "TESTING $PHASE_STATUS"
 echo "  Phase 1: DirectRPCConnection foundation"
@@ -350,6 +356,29 @@ if [[ "$WS_ENABLED" == "true" ]]; then
     echo ""
 fi
 
+echo "============================================"
+echo "CROSS-VALIDATION TESTING (3 endpoints)"
+echo "============================================"
+echo ""
+echo "  # 2-of-3 consensus (query 3 providers, 2 must agree):"
+echo '  curl -v -X POST http://127.0.0.1:3360 \'
+echo '    -H "Content-Type: application/json" \'
+echo '    -H "lava-cross-validation-max-participants: 3" \'
+echo '    -H "lava-cross-validation-agreement-threshold: 2" \'
+echo '    -d '\''{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'\'''
+echo ""
+echo "  # 3-of-3 strict consensus (all must agree):"
+echo '  curl -v -X POST http://127.0.0.1:3360 \'
+echo '    -H "Content-Type: application/json" \'
+echo '    -H "lava-cross-validation-max-participants: 3" \'
+echo '    -H "lava-cross-validation-agreement-threshold: 3" \'
+echo '    -d '\''{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}'\'''
+echo ""
+echo "  Response headers to check:"
+echo "    lava-cross-validation-status          — consensus result"
+echo "    lava-cross-validation-agreeing-providers — which providers agreed"
+echo "    lava-cross-validation-all-providers    — all participants"
+echo ""
 echo "============================================"
 echo "CACHE TESTING (use these to verify cache)"
 echo "============================================"

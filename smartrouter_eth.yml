@@ -42,6 +42,15 @@ direct-rpc:
           - chain-id
           - pruning
 
+  - name: "eth-rpc-3"
+    chain-id: "ETH1"
+    api-interface: "jsonrpc"
+    node-urls:
+      - url: "https://eth.llamarpc.com"
+        skip-verifications:
+          - chain-id
+          - pruning
+
   - name: "mock-eth-mainnet-websocket"
     chain-id: "ETH1"
     api-interface: "websocket"
