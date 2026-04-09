@@ -126,9 +126,11 @@ services:
       - "3334:3334"
       - "3335:3335"
       - "3336:3336"
+      - "9999:9999"
     volumes:
       - ../common/consumer.yml:/lava/config/consumer.yml:ro
       - lava_data:/lava
+      - /root/go/bin/lavap:/bin/lavap  # custom dev binary with clock injection
     command:
       [
         "rpcconsumer",
@@ -146,6 +148,8 @@ services:
         "test",
         "--node",
         "tcp://lava-node:26657",
+        "--debug-address",
+        ":9999",
       ]
     depends_on:
       - lava-node
