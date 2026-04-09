@@ -2,6 +2,7 @@ package lavasession
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -233,25 +234,43 @@ func (e *Endpoint) CheckSupportForServices(addon string, extensions []string) (s
 
 // MarkUnhealthy increments connection refusals and disables endpoint if threshold exceeded
 func (e *Endpoint) MarkUnhealthy() {
+	e.mu.Lock()
 	e.ConnectionRefusals++
-	if e.ConnectionRefusals >= MaxConsecutiveConnectionAttempts {
+	disabled := e.ConnectionRefusals >= MaxConsecutiveConnectionAttempts
+	if disabled {
 		e.Enabled = false
+	}
+	addr, refusals, isDirect := e.NetworkAddress, e.ConnectionRefusals, e.IsDirectRPC()
+	e.mu.Unlock()
+
+	if disabled {
 		utils.LavaFormatWarning("disabled unhealthy endpoint", nil,
-			utils.LogAttr("endpoint", e.NetworkAddress),
-			utils.LogAttr("refusals", e.ConnectionRefusals),
-			utils.LogAttr("is_direct_rpc", e.IsDirectRPC()),
+			utils.LogAttr("endpoint", addr),
+			utils.LogAttr("refusals", refusals),
+			utils.LogAttr("is_direct_rpc", isDirect),
 		)
 	}
 }
 
-// ResetHealth resets connection refusals and re-enables endpoint
-func (e *Endpoint) ResetHealth() {
+// ResetHealth resets connection refusals and re-enables endpoint.
+// Returns true if the endpoint was actually unhealthy and got reset.
+// No-ops silently when the endpoint is already healthy to avoid log spam.
+func (e *Endpoint) ResetHealth() bool {
+	e.mu.Lock()
+	if e.ConnectionRefusals == 0 && e.Enabled {
+		e.mu.Unlock()
+		return false
+	}
 	e.ConnectionRefusals = 0
 	e.Enabled = true
+	addr, isDirect := e.NetworkAddress, e.IsDirectRPC()
+	e.mu.Unlock()
+
 	utils.LavaFormatInfo("re-enabled healthy endpoint",
-		utils.LogAttr("endpoint", e.NetworkAddress),
-		utils.LogAttr("is_direct_rpc", e.IsDirectRPC()),
+		utils.LogAttr("endpoint", addr),
+		utils.LogAttr("is_direct_rpc", isDirect),
 	)
+	return true
 }
 
 type SessionWithProvider struct {
@@ -777,6 +796,18 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 				defer endpoint.mu.Unlock()
 
 				if err != nil {
+					// context.Canceled means the client disconnected — not a provider fault.
+					// context.DeadlineExceeded means the request timed out; the endpoint may
+					// be slow or unreachable, so refusals should still be incremented.
+					if errors.Is(err, context.Canceled) && errors.Is(ctx.Err(), context.Canceled) {
+						utils.LavaFormatDebug("skipping ConnectionRefusals increment: request context canceled (client disconnect)",
+							utils.LogAttr("err", err),
+							utils.LogAttr("ctx_err", ctx.Err()),
+							utils.LogAttr("provider endpoint", networkAddress),
+							utils.LogAttr("GUID", ctx),
+						)
+						return nil, false
+					}
 					endpoint.ConnectionRefusals++
 					utils.LavaFormatInfo("error connecting to provider",
 						utils.LogAttr("err", err),

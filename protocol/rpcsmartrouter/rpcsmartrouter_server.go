@@ -3,6 +3,7 @@ package rpcsmartrouter
 import (
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -1798,49 +1799,13 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 		)
 
 		// Classify error and decide on health tracking
-		shouldMarkUnhealthy := false
-		needsBackoff = false
-
-		// Check if this is an HTTP status error
-		if httpErr, ok := err.(*lavasession.HTTPStatusError); ok {
-			statusCode := httpErr.StatusCode
-
-			switch {
-			case statusCode >= 500:
-				// 5xx errors indicate server/node issues - mark unhealthy and backoff
-				shouldMarkUnhealthy = true
-				needsBackoff = true
-				utils.LavaFormatDebug("endpoint returned server error",
-					utils.LogAttr("status", statusCode),
-					utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
-				)
-			case statusCode == 429:
-				// Rate limit - backoff but DON'T mark unhealthy (endpoint is healthy, just busy)
-				needsBackoff = true
-				utils.LavaFormatDebug("endpoint rate limited",
-					utils.LogAttr("status", statusCode),
-					utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
-				)
-			case statusCode >= 400:
-				// 4xx errors are client errors - don't mark unhealthy, don't backoff
-				utils.LavaFormatDebug("client error",
-					utils.LogAttr("status", statusCode),
-					utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
-				)
-			}
-		} else {
-			// Non-HTTP errors (timeout, connection refused, network errors)
-			// These indicate endpoint/network issues - mark unhealthy and backoff
-			shouldMarkUnhealthy = true
-			needsBackoff = true
-		}
+		shouldMarkUnhealthy, needsBackoff := classifyRelayError(err, ctx)
+		logRelayErrorClassification(err, ctx, singleConsumerSession.Parent.PublicLavaAddress, shouldMarkUnhealthy)
 
 		// Apply health tracking based on error classification
 		if shouldMarkUnhealthy && targetEndpoint != nil {
 			targetEndpoint.MarkUnhealthy()
-			if !targetEndpoint.Enabled { // only emit metric when endpoint actually becomes disabled
-				rpcss.smartRouterEndpointMetrics.SetEndpointOverallHealth(rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface, endpointName, false)
-			}
+			rpcss.smartRouterEndpointMetrics.SetEndpointOverallHealth(rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface, endpointName, false)
 		}
 
 		return relayLatency, err, needsBackoff
@@ -1849,15 +1814,12 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 	// Check status code even when err == nil (for REST 5xx/429)
 	statusCode := result.StatusCode
 	if statusCode >= 500 || statusCode == 429 {
-		// REST returned 5xx or 429 (no transport error, but node issue)
-		shouldMarkUnhealthy := (statusCode >= 500) // Mark unhealthy for 5xx, not 429
-		needsBackoff = true                        // Both should backoff/retry
+		shouldMarkUnhealthy, needsBackoffHTTP := classifyHTTPStatus(statusCode)
+		needsBackoff = needsBackoffHTTP
 
 		if shouldMarkUnhealthy && targetEndpoint != nil {
 			targetEndpoint.MarkUnhealthy()
-			if !targetEndpoint.Enabled { // only emit metric when endpoint actually becomes disabled
-				rpcss.smartRouterEndpointMetrics.SetEndpointOverallHealth(rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface, endpointName, false)
-			}
+			rpcss.smartRouterEndpointMetrics.SetEndpointOverallHealth(rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface, endpointName, false)
 			utils.LavaFormatDebug("endpoint returned error status",
 				utils.LogAttr("status", statusCode),
 				utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
@@ -1874,10 +1836,8 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 	}
 
 	// Success - reset endpoint health
-	if targetEndpoint != nil && targetEndpoint.ConnectionRefusals > 0 {
-		wasDisabled := !targetEndpoint.Enabled
-		targetEndpoint.ResetHealth()
-		if wasDisabled { // only emit metric when recovering from a disabled state
+	if targetEndpoint != nil {
+		if targetEndpoint.ResetHealth() {
 			rpcss.smartRouterEndpointMetrics.SetEndpointOverallHealth(rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface, endpointName, true)
 		}
 	}
@@ -2387,4 +2347,71 @@ func (rpcss *RPCSmartRouterServer) updateProtocolMessageIfNeededWithNewEarliestD
 		return newProtocolMessage
 	}
 	return protocolMessage
+}
+
+// classifyHTTPStatus classifies an HTTP status code for endpoint health decisions.
+func classifyHTTPStatus(code int) (shouldMarkUnhealthy, needsBackoff bool) {
+	switch {
+	case code >= 500:
+		return true, true
+	case code == 429:
+		return false, true
+	default:
+		return false, false
+	}
+}
+
+// classifyRelayError decides whether a relay error should mark the endpoint
+// unhealthy and/or trigger backoff. Extracted for testability.
+func classifyRelayError(err error, ctx context.Context) (shouldMarkUnhealthy, needsBackoff bool) {
+	if httpErr, ok := err.(*lavasession.HTTPStatusError); ok {
+		return classifyHTTPStatus(httpErr.StatusCode)
+	}
+
+	// Non-HTTP errors (timeout, connection refused, network errors).
+	// Exception: context.Canceled with a canceled request context means the
+	// client disconnected — not a provider fault, don't mark unhealthy.
+	// No backoff needed either since the client is gone.
+	if errors.Is(err, context.Canceled) && errors.Is(ctx.Err(), context.Canceled) {
+		return false, false
+	}
+	return true, true
+}
+
+// logRelayErrorClassification emits debug logs for the classification decision.
+func logRelayErrorClassification(err error, ctx context.Context, providerAddress string, shouldMarkUnhealthy bool) {
+	if httpErr, ok := err.(*lavasession.HTTPStatusError); ok {
+		statusCode := httpErr.StatusCode
+		switch {
+		case statusCode >= 500:
+			utils.LavaFormatDebug("endpoint returned server error",
+				utils.LogAttr("status", statusCode),
+				utils.LogAttr("endpoint", providerAddress),
+			)
+		case statusCode == 429:
+			utils.LavaFormatDebug("endpoint rate limited",
+				utils.LogAttr("status", statusCode),
+				utils.LogAttr("endpoint", providerAddress),
+			)
+		case statusCode >= 400:
+			utils.LavaFormatDebug("client error",
+				utils.LogAttr("status", statusCode),
+				utils.LogAttr("endpoint", providerAddress),
+			)
+		}
+		return
+	}
+
+	if !shouldMarkUnhealthy {
+		utils.LavaFormatDebug("skipping MarkUnhealthy: request context canceled (client disconnect)",
+			utils.LogAttr("endpoint", providerAddress),
+			utils.LogAttr("ctx_err", ctx.Err()),
+			utils.LogAttr("GUID", ctx),
+		)
+	} else {
+		utils.LavaFormatDebug("marking endpoint unhealthy: non-HTTP relay error",
+			utils.LogAttr("endpoint", providerAddress),
+			utils.LogAttr("error", err),
+		)
+	}
 }

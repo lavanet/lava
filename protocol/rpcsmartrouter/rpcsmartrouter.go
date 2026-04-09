@@ -1202,6 +1202,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			utils.LavaFormatInfo(common.ProcessStartLogText)
+			common.ValidateAndCapMinRelayTimeout()
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -1576,6 +1577,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	}
 
 	cmdRPCSmartRouter.Flags().DurationVar(&common.DefaultTimeout, common.DefaultProcessingTimeoutFlagName, common.DefaultTimeout, "default timeout for relay processing (e.g., 30s, 1m)")
+	cmdRPCSmartRouter.Flags().DurationVar(&common.MinimumTimePerRelayDelay, common.MinRelayTimeoutFlagName, common.MinimumTimePerRelayDelay, "minimum relay timeout floor applied to all methods when CU-based timeout is lower (e.g., 1s, 5s)")
 	cmdRPCSmartRouter.Flags().IntVar(&lavasession.MaxSessionsAllowedPerProvider, common.MaxSessionsPerProviderFlagName, lavasession.MaxSessionsAllowedPerProvider, "max number of sessions allowed per provider")
 
 	// batch request size limit
@@ -1605,12 +1607,17 @@ func (rpsr *RPCSmartRouter) updateEpoch(epoch uint64) {
 		// until hitting the 1000-session limit, causing "No pairings available" errors
 		freshProviderSessions := make(map[uint64]*lavasession.ConsumerSessionsWithProvider)
 		for idx, oldSession := range oldProviderSessions {
-			// Create new session with same configuration but fresh Sessions map
+			// Reset endpoint health so disabled endpoints get a fresh start each epoch.
+			// Without this, an endpoint disabled by ConnectionRefusals stays disabled
+			// forever since it can never receive the successful relay needed to trigger ResetHealth.
+			for _, endpoint := range oldSession.Endpoints {
+				endpoint.ResetHealth()
+			}
 			freshSession := lavasession.NewConsumerSessionWithProvider(
 				oldSession.PublicLavaAddress,
-				oldSession.Endpoints, // Endpoints are safe to reuse
+				oldSession.Endpoints,
 				oldSession.MaxComputeUnits,
-				epoch, // New epoch
+				epoch,
 				oldSession.GetProviderStakeSize(),
 			)
 			freshSession.StaticProvider = oldSession.StaticProvider
@@ -1625,6 +1632,9 @@ func (rpsr *RPCSmartRouter) updateEpoch(epoch uint64) {
 		// Create fresh backup sessions
 		freshBackupSessions := make(map[uint64]*lavasession.ConsumerSessionsWithProvider)
 		for idx, oldSession := range oldBackupSessions {
+			for _, endpoint := range oldSession.Endpoints {
+				endpoint.ResetHealth()
+			}
 			freshSession := lavasession.NewConsumerSessionWithProvider(
 				oldSession.PublicLavaAddress,
 				oldSession.Endpoints,

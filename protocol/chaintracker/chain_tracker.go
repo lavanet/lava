@@ -429,7 +429,8 @@ func (cs *ChainTracker) start(ctx context.Context, pollingTime time.Duration) er
 		for {
 			select {
 			case <-cs.timer.C:
-				fetchCtx, cancel := context.WithTimeout(ctx, 3*time.Second) // protect this flow from hanging code
+				fetchTimeout := max(10*time.Second, common.MinimumTimePerRelayDelay)
+				fetchCtx, cancel := context.WithTimeout(ctx, fetchTimeout) // protect this flow from hanging code
 				err := cs.fetchAllPreviousBlocksIfNecessary(fetchCtx)
 				cancel()
 				if err != nil {
