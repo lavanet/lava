@@ -306,86 +306,8 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 	// Start optional debug HTTP server for integration tests.
 	// Only starts when --debug-address flag is provided. Off by default.
 	if options.cmdFlags.DebugAddress != "" {
-		// maxDebugOffsetSeconds caps the allowed forward warp to 23 h 59 m.
-		// Upper: keeps effective date on the same calendar day and stays well within
-		//        the score system's InitialDataStaleness window (24 h); no test ever
-		//        needs more than a few hours.
-		// Lower: negative offsets are rejected — a backward shift puts po.now() in
-		//        the past, so existing ScoreStore entries (from real/forward time) are
-		//        newer than the new sampleTime, triggering the same TimeConflictingScoresError
-		//        freeze as an uncleared forward warp.
-		const maxDebugOffsetSeconds = float64(23*3600 + 59*60) // 86340 s
-
-		// currentOffsetNano stores the active warp offset in nanoseconds.
-		// atomic.Int64 is used because the POST handler (writes) and the GET
-		// handler (reads) run in separate goroutines; a plain float64 would be
-		// a data race.  Swap() atomically returns the old value and stores the
-		// new one in a single CPU instruction, which also makes the
-		// needsReset comparison safe without a mutex.
 		var currentOffsetNano atomic.Int64
-		debugMux := http.NewServeMux()
-		debugMux.HandleFunc("/debug/time-warp", func(w http.ResponseWriter, r *http.Request) {
-			if r.Method != http.MethodPost {
-				http.Error(w, "POST only", http.StatusMethodNotAllowed)
-				return
-			}
-			var body struct {
-				OffsetSeconds float64 `json:"offset_seconds"`
-			}
-			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-				http.Error(w, "invalid JSON", http.StatusBadRequest)
-				return
-			}
-			// Reject NaN / ±Inf — these cast to math.MinInt64 when converted to
-			// time.Duration (int64), producing a huge negative offset.
-			if math.IsNaN(body.OffsetSeconds) || math.IsInf(body.OffsetSeconds, 0) {
-				http.Error(w, "offset_seconds must be a finite number", http.StatusBadRequest)
-				return
-			}
-			// Reject negative offsets — backward shifts freeze the optimizer.
-			if body.OffsetSeconds < 0 {
-				http.Error(w, "offset_seconds must be >= 0 (no travel to the past)", http.StatusBadRequest)
-				return
-			}
-			// Reject values above 23 h 59 m.
-			if body.OffsetSeconds > maxDebugOffsetSeconds {
-				http.Error(w, fmt.Sprintf("offset_seconds must be <= %g (23h59m)", maxDebugOffsetSeconds), http.StatusBadRequest)
-				return
-			}
-
-			newNano := int64(body.OffsetSeconds * float64(time.Second))
-			// Swap atomically writes newNano and returns the previous value.
-			// needsReset is true whenever the offset decreases (including reset
-			// to zero) so that future-dated ScoreStore entries are cleared.
-			prevNano := currentOffsetNano.Swap(newNano)
-			needsReset := newNano < prevNano
-
-			offset := time.Duration(newNano)
-			optimizers.Range(func(chainID string, opt *provideroptimizer.ProviderOptimizer) bool {
-				if offset == 0 {
-					opt.NowFunc = nil
-				} else {
-					opt.NowFunc = func() time.Time { return time.Now().Add(offset) }
-				}
-				if needsReset {
-					opt.ResetState()
-				}
-				return true
-			})
-			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprintf(w, `{"offset_seconds":%v,"applied_to_chains":true}`, body.OffsetSeconds)
-		})
-		// GET /debug/time — returns real and effective time so callers can verify the clock moved.
-		debugMux.HandleFunc("/debug/time", func(w http.ResponseWriter, r *http.Request) {
-			now := time.Now()
-			nano := currentOffsetNano.Load()
-			effective := now.Add(time.Duration(nano))
-			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprintf(w, `{"real_time":%q,"effective_time":%q,"offset_seconds":%v}`,
-				now.UTC().Format(time.RFC3339),
-				effective.UTC().Format(time.RFC3339),
-				float64(nano)/float64(time.Second))
-		})
+		debugMux := buildDebugMux(optimizers, &currentOffsetNano)
 		srv := &http.Server{Addr: options.cmdFlags.DebugAddress, Handler: debugMux}
 		// Watcher goroutine: shuts the server down gracefully when ctx is cancelled
 		// (i.e. when Start returns after receiving os.Interrupt).
@@ -407,6 +329,90 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 	signal.Notify(signalChan, os.Interrupt)
 	<-signalChan
 	return nil
+}
+
+// buildDebugMux constructs the /debug/time-warp and /debug/time HTTP handlers.
+//
+// See rpcconsumer.buildDebugMux for full documentation — this is an identical copy
+// scoped to the rpcsmartrouter package.
+func buildDebugMux(
+	optimizers *common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer],
+	currentOffsetNano *atomic.Int64,
+) *http.ServeMux {
+	// maxDebugOffsetSeconds caps the allowed forward warp to exactly 24 h (86 400 s).
+	// Upper: +24 h crosses a calendar-day boundary; ResetState() — called automatically
+	//        whenever the offset decreases — purges future-dated ScoreStore entries so
+	//        real-time samples are accepted immediately after reset.
+	// Lower: negative offsets are rejected — a backward shift puts po.now() in
+	//        the past, so existing ScoreStore entries (from real/forward time) are
+	//        newer than the new sampleTime, triggering the same TimeConflictingScoresError
+	//        freeze as an uncleared forward warp.
+	const maxDebugOffsetSeconds = float64(24 * 3600) // 86400 s
+
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/debug/time-warp", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "POST only", http.StatusMethodNotAllowed)
+			return
+		}
+		var body struct {
+			OffsetSeconds float64 `json:"offset_seconds"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			http.Error(w, "invalid JSON", http.StatusBadRequest)
+			return
+		}
+		// Reject NaN / ±Inf — these cast to math.MinInt64 when converted to
+		// time.Duration (int64), producing a huge negative offset.
+		if math.IsNaN(body.OffsetSeconds) || math.IsInf(body.OffsetSeconds, 0) {
+			http.Error(w, "offset_seconds must be a finite number", http.StatusBadRequest)
+			return
+		}
+		// Reject negative offsets — backward shifts freeze the optimizer.
+		if body.OffsetSeconds < 0 {
+			http.Error(w, "offset_seconds must be >= 0 (no travel to the past)", http.StatusBadRequest)
+			return
+		}
+		// Reject values above 24 h.
+		if body.OffsetSeconds > maxDebugOffsetSeconds {
+			http.Error(w, fmt.Sprintf("offset_seconds must be <= %g (24h)", maxDebugOffsetSeconds), http.StatusBadRequest)
+			return
+		}
+
+		newNano := int64(body.OffsetSeconds * float64(time.Second))
+		prevNano := currentOffsetNano.Swap(newNano)
+		needsReset := newNano < prevNano
+
+		offset := time.Duration(newNano)
+		optimizers.Range(func(chainID string, opt *provideroptimizer.ProviderOptimizer) bool {
+			if offset == 0 {
+				opt.NowFunc = nil
+			} else {
+				opt.NowFunc = func() time.Time { return time.Now().Add(offset) }
+			}
+			if needsReset {
+				opt.ResetState()
+			}
+			return true
+		})
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"offset_seconds":%v,"applied_to_chains":true}`, body.OffsetSeconds)
+	})
+
+	// GET /debug/time — returns real and effective time so callers can verify the clock moved.
+	mux.HandleFunc("/debug/time", func(w http.ResponseWriter, r *http.Request) {
+		now := time.Now()
+		nano := currentOffsetNano.Load()
+		effective := now.Add(time.Duration(nano))
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"real_time":%q,"effective_time":%q,"offset_seconds":%v}`,
+			now.UTC().Format(time.RFC3339),
+			effective.UTC().Format(time.RFC3339),
+			float64(nano)/float64(time.Second))
+	})
+
+	return mux
 }
 
 func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
