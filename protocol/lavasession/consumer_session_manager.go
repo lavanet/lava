@@ -1861,6 +1861,23 @@ func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWit
 		_, providerAddress, err := csm.probeProvider(ctx, consumerSessionsWithProvider, csm.atomicReadCurrentEpoch(), true)
 		if err == nil {
 			utils.LavaFormatDebug("Reconnecting provider succeeded returning provider to valid addresses list", utils.LogAttr("provider", providerAddress))
+			// csm.pairing and csm.backupProviders are built from separate inputs by
+			// UpdateAllProviders with no dedup, so a provider address can legitimately
+			// appear in both. The old "if backup else primary" branching silently dropped
+			// the primary-side unblock for overlap cases — a provider blocked as primary
+			// via currentlyBlockedProviderAddresses would never return to validAddresses
+			// just because it happened to also exist in backupProviders.
+			//
+			// Handle both sides independently:
+			//   - backup side: delete from blockedBackupProviders when present
+			//   - primary side: validateAndReturnBlockedProviderToValidAddressesList —
+			//     idempotent for addresses not in currentlyBlockedProviderAddresses
+			//     (see line ~1739 comment), so calling unconditionally is safe.
+			csm.lock.Lock()
+			if _, inBackup := csm.backupProviders[providerAddress]; inBackup {
+				delete(csm.blockedBackupProviders, providerAddress)
+			}
+			csm.lock.Unlock()
 			csm.validateAndReturnBlockedProviderToValidAddressesList(providerAddress)
 		}
 		return err
