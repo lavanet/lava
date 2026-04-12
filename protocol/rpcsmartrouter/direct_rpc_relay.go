@@ -18,6 +18,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/parser"
+	"github.com/lavanet/lava/v5/protocol/tracing"
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
@@ -330,12 +331,19 @@ func (d *DirectRPCRelaySender) sendJSONRPCRelay(
 		ContentType: "application/json",
 	}
 
+	requestCtx, span := tracing.StartClientSpan(requestCtx, tracing.SpanSendJSONRPCRelay)
+	defer span.End()
+	tracing.RecordHTTPRequest(span, httpParams.Method, httpParams.URL)
+	httpParams.Headers = tracing.InjectHTTP(requestCtx, httpParams.Headers)
+
 	// STEP 3: Send request using DoHTTPRequest (returns headers + body)
 	startTime := time.Now()
 	response, err := httpDoer.DoHTTPRequest(requestCtx, httpParams)
 	latency := time.Since(startTime)
+	tracing.RecordHTTPResponse(span, response)
 
 	if err != nil {
+		tracing.RecordError(span, err)
 		utils.LavaFormatDebug("direct RPC request failed",
 			utils.LogAttr("endpoint", endpointIdentifier),
 			utils.LogAttr("protocol", d.directConnection.GetProtocol()),
@@ -460,6 +468,11 @@ func (d *DirectRPCRelaySender) sendRESTRelay(
 	}
 
 	// Send request
+	requestCtx, span := tracing.StartClientSpan(requestCtx, tracing.SpanSendRESTRelay)
+	defer span.End()
+	tracing.RecordHTTPRequest(span, httpMethod, fullURL)
+	headers = tracing.InjectHTTP(requestCtx, headers)
+
 	startTime := time.Now()
 	response, err := httpDoer.DoHTTPRequest(requestCtx, lavasession.HTTPRequestParams{
 		Method:      httpMethod,
@@ -469,9 +482,11 @@ func (d *DirectRPCRelaySender) sendRESTRelay(
 		ContentType: "application/json",
 	})
 	latency := time.Since(startTime)
+	tracing.RecordHTTPResponse(span, response)
 
 	// Handle transport errors
 	if err != nil {
+		tracing.RecordError(span, err)
 		return nil, classifyAndWrap(err, d.chainFamily, common.TransportREST)
 	}
 
@@ -588,11 +603,18 @@ func (d *DirectRPCRelaySender) sendGRPCRelay(
 	)
 
 	// Send gRPC request via DirectRPCConnection
+	requestCtx, span := tracing.StartClientSpan(requestCtx, tracing.SpanSendGRPCRelay)
+	defer span.End()
+	tracing.RecordGRPCRequest(span, methodPath, d.directConnection.GetURL())
+	tracing.InjectGRPC(requestCtx, headers)
+
 	startTime := time.Now()
 	response, err := d.directConnection.SendRequest(requestCtx, requestData, headers)
 	latency := time.Since(startTime)
+	tracing.RecordGRPCResponse(span, response)
 
 	if err != nil {
+		tracing.RecordError(span, err)
 		utils.LavaFormatDebug("direct gRPC request failed",
 			utils.LogAttr("endpoint", endpointIdentifier),
 			utils.LogAttr("method", methodPath),
