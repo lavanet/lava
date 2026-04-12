@@ -309,8 +309,11 @@ type EndpointWithDirectConnection struct {
 	ProviderAddress  string
 }
 
-// GetAllDirectRPCEndpoints returns all endpoints with direct RPC connections.
-// This is used by the smart router for initializing ChainTrackers on startup.
+// GetAllDirectRPCEndpoints returns all endpoints with direct RPC connections from both
+// the primary pairing and the backup provider list. This is used by the smart router for
+// initializing ChainTrackers on startup — excluding backups left their endpoints without a
+// tracker until a relay happened to hit them (rare, because backups are fallback-only),
+// which meant dedicated-URL backups like base.lava.build had no block data on the dashboard.
 // Returns empty slice if no direct RPC endpoints are configured.
 func (csm *ConsumerSessionManager) GetAllDirectRPCEndpoints() []*EndpointWithDirectConnection {
 	csm.lock.RLock()
@@ -318,18 +321,22 @@ func (csm *ConsumerSessionManager) GetAllDirectRPCEndpoints() []*EndpointWithDir
 
 	var results []*EndpointWithDirectConnection
 
-	// Collect from primary pairing
-	for providerAddr, cswp := range csm.pairing {
-		for _, endpoint := range cswp.Endpoints {
-			if endpoint.IsDirectRPC() && len(endpoint.DirectConnections) > 0 {
-				results = append(results, &EndpointWithDirectConnection{
-					Endpoint:         endpoint,
-					DirectConnection: endpoint.DirectConnections[0],
-					ProviderAddress:  providerAddr,
-				})
+	collect := func(providers map[string]*ConsumerSessionsWithProvider) {
+		for providerAddr, cswp := range providers {
+			for _, endpoint := range cswp.Endpoints {
+				if endpoint.IsDirectRPC() && len(endpoint.DirectConnections) > 0 {
+					results = append(results, &EndpointWithDirectConnection{
+						Endpoint:         endpoint,
+						DirectConnection: endpoint.DirectConnections[0],
+						ProviderAddress:  providerAddr,
+					})
+				}
 			}
 		}
 	}
+
+	collect(csm.pairing)
+	collect(csm.backupProviders)
 
 	return results
 }

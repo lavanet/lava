@@ -2083,3 +2083,59 @@ func TestGenerateReconnectCallback_OverlapBothPairingAndBackup(t *testing.T) {
 	require.True(t, restoredToValid,
 		"successful reconnect must restore the address to validAddresses even when it also exists in backupProviders")
 }
+
+// TestGetAllDirectRPCEndpoints_IncludesBackupProviders verifies that the startup
+// ChainTracker initialization sees backup-only URLs too. Before the fix, only
+// primaries were iterated, so dedicated-URL backups (e.g. base.lava.build with no
+// primary counterpart) never got a tracker created at startup — and since backups
+// rarely get the successful relay that triggers the lazy fallback init, their
+// per-endpoint metrics stayed empty on the dashboard.
+func TestGetAllDirectRPCEndpoints_IncludesBackupProviders(t *testing.T) {
+	ctx := context.Background()
+	nodeUrl := common.NodeUrl{Url: "https://base.lava.build:443/"}
+	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
+	require.NoError(t, err)
+
+	primaryEndpoint := &Endpoint{
+		NetworkAddress:    "https://base.blockpi.network/primary",
+		Enabled:           true,
+		DirectConnections: []DirectRPCConnection{directConn},
+	}
+	backupEndpoint := &Endpoint{
+		NetworkAddress:    nodeUrl.Url,
+		Enabled:           true,
+		DirectConnections: []DirectRPCConnection{directConn},
+	}
+
+	csm := CreateConsumerSessionManager()
+	csm.lock.Lock()
+	csm.pairing = map[string]*ConsumerSessionsWithProvider{
+		"blockpi1": {
+			Sessions:          make(map[int64]*SingleConsumerSession),
+			PublicLavaAddress: "blockpi1",
+			Endpoints:         []*Endpoint{primaryEndpoint},
+			StaticProvider:    true,
+		},
+	}
+	csm.backupProviders = map[string]*ConsumerSessionsWithProvider{
+		"lava1": {
+			Sessions:          make(map[int64]*SingleConsumerSession),
+			PublicLavaAddress: "lava1",
+			Endpoints:         []*Endpoint{backupEndpoint},
+			StaticProvider:    true,
+		},
+	}
+	csm.lock.Unlock()
+
+	results := csm.GetAllDirectRPCEndpoints()
+
+	// Collect the provider addresses we got back. Both the primary and the backup
+	// must be present — a purely-primary iteration would miss the backup entirely.
+	gotAddrs := map[string]bool{}
+	for _, r := range results {
+		gotAddrs[r.ProviderAddress] = true
+	}
+	require.True(t, gotAddrs["blockpi1"], "primary must be included")
+	require.True(t, gotAddrs["lava1"],
+		"backup with a dedicated URL must be included so startup ChainTracker init covers it")
+}
