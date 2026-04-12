@@ -7,6 +7,7 @@ import (
 
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
+	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/utils"
@@ -78,6 +79,22 @@ func NewEndpointChainTrackerManager(ctx context.Context, config EndpointChainTra
 	blocksToSave := config.BlocksToSave
 	if blocksToSave == 0 {
 		blocksToSave = DefaultBlocksToSave
+	}
+
+	// SVMChainTracker (chaintracker/svm_chain_tracker.go) maintains a blockNum→slot
+	// cache that's only populated for the latest block each poll — it has no path to
+	// backfill slots for historical blocks. When blocksToSave > 1, the ChainTracker
+	// init loop (chain_tracker.go readHashes) calls FetchBlockHashByNum for the last
+	// N blocks, every call after the first fails with "slot not found in cache", and
+	// the tracker dies with "ChainTracker stopped with error".
+	//
+	// History isn't useful for per-endpoint tracking anyway: each tracker watches a
+	// single URL, so there's no cross-endpoint fork detection to do — we only need
+	// the latest block to populate per-endpoint metrics and validate relay sync.
+	// Forcing blocksToSave=1 for Solana-family chains sidesteps the SVMChainTracker
+	// limitation entirely without losing any capability the manager actually uses.
+	if common.IsSolanaFamily(config.ChainID) {
+		blocksToSave = 1
 	}
 
 	avgBlockTime := config.AverageBlockTime
