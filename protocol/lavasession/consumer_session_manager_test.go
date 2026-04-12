@@ -2139,3 +2139,36 @@ func TestGetAllDirectRPCEndpoints_IncludesBackupProviders(t *testing.T) {
 	require.True(t, gotAddrs["lava1"],
 		"backup with a dedicated URL must be included so startup ChainTracker init covers it")
 }
+
+// TestProbeDirectRPCEndpoints_RespectsDisabledEndpoint guards the endpoint.Enabled
+// gate added to probeDirectRPCEndpoints. A disabled endpoint (ConnectionRefusals
+// hit the MarkUnhealthy threshold in the relay hot path) must not be counted as
+// healthy at probe time — otherwise checkAndUnblockHealthyReBlockedProviders
+// could unblock a backup that the relay path has already confirmed is down.
+func TestProbeDirectRPCEndpoints_RespectsDisabledEndpoint(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	nodeUrl := common.NodeUrl{Url: "https://backup.example/"}
+	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
+	require.NoError(t, err)
+
+	disabledEndpoint := &Endpoint{
+		NetworkAddress:     nodeUrl.Url,
+		Enabled:            false, // simulates MarkUnhealthy having run the relay path threshold
+		ConnectionRefusals: MaxConsecutiveConnectionAttempts,
+		DirectConnections:  []DirectRPCConnection{directConn},
+	}
+
+	cswp := &ConsumerSessionsWithProvider{
+		Sessions:          make(map[int64]*SingleConsumerSession),
+		PublicLavaAddress: "lava@stuck-backup",
+		Endpoints:         []*Endpoint{disabledEndpoint},
+		StaticProvider:    true,
+	}
+
+	csm := CreateConsumerSessionManager()
+	_, _, probeErr := csm.probeDirectRPCEndpoints(ctx, cswp, cswp.PublicLavaAddress)
+	require.Error(t, probeErr,
+		"a disabled endpoint must cause the direct RPC probe to fail, even though HTTPDirectRPCConnection.IsHealthy starts optimistically true")
+}
