@@ -120,4 +120,3 @@ func TestDebugResetScores_SmartRouter_DoesNotChangeOffset(t *testing.T) {
 	require.Equal(t, http.StatusOK, getRR.Code)
 	require.Contains(t, getRR.Body.String(), `"offset_seconds":3600`)
 }
-
