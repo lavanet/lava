@@ -117,8 +117,12 @@ type SmartRouterMetricsManager struct {
 	lock                    sync.RWMutex
 	endpointsHealthChecksOk uint64
 	endpointMetrics         map[string]*EndpointMetrics
-	urlToProviderName       map[string]string // maps endpoint URL → provider name for metric label resolution
-	optimizerQoSClient      *ConsumerOptimizerQoSClient
+	// urlToProviderNames maps an endpoint URL to every provider name configured to use it.
+	// URL-keyed metric emissions (e.g. ChainTracker OnNewBlock callbacks) must fan out to
+	// ALL provider names sharing the URL — otherwise only the last-registered provider gets
+	// the metric label, leaving its peers stuck at the zero value on dashboards.
+	urlToProviderNames map[string][]string
+	optimizerQoSClient *ConsumerOptimizerQoSClient
 }
 
 // EndpointMetrics holds per-endpoint metrics state for function-level tracking
@@ -559,7 +563,7 @@ func NewSmartRouterMetricsManager(options SmartRouterMetricsManagerOptions) *Sma
 		// Internal state
 		endpointsHealthChecksOk: 1,
 		endpointMetrics:         make(map[string]*EndpointMetrics),
-		urlToProviderName:       make(map[string]string),
+		urlToProviderNames:      make(map[string][]string),
 		optimizerQoSClient:      options.OptimizerQoSClient,
 	}
 
@@ -622,13 +626,18 @@ func (m *SmartRouterMetricsManager) SetEndpointOverallHealthBreakdown(spec, apiI
 	m.endpointOverallHealthBreakdown.WithLabelValues(spec, apiInterface).Set(value)
 }
 
-// SetEndpointLatestBlock sets the latest block known by an RPC endpoint
+// SetEndpointLatestBlock sets the latest block known by an RPC endpoint.
+// When endpointID is a URL shared by multiple providers (typical for backup-primary pairs
+// with identical node-urls), emits the metric once per provider so every dashboard row
+// sees the update — not just the last-registered one.
 func (m *SmartRouterMetricsManager) SetEndpointLatestBlock(spec, apiInterface, endpointID string, block int64) {
 	if m == nil {
 		return
 	}
-	labels := map[string]string{"spec": spec, "apiInterface": apiInterface, "endpoint_id": m.resolveProviderName(endpointID)}
-	m.endpointLatestBlock.WithLabelValues(labels).Set(float64(block))
+	for _, providerName := range m.resolveProviderNames(endpointID) {
+		labels := map[string]string{"spec": spec, "apiInterface": apiInterface, "endpoint_id": providerName}
+		m.endpointLatestBlock.WithLabelValues(labels).Set(float64(block))
+	}
 }
 
 // AddEndpointRelayServiced increments the relay counter for an endpoint and function
@@ -771,7 +780,19 @@ func (m *SmartRouterMetricsManager) RegisterEndpoint(spec, apiInterface, endpoin
 			endpointID:   endpointID,
 		}
 	}
-	m.urlToProviderName[endpointID] = providerName
+	// Append with dedup: multiple providers can share a URL, and the same (URL, provider)
+	// pair can be registered more than once (e.g. a provider with duplicate node-urls).
+	existing := m.urlToProviderNames[endpointID]
+	alreadyRegistered := false
+	for _, name := range existing {
+		if name == providerName {
+			alreadyRegistered = true
+			break
+		}
+	}
+	if !alreadyRegistered {
+		m.urlToProviderNames[endpointID] = append(existing, providerName)
+	}
 	m.lock.Unlock()
 
 	// Initialize health to healthy so always-healthy endpoints appear in Prometheus from startup.
@@ -780,15 +801,29 @@ func (m *SmartRouterMetricsManager) RegisterEndpoint(spec, apiInterface, endpoin
 	m.SetEndpointOverallHealth(spec, apiInterface, providerName, true)
 }
 
-// resolveProviderName returns the provider name for a given endpoint URL.
-// Falls back to the input value if no mapping is found (e.g. when already a name).
-func (m *SmartRouterMetricsManager) resolveProviderName(urlOrName string) string {
+// resolveProviderNames returns every provider name configured for a given endpoint URL.
+// URL-keyed metric emissions must iterate this slice so that every provider on a shared
+// URL gets the same metric update. Falls back to `[urlOrName]` when the input is already
+// a provider name or is otherwise unknown, preserving backward-compatible single-name
+// semantics for callers that pass a provider name directly.
+func (m *SmartRouterMetricsManager) resolveProviderNames(urlOrName string) []string {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
-	if name, ok := m.urlToProviderName[urlOrName]; ok {
-		return name
+	if names, ok := m.urlToProviderNames[urlOrName]; ok && len(names) > 0 {
+		out := make([]string, len(names))
+		copy(out, names)
+		return out
 	}
-	return urlOrName
+	return []string{urlOrName}
+}
+
+// resolveProviderName returns the first provider name configured for a given endpoint URL,
+// or the input if no mapping exists. Use this only for callers that do not emit per-provider
+// metrics (e.g. relay hot path which already passes the provider name directly). For URL-keyed
+// metric emissions, use resolveProviderNames and iterate.
+func (m *SmartRouterMetricsManager) resolveProviderName(urlOrName string) string {
+	names := m.resolveProviderNames(urlOrName)
+	return names[0]
 }
 
 // =============================================================================
@@ -915,24 +950,27 @@ func (m *SmartRouterMetricsManager) RecordCacheHitRequest(spec, apiInterface, fu
 	}
 }
 
-// RecordBlockFetch records block fetch operations (for chain tracker/state poller)
+// RecordBlockFetch records block fetch operations (for chain tracker/state poller).
+// Fans out across every provider sharing the URL so the fetch counters reflect the real
+// upstream success/failure rate for all of them — not just the last-registered name.
 func (m *SmartRouterMetricsManager) RecordBlockFetch(spec, apiInterface, endpointID string, isLatest bool, success bool) {
 	if m == nil {
 		return
 	}
 
-	providerName := m.resolveProviderName(endpointID)
-	if isLatest {
-		if success {
-			m.AddEndpointFetchLatestSuccess(spec, apiInterface, providerName)
+	for _, providerName := range m.resolveProviderNames(endpointID) {
+		if isLatest {
+			if success {
+				m.AddEndpointFetchLatestSuccess(spec, apiInterface, providerName)
+			} else {
+				m.AddEndpointFetchLatestFail(spec, apiInterface, providerName)
+			}
 		} else {
-			m.AddEndpointFetchLatestFail(spec, apiInterface, providerName)
-		}
-	} else {
-		if success {
-			m.AddEndpointFetchBlockSuccess(spec, apiInterface, providerName)
-		} else {
-			m.AddEndpointFetchBlockFail(spec, apiInterface, providerName)
+			if success {
+				m.AddEndpointFetchBlockSuccess(spec, apiInterface, providerName)
+			} else {
+				m.AddEndpointFetchBlockFail(spec, apiInterface, providerName)
+			}
 		}
 	}
 }

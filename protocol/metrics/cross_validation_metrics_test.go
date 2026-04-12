@@ -30,7 +30,7 @@ func newSmartRouterForCVTest() *SmartRouterMetricsManager {
 		crossValidationFailedTotalMetric:                prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_cv_failed"}, cvLabels),
 		crossValidationProviderAgreementsTotalMetric:    prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_cv_agreements"}, cvProviderLabels),
 		crossValidationProviderDisagreementsTotalMetric: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_cv_disagreements"}, cvProviderLabels),
-		urlToProviderName:                               make(map[string]string),
+		urlToProviderNames:                              make(map[string][]string),
 	}
 }
 
