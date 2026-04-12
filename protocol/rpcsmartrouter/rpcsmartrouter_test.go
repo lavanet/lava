@@ -76,3 +76,68 @@ func TestUpdateEpoch_FreshSessions(t *testing.T) {
 	// We can't easily check SessionManager internal state as it's private,
 	// but the fact that updateEpoch completed means UpdateAllProviders was called.
 }
+
+func TestUpdateEpoch_ResetsDisabledEndpoints(t *testing.T) {
+	rand.InitRandomSeed()
+
+	rpsr := &RPCSmartRouter{
+		sessionManagers:        make(map[string]*lavasession.ConsumerSessionManager),
+		providerSessions:       make(map[string]map[uint64]*lavasession.ConsumerSessionsWithProvider),
+		backupProviderSessions: make(map[string]map[uint64]*lavasession.ConsumerSessionsWithProvider),
+	}
+
+	rpcEndpoint := &lavasession.RPCEndpoint{
+		ChainID:        "LAV1",
+		ApiInterface:   "tendermintrpc",
+		NetworkAddress: "127.0.0.1:3334",
+	}
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, time.Second, uint(1), nil, "LAV1")
+	chainKey := rpcEndpoint.Key()
+	sessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test-router", lavasession.NewActiveSubscriptionProvidersStorage())
+	rpsr.sessionManagers[chainKey] = sessionManager
+
+	// Create endpoints that are disabled — simulating 5 consecutive failures.
+	disabledEndpoint := &lavasession.Endpoint{
+		NetworkAddress:     "http://provider1:8080",
+		Enabled:            false,
+		ConnectionRefusals: lavasession.MaxConsecutiveConnectionAttempts,
+	}
+	disabledBackupEndpoint := &lavasession.Endpoint{
+		NetworkAddress:     "http://backup1:8080",
+		Enabled:            false,
+		ConnectionRefusals: lavasession.MaxConsecutiveConnectionAttempts,
+	}
+
+	initialEpoch := uint64(1)
+
+	providerSession := lavasession.NewConsumerSessionWithProvider(
+		"lava@provider1",
+		[]*lavasession.Endpoint{disabledEndpoint},
+		100,
+		initialEpoch,
+		sdk.NewCoin("ulava", sdk.NewInt(1)),
+	)
+	providerSession.StaticProvider = true
+
+	backupSession := lavasession.NewConsumerSessionWithProvider(
+		"lava@backup1",
+		[]*lavasession.Endpoint{disabledBackupEndpoint},
+		100,
+		initialEpoch,
+		sdk.NewCoin("ulava", sdk.NewInt(1)),
+	)
+	backupSession.StaticProvider = true
+
+	rpsr.providerSessions[chainKey] = map[uint64]*lavasession.ConsumerSessionsWithProvider{0: providerSession}
+	rpsr.backupProviderSessions[chainKey] = map[uint64]*lavasession.ConsumerSessionsWithProvider{0: backupSession}
+
+	rpsr.updateEpoch(uint64(2))
+
+	// Direct field reads below are safe without mu: updateEpoch is synchronous and
+	// has fully returned, so no other goroutine holds or can acquire the endpoint lock.
+	require.True(t, disabledEndpoint.Enabled, "provider endpoint should be re-enabled after epoch transition")
+	require.Equal(t, uint64(0), disabledEndpoint.ConnectionRefusals, "provider endpoint refusals should be reset")
+
+	require.True(t, disabledBackupEndpoint.Enabled, "backup endpoint should be re-enabled after epoch transition")
+	require.Equal(t, uint64(0), disabledBackupEndpoint.ConnectionRefusals, "backup endpoint refusals should be reset")
+}

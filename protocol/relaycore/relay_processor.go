@@ -72,10 +72,11 @@ func NewRelayProcessor(
 		}
 	}
 
+	chainID, _ := chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
 	relayProcessor := &RelayProcessor{
 		crossValidationParams:        crossValidationParams,
 		responses:                    make(chan *RelayResponse, MaxCallsPerRelay), // buffered to prevent blocking
-		ResultsManager:               NewResultsManager(guid),
+		ResultsManager:               NewResultsManager(guid, chainID),
 		guid:                         guid,
 		consistency:                  consistency,
 		debugRelay:                   relayStateMachine.GetDebugState(),
@@ -282,6 +283,51 @@ func (rp *RelayProcessor) HasUnsupportedMethodErrors() bool {
 	return false
 }
 
+// HasNonRetryableUserFacingErrors returns true when any current error carries a
+// subcategory whose behavioral contract is "don't retry, don't charge CU" —
+// currently SubCategoryUnsupportedMethod or SubCategoryUserError. This is the
+// single entry point the retry state machine should use so adding a new such
+// subcategory only requires updating ErrorSubCategory.IsNonRetryableUserFacing.
+//
+// This is the superset of HasUnsupportedMethodErrors and should be preferred
+// at retry-decision sites. HasUnsupportedMethodErrors remains for callers
+// that need the narrower check (e.g. caching decisions).
+func (rp *RelayProcessor) HasNonRetryableUserFacingErrors() bool {
+	if rp == nil {
+		return false
+	}
+
+	_, nodeErrorResults, protocolErrors := rp.GetResultsData()
+
+	// Node error path: either flag is a hard stop for retries.
+	for _, nodeErrorResult := range nodeErrorResults {
+		if nodeErrorResult.IsUnsupportedMethod || nodeErrorResult.IsUserError {
+			return true
+		}
+	}
+
+	// Protocol error path: inspect the wrapped LavaError subcategory. We keep
+	// the existing "unsupported-method-by-message" and "non-retryable" checks
+	// from HasUnsupportedMethodErrors so behavior for legacy providers is
+	// unchanged.
+	for _, protocolError := range protocolErrors {
+		if chainlib.IsNonRetryableUserFacingErrorType(protocolError.GetError()) {
+			return true
+		}
+		if chainlib.IsUnsupportedMethodError(protocolError.GetError()) {
+			return true
+		}
+		if lavasession.EpochMismatchError.Is(protocolError.GetError()) {
+			continue
+		}
+		if !chainlib.ShouldRetryError(protocolError.GetError()) {
+			return true
+		}
+	}
+
+	return false
+}
+
 // Deciding wether we should send a relay retry attempt based on the selection mode and error counts.
 func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, nodeErrors int, specialNodeErrors int, protocolErrors int) bool {
 	utils.LavaFormatDebug("shouldRetryRelay called", utils.LogAttr("GUID", rp.guid), utils.LogAttr("selection", rp.selection), utils.LogAttr("resultsCount", resultsCount), utils.LogAttr("hashErr", hashErr), utils.LogAttr("nodeErrors", nodeErrors), utils.LogAttr("specialNodeErrors", specialNodeErrors), utils.LogAttr("protocolErrors", protocolErrors))
@@ -296,8 +342,10 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 		return false
 	}
 
-	// Never retry if we detect unsupported method errors
-	if rp.HasUnsupportedMethodErrors() {
+	// Never retry for non-retryable user-facing errors (unsupported method or
+	// user input error). Both classes are "the request can never succeed" and
+	// retries would burn CU on requests that will keep failing.
+	if rp.HasNonRetryableUserFacingErrors() {
 		return false
 	}
 
@@ -790,21 +838,32 @@ func (rp *RelayProcessor) buildFailureResult(
 	returnedResult := &common.RelayResult{StatusCode: http.StatusInternalServerError}
 	var processingError error
 
+	var bestLavaError *common.LavaError
 	if nodeErrorCount > 0 {
 		// Prefer node errors over protocol errors
 		nodeErr := rp.GetBestNodeErrorMessageForUser()
 		processingError = nodeErr.Err
+		bestLavaError = nodeErr.LavaError
 		if nodeErr.Response != nil {
 			returnedResult = &nodeErr.Response.RelayResult
 		}
 	} else if protocolErrorCount > 0 {
 		protocolErr := rp.GetBestProtocolErrorMessageForUser()
 		processingError = protocolErr.Err
+		bestLavaError = protocolErr.LavaError
 		if protocolErr.Response != nil {
 			returnedResult = &protocolErr.Response.RelayResult
 		}
 	}
 
 	returnedResult.ProviderInfo.ProviderAddress = strings.Join(allProvidersAddresses, ",")
+
+	// Log with classified error code for metrics/observability
+	if bestLavaError != nil {
+		chainID, _ := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
+		common.LogCodedError("failed relay, insufficient results", processingError, bestLavaError,
+			chainID, 0, "", utils.LogAttr("GUID", rp.guid))
+	}
+
 	return returnedResult, utils.LavaFormatError("failed relay, insufficient results", processingError, utils.LogAttr("GUID", rp.guid))
 }

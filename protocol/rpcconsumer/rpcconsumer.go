@@ -2,13 +2,16 @@ package rpcconsumer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -160,6 +163,11 @@ func getConsumerAddressAndKeys(clientCtx client.Context) (sdk.AccAddress, *secp2
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
 func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOptions) (err error) {
+	// Create a cancellable child context so that internal goroutines (e.g. the
+	// debug HTTP server) can be stopped cleanly when Start returns.
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	if common.IsTestMode(ctx) {
 		testModeWarn("RPCConsumer running tests")
 	}
@@ -177,6 +185,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 		consumerOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(consumerAddr.String(), options.analyticsServerAddresses.OptimizerQoSAddress, options.geoLocation, metrics.OptimizerQosServerPushInterval) // start up optimizer qos client
 		consumerOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, metrics.OptimizerQosServerSamplingInterval)
 	}
+	metrics.InitErrorMetrics()
 	consumerMetricsManager := metrics.NewConsumerMetricsManager(metrics.ConsumerMetricsManagerOptions{
 		NetworkAddress:             options.analyticsServerAddresses.MetricsListenAddress,
 		EnableQoSListener:          options.analyticsServerAddresses.OptimizerQoSListen,
@@ -254,6 +263,26 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 
 	relaysMonitorAggregator.StartMonitoring(ctx)
 
+	// Start optional debug HTTP server for integration tests.
+	// Only starts when --debug-address flag is provided. Off by default.
+	if options.cmdFlags.DebugAddress != "" {
+		var currentOffsetNano atomic.Int64
+		debugMux := buildDebugMux(optimizers, &currentOffsetNano)
+		srv := &http.Server{Addr: options.cmdFlags.DebugAddress, Handler: debugMux}
+		// Watcher goroutine: shuts the server down gracefully when ctx is cancelled
+		// (i.e. when Start returns after receiving os.Interrupt).
+		go func() {
+			<-ctx.Done()
+			srv.Shutdown(context.Background()) //nolint:errcheck
+		}()
+		go func() {
+			utils.LavaFormatInfo("Debug HTTP server started", utils.LogAttr("address", options.cmdFlags.DebugAddress))
+			if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				utils.LavaFormatError("Debug HTTP server stopped", err)
+			}
+		}()
+	}
+
 	utils.LavaFormatDebug("Starting Policy Updaters for all chains")
 	for chainId := range chainMutexes {
 		policyUpdater, ok, err := policyUpdaters.Load(chainId)
@@ -275,6 +304,101 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	signal.Notify(signalChan, os.Interrupt)
 	<-signalChan
 	return nil
+}
+
+// buildDebugMux constructs the /debug/time-warp and /debug/time HTTP handlers.
+//
+// The POST /debug/time-warp handler validates the requested offset (must be finite,
+// non-negative, and at most 24 h), stores it atomically in currentOffsetNano, and
+// applies it to every optimizer in the map.  When the new offset is smaller than
+// the previous one, ResetState() is called on every optimizer to discard
+// future-dated ScoreStore entries.
+//
+// The GET /debug/time handler reports real time, effective time, and current offset.
+//
+// currentOffsetNano is owned by the caller so that its value survives across
+// handler invocations; pass a pointer to a zero-valued atomic.Int64.
+func buildDebugMux(
+	optimizers *common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer],
+	currentOffsetNano *atomic.Int64,
+) *http.ServeMux {
+	// maxDebugOffsetSeconds caps the allowed forward warp to exactly 24 h (86 400 s).
+	// Upper: +24 h crosses a calendar-day boundary; ResetState() — called automatically
+	//        whenever the offset decreases — purges future-dated ScoreStore entries so
+	//        real-time samples are accepted immediately after reset.
+	// Lower: negative offsets are rejected — a backward shift puts po.now() in
+	//        the past, so existing ScoreStore entries (from real/forward time) are
+	//        newer than the new sampleTime, triggering the same TimeConflictingScoresError
+	//        freeze as an uncleared forward warp.
+	const maxDebugOffsetSeconds = float64(24 * 3600) // 86400 s
+
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/debug/time-warp", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "POST only", http.StatusMethodNotAllowed)
+			return
+		}
+		var body struct {
+			OffsetSeconds float64 `json:"offset_seconds"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			http.Error(w, "invalid JSON", http.StatusBadRequest)
+			return
+		}
+		// Reject NaN / ±Inf — these cast to math.MinInt64 when converted to
+		// time.Duration (int64), producing a huge negative offset.
+		if math.IsNaN(body.OffsetSeconds) || math.IsInf(body.OffsetSeconds, 0) {
+			http.Error(w, "offset_seconds must be a finite number", http.StatusBadRequest)
+			return
+		}
+		// Reject negative offsets — backward shifts freeze the optimizer.
+		if body.OffsetSeconds < 0 {
+			http.Error(w, "offset_seconds must be >= 0 (no travel to the past)", http.StatusBadRequest)
+			return
+		}
+		// Reject values above 24 h.
+		if body.OffsetSeconds > maxDebugOffsetSeconds {
+			http.Error(w, fmt.Sprintf("offset_seconds must be <= %g (24h)", maxDebugOffsetSeconds), http.StatusBadRequest)
+			return
+		}
+
+		newNano := int64(body.OffsetSeconds * float64(time.Second))
+		// Swap atomically writes newNano and returns the previous value.
+		// needsReset is true whenever the offset decreases (including reset
+		// to zero) so that future-dated ScoreStore entries are cleared.
+		prevNano := currentOffsetNano.Swap(newNano)
+		needsReset := newNano < prevNano
+
+		offset := time.Duration(newNano)
+		optimizers.Range(func(chainID string, opt *provideroptimizer.ProviderOptimizer) bool {
+			if offset == 0 {
+				opt.NowFunc = nil
+			} else {
+				opt.NowFunc = func() time.Time { return time.Now().Add(offset) }
+			}
+			if needsReset {
+				opt.ResetState()
+			}
+			return true
+		})
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"offset_seconds":%v,"applied_to_chains":true}`, body.OffsetSeconds)
+	})
+
+	// GET /debug/time — returns real and effective time so callers can verify the clock moved.
+	mux.HandleFunc("/debug/time", func(w http.ResponseWriter, r *http.Request) {
+		now := time.Now()
+		nano := currentOffsetNano.Load()
+		effective := now.Add(time.Duration(nano))
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"real_time":%q,"effective_time":%q,"offset_seconds":%v}`,
+			now.UTC().Format(time.RFC3339),
+			effective.UTC().Format(time.RFC3339),
+			float64(nano)/float64(time.Second))
+	})
+
+	return mux
 }
 
 func (rpcc *RPCConsumer) CreateConsumerEndpoint(
@@ -452,6 +576,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			utils.LavaFormatInfo(common.ProcessStartLogText)
+			common.ValidateAndCapMinRelayTimeout()
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -658,6 +783,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				GitHubToken:              viper.GetString(common.GitHubTokenFlag),
 				GitLabToken:              viper.GetString(common.GitLabTokenFlag),
 				EnableSelectionStats:     viper.GetBool(common.EnableSelectionStatsHeaderFlag),
+				DebugAddress:             viper.GetString("debug-address"),
 			}
 
 			rpcConsumerSharedState := viper.GetBool(common.SharedStateFlag)
@@ -690,6 +816,10 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().Uint64Var(&lavasession.MaximumStreamsOverASingleConnection, lavasession.MaximumStreamsOverASingleConnectionFlag, lavasession.DefaultMaximumStreamsOverASingleConnection, "maximum number of parallel streams over a single provider connection")
 	cmdRPCConsumer.Flags().Bool(common.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
 	cmdRPCConsumer.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
+	cmdRPCConsumer.Flags().String("debug-address", "", "debug HTTP server for integration tests, e.g. :9999 — exposes /debug/time-warp to shift QoS clock")
+	if err := viper.BindPFlag("debug-address", cmdRPCConsumer.Flags().Lookup("debug-address")); err != nil {
+		utils.LavaFormatFatal("failed binding debug-address flag", err)
+	}
 	cmdRPCConsumer.Flags().String(performance.PyroscopeAddressFlagName, "", "pyroscope server address for continuous profiling (e.g., http://pyroscope:4040)")
 	cmdRPCConsumer.Flags().String(performance.PyroscopeAppNameFlagName, "lavap-consumer", "pyroscope application name for identifying this service")
 	cmdRPCConsumer.Flags().Int(performance.PyroscopeMutexProfileFractionFlagName, performance.DefaultMutexProfileFraction, "mutex profile sampling rate (1 in N mutex events)")
@@ -768,6 +898,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().DurationVar(&lavasession.PeriodicProbeProvidersInterval, common.PeriodicProbeProvidersIntervalFlagName, lavasession.PeriodicProbeProvidersInterval, "interval for periodic probing of providers")
 
 	cmdRPCConsumer.Flags().DurationVar(&common.DefaultTimeout, common.DefaultProcessingTimeoutFlagName, common.DefaultTimeout, "default timeout for relay processing (e.g., 30s, 1m)")
+	cmdRPCConsumer.Flags().DurationVar(&common.MinimumTimePerRelayDelay, common.MinRelayTimeoutFlagName, common.MinimumTimePerRelayDelay, "minimum relay timeout floor applied to all methods when CU-based timeout is lower (e.g., 1s, 5s)")
 	cmdRPCConsumer.Flags().IntVar(&lavasession.MaxSessionsAllowedPerProvider, common.MaxSessionsPerProviderFlagName, lavasession.MaxSessionsAllowedPerProvider, "max number of sessions allowed per provider")
 
 	// batch request size limit

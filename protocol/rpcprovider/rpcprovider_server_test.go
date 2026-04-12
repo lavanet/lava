@@ -3,12 +3,14 @@ package rpcprovider
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
+	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
@@ -27,8 +29,7 @@ type MockChainTracker struct {
 // Test the error handling logic directly without needing a full ProviderSessionManager
 func testUnsupportedMethodErrorHandling(inputError error) error {
 	// This function replicates the error handling logic from finalizeSession
-	var unsupportedMethodError *chainlib.UnsupportedMethodError
-	if errors.As(inputError, &unsupportedMethodError) {
+	if chainlib.IsUnsupportedMethodErrorType(inputError) {
 		// In the actual code, this would log an info message
 		// For testing, we just return the original error without wrapping
 		return inputError
@@ -150,10 +151,10 @@ func TestUnsupportedMethodErrorHandling(t *testing.T) {
 
 			// Additional verification for UnsupportedMethodError
 			if tt.expectLogInfo {
-				var unsupportedMethodError *chainlib.UnsupportedMethodError
-				if errors.As(tt.inputError, &unsupportedMethodError) {
-					require.Equal(t, tt.methodName, unsupportedMethodError.GetMethodName())
-					require.NotEmpty(t, unsupportedMethodError.Error())
+				require.True(t, chainlib.IsUnsupportedMethodErrorType(tt.inputError))
+				require.NotEmpty(t, tt.inputError.Error())
+				if tt.methodName != "" {
+					require.Contains(t, tt.inputError.Error(), tt.methodName)
 				}
 			}
 		})
@@ -161,36 +162,98 @@ func TestUnsupportedMethodErrorHandling(t *testing.T) {
 }
 
 func TestUnsupportedMethodErrorProperties(t *testing.T) {
-	// Test the UnsupportedMethodError type properties and methods
+	// Test the LavaWrappedError properties when created via NewUnsupportedMethodError
 	t.Run("Error with method name", func(t *testing.T) {
 		originalErr := errors.New("method not found")
 		methodName := "eth_unsupportedMethod"
 		err := chainlib.NewUnsupportedMethodError(originalErr, methodName)
 
-		require.Equal(t, methodName, err.GetMethodName())
 		require.Contains(t, err.Error(), methodName)
-		require.Contains(t, err.Error(), originalErr.Error())
-		require.Equal(t, originalErr, err.Unwrap())
+		require.True(t, chainlib.IsUnsupportedMethodErrorType(err))
+		// Unwrap returns the underlying LavaError, not the original error
+		unwrapped := errors.Unwrap(err)
+		require.NotNil(t, unwrapped)
 	})
 
 	t.Run("Error without method name", func(t *testing.T) {
 		originalErr := errors.New("method not found")
 		err := chainlib.NewUnsupportedMethodError(originalErr, "")
 
-		require.Equal(t, "", err.GetMethodName())
-		require.Contains(t, err.Error(), originalErr.Error())
-		require.Equal(t, originalErr, err.Unwrap())
+		require.Contains(t, err.Error(), "unsupported method")
+		require.True(t, chainlib.IsUnsupportedMethodErrorType(err))
+		unwrapped := errors.Unwrap(err)
+		require.NotNil(t, unwrapped)
 	})
 
-	t.Run("Error with method name using WithMethod", func(t *testing.T) {
+	t.Run("Different method names produce different error messages", func(t *testing.T) {
 		originalErr := errors.New("method not found")
-		err := chainlib.NewUnsupportedMethodError(originalErr, "")
-		err = err.WithMethod("eth_customMethod")
+		err1 := chainlib.NewUnsupportedMethodError(originalErr, "eth_call")
+		err2 := chainlib.NewUnsupportedMethodError(originalErr, "eth_customMethod")
 
-		require.Equal(t, "eth_customMethod", err.GetMethodName())
-		require.Contains(t, err.Error(), "eth_customMethod")
-		require.Contains(t, err.Error(), originalErr.Error())
-		require.Equal(t, originalErr, err.Unwrap())
+		require.Contains(t, err1.Error(), "eth_call")
+		require.Contains(t, err2.Error(), "eth_customMethod")
+		require.True(t, chainlib.IsUnsupportedMethodErrorType(err1))
+		require.True(t, chainlib.IsUnsupportedMethodErrorType(err2))
+	})
+}
+
+// finalizeSessionErrorPath replicates the error-branch logic of
+// RPCProviderServer.finalizeSession so the single-metric-per-failure invariant
+// can be asserted without constructing a full provider server + session
+// manager. Any behavioural change in the real finalizeSession must be
+// mirrored here — the comment block in rpcprovider_server.go references this.
+func finalizeSessionErrorPath(err error) error {
+	if chainlib.IsUnsupportedMethodErrorType(err) {
+		// Benign CU rollback — info-level only, no metric, no warning log.
+		return err
+	}
+	// Single structured log + single metric increment per real failure.
+	return common.LogCodedWarning("TryRelay Failed", err, chainlib.ExtractLavaError(err), "LAV1", 0, "")
+}
+
+func TestFinalizeSession_SingleMetricPerFailure(t *testing.T) {
+	// Install a counting metric callback to verify the single-emit invariant
+	// on the error-branch of finalizeSession. Unsupported-method errors must
+	// emit ZERO metrics (benign rollback); regular errors must emit exactly
+	// ONE metric.
+	var (
+		mu    sync.Mutex
+		count int
+	)
+	common.SetErrorMetricsCallback(func(code uint32, name string, category string, retryable bool, chainID string) {
+		mu.Lock()
+		defer mu.Unlock()
+		count++
+	})
+	defer common.SetErrorMetricsCallback(nil)
+
+	t.Run("unsupported method → 0 metrics (benign CU rollback)", func(t *testing.T) {
+		mu.Lock()
+		count = 0
+		mu.Unlock()
+
+		err := chainlib.NewUnsupportedMethodError(errors.New("method not found"), "eth_unsupported")
+		result := finalizeSessionErrorPath(err)
+		require.NotNil(t, result)
+
+		mu.Lock()
+		defer mu.Unlock()
+		require.Equal(t, 0, count,
+			"unsupported-method rollback must not increment lava_errors_total")
+	})
+
+	t.Run("regular failure → exactly 1 metric", func(t *testing.T) {
+		mu.Lock()
+		count = 0
+		mu.Unlock()
+
+		result := finalizeSessionErrorPath(errors.New("some transport failure"))
+		require.NotNil(t, result)
+
+		mu.Lock()
+		defer mu.Unlock()
+		require.Equal(t, 1, count,
+			"regular relay failure must emit exactly one metric")
 	})
 }
 

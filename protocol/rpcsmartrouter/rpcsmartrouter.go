@@ -31,12 +31,16 @@ package rpcsmartrouter
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"math"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -185,6 +189,11 @@ type rpcSmartRouterStartOptions struct {
 
 // spawns a new RPCSmartRouter server with all its processes and internals ready for communications
 func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterStartOptions) (err error) {
+	// Create a cancellable child context so that internal goroutines (e.g. the
+	// debug HTTP server) can be stopped cleanly when Start returns.
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	if common.IsTestMode(ctx) {
 		testModeWarn("RPCSmartRouter running tests")
 	}
@@ -212,6 +221,7 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 		utils.LogAttr("nextEpochTime", time.Now().Add(timeUntilNext).Format("15:04:05 MST")),
 	)
 
+	metrics.InitErrorMetrics()
 	smartRouterReportsManager := metrics.NewConsumerReportsClient(options.analyticsServerAddresses.ReportsAddressFlag)
 
 	// Smart router doesn't need consumer address from blockchain
@@ -295,12 +305,116 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 
 	relaysMonitorAggregator.StartMonitoring(ctx)
 
+	// Start optional debug HTTP server for integration tests.
+	// Only starts when --debug-address flag is provided. Off by default.
+	if options.cmdFlags.DebugAddress != "" {
+		var currentOffsetNano atomic.Int64
+		debugMux := buildDebugMux(optimizers, &currentOffsetNano)
+		srv := &http.Server{Addr: options.cmdFlags.DebugAddress, Handler: debugMux}
+		// Watcher goroutine: shuts the server down gracefully when ctx is cancelled
+		// (i.e. when Start returns after receiving os.Interrupt).
+		go func() {
+			<-ctx.Done()
+			srv.Shutdown(context.Background()) //nolint:errcheck
+		}()
+		go func() {
+			utils.LavaFormatInfo("Debug HTTP server started", utils.LogAttr("address", options.cmdFlags.DebugAddress))
+			if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				utils.LavaFormatError("Debug HTTP server stopped", err)
+			}
+		}()
+	}
+
 	utils.LavaFormatInfo("RPCSmartRouter done setting up all endpoints, ready for requests")
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
 	<-signalChan
 	return nil
+}
+
+// buildDebugMux constructs the /debug/time-warp and /debug/time HTTP handlers.
+//
+// See rpcconsumer.buildDebugMux for full documentation — this is an identical copy
+// scoped to the rpcsmartrouter package.
+func buildDebugMux(
+	optimizers *common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer],
+	currentOffsetNano *atomic.Int64,
+) *http.ServeMux {
+	// maxDebugOffsetSeconds caps the allowed forward warp to exactly 24 h (86 400 s).
+	// Upper: +24 h crosses a calendar-day boundary; ResetState() — called automatically
+	//        whenever the offset decreases — purges future-dated ScoreStore entries so
+	//        real-time samples are accepted immediately after reset.
+	// Lower: negative offsets are rejected — a backward shift puts po.now() in
+	//        the past, so existing ScoreStore entries (from real/forward time) are
+	//        newer than the new sampleTime, triggering the same TimeConflictingScoresError
+	//        freeze as an uncleared forward warp.
+	const maxDebugOffsetSeconds = float64(24 * 3600) // 86400 s
+
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/debug/time-warp", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "POST only", http.StatusMethodNotAllowed)
+			return
+		}
+		var body struct {
+			OffsetSeconds float64 `json:"offset_seconds"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			http.Error(w, "invalid JSON", http.StatusBadRequest)
+			return
+		}
+		// Reject NaN / ±Inf — these cast to math.MinInt64 when converted to
+		// time.Duration (int64), producing a huge negative offset.
+		if math.IsNaN(body.OffsetSeconds) || math.IsInf(body.OffsetSeconds, 0) {
+			http.Error(w, "offset_seconds must be a finite number", http.StatusBadRequest)
+			return
+		}
+		// Reject negative offsets — backward shifts freeze the optimizer.
+		if body.OffsetSeconds < 0 {
+			http.Error(w, "offset_seconds must be >= 0 (no travel to the past)", http.StatusBadRequest)
+			return
+		}
+		// Reject values above 24 h.
+		if body.OffsetSeconds > maxDebugOffsetSeconds {
+			http.Error(w, fmt.Sprintf("offset_seconds must be <= %g (24h)", maxDebugOffsetSeconds), http.StatusBadRequest)
+			return
+		}
+
+		newNano := int64(body.OffsetSeconds * float64(time.Second))
+		prevNano := currentOffsetNano.Swap(newNano)
+		needsReset := newNano < prevNano
+
+		offset := time.Duration(newNano)
+		optimizers.Range(func(chainID string, opt *provideroptimizer.ProviderOptimizer) bool {
+			if offset == 0 {
+				opt.NowFunc = nil
+			} else {
+				opt.NowFunc = func() time.Time { return time.Now().Add(offset) }
+			}
+			if needsReset {
+				opt.ResetState()
+			}
+			return true
+		})
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"offset_seconds":%v,"applied_to_chains":true}`, body.OffsetSeconds)
+	})
+
+	// GET /debug/time — returns real and effective time so callers can verify the clock moved.
+	mux.HandleFunc("/debug/time", func(w http.ResponseWriter, r *http.Request) {
+		now := time.Now()
+		nano := currentOffsetNano.Load()
+		effective := now.Add(time.Duration(nano))
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"real_time":%q,"effective_time":%q,"offset_seconds":%v}`,
+			now.UTC().Format(time.RFC3339),
+			effective.UTC().Format(time.RFC3339),
+			float64(nano)/float64(time.Second))
+	})
+
+	return mux
 }
 
 func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
@@ -1090,6 +1204,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			utils.LavaFormatInfo(common.ProcessStartLogText)
+			common.ValidateAndCapMinRelayTimeout()
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -1347,6 +1462,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				GitLabToken:              viper.GetString(common.GitLabTokenFlag),
 				EpochDuration:            epochDuration,
 				EnableSelectionStats:     viper.GetBool(common.EnableSelectionStatsHeaderFlag),
+				DebugAddress:             viper.GetString("debug-address"),
 			}
 
 			rpcSmartRouterSharedState := viper.GetBool(common.SharedStateFlag)
@@ -1390,9 +1506,15 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().Uint(common.MaximumConcurrentProvidersFlagName, 3, "max number of concurrent providers to communicate with")
 	cmdRPCSmartRouter.MarkFlagRequired(common.GeolocationFlag)
 	cmdRPCSmartRouter.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allow insecure provider-dialing. used for development and testing")
+	cmdRPCSmartRouter.Flags().Bool("skip-policy-verification", false, "skip policy verification (no-op for smart router)")
+	cmdRPCSmartRouter.Flags().Bool("skip-relay-signing", false, "skip relay signing (no-op for smart router)")
 	cmdRPCSmartRouter.Flags().Uint64Var(&lavasession.MaximumStreamsOverASingleConnection, lavasession.MaximumStreamsOverASingleConnectionFlag, lavasession.DefaultMaximumStreamsOverASingleConnection, "maximum number of parallel streams over a single provider connection")
 	cmdRPCSmartRouter.Flags().Bool(common.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
 	cmdRPCSmartRouter.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
+	cmdRPCSmartRouter.Flags().String("debug-address", "", "debug HTTP server for integration tests, e.g. :9999 — exposes /debug/time-warp to shift QoS clock")
+	if err := viper.BindPFlag("debug-address", cmdRPCSmartRouter.Flags().Lookup("debug-address")); err != nil {
+		utils.LavaFormatFatal("failed binding debug-address flag", err)
+	}
 	cmdRPCSmartRouter.Flags().String(performance.PyroscopeAddressFlagName, "", "pyroscope server address for continuous profiling (e.g., http://pyroscope:4040)")
 	cmdRPCSmartRouter.Flags().String(performance.PyroscopeAppNameFlagName, "lavap-smartrouter", "pyroscope application name for identifying this service")
 	cmdRPCSmartRouter.Flags().Int(performance.PyroscopeMutexProfileFractionFlagName, performance.DefaultMutexProfileFraction, "mutex profile sampling rate (1 in N mutex events)")
@@ -1473,6 +1595,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	}
 
 	cmdRPCSmartRouter.Flags().DurationVar(&common.DefaultTimeout, common.DefaultProcessingTimeoutFlagName, common.DefaultTimeout, "default timeout for relay processing (e.g., 30s, 1m)")
+	cmdRPCSmartRouter.Flags().DurationVar(&common.MinimumTimePerRelayDelay, common.MinRelayTimeoutFlagName, common.MinimumTimePerRelayDelay, "minimum relay timeout floor applied to all methods when CU-based timeout is lower (e.g., 1s, 5s)")
 	cmdRPCSmartRouter.Flags().IntVar(&lavasession.MaxSessionsAllowedPerProvider, common.MaxSessionsPerProviderFlagName, lavasession.MaxSessionsAllowedPerProvider, "max number of sessions allowed per provider")
 
 	// batch request size limit
@@ -1515,12 +1638,17 @@ func (rpsr *RPCSmartRouter) updateEpoch(epoch uint64) {
 		// until hitting the 1000-session limit, causing "No pairings available" errors
 		freshProviderSessions := make(map[uint64]*lavasession.ConsumerSessionsWithProvider)
 		for idx, oldSession := range oldProviderSessions {
-			// Create new session with same configuration but fresh Sessions map
+			// Reset endpoint health so disabled endpoints get a fresh start each epoch.
+			// Without this, an endpoint disabled by ConnectionRefusals stays disabled
+			// forever since it can never receive the successful relay needed to trigger ResetHealth.
+			for _, endpoint := range oldSession.Endpoints {
+				endpoint.ResetHealth()
+			}
 			freshSession := lavasession.NewConsumerSessionWithProvider(
 				oldSession.PublicLavaAddress,
-				oldSession.Endpoints, // Endpoints are safe to reuse
+				oldSession.Endpoints,
 				oldSession.MaxComputeUnits,
-				epoch, // New epoch
+				epoch,
 				oldSession.GetProviderStakeSize(),
 			)
 			freshSession.StaticProvider = oldSession.StaticProvider
@@ -1535,6 +1663,9 @@ func (rpsr *RPCSmartRouter) updateEpoch(epoch uint64) {
 		// Create fresh backup sessions
 		freshBackupSessions := make(map[uint64]*lavasession.ConsumerSessionsWithProvider)
 		for idx, oldSession := range oldBackupSessions {
+			for _, endpoint := range oldSession.Endpoints {
+				endpoint.ResetHealth()
+			}
 			freshSession := lavasession.NewConsumerSessionWithProvider(
 				oldSession.PublicLavaAddress,
 				oldSession.Endpoints,

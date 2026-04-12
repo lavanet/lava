@@ -2,84 +2,87 @@ package rpcsmartrouter
 
 import (
 	"errors"
-	"fmt"
-	"net"
-	"strings"
-	"syscall"
 
-	"github.com/lavanet/lava/v5/protocol/lavasession"
+	"github.com/lavanet/lava/v5/protocol/chainlib"
+	"github.com/lavanet/lava/v5/protocol/common"
 )
 
-// MapDirectRPCError maps direct RPC errors to user-friendly errors
-func MapDirectRPCError(err error, protocol lavasession.DirectRPCProtocol) error {
+// extractLavaError extracts the *common.LavaError from a LavaWrappedError,
+// or returns nil if the error is not (or does not wrap) a LavaWrappedError.
+func extractLavaError(err error) *common.LavaError {
+	var wrapped *common.LavaWrappedError
+	if errors.As(err, &wrapped) {
+		return wrapped.LavaErr
+	}
+	return nil
+}
+
+// ---------------------------------------------------------------------------
+// Classification helpers
+// ---------------------------------------------------------------------------
+
+// classifyDirectRPCError classifies a direct RPC error into a LavaError for
+// internal use (logging, metrics, endpoint health). The original error is never
+// modified — the router is a transparent hop for the user.
+// Returns both the classification and a classifiedError that wraps the original.
+func classifyDirectRPCError(err error, chainFamily common.ChainFamily, transport common.TransportType) (*common.LavaError, error) {
+	if err == nil {
+		return common.LavaErrorUnknown, nil
+	}
+
+	// Connection-level errors — detected before inspecting the message
+	connError := common.DetectConnectionError(err)
+
+	// Extract JSON-RPC/gRPC/HTTP error code and canonical message, then classify
+	errorCode, errorMessage := chainlib.ExtractNodeErrorDetails(err)
+	classified := common.ClassifyError(connError, chainFamily, transport, errorCode, errorMessage)
+
+	return classified, common.NewLavaError(classified, err.Error())
+}
+
+// classifyAndWrap is a convenience that calls classifyDirectRPCError and returns
+// only the wrapped error (discarding the *LavaError for call sites that don't need it).
+func classifyAndWrap(err error, chainFamily common.ChainFamily, transport common.TransportType) error {
 	if err == nil {
 		return nil
 	}
-
-	// Connection errors
-	if isConnectionRefused(err) {
-		return fmt.Errorf("RPC endpoint unavailable (connection refused): %w", err)
-	}
-
-	if isTimeout(err) {
-		return fmt.Errorf("RPC request timeout: %w", err)
-	}
-
-	// Protocol-specific error handling
-	switch protocol {
-	case lavasession.DirectRPCProtocolHTTP, lavasession.DirectRPCProtocolHTTPS:
-		return mapHTTPError(err)
-	case lavasession.DirectRPCProtocolGRPC:
-		return mapGRPCError(err)
-	case lavasession.DirectRPCProtocolWS, lavasession.DirectRPCProtocolWSS:
-		return mapWebSocketError(err)
-	}
-
-	return err
+	_, wrapped := classifyDirectRPCError(err, chainFamily, transport)
+	return wrapped
 }
 
-func isConnectionRefused(err error) bool {
-	var netErr *net.OpError
-	if errors.As(err, &netErr) {
-		var syscallErr *syscall.Errno
-		if errors.As(netErr.Err, &syscallErr) {
-			return *syscallErr == syscall.ECONNREFUSED
+// classifyEndpointHealth decides whether an endpoint should be marked unhealthy
+// and/or backed off based on the classified error.
+//
+// Rules:
+//   - isClientCancellation (relay race loser / client disconnect) → neither,
+//     regardless of category. The endpoint is not at fault.
+//   - CategoryInternal (timeout, connection refused, DNS) → unhealthy + backoff
+//   - CategoryExternal + Retryable (5xx, syncing) → backoff + unhealthy (except rate limit)
+//   - CategoryExternal + Retryable + RateLimited → backoff only (endpoint is healthy, just busy)
+//   - CategoryExternal + !Retryable (4xx, unsupported) → neither (error is the user's)
+//
+// The isClientCancellation carve-out lives here so callers have exactly one
+// source of truth for endpoint-health decisions — see common.IsClientCancellation
+// for the rule that produces the bool.
+func classifyEndpointHealth(classified *common.LavaError, isClientCancellation bool) (shouldMarkUnhealthy bool, needsBackoff bool) {
+	if classified == nil {
+		return false, false
+	}
+	// Client-side cancellations (relay race / client disconnect) are not an
+	// endpoint fault. Skip before inspecting category so a ContextCanceled
+	// classification (CategoryInternal) doesn't fall into the unhealthy arm.
+	if isClientCancellation {
+		return false, false
+	}
+	switch {
+	case classified.Category == common.CategoryInternal:
+		return true, true
+	case classified.Category == common.CategoryExternal && classified.Retryable:
+		if classified.IsRateLimited() {
+			return false, true // healthy but busy
 		}
+		return true, true
+	default:
+		return false, false
 	}
-	return false
-}
-
-func isTimeout(err error) bool {
-	var netErr net.Error
-	return errors.As(err, &netErr) && netErr.Timeout()
-}
-
-func mapHTTPError(err error) error {
-	// Check for HTTP status codes (429, 503, etc.)
-	errStr := err.Error()
-	if strings.Contains(errStr, "429") {
-		return fmt.Errorf("RPC rate limit exceeded: %w", err)
-	}
-	if strings.Contains(errStr, "503") {
-		return fmt.Errorf("RPC service unavailable: %w", err)
-	}
-	if strings.Contains(errStr, "500") {
-		return fmt.Errorf("RPC internal server error: %w", err)
-	}
-	if strings.Contains(errStr, "502") || strings.Contains(errStr, "504") {
-		return fmt.Errorf("RPC gateway error: %w", err)
-	}
-	return err
-}
-
-func mapGRPCError(err error) error {
-	// Map gRPC status codes
-	// TODO: Add gRPC-specific error mapping when gRPC support is implemented
-	return err
-}
-
-func mapWebSocketError(err error) error {
-	// Map WebSocket-specific errors
-	// TODO: Add WebSocket-specific error mapping when WS support is implemented
-	return err
 }
