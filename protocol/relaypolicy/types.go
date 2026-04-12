@@ -50,9 +50,7 @@ type EligibilityResult struct {
 	Action EligibilityAction
 }
 
-// ErrorClassification is returned by ClassifyError.
+// ErrorClassification is returned by ClassifyNodeError.
 type ErrorClassification struct {
-	IsUnsupportedMethod  bool
-	IsSolanaNonRetryable bool
-	IsRetryable          bool
+	IsUnsupportedMethod bool
 }
