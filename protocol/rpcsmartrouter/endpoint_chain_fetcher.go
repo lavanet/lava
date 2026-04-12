@@ -256,11 +256,20 @@ func (ecf *EndpointChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint
 	}
 }
 
-// CustomMessage sends a custom message to the endpoint.
-// Required by chaintracker.ChainFetcher interface but not used for block tracking.
+// CustomMessage sends a custom JSON-RPC / REST message to the endpoint.
+// Used by SVMChainTracker to call getLatestBlockhash (which returns slot + block
+// hash + block height together — a single call that has no equivalent in the
+// generic FetchLatestBlockNum path). Returning an error here disables the per-
+// endpoint ChainTracker on Solana, which in turn starves every per-endpoint
+// metric that depends on OnNewBlock (latest_block, fetch_latest_success, …).
+//
+// The `path` argument is accepted for interface compatibility with
+// chainlib.ChainFetcher.CustomMessage but is not needed here: POST callers
+// (like SVMChainTracker) pass the body in `data` with `path=""`, and GET
+// callers already encode the URL suffix in `data` per sendRawRequest's REST
+// convention (see connectionType == "GET" branch below).
 func (ecf *EndpointChainFetcher) CustomMessage(ctx context.Context, path string, data []byte, connectionType string, apiName string) ([]byte, error) {
-	// Not implemented for direct RPC endpoints - not needed for ChainTracker
-	return nil, fmt.Errorf("CustomMessage not supported for EndpointChainFetcher")
+	return ecf.sendRawRequest(ctx, data, connectionType, apiName)
 }
 
 // sendRawRequest sends a raw request to the endpoint and returns the response.

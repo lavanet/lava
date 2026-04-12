@@ -25,7 +25,7 @@ func newSmartRouterForCacheTest() *SmartRouterMetricsManager {
 		cacheSuccessTotalMetric:  prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_cache_success"}, cacheLabels),
 		cacheFailedTotalMetric:   prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_cache_failed"}, cacheLabels),
 		cacheLatencyHistogram:    prometheus.NewHistogramVec(prometheus.HistogramOpts{Name: "t_sr_cache_latency"}, cacheLabels),
-		urlToProviderName:        make(map[string]string),
+		urlToProviderNames:       make(map[string][]string),
 	}
 }
 
