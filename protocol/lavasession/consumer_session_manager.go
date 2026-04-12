@@ -606,6 +606,21 @@ func (csm *ConsumerSessionManager) probeDirectRPCEndpoints(
 		}
 
 		totalEndpoints++
+
+		// Belt-and-suspenders with conn.IsHealthy(): the endpoint struct tracks
+		// cumulative relay-path failures via MarkUnhealthy → ConnectionRefusals,
+		// while IsHealthy() tracks the last transport attempt. A disabled endpoint
+		// must never be considered healthy at probe time — otherwise a backup with
+		// 5+ consecutive refusals could be unblocked at epoch transition despite
+		// the relay path having already confirmed it's down.
+		if !endpoint.Enabled {
+			utils.LavaFormatDebug("Direct RPC endpoint is disabled, skipping probe",
+				utils.LogAttr("provider", providerAddress),
+				utils.LogAttr("endpoint", endpoint.NetworkAddress),
+			)
+			continue
+		}
+
 		for _, conn := range endpoint.DirectConnections {
 			if conn == nil {
 				continue
