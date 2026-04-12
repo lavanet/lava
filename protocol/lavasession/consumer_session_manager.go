@@ -1861,7 +1861,15 @@ func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWit
 		_, providerAddress, err := csm.probeProvider(ctx, consumerSessionsWithProvider, csm.atomicReadCurrentEpoch(), true)
 		if err == nil {
 			utils.LavaFormatDebug("Reconnecting provider succeeded returning provider to valid addresses list", utils.LogAttr("provider", providerAddress))
-			csm.validateAndReturnBlockedProviderToValidAddressesList(providerAddress)
+			csm.lock.Lock()
+			if _, isBackup := csm.backupProviders[providerAddress]; isBackup {
+				// Backup providers are tracked in blockedBackupProviders, not currentlyBlockedProviderAddresses.
+				delete(csm.blockedBackupProviders, providerAddress)
+				csm.lock.Unlock()
+			} else {
+				csm.lock.Unlock()
+				csm.validateAndReturnBlockedProviderToValidAddressesList(providerAddress)
+			}
 		}
 		return err
 	}
