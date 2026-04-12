@@ -24,6 +24,13 @@ func postTimeWarpRouter(mux http.Handler, rawBody string) *httptest.ResponseReco
 	return rr
 }
 
+func postResetScoresRouter(mux http.Handler) *httptest.ResponseRecorder {
+	req := httptest.NewRequest(http.MethodPost, "/debug/reset-scores", nil)
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	return rr
+}
+
 // TestDebugTimeWarp_SmartRouter_OffsetBoundaryValidation mirrors the rpcconsumer boundary
 // test for rpcsmartrouter — the handler is a verbatim copy and must enforce the same ceiling.
 func TestDebugTimeWarp_SmartRouter_OffsetBoundaryValidation(t *testing.T) {
@@ -73,4 +80,43 @@ func TestDebugTimeWarp_SmartRouter_ErrorMessageContainsNewCeiling(t *testing.T) 
 	require.Contains(t, rr.Body.String(), "86400")
 	require.NotContains(t, rr.Body.String(), "86340")
 	require.Contains(t, rr.Body.String(), "24h")
+}
+
+func TestDebugResetScores_SmartRouter_ReturnsJSON(t *testing.T) {
+	var offsetNano atomic.Int64
+	mux := buildDebugMux(newEmptyOptimizersRouter(), &offsetNano)
+
+	rr := postResetScoresRouter(mux)
+	require.Equal(t, http.StatusOK, rr.Code)
+	require.Contains(t, rr.Body.String(), `"reset":true`)
+	require.Contains(t, rr.Body.String(), `"chains_reset":0`)
+}
+
+func TestDebugResetScores_SmartRouter_MethodNotAllowed(t *testing.T) {
+	var offsetNano atomic.Int64
+	mux := buildDebugMux(newEmptyOptimizersRouter(), &offsetNano)
+
+	req := httptest.NewRequest(http.MethodGet, "/debug/reset-scores", nil)
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+
+	require.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+}
+
+func TestDebugResetScores_SmartRouter_DoesNotChangeOffset(t *testing.T) {
+	var offsetNano atomic.Int64
+	mux := buildDebugMux(newEmptyOptimizersRouter(), &offsetNano)
+
+	warpRR := postTimeWarpRouter(mux, `{"offset_seconds":3600}`)
+	require.Equal(t, http.StatusOK, warpRR.Code)
+
+	resetRR := postResetScoresRouter(mux)
+	require.Equal(t, http.StatusOK, resetRR.Code)
+
+	getReq := httptest.NewRequest(http.MethodGet, "/debug/time", nil)
+	getRR := httptest.NewRecorder()
+	mux.ServeHTTP(getRR, getReq)
+
+	require.Equal(t, http.StatusOK, getRR.Code)
+	require.Contains(t, getRR.Body.String(), `"offset_seconds":3600`)
 }
