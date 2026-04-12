@@ -44,6 +44,39 @@ func TestEndpointChainFetcher_CustomMessage_POSTDelegatesToConnection(t *testing
 		"CustomMessage must return the actual upstream response body")
 }
 
+// TestEndpointChainTrackerManager_ForcesBlocksToSave1ForSolana guards the blocksToSave
+// override that sidesteps SVMChainTracker's slot-cache-only-for-latest-block limitation.
+// When blocksToSave > 1 the ChainTracker init loop fetches hashes for historical blocks,
+// and on every Solana-family chain those fetches fail with "slot not found in cache",
+// killing the tracker before OnNewBlock can fire.
+func TestEndpointChainTrackerManager_ForcesBlocksToSave1ForSolana(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	for _, tc := range []struct {
+		chainID  string
+		expected uint64
+		reason   string
+	}{
+		{"SOLANA", 1, "Solana mainnet must force blocksToSave=1 to avoid SVMChainTracker slot-cache misses"},
+		{"SOLANAT", 1, "Solana testnet uses the same SVMChainTracker"},
+		{"KOII", 1, "KOII is a Solana fork — same chain tracker family"},
+		{"ETH", 10, "EVM chains keep the caller-requested blocksToSave"},
+		{"LAV1", 10, "non-SVM chains keep the caller-requested blocksToSave"},
+	} {
+		t.Run(tc.chainID, func(t *testing.T) {
+			m := NewEndpointChainTrackerManager(ctx, EndpointChainTrackerConfig{
+				ChainID:      tc.chainID,
+				ApiInterface: "jsonrpc",
+				BlocksToSave: 10,
+			})
+			require.NotNil(t, m)
+			defer m.Stop()
+			require.Equal(t, tc.expected, m.blocksToSave, tc.reason)
+		})
+	}
+}
+
 // TestEndpointChainFetcher_CustomMessage_PropagatesUnhealthyConnection guards against
 // silently swallowing upstream failures: when the direct connection is unhealthy,
 // CustomMessage should surface an error so the SVM tracker's retry logic kicks in
