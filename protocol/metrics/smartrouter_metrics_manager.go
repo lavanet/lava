@@ -834,19 +834,6 @@ func (m *SmartRouterMetricsManager) RecordRelayError(spec, apiInterface, endpoin
 }
 
 // =============================================================================
-// Reset methods
-// =============================================================================
-
-// ResetEndpointMetrics resets health metrics for a specific endpoint
-func (m *SmartRouterMetricsManager) ResetEndpointMetrics(spec, apiInterface, endpointID string) {
-	if m == nil {
-		return
-	}
-	labels := map[string]string{"spec": spec, "apiInterface": apiInterface, "endpoint_id": endpointID}
-	m.endpointOverallHealth.WithLabelValues(labels).Set(0)
-}
-
-// =============================================================================
 // Methods for direct RPC relay tracking
 // These are called from rpcsmartrouter_server.go during relay processing
 // =============================================================================
