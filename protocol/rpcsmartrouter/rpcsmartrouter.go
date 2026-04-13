@@ -357,6 +357,10 @@ func buildDebugMux(
 			http.Error(w, "POST only", http.StatusMethodNotAllowed)
 			return
 		}
+		// Cap the body at 1 KiB — payload is {"offset_seconds": N}, 1 KiB is
+		// orders of magnitude over the legitimate size and prevents a caller
+		// from streaming an unbounded body into the JSON decoder.
+		r.Body = http.MaxBytesReader(w, r.Body, 1024)
 		var body struct {
 			OffsetSeconds float64 `json:"offset_seconds"`
 		}
