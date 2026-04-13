@@ -776,10 +776,16 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 				NodeUrls:       verificationNodeUrls,
 			}
 
+			// Scoped context for this verification attempt. GetChainRouter creates
+			// connector goroutines tied to ctx that only exit on cancellation.
+			// Without this, temporary routers leak goroutines for the app lifetime.
+			verifyCtx, verifyCancel := context.WithCancel(ctx)
+
 			// Create chain router with all URLs for complete supportedMap (HTTP + WebSocket)
 			parallelConnections := uint(lavasession.DefaultMaximumStreamsOverASingleConnection)
-			verificationRouter, err := chainlib.GetChainRouter(ctx, parallelConnections, verificationEndpoint, chainParser)
+			verificationRouter, err := chainlib.GetChainRouter(verifyCtx, parallelConnections, verificationEndpoint, chainParser)
 			if err != nil {
+				verifyCancel()
 				failedStaticNames[staticProvider.Name] = struct{}{}
 				failedStaticEndpoints = append(failedStaticEndpoints, staticProvider)
 				utils.LavaFormatWarning("static provider: failed creating chain router — excluding from provider list", err,
@@ -790,7 +796,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 			}
 
 			// Create full ChainFetcher for verification (respects severity, skip-verifications)
-			verificationFetcher := chainlib.NewChainFetcher(ctx, &chainlib.ChainFetcherOptions{
+			verificationFetcher := chainlib.NewChainFetcher(verifyCtx, &chainlib.ChainFetcherOptions{
 				ChainRouter: verificationRouter,
 				ChainParser: chainParser,
 				Endpoint:    verificationEndpoint,
@@ -803,7 +809,8 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 				utils.LogAttr("urlCount", len(staticProvider.NodeUrls)),
 			)
 
-			err = verificationFetcher.Validate(ctx)
+			err = verificationFetcher.Validate(verifyCtx)
+			verifyCancel() // cleanup temporary router resources regardless of outcome
 			if err != nil {
 				failedStaticNames[staticProvider.Name] = struct{}{}
 				failedStaticEndpoints = append(failedStaticEndpoints, staticProvider)
@@ -898,9 +905,12 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 				NodeUrls:       verificationNodeUrls,
 			}
 
+			verifyCtx, verifyCancel := context.WithCancel(ctx)
+
 			parallelConnections := uint(lavasession.DefaultMaximumStreamsOverASingleConnection)
-			verificationRouter, err := chainlib.GetChainRouter(ctx, parallelConnections, verificationEndpoint, chainParser)
+			verificationRouter, err := chainlib.GetChainRouter(verifyCtx, parallelConnections, verificationEndpoint, chainParser)
 			if err != nil {
+				verifyCancel()
 				failedBackupNames[backupProvider.Name] = struct{}{}
 				utils.LavaFormatWarning("backup provider: failed creating chain router — excluding from backup list", err,
 					utils.LogAttr("chain", rpcEndpoint.ChainID),
@@ -909,7 +919,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 				continue
 			}
 
-			verificationFetcher := chainlib.NewChainFetcher(ctx, &chainlib.ChainFetcherOptions{
+			verificationFetcher := chainlib.NewChainFetcher(verifyCtx, &chainlib.ChainFetcherOptions{
 				ChainRouter: verificationRouter,
 				ChainParser: chainParser,
 				Endpoint:    verificationEndpoint,
@@ -922,7 +932,9 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 				utils.LogAttr("urlCount", len(backupProvider.NodeUrls)),
 			)
 
-			if err = verificationFetcher.Validate(ctx); err != nil {
+			err = verificationFetcher.Validate(verifyCtx)
+			verifyCancel()
+			if err != nil {
 				failedBackupNames[backupProvider.Name] = struct{}{}
 				utils.LavaFormatWarning("backup provider validation failed — excluding from backup list", err,
 					utils.LogAttr("chain", rpcEndpoint.ChainID),
@@ -1866,9 +1878,16 @@ func (rpsr *RPCSmartRouter) retryFailedStaticProviders(
 				NodeUrls:       verificationNodeUrls,
 			}
 
+			// Scoped context for this verification attempt. GetChainRouter creates
+			// connector goroutines tied to ctx that only exit on cancellation.
+			// Without this, each retry iteration leaks goroutines and connections
+			// for permanently failing providers.
+			attemptCtx, attemptCancel := context.WithCancel(ctx)
+
 			parallelConnections := uint(lavasession.DefaultMaximumStreamsOverASingleConnection)
-			verificationRouter, err := chainlib.GetChainRouter(ctx, parallelConnections, verificationEndpoint, chainParser)
+			verificationRouter, err := chainlib.GetChainRouter(attemptCtx, parallelConnections, verificationEndpoint, chainParser)
 			if err != nil {
+				attemptCancel()
 				stillFailed = append(stillFailed, provider)
 				utils.LavaFormatWarning("retry: static provider chain router creation still failing", err,
 					utils.LogAttr("chain", rpcEndpoint.ChainID),
@@ -1877,14 +1896,16 @@ func (rpsr *RPCSmartRouter) retryFailedStaticProviders(
 				continue
 			}
 
-			verificationFetcher := chainlib.NewChainFetcher(ctx, &chainlib.ChainFetcherOptions{
+			verificationFetcher := chainlib.NewChainFetcher(attemptCtx, &chainlib.ChainFetcherOptions{
 				ChainRouter: verificationRouter,
 				ChainParser: chainParser,
 				Endpoint:    verificationEndpoint,
 				Cache:       nil,
 			})
 
-			if err := verificationFetcher.Validate(ctx); err != nil {
+			err = verificationFetcher.Validate(attemptCtx)
+			attemptCancel() // cleanup temporary router resources regardless of outcome
+			if err != nil {
 				stillFailed = append(stillFailed, provider)
 				utils.LavaFormatWarning("retry: static provider verification still failing", err,
 					utils.LogAttr("chain", rpcEndpoint.ChainID),
