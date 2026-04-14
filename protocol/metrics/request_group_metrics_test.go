@@ -50,7 +50,7 @@ func newSmartRouterForRequestGroupTest() *SmartRouterMetricsManager {
 		routerRequestsDebugTrace: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_req_debug"}, reqLabels),
 		routerRequestsArchive:    prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_req_archive"}, reqLabels),
 		routerRequestsBatch:      prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_req_batch"}, reqLabels),
-		urlToProviderName:        make(map[string]string),
+		urlToProviderNames:       make(map[string][]string),
 	}
 }
 

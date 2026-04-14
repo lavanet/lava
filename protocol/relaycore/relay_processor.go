@@ -283,15 +283,21 @@ func (rp *RelayProcessor) HasUnsupportedMethodErrors() bool {
 	return false
 }
 
-// HasNonRetryableUserFacingErrors returns true when any current error carries a
-// subcategory whose behavioral contract is "don't retry, don't charge CU" —
-// currently SubCategoryUnsupportedMethod or SubCategoryUserError. This is the
-// single entry point the retry state machine should use so adding a new such
-// subcategory only requires updating ErrorSubCategory.IsNonRetryableUserFacing.
+// HasNonRetryableUserFacingErrors returns true when any current error is
+// terminal for the retry state machine. The retry decision rests on a single
+// authority: the classified LavaError's Retryable flag.
 //
-// This is the superset of HasUnsupportedMethodErrors and should be preferred
-// at retry-decision sites. HasUnsupportedMethodErrors remains for callers
-// that need the narrower check (e.g. caching decisions).
+//   - Node errors: IsNonRetryable is set by the classifier when the registry
+//     marks the matched LavaError as Retryable=false. This covers unsupported
+//     method, user input error, execution reverted, out of gas, invalid
+//     signature, double spend, and every other terminal entry in the registry.
+//   - Protocol errors: ShouldRetryError consults the same registry for the
+//     wrapped error. Epoch mismatches are still explicitly allowed to retry.
+//
+// Adding a new terminal error only requires registering it with Retryable=false.
+// The function name retains "UserFacing" for historical continuity but the
+// scope is simply "non-retryable"; HasUnsupportedMethodErrors remains for
+// callers that need the narrower subcategory check (e.g. caching decisions).
 func (rp *RelayProcessor) HasNonRetryableUserFacingErrors() bool {
 	if rp == nil {
 		return false
@@ -299,24 +305,13 @@ func (rp *RelayProcessor) HasNonRetryableUserFacingErrors() bool {
 
 	_, nodeErrorResults, protocolErrors := rp.GetResultsData()
 
-	// Node error path: either flag is a hard stop for retries.
 	for _, nodeErrorResult := range nodeErrorResults {
-		if nodeErrorResult.IsUnsupportedMethod || nodeErrorResult.IsUserError {
+		if nodeErrorResult.IsNonRetryable {
 			return true
 		}
 	}
 
-	// Protocol error path: inspect the wrapped LavaError subcategory. We keep
-	// the existing "unsupported-method-by-message" and "non-retryable" checks
-	// from HasUnsupportedMethodErrors so behavior for legacy providers is
-	// unchanged.
 	for _, protocolError := range protocolErrors {
-		if chainlib.IsNonRetryableUserFacingErrorType(protocolError.GetError()) {
-			return true
-		}
-		if chainlib.IsUnsupportedMethodError(protocolError.GetError()) {
-			return true
-		}
 		if lavasession.EpochMismatchError.Is(protocolError.GetError()) {
 			continue
 		}

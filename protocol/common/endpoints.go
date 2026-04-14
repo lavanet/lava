@@ -388,6 +388,15 @@ type RelayResult struct {
 	// zero retries, zero CU, no provider scoring. User errors are NOT cached
 	// because the next request from the same client may carry valid input.
 	IsUserError bool
+	// IsNonRetryable is the umbrella flag the retry state machine consults:
+	// it's true whenever the matched registry LavaError has Retryable=false,
+	// which covers unsupported method, user input error, execution reverted,
+	// out of gas, invalid signature, double spend, etc. Retrying on another
+	// provider would just reproduce the same deterministic failure.
+	// IsUnsupportedMethod and IsUserError are independent subset flags derived
+	// from the SubCategory and used only to gate CU-charging and caching
+	// policy — they do NOT narrow the retry decision below IsNonRetryable.
+	IsNonRetryable bool
 }
 
 func (rr *RelayResult) GetReplyServer() pairingtypes.Relayer_RelaySubscribeClient {

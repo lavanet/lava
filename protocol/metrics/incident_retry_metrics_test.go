@@ -25,7 +25,7 @@ func newSmartRouterForRetryTest() *SmartRouterMetricsManager {
 		incidentRetriesSuccessMetric:   prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_retries_success"}, retryLabels),
 		incidentRetriesFailedMetric:    prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_retries_failed"}, retryLabels),
 		incidentRetryAttemptsHistogram: prometheus.NewHistogramVec(prometheus.HistogramOpts{Name: "t_sr_retry_attempts", Buckets: []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}}, retryLabels),
-		urlToProviderName:              make(map[string]string),
+		urlToProviderNames:             make(map[string][]string),
 	}
 }
 

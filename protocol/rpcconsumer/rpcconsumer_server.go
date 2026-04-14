@@ -1285,21 +1285,45 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			// Both carry the "don't retry, don't charge" contract via the
 			// IsNonRetryableUserFacing subcategory predicate; caching diverges.
 			if isNodeError {
-				isUnsupported := common.IsUnsupportedMethodError(rpccs.listenEndpoint.ChainID, localRelayResult.StatusCode, errorMessage)
-				isUserErr := common.IsUserInputError(rpccs.listenEndpoint.ChainID, localRelayResult.StatusCode, errorMessage)
-
-				localRelayResult.IsUnsupportedMethod = isUnsupported
-				localRelayResult.IsUserError = isUserErr
+				// Classify once per node error. The three flags (IsNonRetryable,
+				// IsUnsupportedMethod, IsUserError) all come from the same
+				// registry lookup; doing three separate classify passes here
+				// would triple the work on a hot error path.
+				family := common.ChainFamilyUnknown
+				if f, ok := common.GetChainFamily(rpccs.listenEndpoint.ChainID); ok {
+					family = f
+				}
+				transport := common.ApiInterfaceToTransport(rpccs.listenEndpoint.ApiInterface)
+				// JSON-RPC node errors return HTTP 200 with the real error code
+				// embedded in the response body (error.code). The registry's
+				// code-based JSON-RPC matchers (e.g. -32700, -32602) only hit
+				// if we feed them that body code rather than the HTTP status.
+				errorCode := localRelayResult.StatusCode
+				if transport == common.TransportJsonRPC && localRelayResult.Reply != nil {
+					if jsonrpcCode := common.ExtractJSONRPCErrorCode(localRelayResult.Reply.Data); jsonrpcCode != 0 {
+						errorCode = jsonrpcCode
+					}
+				}
+				classification := common.ClassifyNodeErrorForRetry(family, transport, errorCode, errorMessage)
+				localRelayResult.IsNonRetryable = classification.IsNonRetryable
+				localRelayResult.IsUnsupportedMethod = classification.IsUnsupportedMethod
+				localRelayResult.IsUserError = classification.IsUserError
 
 				switch {
-				case isUnsupported:
+				case classification.IsUnsupportedMethod:
 					utils.LavaFormatInfo("unsupported method detected in relay result",
 						utils.LogAttr("GUID", ctx),
 						utils.LogAttr("method", protocolMessage.GetApi().Name),
 						utils.LogAttr("error", errorMessage),
 					)
-				case isUserErr:
+				case classification.IsUserError:
 					utils.LavaFormatInfo("user input error detected in relay result",
+						utils.LogAttr("GUID", ctx),
+						utils.LogAttr("method", protocolMessage.GetApi().Name),
+						utils.LogAttr("error", errorMessage),
+					)
+				case classification.IsNonRetryable:
+					utils.LavaFormatInfo("non-retryable node error detected in relay result",
 						utils.LogAttr("GUID", ctx),
 						utils.LogAttr("method", protocolMessage.GetApi().Name),
 						utils.LogAttr("error", errorMessage),

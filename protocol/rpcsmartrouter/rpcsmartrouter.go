@@ -357,6 +357,10 @@ func buildDebugMux(
 			http.Error(w, "POST only", http.StatusMethodNotAllowed)
 			return
 		}
+		// Cap the body at 1 KiB — payload is {"offset_seconds": N}, 1 KiB is
+		// orders of magnitude over the legitimate size and prevents a caller
+		// from streaming an unbounded body into the JSON decoder.
+		r.Body = http.MaxBytesReader(w, r.Body, 1024)
 		var body struct {
 			OffsetSeconds float64 `json:"offset_seconds"`
 		}
@@ -1603,6 +1607,24 @@ func (rpsr *RPCSmartRouter) updateEpoch(epoch uint64) {
 			utils.LogAttr("time", time.Now().Format("15:04:05 MST")),
 		)
 
+		// Resolve the per-chain metrics manager once so endpoint health resets below
+		// can also reset the corresponding Prometheus gauge. Without this, #2256's
+		// endpoint.ResetHealth() fixes the in-memory struct but the
+		// lava_rpc_endpoint_overall_health gauge stays stuck at 0 (unhealthy) forever,
+		// since the only path back to 1 is a successful relay that calls
+		// SetEndpointOverallHealth(..., true) — which a backup may never receive.
+		var epochMetrics *metrics.SmartRouterMetricsManager
+		var epochChainID, epochApiInterface string
+		// listenEndpoint is a *lavasession.RPCEndpoint — always guard its deref.
+		// Skipping metric reset for a server with a nil listenEndpoint is preferable
+		// to a nil-deref panic that would kill the whole epoch transition and leave
+		// every endpoint.ResetHealth() undone.
+		if server, exists := rpsr.rpcServers[chainKey]; exists && server != nil && server.listenEndpoint != nil {
+			epochMetrics = server.smartRouterEndpointMetrics
+			epochChainID = server.listenEndpoint.ChainID
+			epochApiInterface = server.listenEndpoint.ApiInterface
+		}
+
 		// Create FRESH ConsumerSessionsWithProvider objects to avoid session accumulation
 		// This is critical: reusing the same objects causes sessions to accumulate in the Sessions map
 		// until hitting the 1000-session limit, causing "No pairings available" errors
@@ -1613,6 +1635,11 @@ func (rpsr *RPCSmartRouter) updateEpoch(epoch uint64) {
 			// forever since it can never receive the successful relay needed to trigger ResetHealth.
 			for _, endpoint := range oldSession.Endpoints {
 				endpoint.ResetHealth()
+			}
+			// Mirror the struct reset onto the Prometheus gauge so operators see the
+			// provider recover at the epoch boundary rather than remaining stuck at 0.
+			if epochMetrics != nil {
+				epochMetrics.SetEndpointOverallHealth(epochChainID, epochApiInterface, oldSession.PublicLavaAddress, true)
 			}
 			freshSession := lavasession.NewConsumerSessionWithProvider(
 				oldSession.PublicLavaAddress,
@@ -1635,6 +1662,12 @@ func (rpsr *RPCSmartRouter) updateEpoch(epoch uint64) {
 		for idx, oldSession := range oldBackupSessions {
 			for _, endpoint := range oldSession.Endpoints {
 				endpoint.ResetHealth()
+			}
+			// Same rationale as above: backups are especially susceptible to a stuck
+			// unhealthy gauge because they rarely receive the successful relay that
+			// would otherwise toggle it back to 1.
+			if epochMetrics != nil {
+				epochMetrics.SetEndpointOverallHealth(epochChainID, epochApiInterface, oldSession.PublicLavaAddress, true)
 			}
 			freshSession := lavasession.NewConsumerSessionWithProvider(
 				oldSession.PublicLavaAddress,

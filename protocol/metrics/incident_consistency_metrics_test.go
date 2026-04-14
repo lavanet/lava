@@ -23,7 +23,7 @@ func newSmartRouterForConsistencyTest() *SmartRouterMetricsManager {
 		incidentConsistencyTotalMetric:   prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_consistency_total"}, consistencyLabels),
 		incidentConsistencySuccessMetric: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_consistency_success"}, consistencyLabels),
 		incidentConsistencyFailedMetric:  prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_consistency_failed"}, consistencyLabels),
-		urlToProviderName:                make(map[string]string),
+		urlToProviderNames:               make(map[string][]string),
 	}
 }
 

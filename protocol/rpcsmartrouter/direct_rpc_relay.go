@@ -407,6 +407,16 @@ func (d *DirectRPCRelaySender) sendJSONRPCRelay(
 		},
 		IsNodeError: hasError,
 	}
+	if hasError {
+		// JSON-RPC node errors come back as HTTP 200 with the real code inside
+		// error.code. Prefer the body code over the HTTP status so registry
+		// code-based matchers (e.g. -32700, -32602) fire.
+		errorCode := statusCode
+		if jsonrpcCode := common.ExtractJSONRPCErrorCode(responseData); jsonrpcCode != 0 {
+			errorCode = jsonrpcCode
+		}
+		result.IsNonRetryable = common.IsNonRetryableNodeErrorWithContext(d.chainFamily, common.TransportJsonRPC, errorCode, errorMessage)
+	}
 
 	return result, nil
 }
@@ -518,6 +528,9 @@ func (d *DirectRPCRelaySender) sendRESTRelay(
 			ProviderAddress: providerAddress,
 		},
 		IsNodeError: isNodeError, // Correct transport-level classification
+	}
+	if hasError {
+		result.IsNonRetryable = common.IsNonRetryableNodeErrorWithContext(d.chainFamily, common.TransportREST, response.StatusCode, errorMessage)
 	}
 
 	utils.LavaFormatTrace("REST request completed",
@@ -671,6 +684,9 @@ func (d *DirectRPCRelaySender) sendGRPCRelay(
 			ProviderAddress: providerAddress,
 		},
 		IsNodeError: hasError,
+	}
+	if hasError {
+		result.IsNonRetryable = common.IsNonRetryableNodeErrorWithContext(d.chainFamily, common.TransportGRPC, response.StatusCode, errorMessage)
 	}
 
 	return result, nil
