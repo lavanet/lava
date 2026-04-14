@@ -802,6 +802,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				GitLabToken:              viper.GetString(common.GitLabTokenFlag),
 				EnableSelectionStats:     viper.GetBool(common.EnableSelectionStatsHeaderFlag),
 				DebugAddress:             viper.GetString("debug-address"),
+				ResponseCompression:      viper.GetString(common.ResponseCompressionFlag),
 			}
 
 			rpcConsumerSharedState := viper.GetBool(common.SharedStateFlag)
@@ -831,6 +832,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.MarkFlagRequired(common.GeolocationFlag)
 	cmdRPCConsumer.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allow insecure provider-dialing. used for development and testing")
 	cmdRPCConsumer.Flags().Bool(lavasession.AllowGRPCCompressionFlag, false, "allow messages to be compressed when communicating between the consumer and provider")
+	cmdRPCConsumer.Flags().String(common.ResponseCompressionFlag, common.DefaultResponseCompression, "client-facing response compression: gzip (default), brotli, or off")
 	cmdRPCConsumer.Flags().Uint64Var(&lavasession.MaximumStreamsOverASingleConnection, lavasession.MaximumStreamsOverASingleConnectionFlag, lavasession.DefaultMaximumStreamsOverASingleConnection, "maximum number of parallel streams over a single provider connection")
 	cmdRPCConsumer.Flags().Bool(common.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
 	cmdRPCConsumer.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")

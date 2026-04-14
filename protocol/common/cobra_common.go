@@ -115,6 +115,16 @@ const (
 	MaxSessionsPerProviderFlagName   = "max-sessions-per-provider"  // Max number of sessions allowed per provider
 	DefaultProcessingTimeoutFlagName = "default-processing-timeout" // default timeout for relay processing
 	MinRelayTimeoutFlagName          = "min-relay-timeout"          // minimum relay timeout floor (default 1s)
+
+	// ResponseCompressionFlag controls the encoding used by the fiber compress
+	// middleware on client-facing responses. Accepted values: "gzip", "brotli", "off".
+	// Default is "gzip" because brotli in Go (andybalholm/brotli) costs ~3x more CPU
+	// than gzip for similar wire savings on typical JSON-RPC payloads.
+	ResponseCompressionFlag    = "response-compression"
+	ResponseCompressionGzip    = "gzip"
+	ResponseCompressionBrotli  = "brotli"
+	ResponseCompressionOff     = "off"
+	DefaultResponseCompression = ResponseCompressionGzip
 )
 
 const (
@@ -142,6 +152,7 @@ type ConsumerCmdFlags struct {
 	EpochDuration            time.Duration // duration of each epoch for time-based epoch system (standalone mode)
 	EnableSelectionStats     bool          // enables selection stats header for debugging provider selection
 	DebugAddress             string        // address for the debug HTTP server, e.g. ":9999". Empty = disabled.
+	ResponseCompression      string        // "gzip" (default), "brotli", or "off" — controls client-facing response compression
 }
 
 // default rolling logs behavior (if enabled) will store 3 files each 100MB for up to 1 day every time.
