@@ -231,7 +231,8 @@ smartrouter_lava.yml \
 --log-level trace \
 --cache-be \"127.0.0.1:20100\" \
 --use-static-spec \"$SPECS_DIR\" \
---metrics-listen-address ':7779' 2>&1 | tee \"$LOGS_DIR/SMARTROUTER_LAVA.log\"" && sleep 0.25
+--metrics-listen-address ':7779' \
+--concurrent-providers 1 2>&1 | tee \"$LOGS_DIR/SMARTROUTER_LAVA.log\"" && sleep 0.25
 
 sleep 3
 
