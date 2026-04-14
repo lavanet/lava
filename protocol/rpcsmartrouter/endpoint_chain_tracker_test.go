@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/stretchr/testify/require"
 )
@@ -47,7 +48,7 @@ func (m *mockDirectRPCConnection) GetURL() string {
 	return m.url
 }
 
-func (m *mockDirectRPCConnection) GetNodeUrl() interface{} {
+func (m *mockDirectRPCConnection) GetNodeUrl() *common.NodeUrl {
 	return nil
 }
 

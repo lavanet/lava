@@ -1913,6 +1913,7 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 	relayResult.Finalized = result.Finalized
 	relayResult.StatusCode = result.StatusCode
 	relayResult.IsNodeError = result.IsNodeError
+	relayResult.IsNonRetryable = result.IsNonRetryable
 	relayResult.ProviderInfo = result.ProviderInfo
 	if relayResult.Reply != nil {
 		relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, pairingtypes.Metadata{

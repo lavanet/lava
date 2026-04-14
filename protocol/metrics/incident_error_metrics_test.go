@@ -21,7 +21,7 @@ func newSmartRouterForErrorTest() *SmartRouterMetricsManager {
 	return &SmartRouterMetricsManager{
 		incidentNodeErrorsTotalMetric:     prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_node_errors_total"}, errorLabels),
 		incidentProtocolErrorsTotalMetric: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_protocol_errors_total"}, errorLabels),
-		urlToProviderName:                 make(map[string]string),
+		urlToProviderNames:                make(map[string][]string),
 	}
 }
 

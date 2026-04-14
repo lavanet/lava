@@ -25,7 +25,7 @@ func newSmartRouterForHedgeTest() *SmartRouterMetricsManager {
 		incidentHedgeSuccessMetric:     prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_hedge_success"}, hedgeLabels),
 		incidentHedgeFailedMetric:      prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_sr_hedge_failed"}, hedgeLabels),
 		incidentHedgeAttemptsHistogram: prometheus.NewHistogramVec(prometheus.HistogramOpts{Name: "t_sr_hedge_attempts", Buckets: []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}}, hedgeLabels),
-		urlToProviderName:              make(map[string]string),
+		urlToProviderNames:             make(map[string][]string),
 	}
 }
 

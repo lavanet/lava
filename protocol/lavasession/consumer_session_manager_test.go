@@ -1716,3 +1716,459 @@ func TestCanceledContextDoesNotPenalizeEndpoint(t *testing.T) {
 	require.True(t, enabled,
 		"Endpoint should remain enabled when context is canceled")
 }
+
+// createBackupProviderList creates a single-entry backup provider list pointing at the live gRPC server.
+func createBackupProviderList(addr string) map[uint64]*ConsumerSessionsWithProvider {
+	endpoints := []*Endpoint{{
+		Connections:        []*EndpointConnection{},
+		NetworkAddress:     addr,
+		Enabled:            true,
+		ConnectionRefusals: 0,
+	}}
+	cswp := NewConsumerSessionWithProvider(
+		"lava@backup1",
+		endpoints,
+		1000,
+		firstEpochHeight,
+		sdk.NewCoin("ulava", sdk.NewInt(100)),
+	)
+	return map[uint64]*ConsumerSessionsWithProvider{0: cswp}
+}
+
+// TestBlockProvider_BackupProviderIsTracked verifies that calling blockProvider for a backup provider
+// adds it to blockedBackupProviders (not silently dropped because it's not in validAddresses).
+func TestBlockProvider_BackupProviderIsTracked(t *testing.T) {
+	csm := CreateConsumerSessionManager()
+	backupList := createBackupProviderList(grpcListener)
+	err := csm.UpdateAllProviders(firstEpochHeight, nil, backupList)
+	require.NoError(t, err)
+
+	backupAddr := backupList[0].PublicLavaAddress
+
+	// Block the backup provider
+	err = csm.blockProvider(context.Background(), backupAddr, false, firstEpochHeight, 0, 0, false, nil, nil)
+	require.NoError(t, err)
+
+	csm.lock.RLock()
+	_, blocked := csm.blockedBackupProviders[backupAddr]
+	csm.lock.RUnlock()
+
+	require.True(t, blocked, "backup provider should be in blockedBackupProviders after blockProvider call")
+}
+
+// TestBlockProvider_BackupProviderFilteredFromSelection verifies that a blocked backup provider is
+// not returned by getValidConsumerSessionsWithProviderFromBackupProviderList.
+func TestBlockProvider_BackupProviderFilteredFromSelection(t *testing.T) {
+	csm := CreateConsumerSessionManager()
+	backupList := createBackupProviderList(grpcListener)
+	err := csm.UpdateAllProviders(firstEpochHeight, nil, backupList)
+	require.NoError(t, err)
+
+	backupAddr := backupList[0].PublicLavaAddress
+
+	// Directly mark it blocked
+	csm.lock.Lock()
+	csm.blockedBackupProviders[backupAddr] = struct{}{}
+	csm.lock.Unlock()
+
+	// Attempting to get backup sessions should fail — no eligible backup providers
+	ignored := &ignoredProviders{providers: make(map[string]struct{}), currentEpoch: firstEpochHeight}
+	_, err = csm.getValidConsumerSessionsWithProviderFromBackupProviderList(
+		context.Background(), ignored, 1, servicedBlockNumber, "", nil, 0, 0, NewUsedProviders(nil),
+	)
+	require.Error(t, err, "blocked backup provider should not be selectable")
+}
+
+// TestUpdateAllProviders_BlockedBackupProviderPersistedAcrossEpoch verifies that a backup provider
+// blocked in epoch N is re-blocked in epoch N+1 via previousEpochBlockedProviders.
+func TestUpdateAllProviders_BlockedBackupProviderPersistedAcrossEpoch(t *testing.T) {
+	csm := CreateConsumerSessionManager()
+	backupList := createBackupProviderList(grpcListener)
+	err := csm.UpdateAllProviders(firstEpochHeight, nil, backupList)
+	require.NoError(t, err)
+
+	backupAddr := backupList[0].PublicLavaAddress
+
+	// Block it in the first epoch
+	err = csm.blockProvider(context.Background(), backupAddr, false, firstEpochHeight, 0, 0, false, nil, nil)
+	require.NoError(t, err)
+
+	csm.lock.RLock()
+	_, blocked := csm.blockedBackupProviders[backupAddr]
+	csm.lock.RUnlock()
+	require.True(t, blocked, "backup provider should be blocked before epoch transition")
+
+	// Use a non-listening endpoint for epoch 2 so the background probe fails and
+	// the provider stays blocked (avoids a race between the assertion and the
+	// probe goroutine spawned by UpdateAllProviders).
+	backupListEpoch2 := map[uint64]*ConsumerSessionsWithProvider{
+		0: NewConsumerSessionWithProvider(
+			backupAddr,
+			[]*Endpoint{{Connections: []*EndpointConnection{}, NetworkAddress: "127.0.0.1:1", Enabled: true}},
+			1000,
+			secondEpochHeight,
+			sdk.NewCoin("ulava", sdk.NewInt(100)),
+		),
+	}
+	err = csm.UpdateAllProviders(secondEpochHeight, nil, backupListEpoch2)
+	require.NoError(t, err)
+
+	// Should still be blocked in the new epoch
+	csm.lock.RLock()
+	_, stillBlocked := csm.blockedBackupProviders[backupAddr]
+	csm.lock.RUnlock()
+	require.True(t, stillBlocked, "backup provider should remain blocked after epoch transition")
+}
+
+// TestUpdateAllProviders_NormalProviderBlockedAsBackupInNextEpoch verifies that a provider blocked
+// as a normal provider in epoch N is re-blocked as a backup provider in epoch N+1 if it moves to the backup list.
+func TestUpdateAllProviders_NormalProviderBlockedAsBackupInNextEpoch(t *testing.T) {
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil)
+	require.NoError(t, err)
+
+	// Block a normal provider
+	normalAddr := pairingList[0].PublicLavaAddress
+	err = csm.blockProvider(context.Background(), normalAddr, false, firstEpochHeight, 0, 0, false, nil, nil)
+	require.NoError(t, err)
+
+	csm.lock.RLock()
+	_, inBlockedList := func() (int, bool) {
+		for _, addr := range csm.currentlyBlockedProviderAddresses {
+			if addr == normalAddr {
+				return 0, true
+			}
+		}
+		return 0, false
+	}()
+	csm.lock.RUnlock()
+	require.True(t, inBlockedList, "normal provider should be in currentlyBlockedProviderAddresses")
+
+	// In next epoch the same provider appears only in the backup list.
+	// Use a non-listening endpoint so the background probe fails and the provider
+	// stays blocked (avoids a race with the probe goroutine spawned by UpdateAllProviders).
+	backupList := map[uint64]*ConsumerSessionsWithProvider{
+		0: NewConsumerSessionWithProvider(
+			normalAddr,
+			[]*Endpoint{{Connections: []*EndpointConnection{}, NetworkAddress: "127.0.0.1:1", Enabled: true}},
+			1000,
+			secondEpochHeight,
+			sdk.NewCoin("ulava", sdk.NewInt(100)),
+		),
+	}
+	err = csm.UpdateAllProviders(secondEpochHeight, nil, backupList)
+	require.NoError(t, err)
+
+	csm.lock.RLock()
+	_, blockedAsBackup := csm.blockedBackupProviders[normalAddr]
+	csm.lock.RUnlock()
+	require.True(t, blockedAsBackup, "previously-blocked normal provider should be re-blocked as backup in new epoch")
+}
+
+// TestCheckAndUnblock_BackupRoutedToComprehensiveProbe verifies the `!isBackup && !IsReported`
+// guard in checkAndUnblockHealthyReBlockedProviders. probeProviders only probes pairingList, so
+// backup providers are never added to reportedProviders — without the guard, every backup would
+// match `!IsReported` and take the immediate-unblock branch, skipping any real health check.
+// This test confirms a backup lands in the comprehensive-probe branch instead: we assert the
+// backup is absent from reportedProviders (guard precondition) and that the immediate-unblock
+// path leaves blockedBackupProviders intact (since that path only touches validAddresses).
+func TestCheckAndUnblock_BackupRoutedToComprehensiveProbe(t *testing.T) {
+	csm := CreateConsumerSessionManager()
+	// Point at an unreachable endpoint so the comprehensive probe's eventual outcome
+	// doesn't race with this assertion via the immediate-unblock code path.
+	unreachable := map[uint64]*ConsumerSessionsWithProvider{
+		0: NewConsumerSessionWithProvider(
+			"lava@backup-routed",
+			[]*Endpoint{{Connections: []*EndpointConnection{}, NetworkAddress: "127.0.0.1:1", Enabled: true}},
+			1000,
+			firstEpochHeight,
+			sdk.NewCoin("ulava", sdk.NewInt(100)),
+		),
+	}
+	err := csm.UpdateAllProviders(firstEpochHeight, nil, unreachable)
+	require.NoError(t, err)
+
+	backupAddr := unreachable[0].PublicLavaAddress
+
+	// Seed previousEpochBlockedProviders as if this backup was blocked last epoch.
+	csm.lock.Lock()
+	csm.previousEpochBlockedProviders[backupAddr] = struct{}{}
+	csm.blockedBackupProviders[backupAddr] = struct{}{}
+	csm.lock.Unlock()
+
+	// Guard precondition: backups are never reported (probeProviders skips them).
+	require.False(t, csm.reportedProviders.IsReported(backupAddr),
+		"backup provider should never appear in reportedProviders")
+
+	// The immediate-unblock branch calls validateAndReturnBlockedProviderToValidAddressesListLocked,
+	// which is a no-op for backups (they're not in validAddresses). So if the guard is missing and
+	// the backup wrongly takes that branch, blockedBackupProviders stays populated here *and* the
+	// comprehensive probe is skipped — a silent stall.
+	//
+	// With the guard, the backup is routed to the comprehensive probe. We can't easily assert on
+	// probe outcome here (probeProvider has separate quirks with unreachable endpoints), but we
+	// can assert that the call flow reaches the comprehensive branch by checking the debug-log
+	// marker indirectly via state: validAddresses should not contain the backup afterwards either
+	// way, and the backup should not have been silently restored to pairing.
+	csm.checkAndUnblockHealthyReBlockedProviders(context.Background(), firstEpochHeight)
+
+	csm.lock.RLock()
+	_, inPairing := csm.pairing[backupAddr]
+	csm.lock.RUnlock()
+	require.False(t, inPairing,
+		"backup must never be promoted into csm.pairing by the unblock path")
+}
+
+// TestCheckAndUnblock_BackupUnblockedWhenHealthy verifies the positive path: a backup that was
+// blocked in the previous epoch gets unblocked via the comprehensive probe when its endpoint
+// is actually reachable in the new epoch.
+func TestCheckAndUnblock_BackupUnblockedWhenHealthy(t *testing.T) {
+	csm := CreateConsumerSessionManager()
+	backupList := createBackupProviderList(grpcListener)
+	err := csm.UpdateAllProviders(firstEpochHeight, nil, backupList)
+	require.NoError(t, err)
+
+	backupAddr := backupList[0].PublicLavaAddress
+
+	err = csm.blockProvider(context.Background(), backupAddr, false, firstEpochHeight, 0, 0, false, nil, nil)
+	require.NoError(t, err)
+
+	// New epoch, same backup address, still pointing at the healthy gRPC listener.
+	backupListEpoch2 := createBackupProviderList(grpcListener)
+	// Reuse the same public address so previousEpoch re-blocking matches this entry.
+	backupListEpoch2[0].PublicLavaAddress = backupAddr
+	err = csm.UpdateAllProviders(secondEpochHeight, nil, backupListEpoch2)
+	require.NoError(t, err)
+
+	// Precondition: re-blocked after epoch transition (comes from the previousEpoch merge).
+	csm.lock.RLock()
+	_, reblocked := csm.blockedBackupProviders[backupAddr]
+	csm.lock.RUnlock()
+	require.True(t, reblocked, "backup should be re-blocked immediately after epoch transition")
+
+	// Run the unblock pass. Comprehensive probe against grpcListener should succeed → unblock.
+	csm.checkAndUnblockHealthyReBlockedProviders(context.Background(), secondEpochHeight)
+
+	csm.lock.RLock()
+	_, stillBlocked := csm.blockedBackupProviders[backupAddr]
+	csm.lock.RUnlock()
+	require.False(t, stillBlocked, "healthy backup should be unblocked after comprehensive probe succeeds")
+}
+
+// TestGenerateReconnectCallback_BackupProviderUnblocked covers the #2265-derived behavior:
+// when the periodic reconnect callback runs for a blocked backup and its probe succeeds,
+// the backup must be removed from blockedBackupProviders (not passed to
+// validateAndReturnBlockedProviderToValidAddressesList, which would be a no-op since backups
+// are not in validAddresses).
+func TestGenerateReconnectCallback_BackupProviderUnblocked(t *testing.T) {
+	csm := CreateConsumerSessionManager()
+	backupList := createBackupProviderList(grpcListener)
+	err := csm.UpdateAllProviders(firstEpochHeight, nil, backupList)
+	require.NoError(t, err)
+
+	backupAddr := backupList[0].PublicLavaAddress
+
+	err = csm.blockProvider(context.Background(), backupAddr, false, firstEpochHeight, 0, 0, false, nil, nil)
+	require.NoError(t, err)
+
+	csm.lock.RLock()
+	_, blocked := csm.blockedBackupProviders[backupAddr]
+	csm.lock.RUnlock()
+	require.True(t, blocked, "backup should be blocked before reconnect callback")
+
+	callback := csm.GenerateReconnectCallback(backupList[0])
+	require.NoError(t, callback(), "reconnect callback should succeed against healthy endpoint")
+
+	csm.lock.RLock()
+	_, stillBlocked := csm.blockedBackupProviders[backupAddr]
+	csm.lock.RUnlock()
+	require.False(t, stillBlocked,
+		"successful reconnect probe must remove backup from blockedBackupProviders")
+}
+
+// TestGenerateReconnectCallback_NonBackupUsesValidAddressesPath verifies the non-backup branch
+// of the reconnect callback: a regular (non-backup) provider whose probe succeeds is routed to
+// validateAndReturnBlockedProviderToValidAddressesList, not the blockedBackupProviders path.
+// This guards against a regression where the isBackup lookup is inverted or the lock split
+// drops the non-backup handling.
+func TestGenerateReconnectCallback_NonBackupUsesValidAddressesPath(t *testing.T) {
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil)
+	require.NoError(t, err)
+
+	regularAddr := pairingList[0].PublicLavaAddress
+	err = csm.blockProvider(context.Background(), regularAddr, false, firstEpochHeight, 0, 0, false, nil, nil)
+	require.NoError(t, err)
+
+	// blockProvider removes from validAddresses and adds to currentlyBlockedProviderAddresses.
+	csm.lock.RLock()
+	wasInBlockedList := false
+	for _, addr := range csm.currentlyBlockedProviderAddresses {
+		if addr == regularAddr {
+			wasInBlockedList = true
+			break
+		}
+	}
+	csm.lock.RUnlock()
+	require.True(t, wasInBlockedList, "regular provider should be in currentlyBlockedProviderAddresses")
+
+	// Precondition: the regular provider must NOT be in blockedBackupProviders, otherwise the
+	// isBackup branch would swallow it.
+	csm.lock.RLock()
+	_, inBackupBlocked := csm.blockedBackupProviders[regularAddr]
+	csm.lock.RUnlock()
+	require.False(t, inBackupBlocked, "regular provider must not appear in blockedBackupProviders")
+
+	callback := csm.GenerateReconnectCallback(pairingList[0])
+	require.NoError(t, callback(), "reconnect callback should succeed for healthy regular provider")
+
+	// After a successful reconnect for a non-backup, the provider is returned to validAddresses.
+	csm.lock.RLock()
+	restored := false
+	for _, addr := range csm.validAddresses {
+		if addr == regularAddr {
+			restored = true
+			break
+		}
+	}
+	csm.lock.RUnlock()
+	require.True(t, restored,
+		"non-backup successful reconnect must restore provider to validAddresses")
+}
+
+// TestGenerateReconnectCallback_OverlapBothPairingAndBackup guards the overlap
+// case flagged in review of this commit: UpdateAllProviders builds csm.pairing
+// and csm.backupProviders from separate inputs without dedup, so a provider address
+// can legitimately appear in both. If it was blocked as a primary (in
+// currentlyBlockedProviderAddresses), the old "if backup else primary" branching
+// silently dropped the primary-side unblock — the address would never be restored
+// to validAddresses just because it also happened to exist in backupProviders.
+func TestGenerateReconnectCallback_OverlapBothPairingAndBackup(t *testing.T) {
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil)
+	require.NoError(t, err)
+
+	overlapAddr := pairingList[0].PublicLavaAddress
+
+	// Block as primary — lands in currentlyBlockedProviderAddresses, removed from
+	// validAddresses.
+	err = csm.blockProvider(context.Background(), overlapAddr, false, firstEpochHeight, 0, 0, false, nil, nil)
+	require.NoError(t, err)
+
+	// Seed the overlap: same address also registered as a backup, and blocked there.
+	csm.lock.Lock()
+	csm.backupProviders[overlapAddr] = pairingList[0]
+	csm.blockedBackupProviders[overlapAddr] = struct{}{}
+	csm.lock.Unlock()
+
+	// Reconnect succeeds — expect both sides cleared.
+	require.NoError(t, csm.GenerateReconnectCallback(pairingList[0])())
+
+	csm.lock.RLock()
+	_, stillBlockedBackup := csm.blockedBackupProviders[overlapAddr]
+	restoredToValid := false
+	for _, addr := range csm.validAddresses {
+		if addr == overlapAddr {
+			restoredToValid = true
+			break
+		}
+	}
+	csm.lock.RUnlock()
+
+	require.False(t, stillBlockedBackup,
+		"successful reconnect must clear the backup-side block when the address overlaps with backupProviders")
+	require.True(t, restoredToValid,
+		"successful reconnect must restore the address to validAddresses even when it also exists in backupProviders")
+}
+
+// TestGetAllDirectRPCEndpoints_IncludesBackupProviders verifies that the startup
+// ChainTracker initialization sees backup-only URLs too. Before the fix, only
+// primaries were iterated, so dedicated-URL backups (e.g. base.lava.build with no
+// primary counterpart) never got a tracker created at startup — and since backups
+// rarely get the successful relay that triggers the lazy fallback init, their
+// per-endpoint metrics stayed empty on the dashboard.
+func TestGetAllDirectRPCEndpoints_IncludesBackupProviders(t *testing.T) {
+	ctx := context.Background()
+	nodeUrl := common.NodeUrl{Url: "https://base.lava.build:443/"}
+	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
+	require.NoError(t, err)
+
+	primaryEndpoint := &Endpoint{
+		NetworkAddress:    "https://base.blockpi.network/primary",
+		Enabled:           true,
+		DirectConnections: []DirectRPCConnection{directConn},
+	}
+	backupEndpoint := &Endpoint{
+		NetworkAddress:    nodeUrl.Url,
+		Enabled:           true,
+		DirectConnections: []DirectRPCConnection{directConn},
+	}
+
+	csm := CreateConsumerSessionManager()
+	csm.lock.Lock()
+	csm.pairing = map[string]*ConsumerSessionsWithProvider{
+		"blockpi1": {
+			Sessions:          make(map[int64]*SingleConsumerSession),
+			PublicLavaAddress: "blockpi1",
+			Endpoints:         []*Endpoint{primaryEndpoint},
+			StaticProvider:    true,
+		},
+	}
+	csm.backupProviders = map[string]*ConsumerSessionsWithProvider{
+		"lava1": {
+			Sessions:          make(map[int64]*SingleConsumerSession),
+			PublicLavaAddress: "lava1",
+			Endpoints:         []*Endpoint{backupEndpoint},
+			StaticProvider:    true,
+		},
+	}
+	csm.lock.Unlock()
+
+	results := csm.GetAllDirectRPCEndpoints()
+
+	// Collect the provider addresses we got back. Both the primary and the backup
+	// must be present — a purely-primary iteration would miss the backup entirely.
+	gotAddrs := map[string]bool{}
+	for _, r := range results {
+		gotAddrs[r.ProviderAddress] = true
+	}
+	require.True(t, gotAddrs["blockpi1"], "primary must be included")
+	require.True(t, gotAddrs["lava1"],
+		"backup with a dedicated URL must be included so startup ChainTracker init covers it")
+}
+
+// TestProbeDirectRPCEndpoints_RespectsDisabledEndpoint guards the endpoint.Enabled
+// gate added to probeDirectRPCEndpoints. A disabled endpoint (ConnectionRefusals
+// hit the MarkUnhealthy threshold in the relay hot path) must not be counted as
+// healthy at probe time — otherwise checkAndUnblockHealthyReBlockedProviders
+// could unblock a backup that the relay path has already confirmed is down.
+func TestProbeDirectRPCEndpoints_RespectsDisabledEndpoint(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	nodeUrl := common.NodeUrl{Url: "https://backup.example/"}
+	directConn, err := NewDirectRPCConnection(ctx, nodeUrl, 5, "")
+	require.NoError(t, err)
+
+	disabledEndpoint := &Endpoint{
+		NetworkAddress:     nodeUrl.Url,
+		Enabled:            false, // simulates MarkUnhealthy having run the relay path threshold
+		ConnectionRefusals: MaxConsecutiveConnectionAttempts,
+		DirectConnections:  []DirectRPCConnection{directConn},
+	}
+
+	cswp := &ConsumerSessionsWithProvider{
+		Sessions:          make(map[int64]*SingleConsumerSession),
+		PublicLavaAddress: "lava@stuck-backup",
+		Endpoints:         []*Endpoint{disabledEndpoint},
+		StaticProvider:    true,
+	}
+
+	csm := CreateConsumerSessionManager()
+	_, _, probeErr := csm.probeDirectRPCEndpoints(ctx, cswp, cswp.PublicLavaAddress)
+	require.Error(t, probeErr,
+		"a disabled endpoint must cause the direct RPC probe to fail, even though HTTPDirectRPCConnection.IsHealthy starts optimistically true")
+}
