@@ -161,20 +161,22 @@ func isUTXOFamily(chainID string) bool {
 	return chainID == "BTC" || chainID == "BTCT" || chainID == "LTC" || chainID == "LTCT" || chainID == "DOGE" || chainID == "DOGET" || chainID == "BCH" || chainID == "BCHT"
 }
 
-func checkUTXOResponseAndFixReply(chainID string, replyData []byte) string {
-	response := string(replyData)
+// checkUTXOResponseAndFixReply returns the reply body for UTXO-family chains after
+// reformatting it for JSON-RPC 1.0 semantics, and returns replyData unchanged for all
+// other chains. The non-UTXO path is zero-copy: hot chains (ETH, Cosmos, etc.) no
+// longer pay a full string(replyData) allocation per response.
+func checkUTXOResponseAndFixReply(chainID string, replyData []byte) []byte {
 	if !isUTXOFamily(chainID) {
-		return response
+		return replyData
 	}
 
 	// Try single response first
 	var jsonMsg *rpcclient.JsonrpcMessage
 	if err := json.Unmarshal(replyData, &jsonMsg); err == nil {
-		btcResponse := convertToUTXOResponse(jsonMsg)
-		if marshaledRes, err := json.Marshal(btcResponse); err == nil {
-			response = string(marshaledRes)
+		if marshaledRes, err := json.Marshal(convertToUTXOResponse(jsonMsg)); err == nil {
+			return marshaledRes
 		}
-		return response
+		return replyData
 	}
 
 	// Try batch response (JSON array)
@@ -185,11 +187,13 @@ func checkUTXOResponseAndFixReply(chainID string, replyData []byte) string {
 			btcBatch[i] = convertToUTXOResponse(&jsonMsgs[i])
 		}
 		if marshaledRes, err := json.Marshal(btcBatch); err == nil {
-			response = string(marshaledRes)
+			return marshaledRes
 		}
 	}
 
-	return response
+	// Reached only if batch unmarshal failed OR batch marshal failed: return the
+	// original bytes unchanged so the caller still gets a well-formed reply.
+	return replyData
 }
 
 // convertToUTXOResponse converts a JsonrpcMessage to BTCResponse format.
@@ -214,6 +218,18 @@ func addHeadersAndSendString(c *fiber.Ctx, metaData []pairingtypes.Metadata, dat
 	}
 
 	return c.SendString(data)
+}
+
+// addHeadersAndSendBytes is the []byte counterpart of addHeadersAndSendString.
+// Used on the ETH/Cosmos hot path so the upstream reply body flows straight to
+// fiber.Ctx.Send without a string(response) detour — which would otherwise
+// cancel out the zero-copy passthrough in checkUTXOResponseAndFixReply.
+func addHeadersAndSendBytes(c *fiber.Ctx, metaData []pairingtypes.Metadata, data []byte) error {
+	for _, value := range metaData {
+		c.Set(value.Name, value.Value)
+	}
+
+	return c.Send(data)
 }
 
 func convertToJsonError(errorMsg string) string {
