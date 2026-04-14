@@ -13,31 +13,39 @@ source $__dir/../useful_commands.sh
 
 GASPRICE="0.00002ulava"
 
-# Specs proposal
+# Specs / Plans / Plan-removal proposals
+#
+# Every `submit-legacy-proposal` and every `vote` below is from the same signer
+# (alice). `--broadcast-mode sync` (the default) returns after CheckTx accepts
+# the tx into the mempool — not after block inclusion — so a plain
+# `wait_next_block` between them doesn't guarantee alice's on-chain sequence
+# has advanced before the next tx queries it. Any following same-signer tx
+# would then sign with the stale pre-inclusion sequence and the antehandler
+# would reject it with "account sequence mismatch, expected N+1, got N"
+# (cosmos-sdk@v0.47.13/x/auth/ante/sigverify.go:269).
+#
+# Both the submit AND the vote need this guarantee — submit→vote and vote→next
+# submit are both same-signer pairs. `lavad_tx_and_wait` polls via
+# `wait_for_tx` until the tx is actually included, so the subsequent alice tx
+# always sees the correctly-advanced sequence. The `sleep 6` calls remain for
+# their original purpose: giving plan policies time to become active after the
+# vote lands.
 echo "---- Specs proposal ----"
-lavad tx gov submit-legacy-proposal spec-add ./specs/mainnet-1/specs/ethermint.json,./specs/mainnet-1/specs/ethereum.json,./specs/mainnet-1/specs/cosmoswasm.json,./specs/mainnet-1/specs/ibc.json,./specs/mainnet-1/specs/tendermint.json,./specs/mainnet-1/specs/tendermint.json,./specs/mainnet-1/specs/cosmossdk.json,./specs/mainnet-1/specs/cosmossdkv50.json,./specs/testnet-2/specs/lava.json --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-wait_next_block
-lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-wait_next_block
+lavad_tx_and_wait tx gov submit-legacy-proposal spec-add ./specs/mainnet-1/specs/ethermint.json,./specs/mainnet-1/specs/ethereum.json,./specs/mainnet-1/specs/cosmoswasm.json,./specs/mainnet-1/specs/ibc.json,./specs/mainnet-1/specs/tendermint.json,./specs/mainnet-1/specs/tendermint.json,./specs/mainnet-1/specs/cosmossdk.json,./specs/mainnet-1/specs/cosmossdkv50.json,./specs/testnet-2/specs/lava.json --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad_tx_and_wait tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 sleep 6 # need to sleep because plan policies need the specs when setting chain policies verifications
 
 # Plans proposal
 echo ---- Plans proposal ----
-wait_next_block
-lavad tx gov submit-legacy-proposal plans-add ./cookbook/plans/test_plans/default.json,./cookbook/plans/test_plans/emergency-mode.json,./cookbook/plans/test_plans/temporary-add.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-wait_next_block
-lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-wait_next_block
+lavad_tx_and_wait tx gov submit-legacy-proposal plans-add ./cookbook/plans/test_plans/default.json,./cookbook/plans/test_plans/emergency-mode.json,./cookbook/plans/test_plans/temporary-add.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad_tx_and_wait tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 sleep 6
 
 # Plan removal (of one)
 echo ---- Plans removal ----
-wait_next_block
 # delete plan that deletes "temporary add" plan
-lavad tx gov submit-legacy-proposal plans-del ./cookbook/plans/test_plans/temporary-del.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-wait_next_block
-lavad tx gov vote 3 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-wait_next_block
+lavad_tx_and_wait tx gov submit-legacy-proposal plans-del ./cookbook/plans/test_plans/temporary-del.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad_tx_and_wait tx gov vote 3 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 STAKE="500000000000ulava"
 
