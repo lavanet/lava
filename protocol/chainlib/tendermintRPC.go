@@ -484,7 +484,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			if common.APINotSupportedError.Is(err) {
 				// Convert error to JSON string and add headers
 				errorResponse, _ := json.Marshal(common.JsonRpcMethodNotFoundError)
-				return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(errorResponse))
+				return addHeadersAndSendBytes(fiberCtx, reply.GetMetadata(), errorResponse)
 			}
 
 			// Get unique GUID response
@@ -503,16 +503,15 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			// Construct json response
 			response := rpcInterfaceMessages.ConvertToTendermintError(errMasking, fiberCtx.Body())
 			// Return error json response
-			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+			return addHeadersAndSendBytes(fiberCtx, reply.GetMetadata(), []byte(response))
 		}
 		// Log request and response
 		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "POST", fiberCtx.Request().URI().String(), msg, string(reply.Data), msgSeed, time.Since(startTime), nil)
 		if relayResult.GetStatusCode() != 0 {
 			fiberCtx.Status(relayResult.StatusCode)
 		}
-		response := string(reply.Data)
 		// Return json response
-		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+		err = addHeadersAndSendBytes(fiberCtx, reply.GetMetadata(), reply.Data)
 		return err
 	}
 
@@ -568,16 +567,15 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			response := convertToJsonError(errMasking)
 
 			// Return error json response
-			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+			return addHeadersAndSendBytes(fiberCtx, reply.GetMetadata(), response)
 		}
-		response := string(reply.Data)
 		// Log request and response
-		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "GET", fiberCtx.Request().URI().String(), "", response, msgSeed, time.Since(startTime), nil)
+		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "GET", fiberCtx.Request().URI().String(), "", string(reply.Data), msgSeed, time.Since(startTime), nil)
 		if relayResult.GetStatusCode() != 0 {
 			fiberCtx.Status(relayResult.StatusCode)
 		}
 		// Return json response
-		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+		err = addHeadersAndSendBytes(fiberCtx, reply.GetMetadata(), reply.Data)
 		return err
 	}
 

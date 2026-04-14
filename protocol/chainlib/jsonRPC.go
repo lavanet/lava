@@ -473,13 +473,13 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			if common.APINotSupportedError.Is(err) {
 				// Convert error to JSON string and add headers
 				errorResponse, _ := json.Marshal(common.JsonRpcMethodNotFoundError)
-				return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(errorResponse))
+				return addHeadersAndSendBytes(fiberCtx, reply.GetMetadata(), errorResponse)
 			}
 
 			if _, ok := err.(*json.SyntaxError); ok {
 				// Convert error to JSON string and add headers
 				errorResponse, _ := json.Marshal(common.JsonRpcParseError)
-				return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(errorResponse))
+				return addHeadersAndSendBytes(fiberCtx, reply.GetMetadata(), errorResponse)
 			}
 
 			// Get unique GUID response
@@ -498,7 +498,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			// Construct json response
 			response := convertToJsonError(errMasking)
 			// Return error json response
-			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+			return addHeadersAndSendBytes(fiberCtx, reply.GetMetadata(), response)
 		}
 
 		response := checkUTXOResponseAndFixReply(chainID, reply.Data)
