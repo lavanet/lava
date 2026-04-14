@@ -63,8 +63,15 @@ func (c *UpstreamGRPCStreamConnection) connect(ctx context.Context, timeout time
 		return fmt.Errorf("connection is closed")
 	}
 
-	// Parse URL to extract host
-	parsedURL, err := url.Parse(c.endpoint)
+	// Parse URL to extract host.
+	// Bare "host:port" (no "://") must be prefixed with "//" so url.Parse
+	// treats it as authority rather than "scheme:opaque" (Go's default for
+	// strings without "://", which leaves parsedURL.Host empty).
+	rawURL := c.endpoint
+	if !strings.Contains(rawURL, "://") {
+		rawURL = "//" + rawURL
+	}
+	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
 		return fmt.Errorf("failed to parse gRPC URL %s: %w", c.sanitizedURL, err)
 	}

@@ -21,8 +21,8 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v5/protocol/chainlib/grpcproxy/dyncodec"
 	"github.com/lavanet/lava/v5/protocol/common"
-	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/types/relay"
+	"github.com/lavanet/lava/v5/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -231,6 +231,17 @@ func NewDirectRPCConnection(
 //
 // This matches the behavior of rpcconsumer/provider which accept bare host:port for gRPC.
 func DetectProtocol(urlStr string, apiInterface string) (DirectRPCProtocol, error) {
+	// Handle bare host:port URLs (e.g. "lava-grpc.publicnode.com:443") before url.Parse.
+	// Go's url.Parse treats "word:" as scheme:opaque, so "host.com:443" becomes
+	// scheme="host.com", opaque="443" — the scheme == "" branch below is never reached.
+	// Checking for "://" is sufficient: all valid scheme URLs contain it.
+	if !strings.Contains(urlStr, "://") {
+		if strings.ToLower(apiInterface) == "grpc" {
+			return DirectRPCProtocolGRPC, nil
+		}
+		return DirectRPCProtocolHTTPS, nil
+	}
+
 	parsed, err := url.Parse(urlStr)
 	if err != nil {
 		return "", fmt.Errorf("invalid URL: %w", err)
@@ -249,17 +260,6 @@ func DetectProtocol(urlStr string, apiInterface string) (DirectRPCProtocol, erro
 	case "grpc", "grpcs":
 		return DirectRPCProtocolGRPC, nil
 	default:
-		// Handle URLs without explicit scheme (bare "host:port")
-		if scheme == "" {
-			// If API interface is gRPC, treat bare host:port as gRPC
-			// This matches rpcconsumer/provider behavior where gRPC endpoints
-			// are commonly specified as "127.0.0.1:9090" without scheme
-			if strings.ToLower(apiInterface) == "grpc" {
-				return DirectRPCProtocolGRPC, nil
-			}
-			// Default to HTTPS for other interfaces
-			return DirectRPCProtocolHTTPS, nil
-		}
 		return "", fmt.Errorf("unsupported URL scheme: %s", scheme)
 	}
 }

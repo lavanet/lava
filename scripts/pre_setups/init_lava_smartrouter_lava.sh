@@ -45,7 +45,9 @@ sleep 2
 
 # PublicNode upstream endpoints (TLS)
 LAVA_REST_LOCAL="https://lava-rest.publicnode.com:443"
-LAVA_GRPC_LOCAL="grpcs://lava-grpc.publicnode.com:443"
+# gRPC URLs must NOT have a scheme prefix (grpcs:// is invalid for grpc.DialContext).
+# TLS is enabled via auth-config.use-tls in the node-url config instead.
+LAVA_GRPC_LOCAL="lava-grpc.publicnode.com:443"
 LAVA_TENDERMINTRPC_LOCAL="https://lava-rpc.publicnode.com:443"
 LAVA_TENDERMINTRPC_WS_LOCAL="wss://lava-rpc.publicnode.com:443/websocket"
 
@@ -128,32 +130,43 @@ direct-rpc:
           - pruning
 
   # 3 upstream gRPC endpoints (PublicNode TLS)
+  # Note: gRPC URLs must NOT include a scheme prefix (grpcs:// is invalid).
+  # TLS is enabled via auth-config.use-tls below.
   - name: "lava-publicnode-grpc-1"
     chain-id: "LAV1"
     api-interface: "grpc"
     node-urls:
       - url: "$LAVA_GRPC_LOCAL"
+        auth-config:
+          use-tls: true
         skip-verifications:
           - chain-id
           - pruning
+          - tx-indexing
 
   - name: "lava-publicnode-grpc-2"
     chain-id: "LAV1"
     api-interface: "grpc"
     node-urls:
       - url: "$LAVA_GRPC_LOCAL"
+        auth-config:
+          use-tls: true
         skip-verifications:
           - chain-id
           - pruning
+          - tx-indexing
 
   - name: "lava-publicnode-grpc-3"
     chain-id: "LAV1"
     api-interface: "grpc"
     node-urls:
       - url: "$LAVA_GRPC_LOCAL"
+        auth-config:
+          use-tls: true
         skip-verifications:
           - chain-id
           - pruning
+          - tx-indexing
 
   # 3 upstream Tendermint RPC endpoints (PublicNode TLS)
   - name: "lava-publicnode-tendermintrpc-1"
