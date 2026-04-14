@@ -49,13 +49,13 @@ import (
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
 	"github.com/lavanet/lava/v5/protocol/relaycore"
 	"github.com/lavanet/lava/v5/protocol/statetracker"
-	"github.com/lavanet/lava/v5/utils"
-	"github.com/lavanet/lava/v5/utils/rand"
-	scoreutils "github.com/lavanet/lava/v5/utils/score"
 	epochstoragetypes "github.com/lavanet/lava/v5/types/epoch"
 	planstypes "github.com/lavanet/lava/v5/types/plans"
 	protocoltypes "github.com/lavanet/lava/v5/types/protocol"
 	spectypes "github.com/lavanet/lava/v5/types/spec"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/rand"
+	scoreutils "github.com/lavanet/lava/v5/utils/score"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -545,6 +545,21 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 						provider.Name, // provider name — used as endpoint_id in all Prometheus metrics
 					)
 				}
+			}
+
+			// Skip provider entirely if every URL failed direct-connection creation.
+			// Registering a provider with no usable endpoints would silently poison
+			// the session manager: UpdateAllProviders makes it selectable, but any
+			// relay attempt against it fails because there are no endpoints to dial.
+			if len(endpoints) == 0 {
+				utils.LavaFormatWarning("skipping static provider: all URL connections failed, no usable endpoints",
+					nil,
+					utils.LogAttr("provider", provider.Name),
+					utils.LogAttr("chain", rpcEndpoint.ChainID),
+					utils.LogAttr("apiInterface", provider.ApiInterface),
+					utils.LogAttr("urlCount", len(provider.NodeUrls)),
+				)
+				continue
 			}
 
 			// Create provider session with static configuration.
