@@ -306,7 +306,8 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	return nil
 }
 
-// buildDebugMux constructs the /debug/time-warp and /debug/time HTTP handlers.
+// buildDebugMux constructs the /debug/time-warp, /debug/time, and /debug/reset-scores
+// HTTP handlers.
 //
 // The POST /debug/time-warp handler validates the requested offset (must be finite,
 // non-negative, and at most 24 h), stores it atomically in currentOffsetNano, and
@@ -396,6 +397,23 @@ func buildDebugMux(
 			now.UTC().Format(time.RFC3339),
 			effective.UTC().Format(time.RFC3339),
 			float64(nano)/float64(time.Second))
+	})
+
+	// POST /debug/reset-scores — clears optimizer score state without changing
+	// current time offset or NowFunc.
+	mux.HandleFunc("/debug/reset-scores", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "POST only", http.StatusMethodNotAllowed)
+			return
+		}
+		count := 0
+		optimizers.Range(func(chainID string, opt *provideroptimizer.ProviderOptimizer) bool {
+			opt.ResetState()
+			count++
+			return true
+		})
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"reset":true,"chains_reset":%d}`, count)
 	})
 
 	return mux

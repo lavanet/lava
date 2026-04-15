@@ -28,6 +28,14 @@ func postTimeWarp(mux http.Handler, rawBody string) *httptest.ResponseRecorder {
 	return rr
 }
 
+// postResetScores sends a POST /debug/reset-scores request.
+func postResetScores(mux http.Handler) *httptest.ResponseRecorder {
+	req := httptest.NewRequest(http.MethodPost, "/debug/reset-scores", nil)
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	return rr
+}
+
 // TestDebugTimeWarp_OffsetBoundaryValidation verifies that the /debug/time-warp handler
 // accepts and rejects offset values exactly as specified in the plan.
 //
@@ -173,4 +181,43 @@ func TestDebugTimeWarp_ErrorMessageContainsNewCeiling(t *testing.T) {
 	require.NotContains(t, rr.Body.String(), "86340",
 		"old ceiling value must not appear in the error message after this PR")
 	require.Contains(t, rr.Body.String(), "24h")
+}
+
+func TestDebugResetScores_ReturnsJSON(t *testing.T) {
+	var offsetNano atomic.Int64
+	mux := buildDebugMux(newEmptyOptimizers(), &offsetNano)
+
+	rr := postResetScores(mux)
+	require.Equal(t, http.StatusOK, rr.Code)
+	require.Contains(t, rr.Body.String(), `"reset":true`)
+	require.Contains(t, rr.Body.String(), `"chains_reset":0`)
+}
+
+func TestDebugResetScores_MethodNotAllowed(t *testing.T) {
+	var offsetNano atomic.Int64
+	mux := buildDebugMux(newEmptyOptimizers(), &offsetNano)
+
+	req := httptest.NewRequest(http.MethodGet, "/debug/reset-scores", nil)
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+
+	require.Equal(t, http.StatusMethodNotAllowed, rr.Code)
+}
+
+func TestDebugResetScores_DoesNotChangeOffset(t *testing.T) {
+	var offsetNano atomic.Int64
+	mux := buildDebugMux(newEmptyOptimizers(), &offsetNano)
+
+	warpRR := postTimeWarp(mux, `{"offset_seconds":3600}`)
+	require.Equal(t, http.StatusOK, warpRR.Code)
+
+	resetRR := postResetScores(mux)
+	require.Equal(t, http.StatusOK, resetRR.Code)
+
+	getReq := httptest.NewRequest(http.MethodGet, "/debug/time", nil)
+	getRR := httptest.NewRecorder()
+	mux.ServeHTTP(getRR, getReq)
+
+	require.Equal(t, http.StatusOK, getRR.Code)
+	require.Contains(t, getRR.Body.String(), `"offset_seconds":3600`)
 }
