@@ -935,7 +935,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	// Collect ALL WebSocket-capable endpoints from static providers for direct subscriptions
 	// WebSocket URLs are identified by ws:// or wss:// prefix
 	var wsEndpoints []*common.NodeUrl
-	for _, provider := range relevantStaticProviderList {
+	for _, provider := range healthyStaticProviders {
 		for i := range provider.NodeUrls {
 			url := strings.ToLower(provider.NodeUrls[i].Url)
 			if strings.HasPrefix(url, "ws://") || strings.HasPrefix(url, "wss://") {
@@ -987,7 +987,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	var grpcEndpoints []*common.NodeUrl
 	if rpcEndpoint.ApiInterface == spectypes.APIInterfaceGrpc {
 		// Collect gRPC endpoints from static providers
-		for _, provider := range relevantStaticProviderList {
+		for _, provider := range healthyStaticProviders {
 			if provider.ApiInterface == spectypes.APIInterfaceGrpc {
 				for i := range provider.NodeUrls {
 					grpcEndpoints = append(grpcEndpoints, &provider.NodeUrls[i])
