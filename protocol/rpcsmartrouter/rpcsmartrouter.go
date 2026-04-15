@@ -643,7 +643,9 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 			// Scoped context for this verification attempt. GetChainRouter creates
 			// connector goroutines tied to ctx that only exit on cancellation.
 			// Without this, temporary routers leak goroutines for the app lifetime.
-			verifyCtx, verifyCancel := context.WithCancel(ctx)
+			// Timeout bounds a hung provider (e.g. blackholed TCP) so it can't stall
+			// validation of the remaining providers.
+			verifyCtx, verifyCancel := context.WithTimeout(ctx, 30*time.Second)
 
 			// Create chain router with all URLs for complete supportedMap (HTTP + WebSocket)
 			parallelConnections := uint(lavasession.DefaultMaximumStreamsOverASingleConnection)
@@ -1701,7 +1703,9 @@ func (rpsr *RPCSmartRouter) retryFailedStaticProviders(
 			// connector goroutines tied to ctx that only exit on cancellation.
 			// Without this, each retry iteration leaks goroutines and connections
 			// for permanently failing providers.
-			attemptCtx, attemptCancel := context.WithCancel(ctx)
+			// Timeout bounds a hung provider so it can't stall retries of the
+			// remaining providers in this cycle.
+			attemptCtx, attemptCancel := context.WithTimeout(ctx, 30*time.Second)
 
 			parallelConnections := uint(lavasession.DefaultMaximumStreamsOverASingleConnection)
 			verificationRouter, err := chainlib.GetChainRouter(attemptCtx, parallelConnections, verificationEndpoint, chainParser)
