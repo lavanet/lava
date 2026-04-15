@@ -603,7 +603,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 			utils.LogAttr("providerCount", len(relevantStaticProviderList)),
 		)
 
-		validatedCount := 0
+		totalAttemptedCount := 0
 		failedStaticNames = make(map[string]struct{})
 
 		for _, staticProvider := range relevantStaticProviderList {
@@ -616,7 +616,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 				)
 				continue
 			}
-			validatedCount++
+			totalAttemptedCount++
 
 			// Prepare ALL URLs for validation together (matches provider behavior).
 			// ChainRouter requires both with-addon and without-addon routes for addon URLs
@@ -691,8 +691,10 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 			)
 		}
 
+		healthyCount := totalAttemptedCount - len(failedStaticNames)
+
 		// If ALL static providers failed verification, this endpoint cannot serve traffic
-		if len(failedStaticNames) > 0 && len(failedStaticNames) >= validatedCount {
+		if totalAttemptedCount > 0 && healthyCount == 0 {
 			err := utils.LavaFormatError("all static providers failed verification — cannot serve endpoint", nil,
 				utils.LogAttr("chain", rpcEndpoint.ChainID),
 				utils.LogAttr("apiInterface", rpcEndpoint.ApiInterface),
@@ -708,13 +710,13 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 				utils.LogAttr("chain", rpcEndpoint.ChainID),
 				utils.LogAttr("apiInterface", rpcEndpoint.ApiInterface),
 				utils.LogAttr("failed", len(failedStaticNames)),
-				utils.LogAttr("healthy", validatedCount-len(failedStaticNames)),
+				utils.LogAttr("healthy", healthyCount),
 			)
 		} else {
 			utils.LavaFormatInfo("All providers validated for api-interface",
 				utils.LogAttr("chain", rpcEndpoint.ChainID),
 				utils.LogAttr("apiInterface", rpcEndpoint.ApiInterface),
-				utils.LogAttr("validated", validatedCount),
+				utils.LogAttr("validated", healthyCount),
 				utils.LogAttr("total", len(relevantStaticProviderList)),
 			)
 		}

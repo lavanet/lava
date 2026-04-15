@@ -240,9 +240,10 @@ func TestGracefulFailure_AllFailedFiltering(t *testing.T) {
 		"providerB": {},
 	}
 
-	// Simulate the all-fail check (line 840)
-	validatedCount := 2
-	require.True(t, len(failedStaticNames) >= validatedCount, "Should detect all providers failed")
+	// Simulate the all-fail check
+	totalAttemptedCount := 2
+	healthyCount := totalAttemptedCount - len(failedStaticNames)
+	require.Equal(t, 0, healthyCount, "Should detect all providers failed")
 
 	// Filtering produces empty list
 	healthyStaticProviders := make([]*lavasession.RPCStaticProviderEndpoint, 0)
@@ -277,10 +278,11 @@ func TestGracefulFailure_SingleProviderFails(t *testing.T) {
 	failedStaticNames := map[string]struct{}{
 		"providerA": {},
 	}
-	validatedCount := 1
+	totalAttemptedCount := 1
+	healthyCount := totalAttemptedCount - len(failedStaticNames)
 
-	// len(failedStaticNames) >= validatedCount when both are 1
-	require.True(t, len(failedStaticNames) >= validatedCount)
+	// healthyCount == 0 triggers the all-fail branch
+	require.Equal(t, 0, healthyCount)
 }
 
 // Scenario 9: Mixed static + backup failures — both filtered independently.
