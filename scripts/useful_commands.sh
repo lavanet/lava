@@ -100,12 +100,12 @@ extract_tx_hash() {
 # Wait for next block AND ensure a transaction is included (if tx_hash provided)
 wait_next_block_and_tx() {
   local tx_output="$1"
-  
+
   # First wait for next block
   if ! wait_next_block; then
     return 1
   fi
-  
+
   # If transaction output was provided, verify it was included
   if [ -n "$tx_output" ]; then
     local tx_hash=$(extract_tx_hash "$tx_output")
@@ -115,8 +115,37 @@ wait_next_block_and_tx() {
       fi
     fi
   fi
-  
+
   return 0
+}
+
+# Run `lavad tx ...` and block until the tx is actually included in a block.
+#
+# The default `--broadcast-mode sync` returns after CheckTx (mempool accept),
+# not after block inclusion — so a following tx from the same signer may query
+# an on-chain sequence that doesn't yet reflect the pending tx. When the pending
+# tx then lands between the next tx's query and its broadcast, the antehandler
+# rejects with "account sequence mismatch, expected N+1, got N".
+#
+# This wrapper runs the tx, extracts its hash, and waits for inclusion so the
+# caller can safely submit another tx from the same signer without racing.
+#
+# Usage: `lavad_tx_and_wait tx gov vote 1 yes -y --from alice ...`
+# (pass the full `lavad` argument list starting with `tx`).
+lavad_tx_and_wait() {
+  local output
+  output=$(lavad "$@" 2>&1)
+  local rc=$?
+  echo "$output"
+  if [ $rc -ne 0 ]; then
+    return $rc
+  fi
+  local tx_hash=$(extract_tx_hash "$output")
+  if [ -z "$tx_hash" ]; then
+    echo "ERROR: lavad_tx_and_wait could not extract txhash from output" >&2
+    return 1
+  fi
+  wait_for_tx "$tx_hash"
 }
 
 current_block() {
