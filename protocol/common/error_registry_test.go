@@ -554,6 +554,118 @@ func TestIsUserInputError_KnownCases(t *testing.T) {
 	assert.False(t, IsUserInputError("ETH1", 0, "context deadline exceeded"))
 }
 
+// TestClassifyNodeErrorForRetry_DerivesAllFlagsFromSingleLookup verifies the
+// single-pass helper the consumer hot path uses. Each row asserts all three
+// flags at once because the consumer relies on their mutual consistency —
+// IsUnsupportedMethod and IsUserError must always imply IsNonRetryable, and
+// unknown messages must fail open (all flags false → retryable).
+func TestClassifyNodeErrorForRetry_DerivesAllFlagsFromSingleLookup(t *testing.T) {
+	cases := []struct {
+		name             string
+		family           ChainFamily
+		transport        TransportType
+		errorCode        int
+		message          string
+		wantNonRetryable bool
+		wantUnsupported  bool
+		wantUserErr      bool
+	}{
+		{
+			name:             "EVM execution reverted → terminal, neither unsupported nor user",
+			family:           ChainFamilyEVM,
+			transport:        TransportJsonRPC,
+			errorCode:        3,
+			message:          "execution reverted",
+			wantNonRetryable: true,
+		},
+		{
+			name:             "EVM method not found → terminal + unsupported",
+			family:           ChainFamilyEVM,
+			transport:        TransportJsonRPC,
+			errorCode:        -32601,
+			message:          "method not found",
+			wantNonRetryable: true,
+			wantUnsupported:  true,
+		},
+		{
+			name:             "JSON-RPC body code -32700 parse error → terminal + user",
+			family:           ChainFamilyEVM,
+			transport:        TransportJsonRPC,
+			errorCode:        -32700,
+			message:          "parse error",
+			wantNonRetryable: true,
+			wantUserErr:      true,
+		},
+		{
+			name:             "generic transient → retryable (all flags false)",
+			family:           ChainFamilyEVM,
+			transport:        TransportJsonRPC,
+			errorCode:        502,
+			message:          "bad gateway",
+			wantNonRetryable: false,
+		},
+		{
+			name:             "unknown classification fails open",
+			family:           ChainFamilyUnknown,
+			transport:        TransportJsonRPC,
+			errorCode:        0,
+			message:          "totally unfamiliar garbage",
+			wantNonRetryable: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := ClassifyNodeErrorForRetry(tc.family, tc.transport, tc.errorCode, tc.message)
+			assert.Equal(t, tc.wantNonRetryable, got.IsNonRetryable, "IsNonRetryable")
+			assert.Equal(t, tc.wantUnsupported, got.IsUnsupportedMethod, "IsUnsupportedMethod")
+			assert.Equal(t, tc.wantUserErr, got.IsUserError, "IsUserError")
+			// Invariant: the two subset flags must never be set without
+			// IsNonRetryable also being set.
+			if got.IsUnsupportedMethod || got.IsUserError {
+				assert.True(t, got.IsNonRetryable, "subset flags imply IsNonRetryable")
+			}
+		})
+	}
+}
+
+// TestApiInterfaceToTransport maps the spec API interface strings to the
+// TransportType consumed by the error registry. tendermintrpc and unknown
+// inputs fall back to JSON-RPC — the consumer and smart router rely on this
+// default to avoid threading a null transport through hot paths.
+func TestApiInterfaceToTransport(t *testing.T) {
+	cases := []struct {
+		apiInterface string
+		want         TransportType
+	}{
+		{apiInterface: "jsonrpc", want: TransportJsonRPC},
+		{apiInterface: "tendermintrpc", want: TransportJsonRPC},
+		{apiInterface: "rest", want: TransportREST},
+		{apiInterface: "grpc", want: TransportGRPC},
+		{apiInterface: "", want: TransportJsonRPC},
+		{apiInterface: "anything-else", want: TransportJsonRPC},
+	}
+	for _, tc := range cases {
+		t.Run(tc.apiInterface, func(t *testing.T) {
+			assert.Equal(t, tc.want, ApiInterfaceToTransport(tc.apiInterface))
+		})
+	}
+}
+
+// TestIsNonRetryableNodeErrorWithContext_JSONRPCBodyCode documents that the
+// JSON-RPC Tier-1 code matchers only fire when callers pass the body error
+// code (e.g. -32700) rather than the HTTP status that wraps it. This is the
+// invariant the consumer and smart-router JSON-RPC paths rely on when they
+// call ExtractJSONRPCErrorCode before classification.
+func TestIsNonRetryableNodeErrorWithContext_JSONRPCBodyCode(t *testing.T) {
+	// Using HTTP 200 (the wrapper status for JSON-RPC node errors) the
+	// registry never reaches the body-code matcher.
+	assert.False(t, IsNonRetryableNodeErrorWithContext(ChainFamilyEVM, TransportJsonRPC, 200, ""))
+	// Passing the body code unlocks the Tier-1 JSON-RPC matcher for USER_*.
+	assert.True(t, IsNonRetryableNodeErrorWithContext(ChainFamilyEVM, TransportJsonRPC, -32700, ""))
+	assert.True(t, IsNonRetryableNodeErrorWithContext(ChainFamilyEVM, TransportJsonRPC, -32602, ""))
+}
+
 // ---------------------------------------------------------------------------
 // ChainFamily tests
 // ---------------------------------------------------------------------------

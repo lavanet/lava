@@ -455,8 +455,30 @@ func GetChainFamilyOrDefault(chainID string) ChainFamily // returns ChainFamilyU
 // Public classification entry points
 func ClassifyError(connErr *LavaError, family ChainFamily, transport TransportType, code int, msg string) *LavaError
 func ClassifyMessage(code int, msg string) *LavaError // transport + chain unknown
+
+// Retry-policy predicates. IsUnsupportedMethodError and IsUserInputError key off
+// SubCategory (zero-CU carve-out + caching). IsNonRetryableNodeError keys off
+// LavaError.Retryable directly so every terminal classification short-circuits
+// retries, not only the user-facing subcategories.
 func IsUnsupportedMethodError(chainID string, statusCode int, message string) bool
 func IsUserInputError(chainID string, statusCode int, message string) bool
+func IsNonRetryableNodeError(chainID string, statusCode int, message string) bool
+func IsNonRetryableNodeErrorWithContext(family ChainFamily, transport TransportType, statusCode int, message string) bool
+
+// NodeErrorClassification aggregates the three retry-related flags derived from a
+// single ClassifyError lookup. IsNonRetryable is the authoritative retry signal;
+// IsUnsupportedMethod / IsUserError are strict subsets that also drive the
+// zero-CU carve-out and caching policy.
+type NodeErrorClassification struct {
+    IsNonRetryable      bool
+    IsUnsupportedMethod bool
+    IsUserError         bool
+}
+
+// ClassifyNodeErrorForRetry is the preferred entry point on hot error paths —
+// one lookup produces all three flags, avoiding the JSON-RPC→REST→gRPC scan
+// the individual predicates perform when the caller doesn't know transport.
+func ClassifyNodeErrorForRetry(family ChainFamily, transport TransportType, errorCode int, message string) NodeErrorClassification
 
 // Metrics callback registration (single-writer, atomic-pointer reads on hot path)
 func SetErrorMetricsCallback(cb ErrorMetricsCallback)
@@ -540,6 +562,7 @@ Log output automatically includes:
 - [x] Populate `RelayError.LavaError` in the smart-router path (`direct_rpc_relay.go` → pass classification from `ClassifyDirectRPCError` into the relay response flow)
 - [x] Update `GetBestErrorMessageForUser` to prefer external errors (`CHAIN_*`, `NODE_*`) over internal (`PROTOCOL_*`) when selecting the best error for the user
 - [x] Update `protocol/relaycore/relay_processor.go` to propagate codes
+- [x] Populate `RelayResult.IsNonRetryable` from `ClassifyError` on both consumer and smart-router paths so `relay_processor.HasNonRetryableUserFacingErrors` honors `LavaError.Retryable=false` for every terminal classification — not only `SubCategoryUnsupportedMethod` / `SubCategoryUserError`. Prior to this, node errors like `CHAIN_EXECUTION_REVERTED`, `CHAIN_OUT_OF_GAS`, and `CHAIN_DOUBLE_SPEND` were retried across providers despite `Retryable=false` in the registry.
 - [x] Update consumer server (`rpcconsumer/rpcconsumer_server.go`) to log with codes
 - [x] Update provider server (`rpcprovider/rpcprovider_server.go`) to log with codes
 
@@ -578,11 +601,13 @@ _Blocked on protocol upgrade: sdkerrors carry ABCI codes used in the gRPC wire f
 
 6. **Transport-scoped generic matching**: `ClassifyError` accepts a `TransportType` parameter. Generic (Tier 1) matchers are partitioned by transport (JSON-RPC, REST, gRPC) so that EVM/JSON-RPC chains never evaluate gRPC matchers and vice versa.
 
-7. **Unsupported methods use `SubCategoryUnsupportedMethod`.** Codes 2001, 2008, 2009, and 2010 have `SubCategory: SubCategoryUnsupportedMethod`. This replaces the current pattern-matching approach (`IsUnsupportedMethodError`, `IsUnsupportedMethodMessage`) with a subcategory check via `LavaError.SubCategory.IsUnsupportedMethod()`. The special behavior (zero retries, zero CU, cached response, no provider scoring) is derived from the subcategory. _(Note: 2002 `NODE_METHOD_NOT_SUPPORTED` was removed from this list during Phase 7 review — it represents a method that exists but is disabled on this node, which is a retryable condition on a different provider. It has `Retryable: true` and no subcategory.)_
+7. **Unsupported methods use `SubCategoryUnsupportedMethod`.** Codes 2001, 2008, 2009, and 2010 have `SubCategory: SubCategoryUnsupportedMethod`. This replaces the current pattern-matching approach (`IsUnsupportedMethodError`, `IsUnsupportedMethodMessage`) with a subcategory check via `LavaError.SubCategory.IsUnsupportedMethod()`. The special behavior (zero CU, cached response, no provider scoring) is derived from the subcategory. The retry short-circuit itself runs off the registry's `Retryable` flag — see Decision 10. _(Note: 2002 `NODE_METHOD_NOT_SUPPORTED` was removed from this list during Phase 7 review — it represents a method that exists but is disabled on this node, which is a retryable condition on a different provider. It has `Retryable: true` and no subcategory.)_
 
 8. **Two-level error grouping: Category + SubCategory.** Category is `Internal` (errors Lava introduces — protocol layer) vs `External` (errors the user would get regardless of Lava — node, chain, user input). SubCategory provides finer classification within each category (e.g., UnsupportedMethod, Connection, Session, ChainExecution, ChainState, UserInput). SubCategories to be finalized before Phase 1 implementation.
 
 9. **Transparent hop: original errors pass through unchanged.** The router/consumer is a transparent hop — the user always receives the original error from the node, unmodified. `LavaError` classification is metadata for internal use only (logging, metrics, endpoint health). Unknown/unmatched errors default to `CategoryExternal` because they are node pass-throughs. _(Clarification added in Phase 7: `handleAndClassify` wraps classified errors in `LavaWrappedError` on the **Go error return path** — this is internal plumbing for retry/health decisions and never reaches the user. The actual node response body travels separately and is always returned unmodified to the user. The "transparent hop" principle applies to the response body, not the internal Go error return.)_
+
+10. **Retryable is the primary retry signal, not SubCategory.** The consumer and smart-router retry state machines short-circuit on `LavaError.Retryable=false` via `RelayResult.IsNonRetryable`, populated at classification time on both paths (consumer: `rpcconsumer_server.go`; smart-router: `direct_rpc_relay.go` / `rpcsmartrouter_server.go`). This covers every terminal classification — `CHAIN_EXECUTION_REVERTED`, `CHAIN_OUT_OF_GAS`, `CHAIN_DOUBLE_SPEND`, `CHAIN_INVALID_SIGNATURE`, all of 3000-range — not only user-facing subcategories. SubCategory continues to govern adjacent policy: `SubCategoryUnsupportedMethod` and `SubCategoryUserError` trigger the zero-CU carve-out and caching, and `SubCategoryRateLimit` drives backoff without marking the endpoint unhealthy. `relay_processor.HasNonRetryableUserFacingErrors` keys off the `IsNonRetryable` flag rather than re-classifying, so adding a new non-retryable error type requires no state-machine changes. _(Added after Phase 7: the earlier implementation gated retries on `SubCategory.IsNonRetryableUserFacing()` alone and silently retried every `Retryable=false` node error whose SubCategory was neither `UnsupportedMethod` nor `UserError`.)_
 
 ## 8. Chains Analyzed
 

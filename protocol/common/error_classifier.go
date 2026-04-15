@@ -410,6 +410,94 @@ func IsUserInputError(chainID string, statusCode int, message string) bool {
 	return classifySubCategoryAcrossTransports(chainID, statusCode, message).IsUserError()
 }
 
+// IsNonRetryableNodeError returns true when the classified LavaError for the
+// given node-error response has Retryable=false (e.g. CHAIN_EXECUTION_REVERTED,
+// CHAIN_OUT_OF_GAS, CHAIN_DOUBLE_SPEND, CHAIN_INVALID_SIGNATURE, and every
+// other terminal error in the 3000-range). Unlike IsUserInputError /
+// IsUnsupportedMethodError this does NOT key off SubCategory — it honors the
+// Retryable flag directly so every non-retryable LavaError short-circuits
+// retries, not only the zero-CU user-facing subset.
+func IsNonRetryableNodeError(chainID string, statusCode int, message string) bool {
+	family := ChainFamilyUnknown
+	if chainID != "" {
+		family = GetChainFamilyOrDefault(chainID)
+	}
+	for _, transport := range []TransportType{TransportJsonRPC, TransportREST, TransportGRPC} {
+		c := ClassifyError(nil, family, transport, statusCode, message)
+		if c == nil || c == LavaErrorUnknown {
+			continue
+		}
+		return !c.Retryable
+	}
+	return false
+}
+
+// IsNonRetryableNodeErrorWithContext is the variant of IsNonRetryableNodeError
+// for call sites that already know the chain family and transport exactly (e.g.
+// the smart router's direct-RPC senders). It avoids the JSON-RPC→REST→gRPC
+// scan of classifySubCategoryAcrossTransports and the chainID-to-family lookup.
+// Pass ChainFamilyUnknown when the family is genuinely unknown.
+func IsNonRetryableNodeErrorWithContext(family ChainFamily, transport TransportType, statusCode int, message string) bool {
+	c := ClassifyError(nil, family, transport, statusCode, message)
+	if c == nil || c == LavaErrorUnknown {
+		return false
+	}
+	return !c.Retryable
+}
+
+// NodeErrorClassification aggregates the three policy flags derived from a
+// single registry lookup on a node-error response:
+//   - IsNonRetryable: registry entry is Retryable=false (hard stop for retries).
+//   - IsUnsupportedMethod / IsUserError: SubCategory-based predicates used by
+//     the consumer to apply the zero-CU carve-out and caching policy. Both are
+//     strict subsets of IsNonRetryable.
+type NodeErrorClassification struct {
+	IsNonRetryable      bool
+	IsUnsupportedMethod bool
+	IsUserError         bool
+}
+
+// ClassifyNodeErrorForRetry runs ClassifyError exactly once and derives the
+// three flags consumed by the consumer's retry decision and CU/caching
+// carve-outs. Prefer this over sequential IsNonRetryableNodeError /
+// IsUnsupportedMethodError / IsUserInputError calls on hot error paths — each
+// of those internally scans all three transports, which is wasteful when the
+// caller already knows family and transport.
+//
+// errorCode semantics depend on transport:
+//   - TransportJsonRPC: pass the JSON-RPC error.code from the response body
+//     (e.g. -32700, -32602). HTTP status is usually 200 for JSON-RPC node
+//     errors and would miss the code-based registry mappings.
+//   - TransportREST / TransportGRPC: the HTTP / gRPC status code.
+//
+// Unknown classifications fail open (all flags false → retryable).
+func ClassifyNodeErrorForRetry(family ChainFamily, transport TransportType, errorCode int, message string) NodeErrorClassification {
+	c := ClassifyError(nil, family, transport, errorCode, message)
+	if c == nil || c == LavaErrorUnknown {
+		return NodeErrorClassification{}
+	}
+	return NodeErrorClassification{
+		IsNonRetryable:      !c.Retryable,
+		IsUnsupportedMethod: c.SubCategory.IsUnsupportedMethod(),
+		IsUserError:         c.SubCategory.IsUserError(),
+	}
+}
+
+// ApiInterfaceToTransport maps a spec API interface string (jsonrpc,
+// tendermintrpc, rest, grpc) to the TransportType used by the error registry.
+// Unknown or empty inputs fall through to TransportJsonRPC, which is the most
+// common transport and matches the broadest set of registry matchers.
+func ApiInterfaceToTransport(apiInterface string) TransportType {
+	switch apiInterface {
+	case "rest":
+		return TransportREST
+	case "grpc":
+		return TransportGRPC
+	default:
+		return TransportJsonRPC
+	}
+}
+
 // ClassifyMessage classifies an error from just a message string and an optional
 // numeric code, trying all transport types in order (JsonRPC → REST → gRPC) and
 // returning the first non-unknown classification.
