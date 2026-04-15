@@ -12,15 +12,22 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	commonlib "github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
-	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v5/protocol/statetracker"
+	protocoltypes "github.com/lavanet/lava/v5/types/protocol"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
-	protocoltypes "github.com/lavanet/lava/v5/types/protocol"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-func startTesting(ctx context.Context, rpcEndpoints []*lavasession.RPCProviderEndpoint, parallelConnections uint) error {
+// startTesting connects to a running smart router's endpoints and starts chain
+// trackers to validate that the router is proxying blocks correctly.
+//
+// staticSpecPaths must be non-empty: the smart router does not query the
+// blockchain, so specs must be loaded from files/URLs (--use-static-spec).
+// Any goroutine that fails during setup sends its error to errCh, which causes
+// the command to cancel and return the error immediately.
+func startTesting(ctx context.Context, rpcEndpoints []*lavasession.RPCProviderEndpoint, parallelConnections uint, staticSpecPaths []string) error {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -28,23 +35,55 @@ func startTesting(ctx context.Context, rpcEndpoints []*lavasession.RPCProviderEn
 		signal.Stop(signalChan)
 		cancel()
 	}()
+
+	if len(staticSpecPaths) == 0 {
+		return utils.LavaFormatError("--use-static-spec is required in smart-router mode (no blockchain connection available)", nil)
+	}
+
 	chainlib.IgnoreWsEnforcementForTestCommands = true // ignore ws panic for tests
-	stateQuery := updaters.NewConsumerStateQuery(ctx)
+
+	// errCh receives the first setup error from any goroutine; buffered so
+	// senders never block even if we only read one error.
+	errCh := make(chan error, len(rpcEndpoints))
+
 	for _, rpcProviderEndpoint := range rpcEndpoints {
-		go func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint) error {
+		go func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint) {
 			chainParser, err := chainlib.NewChainParser(rpcProviderEndpoint.ApiInterface)
 			if err != nil {
-				utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
+				errCh <- utils.LavaFormatError("failed creating chain parser, aborting endpoint", err,
+					utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
+				return
 			}
-			specResponse, err := stateQuery.GetSpec(ctx, rpcProviderEndpoint.ChainID)
-			if err != nil {
-				return err
+
+			// In smart-router mode NewConsumerStateQuery returns a stub whose
+			// GetSpec always errors.  Use static spec loading instead, mirroring
+			// what the main rpcsmartrouter command does via RegisterForSpecUpdates.
+			rpcEndpoint := lavasession.RPCEndpoint{
+				ChainID:      rpcProviderEndpoint.ChainID,
+				ApiInterface: rpcProviderEndpoint.ApiInterface,
+				Geolocation:  1,
 			}
-			chainParser.SetSpec(*specResponse)
+			if err := statetracker.RegisterForSpecUpdatesOrSetStaticSpecsWithToken(
+				ctx, chainParser, staticSpecPaths, rpcEndpoint,
+				nil, // no live spec updater in static mode
+				"",  // github token — not needed for local files
+				"",  // gitlab token — not needed for local files
+			); err != nil {
+				errCh <- utils.LavaFormatError("failed loading spec for endpoint", err,
+					utils.Attribute{Key: "chainID", Value: rpcProviderEndpoint.ChainID},
+					utils.Attribute{Key: "apiInterface", Value: rpcProviderEndpoint.ApiInterface},
+				)
+				return
+			}
+
 			chainProxy, err := chainlib.GetChainRouter(ctx, parallelConnections, rpcProviderEndpoint, chainParser)
 			if err != nil {
-				return utils.LavaFormatError("panic severity critical error, failed creating chain proxy, continuing with others endpoints", err, utils.Attribute{Key: "parallelConnections", Value: uint64(parallelConnections)}, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
+				errCh <- utils.LavaFormatError("failed creating chain proxy, aborting endpoint", err,
+					utils.Attribute{Key: "parallelConnections", Value: uint64(parallelConnections)},
+					utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
+				return
 			}
+
 			printOnNewLatestCallback := func(blockFrom int64, blockTo int64, hash string) {
 				for block := blockFrom + 1; block <= blockTo; block++ {
 					utils.LavaFormatInfo("Received a new Block",
@@ -63,6 +102,7 @@ func startTesting(ctx context.Context, rpcEndpoints []*lavasession.RPCProviderEn
 					utils.Attribute{Key: "apiInterface", Value: rpcProviderEndpoint.ApiInterface},
 				)
 			}
+
 			_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
 			blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
 			chainTrackerConfig := chaintracker.ChainTrackerConfig{
@@ -76,18 +116,25 @@ func startTesting(ctx context.Context, rpcEndpoints []*lavasession.RPCProviderEn
 			chainFetcher := chainlib.NewChainFetcher(ctx, &chainlib.ChainFetcherOptions{ChainRouter: chainProxy, ChainParser: chainParser, Endpoint: rpcProviderEndpoint, Cache: nil})
 			chainTracker, err := chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
 			if err != nil {
-				return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
+				errCh <- utils.LavaFormatError("failed creating chain tracker, aborting endpoint", err,
+					utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig},
+					utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
+				return
 			}
 			chainTracker.StartAndServe(ctx)
 			_ = chainTracker // let the chain tracker work and make queries
-			return nil
 		}(rpcProviderEndpoint)
 	}
+
 	select {
+	case err := <-errCh:
+		// A goroutine failed during setup — cancel all others and propagate.
+		cancel()
+		return err
 	case <-ctx.Done():
-		utils.LavaFormatInfo("test rpcconsumer ctx.Done")
+		utils.LavaFormatInfo("test rpcsmartrouter ctx.Done")
 	case <-signalChan:
-		utils.LavaFormatInfo("test rpcconsumer signalChan")
+		utils.LavaFormatInfo("test rpcsmartrouter signalChan")
 	}
 	return nil
 }
@@ -107,7 +154,6 @@ func CreateTestRPCSmartRouterCobraCommand() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			utils.LavaFormatInfo("RPCConsumer Test started", utils.Attribute{Key: "args", Value: strings.Join(args, ";")})
-			// handle flags, pass necessary fields
 			ctx := context.Background()
 			networkChainId, err := cmd.Flags().GetString("chain-id")
 			if err != nil {
@@ -118,6 +164,12 @@ func CreateTestRPCSmartRouterCobraCommand() *cobra.Command {
 				utils.LavaFormatFatal("failed to read log level flag", err)
 			}
 			utils.SetGlobalLoggingLevel(logLevel)
+
+			staticSpecPaths, err := cmd.Flags().GetStringArray(commonlib.UseStaticSpecFlag)
+			if err != nil {
+				return utils.LavaFormatError("failed to read --use-static-spec flag", err)
+			}
+
 			var viper_endpoints *viper.Viper
 			viper_endpoints, err = commonlib.ParseEndpointArgs(args, Yaml_config_properties, commonlib.EndpointsConfigName)
 			if err != nil {
@@ -157,7 +209,7 @@ func CreateTestRPCSmartRouterCobraCommand() *cobra.Command {
 			if err != nil {
 				utils.LavaFormatFatal("error fetching chainproxy.ParallelConnectionsFlag", err)
 			}
-			return startTesting(ctx, modifiedProviderEndpoints, numberOfNodeParallelConnections)
+			return startTesting(ctx, modifiedProviderEndpoints, numberOfNodeParallelConnections, staticSpecPaths)
 		},
 	}
 
@@ -170,5 +222,6 @@ func CreateTestRPCSmartRouterCobraCommand() *cobra.Command {
 	cmdTestRPCSmartRouter.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")
 	cmdTestRPCSmartRouter.Flags().Bool(chainproxy.GRPCAllowInsecureConnection, false, "used to test grpc, to allow insecure (self signed cert).")
 	cmdTestRPCSmartRouter.Flags().Bool(chainproxy.GRPCUseTls, true, "use tls configuration for grpc connections to your consumer")
+	cmdTestRPCSmartRouter.Flags().StringArray(commonlib.UseStaticSpecFlag, nil, "load specs from file, directory, or remote URL — required in smart-router mode (same paths as rpcsmartrouter --use-static-spec)")
 	return cmdTestRPCSmartRouter
 }
