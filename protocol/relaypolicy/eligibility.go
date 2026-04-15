@@ -1,27 +1,20 @@
 package relaypolicy
 
-import (
-	"github.com/lavanet/lava/v5/protocol/common"
-	"github.com/lavanet/lava/v5/protocol/lavasession"
+import "github.com/lavanet/lava/v5/protocol/common"
+
+// Re-export eligibility types from common for convenience
+type (
+	EligibilityAction = common.EligibilityAction
+	EligibilityResult = common.EligibilityResult
 )
 
-// DecideEligibility consolidates DP#9 — provider eligibility logic.
-// Called from workers in the same location as today. The worker executes the result
-// (updates UsedProviders) for timing reasons.
-func DecideEligibility(err error, isFirstSyncLoss bool) EligibilityResult {
-	if err == nil {
-		return EligibilityResult{Action: MarkUnwanted}
-	}
+const (
+	MarkUnwanted = common.EligibilityMarkUnwanted
+	AllowRetry   = common.EligibilityAllowRetry
+)
 
-	// Never retry unsupported method errors (chain-agnostic check with empty chainID)
-	if common.IsUnsupportedMethodError("", 0, err.Error()) {
-		return EligibilityResult{Action: MarkUnwanted}
-	}
-
-	// Allow retry for first sync loss
-	if lavasession.IsSessionSyncLoss(err) && isFirstSyncLoss {
-		return EligibilityResult{Action: AllowRetry}
-	}
-
-	return EligibilityResult{Action: MarkUnwanted}
+// DecideEligibility delegates to common.DecideEligibility.
+// Kept in relaypolicy for API consistency with the policy package.
+func DecideEligibility(isUnsupportedMethod bool, isSyncLoss bool, isFirstSyncLoss bool) EligibilityResult {
+	return common.DecideEligibility(isUnsupportedMethod, isSyncLoss, isFirstSyncLoss)
 }

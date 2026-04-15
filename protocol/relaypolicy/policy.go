@@ -27,12 +27,11 @@ func (p *Policy) Decide(input DecisionInput) DecisionOutput {
 		return DecisionOutput{Action: Stop, Reason: "Stateful"}
 	}
 
-	// 2. PERMANENT FAILURE CHECKS — non-retryable user-facing errors
-	if input.Summary.HasUnsupportedMethod {
-		return DecisionOutput{Action: Stop, Reason: "UnsupportedMethod"}
-	}
-	if input.Summary.HasUserError {
-		return DecisionOutput{Action: Stop, Reason: "UserError"}
+	// 2. PERMANENT FAILURE CHECKS
+	// HasNonRetryableNodeError is the umbrella flag — covers unsupported method,
+	// user error, and any future non-retryable subcategory from the error registry.
+	if input.Summary.HasNonRetryableNodeError {
+		return DecisionOutput{Action: Stop, Reason: "NonRetryableNodeError"}
 	}
 	if input.Summary.HasPermanentProtocolError {
 		return DecisionOutput{Action: Stop, Reason: "PermanentProtocolError"}

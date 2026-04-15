@@ -68,8 +68,9 @@ type ResultsSummary struct {
 	NodeErrors                int
 	SpecialNodeErrors         int
 	ProtocolErrors            int
-	HasUnsupportedMethod      bool  // any node error with IsUnsupportedMethod flag
-	HasUserError              bool  // any node error with IsUserError flag (new in error registry)
+	HasNonRetryableNodeError  bool  // any node error with IsNonRetryable flag (umbrella — THE RETRY GATE)
+	HasUnsupportedMethod      bool  // subset of non-retryable, for caching decisions
+	HasUserError              bool  // subset of non-retryable, for CU charging
 	HasPermanentProtocolError bool  // any non-retryable protocol error (excluding epoch mismatch)
 	HasEpochMismatch          bool  // any protocol error is epoch mismatch
 	HashErr                   error // hash computation error (nil = hash OK)

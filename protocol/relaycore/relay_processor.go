@@ -260,10 +260,15 @@ func (rp *RelayProcessor) GetResultsSummary() ResultsSummary {
 	hash, hashErr := rp.getInputMsgInfoHashString()
 	_ = hash
 
-	// Check node errors for unsupported method and user error flags
+	// Check node errors: IsNonRetryable is the umbrella retry gate.
+	// IsUnsupportedMethod and IsUserError are subsets kept for CU/caching only.
+	hasNonRetryableNodeError := false
 	hasUnsupportedMethod := false
 	hasUserError := false
 	for _, result := range nodeErrorResults {
+		if result.IsNonRetryable {
+			hasNonRetryableNodeError = true
+		}
 		if result.IsUnsupportedMethod {
 			hasUnsupportedMethod = true
 		}
@@ -294,6 +299,7 @@ func (rp *RelayProcessor) GetResultsSummary() ResultsSummary {
 		NodeErrors:                nodeErrors,
 		SpecialNodeErrors:         specialNodeErrors,
 		ProtocolErrors:            protocolErrors,
+		HasNonRetryableNodeError:  hasNonRetryableNodeError,
 		HasUnsupportedMethod:      hasUnsupportedMethod,
 		HasUserError:              hasUserError,
 		HasPermanentProtocolError: hasPermanentProtocolError,

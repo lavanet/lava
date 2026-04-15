@@ -32,13 +32,13 @@ func TestDecide_ModeChecks(t *testing.T) {
 func TestDecide_PermanentFailures(t *testing.T) {
 	policy := NewPolicy(PolicyConfig{MaxRetries: 10, RelayRetryLimit: 2, SendRelayAttempts: 3})
 
-	t.Run("UnsupportedMethod stops", func(t *testing.T) {
+	t.Run("NonRetryableNodeError stops", func(t *testing.T) {
 		output := policy.Decide(DecisionInput{
 			Selection: relaycore.Stateless,
-			Summary:   ResultsSummary{HasUnsupportedMethod: true},
+			Summary:   ResultsSummary{HasNonRetryableNodeError: true},
 		})
 		require.Equal(t, Stop, output.Action)
-		require.Equal(t, "UnsupportedMethod", output.Reason)
+		require.Equal(t, "NonRetryableNodeError", output.Reason)
 	})
 
 	t.Run("PermanentProtocolError stops", func(t *testing.T) {
@@ -217,15 +217,15 @@ func TestDecide_IsTickerHedge(t *testing.T) {
 		require.Equal(t, Stop, output.Action)
 		require.Equal(t, "MaxRetriesReached", output.Reason)
 
-		// Unsupported method should still stop ticker hedges
+		// Non-retryable node error should still stop ticker hedges
 		input2 := DecisionInput{
 			Selection:     relaycore.Stateless,
 			IsTickerHedge: true,
-			Summary:       ResultsSummary{HasUnsupportedMethod: true},
+			Summary:       ResultsSummary{HasNonRetryableNodeError: true},
 		}
 		output = policy.Decide(input2)
 		require.Equal(t, Stop, output.Action)
-		require.Equal(t, "UnsupportedMethod", output.Reason)
+		require.Equal(t, "NonRetryableNodeError", output.Reason)
 	})
 }
 
