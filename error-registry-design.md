@@ -33,7 +33,7 @@ Errors raised from within the Lava protocol itself — not from nodes or chains.
 | 1014 | `PROTOCOL_PROVIDER_DATA_LOSS` | Provider data loss (gRPC DATA_LOSS) | Yes |
 | 1020 | `PROTOCOL_RATE_LIMITED` | Lava-side rate limit exceeded (SubCategoryRateLimit) | No |
 | 1021 | `PROTOCOL_MAX_CU_EXCEEDED` | Maximum compute units exceeded for session | No |
-| 1022 | `PROTOCOL_BATCH_SIZE_EXCEEDED` | Batch request size exceeded limit (SubCategoryUserError) | No |
+| 1022 | `PROTOCOL_BATCH_SIZE_EXCEEDED` | Batch request size exceeded limit | No |
 | 1030 | `PROTOCOL_SESSION_NOT_FOUND` | Session does not exist | No |
 | 1031 | `PROTOCOL_EPOCH_MISMATCH` | Epoch mismatch or too old | No |
 | 1032 | `PROTOCOL_CONSUMER_BLOCKED` | Consumer is blocklisted | No |
@@ -162,9 +162,7 @@ Uses a **tiered classification system** (see Section 3 for details):
 ### Layer D: User Errors (`USER_*` — range 4000-4999) — Category: External
 Errors caused by malformed or invalid client requests — classified by nature of error, regardless of where caught (pre-forwarding by Lava or returned by node).
 
-| Code | Name | Description | Retryable | Standard Code |
-|------|------|-------------|-----------|---------------|
-All Layer D codes carry `SubCategoryUserError` — the consumer hot path short-circuits retries and charges zero CU for invalid client input.
+Layer D codes are non-retryable but charge **normal CU** — the provider does real work on every call because the response is not cached (the next request from the same client may carry valid input). Only `SubCategoryUnsupportedMethod` errors get the zero-CU carve-out, because those responses *are* cached and the provider won't be hit again.
 
 | Code | Name | Description | Retryable | Standard Code |
 |------|------|-------------|-----------|---------------|
@@ -412,21 +410,12 @@ type ErrorSubCategory int
 const (
     SubCategoryNone              ErrorSubCategory = iota
     SubCategoryUnsupportedMethod                         // zero retries, zero CU, cached response, no provider scoring
-    SubCategoryUserError                                 // invalid client input: zero retries, zero CU, no provider scoring (not cached)
     SubCategoryRateLimit                                 // endpoint is healthy but busy; apply backoff, do not mark unhealthy
 )
 
 func (sc ErrorSubCategory) IsUnsupportedMethod() bool { return sc == SubCategoryUnsupportedMethod }
-func (sc ErrorSubCategory) IsUserError() bool         { return sc == SubCategoryUserError }
 func (sc ErrorSubCategory) IsRateLimit() bool         { return sc == SubCategoryRateLimit }
 
-// IsNonRetryableUserFacing combines the subcategories whose contract is
-// "don't retry, don't charge CU". Consumer/retry sites call this instead of
-// checking individual subcategories so adding a new non-retryable-user-facing
-// subcategory only needs to update this one predicate.
-func (sc ErrorSubCategory) IsNonRetryableUserFacing() bool {
-    return sc.IsUnsupportedMethod() || sc.IsUserError()
-}
 
 // LavaError is the central error definition
 type LavaError struct {
@@ -456,23 +445,21 @@ func GetChainFamilyOrDefault(chainID string) ChainFamily // returns ChainFamilyU
 func ClassifyError(connErr *LavaError, family ChainFamily, transport TransportType, code int, msg string) *LavaError
 func ClassifyMessage(code int, msg string) *LavaError // transport + chain unknown
 
-// Retry-policy predicates. IsUnsupportedMethodError and IsUserInputError key off
-// SubCategory (zero-CU carve-out + caching). IsNonRetryableNodeError keys off
+// Retry-policy predicates. IsUnsupportedMethodError keys off SubCategory
+// (zero-CU carve-out + caching). IsNonRetryableNodeError keys off
 // LavaError.Retryable directly so every terminal classification short-circuits
-// retries, not only the user-facing subcategories.
+// retries, not only unsupported methods.
 func IsUnsupportedMethodError(chainID string, statusCode int, message string) bool
-func IsUserInputError(chainID string, statusCode int, message string) bool
 func IsNonRetryableNodeError(chainID string, statusCode int, message string) bool
 func IsNonRetryableNodeErrorWithContext(family ChainFamily, transport TransportType, statusCode int, message string) bool
 
-// NodeErrorClassification aggregates the three retry-related flags derived from a
+// NodeErrorClassification aggregates the retry-related flags derived from a
 // single ClassifyError lookup. IsNonRetryable is the authoritative retry signal;
-// IsUnsupportedMethod / IsUserError are strict subsets that also drive the
-// zero-CU carve-out and caching policy.
+// IsUnsupportedMethod is a strict subset that also drives the zero-CU carve-out
+// and caching policy.
 type NodeErrorClassification struct {
     IsNonRetryable      bool
     IsUnsupportedMethod bool
-    IsUserError         bool
 }
 
 // ClassifyNodeErrorForRetry is the preferred entry point on hot error paths —
@@ -562,7 +549,7 @@ Log output automatically includes:
 - [x] Populate `RelayError.LavaError` in the smart-router path (`direct_rpc_relay.go` → pass classification from `ClassifyDirectRPCError` into the relay response flow)
 - [x] Update `GetBestErrorMessageForUser` to prefer external errors (`CHAIN_*`, `NODE_*`) over internal (`PROTOCOL_*`) when selecting the best error for the user
 - [x] Update `protocol/relaycore/relay_processor.go` to propagate codes
-- [x] Populate `RelayResult.IsNonRetryable` from `ClassifyError` on both consumer and smart-router paths so `relay_processor.HasNonRetryableUserFacingErrors` honors `LavaError.Retryable=false` for every terminal classification — not only `SubCategoryUnsupportedMethod` / `SubCategoryUserError`. Prior to this, node errors like `CHAIN_EXECUTION_REVERTED`, `CHAIN_OUT_OF_GAS`, and `CHAIN_DOUBLE_SPEND` were retried across providers despite `Retryable=false` in the registry.
+- [x] Populate `RelayResult.IsNonRetryable` from `ClassifyError` on both consumer and smart-router paths so `relay_processor.HasNonRetryableUserFacingErrors` honors `LavaError.Retryable=false` for every terminal classification — not only `SubCategoryUnsupportedMethod`. Prior to this, node errors like `CHAIN_EXECUTION_REVERTED`, `CHAIN_OUT_OF_GAS`, and `CHAIN_DOUBLE_SPEND` were retried across providers despite `Retryable=false` in the registry.
 - [x] Update consumer server (`rpcconsumer/rpcconsumer_server.go`) to log with codes
 - [x] Update provider server (`rpcprovider/rpcprovider_server.go`) to log with codes
 
@@ -607,7 +594,7 @@ _Blocked on protocol upgrade: sdkerrors carry ABCI codes used in the gRPC wire f
 
 9. **Transparent hop: original errors pass through unchanged.** The router/consumer is a transparent hop — the user always receives the original error from the node, unmodified. `LavaError` classification is metadata for internal use only (logging, metrics, endpoint health). Unknown/unmatched errors default to `CategoryExternal` because they are node pass-throughs. _(Clarification added in Phase 7: `handleAndClassify` wraps classified errors in `LavaWrappedError` on the **Go error return path** — this is internal plumbing for retry/health decisions and never reaches the user. The actual node response body travels separately and is always returned unmodified to the user. The "transparent hop" principle applies to the response body, not the internal Go error return.)_
 
-10. **Retryable is the primary retry signal, not SubCategory.** The consumer and smart-router retry state machines short-circuit on `LavaError.Retryable=false` via `RelayResult.IsNonRetryable`, populated at classification time on both paths (consumer: `rpcconsumer_server.go`; smart-router: `direct_rpc_relay.go` / `rpcsmartrouter_server.go`). This covers every terminal classification — `CHAIN_EXECUTION_REVERTED`, `CHAIN_OUT_OF_GAS`, `CHAIN_DOUBLE_SPEND`, `CHAIN_INVALID_SIGNATURE`, all of 3000-range — not only user-facing subcategories. SubCategory continues to govern adjacent policy: `SubCategoryUnsupportedMethod` and `SubCategoryUserError` trigger the zero-CU carve-out and caching, and `SubCategoryRateLimit` drives backoff without marking the endpoint unhealthy. `relay_processor.HasNonRetryableUserFacingErrors` keys off the `IsNonRetryable` flag rather than re-classifying, so adding a new non-retryable error type requires no state-machine changes. _(Added after Phase 7: the earlier implementation gated retries on `SubCategory.IsNonRetryableUserFacing()` alone and silently retried every `Retryable=false` node error whose SubCategory was neither `UnsupportedMethod` nor `UserError`.)_
+10. **Retryable is the primary retry signal, not SubCategory.** The consumer and smart-router retry state machines short-circuit on `LavaError.Retryable=false` via `RelayResult.IsNonRetryable`, populated at classification time on both paths (consumer: `rpcconsumer_server.go`; smart-router: `direct_rpc_relay.go` / `rpcsmartrouter_server.go`). This covers every terminal classification — `CHAIN_EXECUTION_REVERTED`, `CHAIN_OUT_OF_GAS`, `CHAIN_DOUBLE_SPEND`, `CHAIN_INVALID_SIGNATURE`, all of 3000-range — not only unsupported methods. SubCategory continues to govern adjacent policy: `SubCategoryUnsupportedMethod` triggers the zero-CU carve-out and caching, and `SubCategoryRateLimit` drives backoff without marking the endpoint unhealthy. Layer D user-input errors are non-retryable but charge normal CU — the provider does real work because responses are not cached. `relay_processor.HasNonRetryableUserFacingErrors` keys off the `IsNonRetryable` flag rather than re-classifying, so adding a new non-retryable error type requires no state-machine changes.
 
 ## 8. Chains Analyzed
 

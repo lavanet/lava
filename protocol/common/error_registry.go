@@ -37,7 +37,6 @@ type ErrorSubCategory int
 const (
 	SubCategoryNone              ErrorSubCategory = iota
 	SubCategoryUnsupportedMethod                  // zero retries, zero CU, cached response, no provider scoring
-	SubCategoryUserError                          // invalid client input: zero retries, zero CU, no provider scoring (not cached — next request may have valid input)
 	SubCategoryRateLimit                          // rate-limit signal: endpoint is healthy but busy, apply backoff, do not mark unhealthy
 )
 
@@ -45,8 +44,6 @@ func (sc ErrorSubCategory) String() string {
 	switch sc {
 	case SubCategoryUnsupportedMethod:
 		return "unsupported_method"
-	case SubCategoryUserError:
-		return "user_error"
 	case SubCategoryRateLimit:
 		return "rate_limit"
 	default:
@@ -58,26 +55,11 @@ func (sc ErrorSubCategory) IsUnsupportedMethod() bool {
 	return sc == SubCategoryUnsupportedMethod
 }
 
-// IsUserError reports whether this subcategory represents invalid client
-// input. Consumers should short-circuit retries and charge zero CU for
-// these errors, symmetric to IsUnsupportedMethod.
-func (sc ErrorSubCategory) IsUserError() bool {
-	return sc == SubCategoryUserError
-}
-
 // IsRateLimit reports whether this subcategory represents a "slow down"
 // signal from the endpoint. Health-tracking callers should apply backoff
 // but NOT mark the endpoint unhealthy — it's working, just busy.
 func (sc ErrorSubCategory) IsRateLimit() bool {
 	return sc == SubCategoryRateLimit
-}
-
-// IsNonRetryableUserFacing returns true for any subcategory whose behavioral
-// contract is "don't retry, don't charge CU". This is the combined check the
-// consumer hot path uses so a new subcategory with the same contract only
-// needs to be added here, not at every call site.
-func (sc ErrorSubCategory) IsNonRetryableUserFacing() bool {
-	return sc.IsUnsupportedMethod() || sc.IsUserError()
 }
 
 // LavaError is the central error definition — a classification struct, not a Go error.

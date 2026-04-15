@@ -1279,25 +1279,21 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			isNodeError, errorMessage := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
 			localRelayResult.IsNodeError = isNodeError
 
-			// Classify node errors into two behavioral buckets:
-			//   - Unsupported method → zero CU, no retry, CACHE the response
-			//   - User input error   → zero CU, no retry, do NOT cache
-			// Both carry the "don't retry, don't charge" contract via the
-			// IsNonRetryableUserFacing subcategory predicate; caching diverges.
+			// Classify node errors for retry and CU decisions. One registry
+			// lookup produces both flags: IsNonRetryable terminates the retry
+			// loop for every Retryable=false entry (execution reverted, out of
+			// gas, invalid signature, double spend, unsupported method, ...),
+			// IsUnsupportedMethod gates the zero-CU + caching carve-out.
 			if isNodeError {
-				// Classify once per node error. The three flags (IsNonRetryable,
-				// IsUnsupportedMethod, IsUserError) all come from the same
-				// registry lookup; doing three separate classify passes here
-				// would triple the work on a hot error path.
 				family := common.ChainFamilyUnknown
 				if f, ok := common.GetChainFamily(rpccs.listenEndpoint.ChainID); ok {
 					family = f
 				}
 				transport := common.ApiInterfaceToTransport(rpccs.listenEndpoint.ApiInterface)
-				// JSON-RPC node errors return HTTP 200 with the real error code
-				// embedded in the response body (error.code). The registry's
-				// code-based JSON-RPC matchers (e.g. -32700, -32602) only hit
-				// if we feed them that body code rather than the HTTP status.
+				// JSON-RPC node errors typically come back as HTTP 200 with the
+				// real code in error.code (e.g. -32601, -32004). The registry's
+				// code-based JSON-RPC matchers only fire if we feed them that
+				// body code rather than the HTTP status.
 				errorCode := localRelayResult.StatusCode
 				if transport == common.TransportJsonRPC && localRelayResult.Reply != nil {
 					if jsonrpcCode := common.ExtractJSONRPCErrorCode(localRelayResult.Reply.Data); jsonrpcCode != 0 {
@@ -1307,17 +1303,10 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				classification := common.ClassifyNodeErrorForRetry(family, transport, errorCode, errorMessage)
 				localRelayResult.IsNonRetryable = classification.IsNonRetryable
 				localRelayResult.IsUnsupportedMethod = classification.IsUnsupportedMethod
-				localRelayResult.IsUserError = classification.IsUserError
 
 				switch {
 				case classification.IsUnsupportedMethod:
 					utils.LavaFormatInfo("unsupported method detected in relay result",
-						utils.LogAttr("GUID", ctx),
-						utils.LogAttr("method", protocolMessage.GetApi().Name),
-						utils.LogAttr("error", errorMessage),
-					)
-				case classification.IsUserError:
-					utils.LavaFormatInfo("user input error detected in relay result",
 						utils.LogAttr("GUID", ctx),
 						utils.LogAttr("method", protocolMessage.GetApi().Name),
 						utils.LogAttr("error", errorMessage),
@@ -1331,19 +1320,17 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				}
 			}
 
-			// Zero-CU carve-out: both unsupported methods and user input errors
-			// are "not the endpoint's fault" and don't consume the provider's
-			// work budget. Keeping a single branch on the OR means adding a
-			// new non-retryable-user-facing subcategory only needs the code
-			// registry update, not another touch here.
+			// Zero-CU carve-out: unsupported methods are deterministic and
+			// cached — the provider won't be hit again, so zero CU is fair.
+			// User input errors (invalid params, bad hex, etc.) are NOT
+			// zero-CU: the response isn't cached, so the provider does real
+			// work on every call and should be compensated.
 			computeUnits := chainlib.GetComputeUnits(protocolMessage)
-			if localRelayResult.IsUnsupportedMethod || localRelayResult.IsUserError {
+			if localRelayResult.IsUnsupportedMethod {
 				computeUnits = 0
-				utils.LavaFormatDebug("Not charging CU for non-retryable user-facing error",
+				utils.LavaFormatDebug("Not charging CU for unsupported method",
 					utils.LogAttr("GUID", ctx),
 					utils.LogAttr("method", protocolMessage.GetApi().Name),
-					utils.LogAttr("isUnsupportedMethod", localRelayResult.IsUnsupportedMethod),
-					utils.LogAttr("isUserError", localRelayResult.IsUserError),
 				)
 			}
 
