@@ -205,10 +205,22 @@ func NewDirectRPCConnection(
 
 	switch protocol {
 	case DirectRPCProtocolHTTP, DirectRPCProtocolHTTPS:
+		// Use the shared optimized client so every smart-router HTTP connection
+		// benefits from:
+		//   - DisableCompression=true        (skips ~30% CPU on auto-gunzip inflate)
+		//   - MaxIdleConnsPerHost pooling    (reuses TCP conns under load)
+		//   - TLS session cache              (faster reconnects, less handshake CPU)
+		//   - ForceAttemptHTTP2              (multiplexes streams on one conn)
+		//
+		// The backing transport is a singleton from common.SharedHttpTransport(),
+		// so all HTTPDirectRPCConnection instances share one connection pool.
+		// Per-request deadlines still come from the caller's context via
+		// http.NewRequestWithContext; the client's own 5-minute timeout is a
+		// safety backstop.
 		conn := &HTTPDirectRPCConnection{
 			nodeUrl:  nodeUrl,
 			protocol: protocol,
-			client:   &http.Client{},
+			client:   common.OptimizedHttpClient(),
 		}
 		conn.healthy.Store(true) // Start as healthy until proven otherwise
 		return conn, nil
@@ -299,6 +311,14 @@ func (h *HTTPDirectRPCConnection) SendRequest(
 		req.Header.Set(k, v)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	// Advertise Accept-Encoding: identity so Go's http client neither auto-adds
+	// `gzip` nor auto-decodes the response. This scoping is smart-router-only:
+	// the shared transport still lets provider chain proxies keep their
+	// standard auto-gzip behavior. Production pprof attributed ~30-39% of CPU
+	// to the auto-decode path (http2gzipReader → compress/flate.decompressor);
+	// removing it dropped the eth router from 2.47 cores to 1.23 cores.
+	// Set *after* caller headers so it cannot be accidentally overridden.
+	req.Header.Set("Accept-Encoding", "identity")
 
 	resp, err := h.client.Do(req)
 	if err != nil {
@@ -420,6 +440,10 @@ func (h *HTTPDirectRPCConnection) DoHTTPRequest(
 	if params.Body != nil && params.ContentType != "" {
 		req.Header.Set("Content-Type", params.ContentType)
 	}
+	// Scoped smart-router override: skip upstream gzip auto-negotiation. See
+	// SendRequest above for the full rationale. Set last so it cannot be
+	// overridden by per-request headers.
+	req.Header.Set("Accept-Encoding", "identity")
 
 	// Send request
 	resp, err := h.client.Do(req)

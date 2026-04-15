@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -422,4 +423,100 @@ func TestHTTPDirectRPCConnection_IsHealthy_RecoversAfterFailure(t *testing.T) {
 	require.NoError(t, sendErr)
 	require.True(t, httpConn.IsHealthy(),
 		"a successful transport exchange must restore IsHealthy=true after a prior failure")
+}
+
+// TestHTTPDirectRPCConnection_UsesSharedOptimizedTransport locks in the
+// smart-router HTTP path using the shared optimized transport — NOT a fresh
+// default http.Transport per connection. Regression here kills TLS session
+// reuse and fragments the connection pool across every HTTPDirectRPCConnection.
+func TestHTTPDirectRPCConnection_UsesSharedOptimizedTransport(t *testing.T) {
+	ctx := context.Background()
+	c1, err := NewDirectRPCConnection(ctx, common.NodeUrl{Url: "http://127.0.0.1:1"}, 5, "")
+	require.NoError(t, err)
+	c2, err := NewDirectRPCConnection(ctx, common.NodeUrl{Url: "https://127.0.0.1:1"}, 5, "")
+	require.NoError(t, err)
+
+	h1, ok := c1.(*HTTPDirectRPCConnection)
+	require.True(t, ok, "c1 must be *HTTPDirectRPCConnection")
+	h2, ok := c2.(*HTTPDirectRPCConnection)
+	require.True(t, ok, "c2 must be *HTTPDirectRPCConnection")
+
+	t1, ok := h1.client.Transport.(*http.Transport)
+	require.True(t, ok, "http client must back onto *http.Transport")
+	t2, ok := h2.client.Transport.(*http.Transport)
+	require.True(t, ok, "http client must back onto *http.Transport")
+
+	// Pool sharing: both instances must point at the same transport pointer.
+	require.Same(t, t1, t2,
+		"all HTTPDirectRPCConnection instances must share the same transport "+
+			"so one connection pool + one TLS session cache serve every upstream")
+	require.Same(t, t1, common.SharedHttpTransport(),
+		"the shared transport must be common.SharedHttpTransport(); a local transport "+
+			"fragments the connection pool and skips TLS session reuse")
+}
+
+// TestHTTPDirectRPCConnection_AdvertisesAcceptEncodingIdentity asserts that
+// the smart-router HTTP path tells upstream not to gzip. This is the scoped
+// replacement for disabling compression on the shared transport: provider
+// chain proxies keep their standard auto-gzip behavior, and the smart router
+// alone opts out via an outbound header.
+//
+// Without this, Go's http client auto-adds `Accept-Encoding: gzip` and
+// auto-decodes every response — the hot path that showed up at ~30-39% CPU
+// in production pprof before the scoped override.
+func TestHTTPDirectRPCConnection_AdvertisesAcceptEncodingIdentity(t *testing.T) {
+	// The handler runs in httptest.Server's goroutine; the assertions run in
+	// the test goroutine. Guard the shared observations with a mutex so
+	// `go test -race` is happy.
+	var (
+		mu                             sync.Mutex
+		sendRequestAE, doHTTPRequestAE string
+	)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ae := r.Header.Get("Accept-Encoding")
+		mu.Lock()
+		if r.Method == http.MethodPost {
+			sendRequestAE = ae
+		} else {
+			doHTTPRequestAE = ae
+		}
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	conn, err := NewDirectRPCConnection(ctx, common.NodeUrl{Url: srv.URL}, 1, "")
+	require.NoError(t, err)
+	h, ok := conn.(*HTTPDirectRPCConnection)
+	require.True(t, ok, "conn must be *HTTPDirectRPCConnection")
+
+	// SendRequest — POST JSON-RPC path.
+	sendResp, sendErr := h.SendRequest(ctx, []byte(`{"jsonrpc":"2.0","id":1}`), nil)
+	require.NoError(t, sendErr)
+	require.NotNil(t, sendResp)
+	require.Equal(t, `{"ok":true}`, string(sendResp.Data),
+		"body must be the raw server payload; any transformation implies unexpected auto-decode")
+
+	// DoHTTPRequest — REST path.
+	doResp, doErr := h.DoHTTPRequest(ctx, HTTPRequestParams{
+		Method: http.MethodGet,
+		URL:    srv.URL,
+	})
+	require.NoError(t, doErr)
+	require.NotNil(t, doResp)
+	require.Equal(t, `{"ok":true}`, string(doResp.Body),
+		"body must be the raw server payload; any transformation implies unexpected auto-decode")
+
+	mu.Lock()
+	sae, dae := sendRequestAE, doHTTPRequestAE
+	mu.Unlock()
+	require.Equal(t, "identity", sae,
+		"SendRequest must advertise Accept-Encoding: identity so Go does not auto-negotiate gzip")
+	require.Equal(t, "identity", dae,
+		"DoHTTPRequest must advertise Accept-Encoding: identity so Go does not auto-negotiate gzip")
 }
