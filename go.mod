@@ -8,7 +8,6 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.12
 	github.com/gofiber/websocket/v2 v2.0.22
 	github.com/gogo/protobuf v1.3.3
-	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/segmentio/kafka-go v0.4.47
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/spf13/cobra v1.8.0
@@ -20,7 +19,6 @@ require (
 
 require (
 	github.com/caio/go-tdigest/v5 v5.0.0
-	github.com/cosmos/gogoproto v1.4.10
 	github.com/dgraph-io/ristretto/v2 v2.3.0
 	github.com/fullstorydev/grpcurl v1.8.5
 	github.com/goccy/go-json v0.10.5
