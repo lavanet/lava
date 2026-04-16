@@ -1,21 +1,14 @@
+### lavap binary
 
-<div align="center">
-  <h1> Lava Network </h1>
-</div>
-
-![image](https://user-images.githubusercontent.com/2770565/203528359-dced4d06-f020-4b6a-bb5f-319124924689.png)
-
-
-### lavap binary.
-
-build lavap + lavad
+Build lavap + smartrouter:
 
 ```bash
 make install-all
 ```
 
-build lavap only
+Build lavap only:
 
 ```bash
-LAVA_BINARY=lavap make install
+make install
+go install -mod=readonly ./cmd/lavap
 ```
