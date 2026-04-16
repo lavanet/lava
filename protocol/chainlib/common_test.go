@@ -15,6 +15,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/common"
+	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -129,7 +130,7 @@ func TestConvertToJsonError(t *testing.T) {
 			t.Parallel()
 
 			result := convertToJsonError(testCase.errorMsg)
-			if result != testCase.expected {
+			if string(result) != testCase.expected {
 				t.Errorf("Expected result to be %s, but got %s", testCase.expected, result)
 			}
 		})
@@ -548,6 +549,74 @@ func TestApplyResponseCompression(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAddHeadersAndSendBytes(t *testing.T) {
+	t.Run("writes_body_bytes_and_metadata_headers", func(t *testing.T) {
+		payload := []byte(`{"jsonrpc":"2.0","id":1,"result":"0xdeadbeef"}`)
+		meta := []pairingtypes.Metadata{
+			{Name: "X-Test-Trace-Id", Value: "abc-123"},
+			{Name: "Content-Type", Value: "application/json"},
+		}
+
+		app := fiber.New()
+		app.Get("/", func(c *fiber.Ctx) error {
+			return addHeadersAndSendBytes(c, meta, payload)
+		})
+
+		req := httptest.NewRequest(fiber.MethodGet, "/", nil)
+		resp, err := app.Test(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		require.Equal(t, fiber.StatusOK, resp.StatusCode)
+		require.Equal(t, payload, body, "response body must match the []byte payload exactly")
+		require.Equal(t, "abc-123", resp.Header.Get("X-Test-Trace-Id"))
+		require.Equal(t, "application/json", resp.Header.Get("Content-Type"))
+	})
+
+	t.Run("empty_body_is_allowed", func(t *testing.T) {
+		app := fiber.New()
+		app.Get("/", func(c *fiber.Ctx) error {
+			return addHeadersAndSendBytes(c, nil, nil)
+		})
+
+		req := httptest.NewRequest(fiber.MethodGet, "/", nil)
+		resp, err := app.Test(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		require.Equal(t, fiber.StatusOK, resp.StatusCode)
+		require.Empty(t, body)
+	})
+
+	t.Run("preserves_binary_payload_bytes", func(t *testing.T) {
+		// The whole point of the []byte signature is that non-UTF8 / binary content
+		// isn't mangled by a []byte → string → []byte round-trip. Verify with a
+		// payload that includes every byte value, including embedded NULs.
+		payload := make([]byte, 256)
+		for i := range payload {
+			payload[i] = byte(i)
+		}
+
+		app := fiber.New()
+		app.Get("/", func(c *fiber.Ctx) error {
+			return addHeadersAndSendBytes(c, nil, payload)
+		})
+
+		req := httptest.NewRequest(fiber.MethodGet, "/", nil)
+		resp, err := app.Test(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		require.Equal(t, payload, body, "binary payload must round-trip byte-for-byte")
+	})
 }
 
 func TestCompareRequestedBlockInBatch(t *testing.T) {

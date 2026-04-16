@@ -212,18 +212,10 @@ func convertToUTXOResponse(msg *rpcclient.JsonrpcMessage) *rpcclient.BTCResponse
 	}
 }
 
-func addHeadersAndSendString(c *fiber.Ctx, metaData []pairingtypes.Metadata, data string) error {
-	for _, value := range metaData {
-		c.Set(value.Name, value.Value)
-	}
-
-	return c.SendString(data)
-}
-
-// addHeadersAndSendBytes is the []byte counterpart of addHeadersAndSendString.
-// Used on the ETH/Cosmos hot path so the upstream reply body flows straight to
-// fiber.Ctx.Send without a string(response) detour — which would otherwise
-// cancel out the zero-copy passthrough in checkUTXOResponseAndFixReply.
+// addHeadersAndSendBytes writes response metadata headers and sends the raw body via
+// fiber.Ctx.Send to avoid the []byte → string → []byte round-trip that fiber.Ctx.SendString
+// imposes at every call site. Hot-path response bodies (already []byte from the relay
+// pipeline) no longer pay an extra string-conversion allocation per request.
 func addHeadersAndSendBytes(c *fiber.Ctx, metaData []pairingtypes.Metadata, data []byte) error {
 	for _, value := range metaData {
 		c.Set(value.Name, value.Value)
@@ -232,15 +224,18 @@ func addHeadersAndSendBytes(c *fiber.Ctx, metaData []pairingtypes.Metadata, data
 	return c.Send(data)
 }
 
-func convertToJsonError(errorMsg string) string {
+// convertToJsonError returns a JSON-encoded `{"error": errorMsg}` body as raw bytes.
+// Returning []byte (rather than string) lets every error-path caller hand the
+// result straight to addHeadersAndSendBytes / fiber.Ctx.Send with no conversion.
+func convertToJsonError(errorMsg string) []byte {
 	jsonResponse, err := json.Marshal(fiber.Map{
 		"error": errorMsg,
 	})
 	if err != nil {
-		return `{"error": "Failed to marshal error response to json"}`
+		return []byte(`{"error": "Failed to marshal error response to json"}`)
 	}
 
-	return string(jsonResponse)
+	return jsonResponse
 }
 
 func addAttributeToError(key, value, errorMessage string) string {

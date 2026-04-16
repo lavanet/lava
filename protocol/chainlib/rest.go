@@ -322,7 +322,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			response := convertToJsonError(errMasking)
 
 			// Return error json response
-			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+			return addHeadersAndSendBytes(fiberCtx, reply.GetMetadata(), response)
 		}
 		// Log request and response
 		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodPost, path, requestBody, string(reply.Data), msgSeed, time.Since(startTime), nil)
@@ -330,7 +330,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			fiberCtx.Status(relayResult.StatusCode)
 		}
 		// Return json response and add metric for after provider processing
-		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
+		err = addHeadersAndSendBytes(fiberCtx, reply.GetMetadata(), reply.Data)
 		return err
 	}
 
@@ -397,7 +397,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			response := convertToJsonError(errMasking)
 
 			// Return error json response
-			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+			return addHeadersAndSendBytes(fiberCtx, reply.GetMetadata(), response)
 		}
 		if relayResult.GetStatusCode() != 0 {
 			fiberCtx.Status(relayResult.StatusCode)
@@ -406,7 +406,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", string(reply.Data), msgSeed, time.Since(startTime), nil)
 
 		// Return json response
-		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
+		err = addHeadersAndSendBytes(fiberCtx, reply.GetMetadata(), reply.Data)
 		return err
 	}
 
