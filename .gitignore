@@ -64,5 +64,13 @@ docs/
 agent_docs/
 /readme-docs/
 mock-node-server/
-.claude/
 Claude.md
+
+# Harness runtime artifacts (protocol-review / protocol-develop)
+_workspace/
+_workspace_*/
+REVIEW_REPORT.md
+# Local per-developer Claude Code overrides (the shared harness under
+# .claude/{agents,skills} IS committed; these are for personal state)
+.claude/settings.local.json
+.claude/*.local.*
