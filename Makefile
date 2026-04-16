@@ -2,6 +2,7 @@
 
 BINDIR ?= $(GOPATH)/bin
 
+# Install both binaries to $GOPATH/bin
 install-all: install
 
 install:
@@ -11,17 +12,25 @@ install:
 install-smartrouter:
 	go install -mod=readonly ./cmd/smartrouter
 
+# Build binaries into build/
+build-all: build build-lavap
+
 build:
-	go build -mod=readonly -o build/smart-router ./cmd/smartrouter
+	go build -mod=readonly -o build/smartrouter ./cmd/smartrouter
 
 build-lavap:
 	go build -mod=readonly -o build/lavap ./cmd/lavap
 
+# Tests
 test:
+	go test ./... -count=1 -timeout 300s
+
+test-short:
 	go test ./protocol/rpcsmartrouter/... -count=1 -timeout 120s
 
-test-all:
-	go test ./... -count=1 -timeout 300s
+# Maintenance
+tidy:
+	go mod tidy
 
 lint:
 	go vet ./...
@@ -29,4 +38,4 @@ lint:
 clean:
 	rm -rf build/
 
-.PHONY: install install-all install-smartrouter build build-lavap test test-all lint clean
+.PHONY: install install-all install-smartrouter build build-all build-lavap test test-short tidy lint clean
