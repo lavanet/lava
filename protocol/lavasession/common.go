@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/exp/slices"
+	"slices"
 
 	"github.com/gogo/status"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
@@ -182,10 +182,10 @@ func SortByGeolocations(pairingEndpoints []*Endpoint, currentGeo planstypes.Geol
 	}
 
 	// sort the endpoints by geolocation relevance:
-	lessFunc := func(a *Endpoint, b *Endpoint) bool {
+	cmpFunc := func(a *Endpoint, b *Endpoint) int {
 		latencyA := int(latencyToGeo(a.Geolocation, currentGeo))
 		latencyB := int(latencyToGeo(b.Geolocation, currentGeo))
-		return latencyA < latencyB
+		return latencyA - latencyB
 	}
-	slices.SortStableFunc(pairingEndpoints, lessFunc)
+	slices.SortStableFunc(pairingEndpoints, cmpFunc)
 }

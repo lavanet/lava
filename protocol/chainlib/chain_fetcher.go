@@ -18,7 +18,7 @@ import (
 	spectypes "github.com/lavanet/lava/v5/types/spec"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/sigs"
-	"golang.org/x/exp/slices"
+	"slices"
 )
 
 const (

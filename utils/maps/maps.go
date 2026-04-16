@@ -1,9 +1,10 @@
 package maps
 
 import (
+	"cmp"
+	"maps"
+
 	"github.com/lavanet/lava/v5/utils/lavaslices"
-	"golang.org/x/exp/constraints"
-	"golang.org/x/exp/maps"
 )
 
 func FindLargestIntValueInMap[K comparable](myMap map[K]int) (K, int) {
@@ -22,13 +23,13 @@ func FindLargestIntValueInMap[K comparable](myMap map[K]int) (K, int) {
 	return maxKey, maxVal
 }
 
-func StableSortedKeys[T constraints.Ordered, V any](m map[T]V) []T {
-	keys := maps.Keys(m)
+func StableSortedKeys[T cmp.Ordered, V any](m map[T]V) []T {
+	keys := KeysSlice(m)
 	lavaslices.SortStable(keys)
 	return keys
 }
 
-func GetMaxKey[T constraints.Ordered, V any](m map[T]V) T {
+func GetMaxKey[T cmp.Ordered, V any](m map[T]V) T {
 	var maxKey T
 	for k := range m {
 		if k > maxKey {
@@ -39,17 +40,18 @@ func GetMaxKey[T constraints.Ordered, V any](m map[T]V) T {
 }
 
 func KeysSlice[T comparable, V any](in map[T]V) []T {
-	keys := []T{}
-	for k := range in {
-		keys = append(keys, k)
-	}
-	return keys
+	return slicesFromIter(maps.Keys(in))
 }
 
 func ValuesSlice[T comparable, V any](in map[T]V) []V {
-	values := []V{}
-	for _, v := range in {
-		values = append(values, v)
+	return slicesFromIter(maps.Values(in))
+}
+
+// slicesFromIter collects an iter.Seq into a slice.
+func slicesFromIter[T any](seq func(yield func(T) bool)) []T {
+	var s []T
+	for v := range seq {
+		s = append(s, v)
 	}
-	return values
+	return s
 }

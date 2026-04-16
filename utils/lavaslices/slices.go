@@ -1,14 +1,13 @@
 package lavaslices
 
 import (
+	"cmp"
 	"math"
-
-	"golang.org/x/exp/constraints"
-	"golang.org/x/exp/slices"
+	"slices"
 )
 
 type Number interface {
-	constraints.Float | constraints.Integer
+	~float32 | ~float64 | ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64
 }
 
 type ComparableByFunc interface {
@@ -27,7 +26,7 @@ func Concat[T any](s ...[]T) []T {
 	return v
 }
 
-func Min[T constraints.Ordered](s []T) (m T) {
+func Min[T cmp.Ordered](s []T) (m T) {
 	if len(s) > 0 {
 		m = s[0]
 		for _, v := range s[1:] {
@@ -39,7 +38,7 @@ func Min[T constraints.Ordered](s []T) (m T) {
 	return m
 }
 
-func Max[T constraints.Ordered](s []T) (m T) {
+func Max[T cmp.Ordered](s []T) (m T) {
 	if len(s) > 0 {
 		m = s[0]
 		for _, v := range s[1:] {
@@ -96,7 +95,7 @@ func Percentile[T Number](slice []T, rank float64, reverse bool) T {
 		return 0
 	}
 	if reverse {
-		slices.SortFunc(slice, func(i, j T) bool { return i > j })
+		slices.SortFunc(slice, func(i, j T) int { return cmp.Compare(j, i) })
 	} else {
 		slices.Sort(slice)
 	}
@@ -347,13 +346,13 @@ func SplitGenericSliceIntoChunks[T any](arr []T, chunkSize int) [][]T {
 	return result
 }
 
-func SortStable[T constraints.Ordered](slice []T) {
-	slices.SortStableFunc(slice, func(i, j T) bool { return i < j })
+func SortStable[T cmp.Ordered](slice []T) {
+	slices.SortStableFunc(slice, func(i, j T) int { return cmp.Compare(i, j) })
 }
 
 // This function is used to check if the slice is consecutive.
 // It returns the index of the first non-consecutive element or 0 if all elements are consecutive.
-func IsSliceConsecutive[T constraints.Integer](slice []T) (int, bool) {
+func IsSliceConsecutive[T ~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64](slice []T) (int, bool) {
 	for index := range slice {
 		if index != 0 && slice[index]-1 != slice[index-1] {
 			return index, false

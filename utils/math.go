@@ -1,17 +1,17 @@
 package utils
 
 import (
-	"golang.org/x/exp/constraints"
+	"cmp"
 )
 
-func Min[T constraints.Ordered](x, y T) T {
+func Min[T cmp.Ordered](x, y T) T {
 	if x < y {
 		return x
 	}
 	return y
 }
 
-func Max[T constraints.Ordered](x, y T) T {
+func Max[T cmp.Ordered](x, y T) T {
 	if x > y {
 		return x
 	}

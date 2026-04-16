@@ -10,10 +10,11 @@ import (
 	"time"
 
 	"github.com/goccy/go-json"
+	spectypes "github.com/lavanet/lava/v5/types/spec"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
-	spectypes "github.com/lavanet/lava/v5/types/spec"
-	"golang.org/x/exp/maps"
+	"maps"
+	"slices"
 )
 
 // sanitizeFloat returns 0 if the value is NaN or Inf, otherwise returns the value
@@ -273,7 +274,7 @@ func (coqc *ConsumerOptimizerQoSClient) getReportsFromOptimizers() []OptimizerQo
 			continue
 		}
 
-		reports := optimizer.CalculateQoSScoresForMetrics(maps.Keys(providersMap), ignoredProviders, cu, requestedBlock)
+		reports := optimizer.CalculateQoSScoresForMetrics(slices.Collect(maps.Keys(providersMap)), ignoredProviders, cu, requestedBlock)
 		for _, report := range reports {
 			reportsToSend = append(reportsToSend, coqc.appendOptimizerQoSReport(report, chainId, currentEpoch))
 		}
