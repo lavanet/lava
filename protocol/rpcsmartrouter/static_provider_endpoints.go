@@ -7,7 +7,6 @@ import (
 )
 
 // ParseStaticProviderEndpoints parses static provider configuration into extended endpoint types.
-// Relocated from protocol/rpcprovider for use by smart router without the full rpcprovider dependency.
 func ParseStaticProviderEndpoints(viperEndpoints *viper.Viper, endpointsConfigName string, geolocation uint64) (endpoints []*lavasession.RPCStaticProviderEndpoint, err error) {
 	err = viperEndpoints.UnmarshalKey(endpointsConfigName, &endpoints)
 	if err != nil {

@@ -10,10 +10,10 @@ import (
 
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
 	"github.com/lavanet/lava/v5/protocol/qos"
+	planstypes "github.com/lavanet/lava/v5/types/plans"
+	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
-	pairingtypes "github.com/lavanet/lava/v5/types/relay"
-	planstypes "github.com/lavanet/lava/v5/types/plans"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 )
@@ -39,16 +39,14 @@ func (list EndpointInfoList) Swap(i, j int) {
 	list[i], list[j] = list[j], list[i]
 }
 
-// SessionConnection - Base interface for both connection types (provider-relay and direct-RPC)
-// This enables composition-based design where consumer and smart router use different connection types
+// SessionConnection is the base interface for RPC connections with QoS management.
 type SessionConnection interface {
 	GetQoSManager() *qos.QoSManager
 	IsHealthy() bool
 	GetEndpointAddress() string
 }
 
-// ProviderRelayConnection - For rpcconsumer (decentralized)
-// Wraps the traditional provider-relay connection with QoS management
+// ProviderRelayConnection wraps a provider-relay connection with QoS management.
 type ProviderRelayConnection struct {
 	EndpointConnection *EndpointConnection
 	QoSManager         *qos.QoSManager
@@ -67,8 +65,7 @@ func (prc *ProviderRelayConnection) GetEndpointAddress() string {
 	return prc.EndpointAddress
 }
 
-// DirectRPCSessionConnection - For rpcsmartrouter (centralized)
-// Wraps a direct RPC connection with QoS management
+// DirectRPCSessionConnection wraps a direct RPC connection with QoS management.
 type DirectRPCSessionConnection struct {
 	DirectConnection DirectRPCConnection
 	QoSManager       *qos.QoSManager
@@ -187,9 +184,8 @@ type Endpoint struct {
 	NetworkAddress string // change at the end to NetworkAddress
 	Enabled        bool
 
-	// Only ONE of these will be populated (determined by binary):
-	Connections       []*EndpointConnection // For rpcconsumer only (provider-relay)
-	DirectConnections []DirectRPCConnection // For rpcsmartrouter only (direct RPC)
+	Connections       []*EndpointConnection // Provider-relay connections (legacy)
+	DirectConnections []DirectRPCConnection // Direct RPC connections
 
 	ConnectionRefusals uint64
 	Addons             map[string]struct{}
@@ -296,8 +292,8 @@ type ConsumerSessionsWithProvider struct {
 	UsedComputeUnits  uint64
 	PairingEpoch      uint64
 	// whether we already reported this provider this epoch, we can only report one conflict per provider per epoch
-	conflictFoundAndReported uint32   // 0 == not reported, 1 == reported
-	stakeSize                int64 // the stake size the provider staked (ulava)
+	conflictFoundAndReported uint32 // 0 == not reported, 1 == reported
+	stakeSize                int64  // the stake size the provider staked (ulava)
 
 	// blocked provider recovery status if 0 currently not used, if 1 a session has tried resume communication with this provider
 	// if the provider is not blocked at all this field is irrelevant

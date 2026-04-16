@@ -1,32 +1,18 @@
-// Package rpcsmartrouter provides a centralized RPC routing solution for the Lava protocol.
+// Package rpcsmartrouter provides the RPC routing solution for the Lava protocol.
 //
 // # Architecture Overview
 //
-// The smart router is designed for centralized deployments where providers are statically
-// configured rather than dynamically discovered through blockchain pairing. This is useful for:
-//   - Enterprise deployments with known provider infrastructure
-//   - Testing and development environments
-//   - Use cases requiring predictable provider routing
+// The smart router routes RPC requests to statically configured provider endpoints.
 //
-// # Key Differences from rpcconsumer
-//
-// rpcsmartrouter (centralized):
 //   - Uses pre-configured static providers from configuration files
-//   - No blockchain state tracking required
 //   - Provider selection based on configured weights (static providers get 10x multiplier)
-//   - No epoch management or on-chain pairing updates
-//
-// rpcconsumer (decentralized):
-//   - Discovers providers dynamically through blockchain pairing
-//   - Tracks blockchain state, epochs, and provider stake
-//   - Provider selection weighted by actual on-chain stake
-//   - Includes conflict detection and finalization consensus
+//   - Direct RPC connections to provider nodes
 //
 // # Provider Selection
 //
 // Static providers are configured in YAML files and automatically receive a 10x weight
-// multiplier compared to blockchain providers. This ensures static providers are preferred
-// in routing decisions. See StaticProviderDummyCoin for implementation details.
+// multiplier. This ensures static providers are preferred in routing decisions.
+// See StaticProviderDummyCoin for implementation details.
 package rpcsmartrouter
 
 import (
@@ -530,7 +516,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 					Enabled:           true,
 					Addons:            extensions,
 					Extensions:        extensions,
-					Connections:       nil,                                           // rpcconsumer only - not used in smart router
+					Connections:       nil,
 					DirectConnections: []lavasession.DirectRPCConnection{directConn}, // Smart router uses direct RPC
 					Geolocation:       planstypes.Geolocation(provider.Geolocation),
 				}
@@ -682,8 +668,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 		)
 	} else {
 		// No WebSocket endpoints configured - use NoOp manager that returns clear errors
-		// Smart router does NOT fall back to provider-based subscriptions (per implementation plan)
-		// Provider-based subscriptions are only for rpcconsumer, not rpcsmartrouter
+		// No WebSocket endpoints configured — use NoOp manager that returns clear errors
 		wsSubscriptionManager = NewNoOpWSSubscriptionManager(rpcEndpoint.ChainID, rpcEndpoint.ApiInterface)
 		utils.LavaFormatInfo("No WebSocket endpoints configured for direct subscriptions",
 			utils.LogAttr("chainID", rpcEndpoint.ChainID),
@@ -1381,7 +1366,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.MarkFlagRequired(common.GeolocationFlag)
 	cmdRPCSmartRouter.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allow insecure provider-dialing. used for development and testing")
 	cmdRPCSmartRouter.Flags().Uint64Var(&lavasession.MaximumStreamsOverASingleConnection, lavasession.MaximumStreamsOverASingleConnectionFlag, lavasession.DefaultMaximumStreamsOverASingleConnection, "maximum number of parallel streams over a single provider connection")
-	cmdRPCSmartRouter.Flags().Bool(common.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
+	cmdRPCSmartRouter.Flags().Bool(common.TestModeFlagName, false, "test mode sends dummy data and prints all metadata in listeners")
 	cmdRPCSmartRouter.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdRPCSmartRouter.Flags().String(performance.PyroscopeAddressFlagName, "", "pyroscope server address for continuous profiling (e.g., http://pyroscope:4040)")
 	cmdRPCSmartRouter.Flags().String(performance.PyroscopeAppNameFlagName, "lavap-smartrouter", "pyroscope application name for identifying this service")

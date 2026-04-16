@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/v5/protocol/qos"
-	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/types/relay"
+	"github.com/lavanet/lava/v5/utils"
 )
 
 type SingleConsumerSession struct {
@@ -18,12 +18,11 @@ type SingleConsumerSession struct {
 	RelayNum      uint64
 	LatestBlock   int64
 
-	// Connection type - uses composition pattern for type safety
-	// Either ProviderRelayConnection (rpcconsumer) or DirectRPCSessionConnection (rpcsmartrouter)
+	// Connection wraps the underlying RPC connection with QoS management.
 	Connection SessionConnection
 
-	// Legacy field - maintained for backward compatibility
-	// For provider-relay mode, this points to the same connection as Connection.(*ProviderRelayConnection).EndpointConnection
+	// EndpointConnection is maintained for backward compatibility with the
+	// provider-relay code path. It is nil for direct-RPC sessions.
 	EndpointConnection *EndpointConnection
 
 	BlockListed       bool // if session lost sync we blacklist it.
@@ -41,7 +40,6 @@ func (cs *SingleConsumerSession) CalculateExpectedLatency(timeoutGivenToRelay ti
 	expectedLatency := (timeoutGivenToRelay / 2)
 	return expectedLatency
 }
-
 
 func (scs *SingleConsumerSession) SetUsageForSession(cuNeededForSession uint64, reputationReport *pairingtypes.QualityOfServiceReport, usedProviders UsedProvidersInf, routerKey RouterKey) error {
 	scs.LatestRelayCu = cuNeededForSession // set latestRelayCu

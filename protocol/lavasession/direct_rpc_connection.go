@@ -229,7 +229,7 @@ func NewDirectRPCConnection(
 //   - For "grpc" interface: bare "host:port" → gRPC
 //   - For other interfaces: bare "host:port" → HTTPS (default)
 //
-// This matches the behavior of rpcconsumer/provider which accept bare host:port for gRPC.
+// Bare host:port is treated as gRPC for the "grpc" interface, HTTPS otherwise.
 func DetectProtocol(urlStr string, apiInterface string) (DirectRPCProtocol, error) {
 	// Handle bare host:port URLs (e.g. "lava-grpc.publicnode.com:443") before url.Parse.
 	// Go's url.Parse treats "word:" as scheme:opaque, so "host.com:443" becomes

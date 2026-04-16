@@ -18,7 +18,7 @@ func TestProcessingTimestampLifecycle(t *testing.T) {
 
 	require.Equal(t, startTime, analytics.ProcessingTimestamp, "ProcessingTimestamp should be set after before-relay")
 
-	// Simulate successful relay (as done in rpcconsumer_server.go)
+	// Simulate successful relay
 	time.Sleep(10 * time.Millisecond)
 	afterProviderTime := time.Now()
 	analytics.SetProcessingTimestampAfterRelay(afterProviderTime)

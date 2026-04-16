@@ -14,8 +14,8 @@ import (
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
-	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/types/relay"
+	"github.com/lavanet/lava/v5/utils"
 )
 
 // Note: Configuration constants are now in WebsocketConfig (websocket_config.go)
@@ -194,8 +194,7 @@ func (dwsm *DirectWSSubscriptionManager) Start(ctx context.Context) {
 	)
 }
 
-// cleanupStaleSubscriptions periodically removes stale subscriptions with cancelled contexts
-// This matches rpcconsumer's cleanup pattern (interval from config, default 1 minute)
+// cleanupStaleSubscriptions periodically removes stale subscriptions with cancelled contexts.
 func (dwsm *DirectWSSubscriptionManager) cleanupStaleSubscriptions(ctx context.Context) {
 	ticker := time.NewTicker(dwsm.config.CleanupInterval)
 	defer ticker.Stop()
@@ -269,7 +268,7 @@ func (dwsm *DirectWSSubscriptionManager) performCleanup() {
 		}
 	}
 
-	// Log warning if subscription count is high (match rpcconsumer pattern)
+	// Log warning if subscription count is high
 	totalSubs := len(dwsm.activeSubscriptions)
 	if totalSubs > dwsm.config.MaxTotalSubscriptions {
 		utils.LavaFormatWarning("DirectWS: subscription count high, potential memory issue", nil,
