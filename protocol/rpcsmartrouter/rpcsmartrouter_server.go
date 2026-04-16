@@ -278,10 +278,24 @@ func (rpcss *RPCSmartRouterServer) craftRelay(ctx context.Context) (ok bool, rel
 	return true, relay, chainMessage, nil
 }
 
+// validateCrossValidationCapacity returns an error when CrossValidation mode is active but
+// MaxParticipants exceeds the number of currently available endpoints.
+func (rpcss *RPCSmartRouterServer) validateCrossValidationCapacity(ctx context.Context, selection relaycore.Selection, params *common.CrossValidationParams) error {
+	if selection == relaycore.CrossValidation && params != nil && params.MaxParticipants > rpcss.sessionManager.GetNumberOfValidProviders() {
+		return utils.LavaFormatError("requested cross-validation maxParticipants exceeds available endpoints",
+			lavasession.PairingListEmptyError,
+			utils.LogAttr("maxParticipants", params.MaxParticipants),
+			utils.LogAttr("availableEndpoints", rpcss.sessionManager.GetNumberOfValidProviders()),
+			utils.LogAttr("GUID", ctx))
+	}
+	return nil
+}
+
 func (rpcss *RPCSmartRouterServer) sendRelayWithRetries(ctx context.Context, retries int, initialRelays bool, protocolMessage chainlib.ProtocolMessage) (bool, error) {
 	success := false
 	var err error
 	usedProviders := lavasession.NewUsedProviders(nil)
+	usedProviders.SetChainID(rpcss.listenEndpoint.ChainID)
 
 	// Create state machine first - it determines Selection type based on cross-validation headers
 	stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, rpcss, protocolMessage, nil, rpcss.debugRelays)
@@ -292,13 +306,8 @@ func (rpcss *RPCSmartRouterServer) sendRelayWithRetries(ctx context.Context, ret
 	// Get cross-validation parameters from the state machine (nil for Stateless/Stateful)
 	crossValidationParams := stateMachine.GetCrossValidationParams()
 
-	// Validate that maxParticipants doesn't exceed available endpoints when CrossValidation is enabled
-	if stateMachine.GetSelection() == relaycore.CrossValidation && crossValidationParams != nil && crossValidationParams.MaxParticipants > rpcss.sessionManager.GetNumberOfValidProviders() {
-		return false, utils.LavaFormatError("requested cross-validation maxParticipants exceeds available endpoints",
-			lavasession.PairingListEmptyError,
-			utils.LogAttr("maxParticipants", crossValidationParams.MaxParticipants),
-			utils.LogAttr("availableEndpoints", rpcss.sessionManager.GetNumberOfValidProviders()),
-			utils.LogAttr("GUID", ctx))
+	if err := rpcss.validateCrossValidationCapacity(ctx, stateMachine.GetSelection(), crossValidationParams); err != nil {
+		return false, err
 	}
 
 	// Direct RPC flow: pass nil for availabilityDegrader since there are no Lava protocol sessions.
@@ -557,6 +566,7 @@ func (rpcss *RPCSmartRouterServer) ProcessRelaySend(ctx context.Context, protoco
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	usedProviders := lavasession.NewUsedProviders(protocolMessage)
+	usedProviders.SetChainID(rpcss.listenEndpoint.ChainID)
 
 	// Create state machine first - it determines Selection type based on cross-validation headers
 	stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, rpcss, protocolMessage, analytics, rpcss.debugRelays)
@@ -567,13 +577,8 @@ func (rpcss *RPCSmartRouterServer) ProcessRelaySend(ctx context.Context, protoco
 	// Get cross-validation parameters from the state machine (nil for Stateless/Stateful)
 	crossValidationParams := stateMachine.GetCrossValidationParams()
 
-	// Validate that maxParticipants doesn't exceed available endpoints when CrossValidation is enabled
-	if stateMachine.GetSelection() == relaycore.CrossValidation && crossValidationParams != nil && crossValidationParams.MaxParticipants > rpcss.sessionManager.GetNumberOfValidProviders() {
-		return nil, utils.LavaFormatError("requested cross-validation maxParticipants exceeds available endpoints",
-			lavasession.PairingListEmptyError,
-			utils.LogAttr("maxParticipants", crossValidationParams.MaxParticipants),
-			utils.LogAttr("availableEndpoints", rpcss.sessionManager.GetNumberOfValidProviders()),
-			utils.LogAttr("GUID", ctx))
+	if err := rpcss.validateCrossValidationCapacity(ctx, stateMachine.GetSelection(), crossValidationParams); err != nil {
+		return nil, err
 	}
 
 	// Direct RPC flow: pass nil for availabilityDegrader since there are no Lava protocol sessions.
@@ -1773,10 +1778,16 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 	// Create direct RPC relay sender
 	// Use provider name (configured name) instead of raw URL to avoid leaking API keys
 	endpointName := singleConsumerSession.Parent.PublicLavaAddress
+	// Resolve chain family for Tier 2 error classification
+	senderChainFamily := common.ChainFamily(-1)
+	if family, ok := common.GetChainFamily(rpcss.listenEndpoint.ChainID); ok {
+		senderChainFamily = family
+	}
 	directSender := &DirectRPCRelaySender{
 		directConnection:    directConnection,
 		endpointName:        endpointName,
 		originalRequestData: originalRequestData,
+		chainFamily:         senderChainFamily,
 	}
 
 	// Send relay directly to RPC endpoint
@@ -1798,50 +1809,70 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 			utils.LogAttr("GUID", ctx),
 		)
 
-		// Classify error and decide on health tracking
-		shouldMarkUnhealthy := false
-		needsBackoff = false
-
-		// Check if this is an HTTP status error
-		if httpErr, ok := err.(*lavasession.HTTPStatusError); ok {
-			statusCode := httpErr.StatusCode
-
-			switch {
-			case statusCode >= 500:
-				// 5xx errors indicate server/node issues - mark unhealthy and backoff
-				shouldMarkUnhealthy = true
-				needsBackoff = true
-				utils.LavaFormatDebug("endpoint returned server error",
-					utils.LogAttr("status", statusCode),
-					utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
-				)
-			case statusCode == 429:
-				// Rate limit - backoff but DON'T mark unhealthy (endpoint is healthy, just busy)
-				needsBackoff = true
-				utils.LavaFormatDebug("endpoint rate limited",
-					utils.LogAttr("status", statusCode),
-					utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
-				)
-			case statusCode >= 400:
-				// 4xx errors are client errors - don't mark unhealthy, don't backoff
-				utils.LavaFormatDebug("client error",
-					utils.LogAttr("status", statusCode),
-					utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
-				)
+		// Classify error using the error registry and decide on health tracking
+		// Try to extract LavaError from classifiedError (already classified by classifyAndWrap)
+		classified := extractLavaError(err)
+		if classified == nil {
+			// Fallback: derive transport and chain family, classify from scratch
+			transport := common.TransportJsonRPC
+			switch directConnection.GetProtocol() {
+			case lavasession.DirectRPCProtocolGRPC:
+				transport = common.TransportGRPC
+			case lavasession.DirectRPCProtocolHTTP, lavasession.DirectRPCProtocolHTTPS:
+				// HTTP could be JSON-RPC or REST — use the endpoint's API interface
+				if rpcss.listenEndpoint.ApiInterface == "rest" {
+					transport = common.TransportREST
+				}
 			}
-		} else {
-			// Non-HTTP errors (timeout, connection refused, network errors)
-			// These indicate endpoint/network issues - mark unhealthy and backoff
-			shouldMarkUnhealthy = true
-			needsBackoff = true
+
+			// Resolve chain family for Tier 2 matchers
+			chainFamily := common.ChainFamily(-1)
+			if family, ok := common.GetChainFamily(rpcss.listenEndpoint.ChainID); ok {
+				chainFamily = family
+			}
+
+			errorCode := 0
+			if httpErr, ok := err.(*lavasession.HTTPStatusError); ok {
+				errorCode = httpErr.StatusCode
+			}
+			classified = common.ClassifyError(common.DetectConnectionError(err), chainFamily, transport, errorCode, err.Error())
 		}
+
+		// PROTOCOL_CONTEXT_CANCELED is expected in two cases:
+		// 1. Relay race: multiple goroutines race in parallel; when one wins, ProcessRelaySend
+		//    returns and its defer cancel() cancels the parent ctx, which cancels all still-in-flight
+		//    goroutines — those see context.Canceled as a result.
+		// 2. Client disconnect: the upstream caller closed the connection before we responded.
+		// Neither case is a provider fault — classifyEndpointHealth handles the carve-out
+		// using common.IsClientCancellation so every endpoint-health decision site uses the
+		// same rule.
+		//
+		// Compute the cancellation flag BEFORE logging so race losers don't get
+		// tagged as errors and don't pollute lava_errors_total — on a busy router
+		// doing parallel races, the race-loser count would otherwise swamp the
+		// real error count.
+		isClientCancel := common.IsClientCancellation(err, ctx)
+		if isClientCancel {
+			utils.LavaFormatDebug("direct RPC relay cancelled by client (race loser or client disconnect)",
+				utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
+				utils.LogAttr("ctx_err", ctx.Err()),
+				utils.LogAttr("GUID", ctx),
+			)
+		} else {
+			common.LogCodedError("direct RPC relay error", err, classified,
+				rpcss.listenEndpoint.ChainID, 0, err.Error(),
+				utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
+			)
+		}
+
+		// Decide endpoint health based on error classification.
+		var shouldMarkUnhealthy bool
+		shouldMarkUnhealthy, needsBackoff = classifyEndpointHealth(classified, isClientCancel)
 
 		// Apply health tracking based on error classification
 		if shouldMarkUnhealthy && targetEndpoint != nil {
 			targetEndpoint.MarkUnhealthy()
-			if !targetEndpoint.Enabled { // only emit metric when endpoint actually becomes disabled
-				rpcss.smartRouterEndpointMetrics.SetEndpointOverallHealth(rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface, endpointName, false)
-			}
+			rpcss.smartRouterEndpointMetrics.SetEndpointOverallHealth(rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface, endpointName, false)
 		}
 
 		return relayLatency, err, needsBackoff
@@ -1850,15 +1881,12 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 	// Check status code even when err == nil (for REST 5xx/429)
 	statusCode := result.StatusCode
 	if statusCode >= 500 || statusCode == 429 {
-		// REST returned 5xx or 429 (no transport error, but node issue)
-		shouldMarkUnhealthy := (statusCode >= 500) // Mark unhealthy for 5xx, not 429
-		needsBackoff = true                        // Both should backoff/retry
+		shouldMarkUnhealthy, needsBackoffHTTP := classifyHTTPStatus(statusCode)
+		needsBackoff = needsBackoffHTTP
 
 		if shouldMarkUnhealthy && targetEndpoint != nil {
 			targetEndpoint.MarkUnhealthy()
-			if !targetEndpoint.Enabled { // only emit metric when endpoint actually becomes disabled
-				rpcss.smartRouterEndpointMetrics.SetEndpointOverallHealth(rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface, endpointName, false)
-			}
+			rpcss.smartRouterEndpointMetrics.SetEndpointOverallHealth(rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface, endpointName, false)
 			utils.LavaFormatDebug("endpoint returned error status",
 				utils.LogAttr("status", statusCode),
 				utils.LogAttr("endpoint", singleConsumerSession.Parent.PublicLavaAddress),
@@ -1875,10 +1903,8 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 	}
 
 	// Success - reset endpoint health
-	if targetEndpoint != nil && targetEndpoint.ConnectionRefusals > 0 {
-		wasDisabled := !targetEndpoint.Enabled
-		targetEndpoint.ResetHealth()
-		if wasDisabled { // only emit metric when recovering from a disabled state
+	if targetEndpoint != nil {
+		if targetEndpoint.ResetHealth() {
 			rpcss.smartRouterEndpointMetrics.SetEndpointOverallHealth(rpcss.listenEndpoint.ChainID, rpcss.listenEndpoint.ApiInterface, endpointName, true)
 		}
 	}
@@ -1888,6 +1914,7 @@ func (rpcss *RPCSmartRouterServer) relayInnerDirect(
 	relayResult.Finalized = result.Finalized
 	relayResult.StatusCode = result.StatusCode
 	relayResult.IsNodeError = result.IsNodeError
+	relayResult.IsNonRetryable = result.IsNonRetryable
 	relayResult.ProviderInfo = result.ProviderInfo
 	if relayResult.Reply != nil {
 		relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, pairingtypes.Metadata{
@@ -2388,4 +2415,16 @@ func (rpcss *RPCSmartRouterServer) updateProtocolMessageIfNeededWithNewEarliestD
 		return newProtocolMessage
 	}
 	return protocolMessage
+}
+
+// classifyHTTPStatus classifies an HTTP status code for endpoint health decisions.
+func classifyHTTPStatus(code int) (shouldMarkUnhealthy, needsBackoff bool) {
+	switch {
+	case code >= 500:
+		return true, true
+	case code == 429:
+		return false, true
+	default:
+		return false, false
+	}
 }

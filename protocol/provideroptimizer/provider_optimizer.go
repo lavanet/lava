@@ -10,10 +10,10 @@ import (
 
 	"github.com/dgraph-io/ristretto/v2"
 	"github.com/lavanet/lava/v5/protocol/metrics"
+	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/lavaslices"
 	"github.com/lavanet/lava/v5/utils/score"
-	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 	"gonum.org/v1/gonum/mathext"
 )
 
@@ -37,6 +37,9 @@ type ConcurrentBlockStore struct {
 type cacheInf interface {
 	Get(key string) (interface{}, bool)
 	Set(key string, value interface{}, cost int64) bool
+	// Clear empties the cache. Used by ResetState to discard future-dated entries
+	// after a debug clock reset so that real-time samples are no longer rejected.
+	Clear()
 }
 
 type consumerOptimizerQoSClientInf interface {
@@ -57,6 +60,7 @@ type ProviderOptimizer struct {
 	globalLatencyCalculator         *score.AdaptiveMaxCalculator // Global T-Digest for all providers' latency samples
 	globalSyncCalculator            *score.AdaptiveMaxCalculator // Global T-Digest for all providers' sync samples
 	adaptiveLock                    sync.RWMutex                 // Lock for accessing adaptive calculators
+	NowFunc                         func() time.Time             // NowFunc overrides the clock used for score updates nil = use real time.Now()
 }
 
 type ProviderData struct {
@@ -187,14 +191,66 @@ func (po *ProviderOptimizer) UpdateWeights(weights map[string]int64, epoch uint6
 	}
 }
 
+// now returns the current time, using NowFunc if set (for testing) or time.Now() otherwise
+// This allows us to control time in tests for deterministic behavior
+func (po *ProviderOptimizer) now() time.Time {
+	if po.NowFunc != nil {
+		return po.NowFunc()
+	}
+	return time.Now()
+}
+
+// ResetState clears all time-dependent internal state so the optimizer works correctly
+// after a debug clock reset (i.e. when the time offset is set back to 0).
+//
+// Why this is necessary:
+// When the clock is shifted forward (e.g. +24 h via the debug server), all ScoreStore
+// entries written during that window carry future timestamps.  When the offset is reset to
+// 0, po.now() returns real time again — but ScoreStore.Update rejects any sample whose
+// timestamp is earlier than the stored one ("TimeConflictingScoresError").  That means
+// every new relay sample would be silently dropped for the next 24 hours, leaving the
+// optimizer effectively frozen.  Calling ResetState discards all the future-dated data so
+// incoming real-time samples are accepted immediately.
+func (po *ProviderOptimizer) ResetState() {
+	// Discard all per-provider score caches.  Every ProviderData entry holds ScoreStore
+	// objects whose Time field was advanced to the shifted period; without clearing them
+	// new real-time samples would be rejected by the TimeConflictingScores guard.
+	po.providersStorage.Clear()
+
+	// Discard relay-stats timestamps (used for half-time / sync-lag calculations).
+	// Future-dated relay times would produce negative or wildly inflated durations.
+	po.providerRelayStats.Clear()
+
+	// Reset the latest-sync block record.  Its Time field was set during the shifted
+	// period; a stale future timestamp here causes negative sync-lag when real time
+	// reverts to the pre-warp value.
+	po.latestSyncData.Lock.Lock()
+	po.latestSyncData.Block = 0
+	po.latestSyncData.Time = time.Time{}
+	po.latestSyncData.Lock.Unlock()
+
+	// Reset both global adaptive calculators under their shared write lock.
+	// T-Digest samples recorded at shifted timestamps distort the P10/P90 bounds
+	// used for score normalisation until they decay out — resetting clears them
+	// instantly so normalization is back to defaults right away.
+	po.adaptiveLock.Lock()
+	defer po.adaptiveLock.Unlock()
+	if po.globalLatencyCalculator != nil {
+		po.globalLatencyCalculator.Reset()
+	}
+	if po.globalSyncCalculator != nil {
+		po.globalSyncCalculator.Reset()
+	}
+}
+
 // AppendRelayFailure updates a provider's QoS metrics for a failed relay
 func (po *ProviderOptimizer) AppendRelayFailure(provider string) {
-	po.appendRelayData(provider, 0, false, 0, 0, time.Now())
+	po.appendRelayData(provider, 0, false, 0, 0, po.now())
 }
 
 // AppendRelayData updates a provider's QoS metrics for a successful relay
 func (po *ProviderOptimizer) AppendRelayData(provider string, latency time.Duration, cu, syncBlock uint64) {
-	po.appendRelayData(provider, latency, true, cu, syncBlock, time.Now())
+	po.appendRelayData(provider, latency, true, cu, syncBlock, po.now())
 }
 
 // appendRelayData gets three new QoS metrics samples and updates the provider's metrics using a decaying weighted average
@@ -247,7 +303,7 @@ func (po *ProviderOptimizer) appendRelayData(provider string, latency time.Durat
 // AppendProbeRelayData updates a provider's QoS metrics for a probe relay message
 func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latency time.Duration, success bool) {
 	providerData, _ := po.getProviderData(providerAddress)
-	sampleTime := time.Now()
+	sampleTime := po.now()
 	halfTime := po.calculateHalfTime(providerAddress, sampleTime)
 	weight := score.ProbeUpdateWeight
 	var updateErr error

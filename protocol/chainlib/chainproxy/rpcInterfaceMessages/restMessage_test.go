@@ -605,6 +605,15 @@ func TestCheckResponseError_ServerErrors(t *testing.T) {
 			},
 		},
 		{
+			name:          "501 Not Implemented (treated as node error, not client error)",
+			httpStatus:    501,
+			response:      `{"error":"method not implemented on this node"}`,
+			expectedError: true, // 5xx → node error → try another provider
+			errorCheck: func(t *testing.T, errorMessage string) {
+				require.Contains(t, errorMessage, "method not implemented")
+			},
+		},
+		{
 			name:          "404 Not Found (client error)",
 			httpStatus:    404,
 			response:      `{"code":5,"message":"block not found"}`,

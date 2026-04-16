@@ -24,9 +24,9 @@ import (
 
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 	spectypes "github.com/lavanet/lava/v5/types/spec"
+	"github.com/lavanet/lava/v5/utils"
 )
 
 const (
@@ -473,13 +473,13 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			if errors.Is(err, common.APINotSupportedError) {
 				// Convert error to JSON string and add headers
 				errorResponse, _ := json.Marshal(common.JsonRpcMethodNotFoundError)
-				return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(errorResponse))
+				return addHeadersAndSendBytes(fiberCtx, reply.GetMetadata(), errorResponse)
 			}
 
 			if _, ok := err.(*json.SyntaxError); ok {
 				// Convert error to JSON string and add headers
 				errorResponse, _ := json.Marshal(common.JsonRpcParseError)
-				return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(errorResponse))
+				return addHeadersAndSendBytes(fiberCtx, reply.GetMetadata(), errorResponse)
 			}
 
 			// Get unique GUID response
@@ -498,17 +498,25 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			// Construct json response
 			response := convertToJsonError(errMasking)
 			// Return error json response
-			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+			return addHeadersAndSendBytes(fiberCtx, reply.GetMetadata(), response)
 		}
 
 		response := checkUTXOResponseAndFixReply(chainID, reply.Data)
-		// Log request and response
+		// Log request and response — gate the string conversion behind the
+		// debug-level check because LogRequestAndResponse routes the happy path
+		// through LavaFormatDebug. At info/warn+ the value is never emitted,
+		// but Go evaluates arguments eagerly, so a blind string(response) would
+		// still allocate a full copy of every reply body on the hot path.
+		var loggedResponse string
+		if utils.IsDebugEnabled() {
+			loggedResponse = string(response)
+		}
 		apil.logger.LogRequestAndResponse("jsonrpc http",
 			false,
 			"POST",
 			fiberCtx.Request().URI().String(),
 			msg,
-			response,
+			loggedResponse,
 			msgSeed,
 			time.Since(startTime),
 			nil,
@@ -516,8 +524,9 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		if relayResult.GetStatusCode() != 0 {
 			fiberCtx.Status(relayResult.StatusCode)
 		}
-		// Return json response
-		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+		// Return json response — send bytes directly so we don't allocate
+		// another string(response) on top of the already-pass-through body.
+		err = addHeadersAndSendBytes(fiberCtx, reply.GetMetadata(), response)
 		return err
 	}
 	app.Post("/*", handlerPost)
@@ -554,7 +563,7 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 		BaseChainProxy: BaseChainProxy{
 			averageBlockTime: averageBlockTime,
 			NodeUrl:          nodeUrl,
-			ErrorHandler:     &JsonRPCErrorHandler{},
+			ErrorHandler:     &JsonRPCErrorHandler{chainFamily: common.GetChainFamilyOrDefault(rpcProviderEndpoint.ChainID), chainID: rpcProviderEndpoint.ChainID},
 			ChainID:          rpcProviderEndpoint.ChainID,
 		},
 		conn: nil,

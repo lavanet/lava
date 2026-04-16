@@ -162,20 +162,22 @@ func isUTXOFamily(chainID string) bool {
 	return chainID == "BTC" || chainID == "BTCT" || chainID == "LTC" || chainID == "LTCT" || chainID == "DOGE" || chainID == "DOGET" || chainID == "BCH" || chainID == "BCHT"
 }
 
-func checkUTXOResponseAndFixReply(chainID string, replyData []byte) string {
-	response := string(replyData)
+// checkUTXOResponseAndFixReply returns the reply body for UTXO-family chains after
+// reformatting it for JSON-RPC 1.0 semantics, and returns replyData unchanged for all
+// other chains. The non-UTXO path is zero-copy: hot chains (ETH, Cosmos, etc.) no
+// longer pay a full string(replyData) allocation per response.
+func checkUTXOResponseAndFixReply(chainID string, replyData []byte) []byte {
 	if !isUTXOFamily(chainID) {
-		return response
+		return replyData
 	}
 
 	// Try single response first
 	var jsonMsg *rpcclient.JsonrpcMessage
 	if err := json.Unmarshal(replyData, &jsonMsg); err == nil {
-		btcResponse := convertToUTXOResponse(jsonMsg)
-		if marshaledRes, err := json.Marshal(btcResponse); err == nil {
-			response = string(marshaledRes)
+		if marshaledRes, err := json.Marshal(convertToUTXOResponse(jsonMsg)); err == nil {
+			return marshaledRes
 		}
-		return response
+		return replyData
 	}
 
 	// Try batch response (JSON array)
@@ -186,11 +188,13 @@ func checkUTXOResponseAndFixReply(chainID string, replyData []byte) string {
 			btcBatch[i] = convertToUTXOResponse(&jsonMsgs[i])
 		}
 		if marshaledRes, err := json.Marshal(btcBatch); err == nil {
-			response = string(marshaledRes)
+			return marshaledRes
 		}
 	}
 
-	return response
+	// Reached only if batch unmarshal failed OR batch marshal failed: return the
+	// original bytes unchanged so the caller still gets a well-formed reply.
+	return replyData
 }
 
 // convertToUTXOResponse converts a JsonrpcMessage to BTCResponse format.
@@ -209,23 +213,30 @@ func convertToUTXOResponse(msg *rpcclient.JsonrpcMessage) *rpcclient.BTCResponse
 	}
 }
 
-func addHeadersAndSendString(c *fiber.Ctx, metaData []pairingtypes.Metadata, data string) error {
+// addHeadersAndSendBytes writes response metadata headers and sends the raw body via
+// fiber.Ctx.Send to avoid the []byte → string → []byte round-trip that fiber.Ctx.SendString
+// imposes at every call site. Hot-path response bodies (already []byte from the relay
+// pipeline) no longer pay an extra string-conversion allocation per request.
+func addHeadersAndSendBytes(c *fiber.Ctx, metaData []pairingtypes.Metadata, data []byte) error {
 	for _, value := range metaData {
 		c.Set(value.Name, value.Value)
 	}
 
-	return c.SendString(data)
+	return c.Send(data)
 }
 
-func convertToJsonError(errorMsg string) string {
+// convertToJsonError returns a JSON-encoded `{"error": errorMsg}` body as raw bytes.
+// Returning []byte (rather than string) lets every error-path caller hand the
+// result straight to addHeadersAndSendBytes / fiber.Ctx.Send with no conversion.
+func convertToJsonError(errorMsg string) []byte {
 	jsonResponse, err := json.Marshal(fiber.Map{
 		"error": errorMsg,
 	})
 	if err != nil {
-		return `{"error": "Failed to marshal error response to json"}`
+		return []byte(`{"error": "Failed to marshal error response to json"}`)
 	}
 
-	return string(jsonResponse)
+	return jsonResponse
 }
 
 func addAttributeToError(key, value, errorMessage string) string {
@@ -377,6 +388,74 @@ func GetRelayTimeout(chainMessage ChainMessageForSend, averageBlockTime time.Dur
 	return extraRelayTimeout + relayTimeAddition
 }
 
+// applyResponseCompression wires the fiber compress middleware according to
+// cmdFlags.ResponseCompression. Modes:
+//
+//	"off"    — no compression middleware registered. Cheapest on CPU; clients get
+//	           raw bytes. Use when the process sits behind a compressing ingress.
+//	"brotli" — current legacy behavior: fasthttp auto-negotiates br/gzip/deflate
+//	           based on Accept-Encoding. Brotli in Go costs ~3x the CPU of gzip
+//	           for similar wire savings, so this is the expensive choice.
+//	"gzip"   — default. Strips `br` from Accept-Encoding before fasthttp's
+//	           encoder picks, so the best encoding advertised falls back to gzip
+//	           (or deflate). ~3x cheaper than brotli on the same workload.
+//
+// Any unknown value is treated as "gzip" but logs a warning — a deploy-time
+// typo in the flag would otherwise silently downgrade compression config.
+func applyResponseCompression(app *fiber.App, mode string) {
+	normalized := strings.ToLower(strings.TrimSpace(mode))
+	switch normalized {
+	case common.ResponseCompressionOff:
+		return
+	case common.ResponseCompressionBrotli:
+		app.Use(compress.New(compress.Config{Level: compress.LevelBestSpeed}))
+	default: // "gzip", "", or anything else
+		if normalized != common.ResponseCompressionGzip && normalized != "" {
+			utils.LavaFormatWarning("unknown response-compression mode, falling back to gzip",
+				nil, utils.LogAttr("mode", mode))
+		}
+		app.Use(stripBrotliAcceptEncoding)
+		app.Use(compress.New(compress.Config{Level: compress.LevelBestSpeed}))
+	}
+}
+
+// stripBrotliAcceptEncoding removes the `br` coding from Accept-Encoding before
+// downstream middleware inspects it. Preserves q-values on remaining codings and
+// is a no-op when the header is missing. Case-insensitive per RFC 7231 §5.3.4.
+func stripBrotliAcceptEncoding(c *fiber.Ctx) error {
+	ae := c.Get(fiber.HeaderAcceptEncoding)
+	if ae == "" {
+		return c.Next()
+	}
+	parts := strings.Split(ae, ",")
+	kept := parts[:0]
+	stripped := false
+	for _, part := range parts {
+		coding := part
+		if semi := strings.IndexByte(coding, ';'); semi >= 0 {
+			coding = coding[:semi]
+		}
+		if strings.EqualFold(strings.TrimSpace(coding), "br") {
+			stripped = true
+			continue
+		}
+		kept = append(kept, part)
+	}
+	if stripped {
+		if len(kept) == 0 {
+			// Client advertised only `br`. An absent Accept-Encoding is
+			// semantically different from an empty-value one: many stacks
+			// (fasthttp included) treat absent as "no client preference, pick
+			// your default" while empty-value can short-circuit content
+			// negotiation entirely. Delete the header to fall back to default.
+			c.Request().Header.Del(fiber.HeaderAcceptEncoding)
+		} else {
+			c.Request().Header.Set(fiber.HeaderAcceptEncoding, strings.Join(kept, ","))
+		}
+	}
+	return c.Next()
+}
+
 // setup a common preflight and cors configuration allowing wild cards and preflight caching.
 func createAndSetupBaseAppListener(cmdFlags common.ConsumerCmdFlags, healthCheckPath string, healthReporter HealthReporter) *fiber.App {
 	app := fiber.New(fiber.Config{
@@ -384,7 +463,7 @@ func createAndSetupBaseAppListener(cmdFlags common.ConsumerCmdFlags, healthCheck
 		JSONDecoder: json.Unmarshal,
 	})
 	app.Use(favicon.New())
-	app.Use(compress.New(compress.Config{Level: compress.LevelBestSpeed}))
+	applyResponseCompression(app, cmdFlags.ResponseCompression)
 	app.Use(func(c *fiber.Ctx) error {
 		// we set up wild card by default.
 		c.Set("Access-Control-Allow-Origin", cmdFlags.OriginFlag)

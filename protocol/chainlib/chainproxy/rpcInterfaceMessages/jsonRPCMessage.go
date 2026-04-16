@@ -69,7 +69,11 @@ func (jm JsonrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (ha
 	if result.Error == nil { // no error
 		return false, ""
 	}
-	return result.Error.Message != "", result.Error.Message
+	if result.Error.Message == "" {
+		return false, ""
+	}
+
+	return true, result.Error.Message
 }
 
 func ConvertJsonRPCMsg(rpcMsg *rpcclient.JsonrpcMessage) (*JsonrpcMessage, error) {

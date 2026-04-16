@@ -49,6 +49,11 @@ protocol/rpcprovider/key.pem
 .storage/
 badger_test
 
+# Local load-test / adversarial probing fixtures (target lists, bodies, results).
+# Must never be committed — the target lists in particular can look like
+# reconnaissance data to automated scanners.
+attack/
+
 config/health_examples/health_template_gen.yml
 # Yarn
 .yarn/

@@ -116,6 +116,8 @@ func TestUsedProviderContextTimeout(t *testing.T) {
 
 // NEW TEST: Verify shouldRetryWithThisError logic with unsupported methods
 func TestShouldRetryWithThisError(t *testing.T) {
+	up := NewUsedProviders(nil)
+
 	t.Run("Should NOT retry unsupported methods", func(t *testing.T) {
 		unsupportedErrors := []error{
 			fmt.Errorf("method not found"),
@@ -124,14 +126,14 @@ func TestShouldRetryWithThisError(t *testing.T) {
 		}
 
 		for _, err := range unsupportedErrors {
-			result := shouldRetryWithThisError(err)
+			result := up.shouldRetryWithThisError(err)
 			require.False(t, result, "Should not retry unsupported method: %s", err.Error())
 		}
 	})
 
 	t.Run("Should retry session sync loss", func(t *testing.T) {
 		err := status.Error(codes.Code(SessionOutOfSyncGRPCCode), "session out of sync")
-		result := shouldRetryWithThisError(err)
+		result := up.shouldRetryWithThisError(err)
 		require.True(t, result, "Should retry session sync loss")
 	})
 
@@ -143,7 +145,7 @@ func TestShouldRetryWithThisError(t *testing.T) {
 		}
 
 		for _, err := range normalErrors {
-			result := shouldRetryWithThisError(err)
+			result := up.shouldRetryWithThisError(err)
 			require.False(t, result, "Should not retry normal error: %s", err.Error())
 		}
 	})

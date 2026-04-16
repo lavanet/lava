@@ -1496,24 +1496,20 @@ func TestHasUnsupportedMethodErrors(t *testing.T) {
 		require.True(t, result.IsNodeError, "Should still be a node error")
 
 		// Verify the message itself would not be classified as unsupported
-		isUnsupported := common.IsUnsupportedMethodMessage(string(result.Reply.Data))
+		isUnsupported := common.IsUnsupportedMethodError("", 0, string(result.Reply.Data))
 		require.False(t, isUnsupported, "Smart contract 'identity not found' should NOT match unsupported patterns")
 	})
 
-	t.Run("Backward compatibility - message pattern check still works", func(t *testing.T) {
-		// Verify that the old message-based detection still works
-		// for backward compatibility
-
-		// Actual unsupported method messages
+	t.Run("Registry-based classification", func(t *testing.T) {
+		// Actual unsupported method messages (SubCategoryUnsupportedMethod)
+		// Note: "method not supported" (-32004) is retryable on another provider — not in this list
 		unsupportedMessages := []string{
 			"method not found",
 			"endpoint not found",
-			"method not supported",
-			"-32601",
 		}
 
 		for _, msg := range unsupportedMessages {
-			isUnsupported := common.IsUnsupportedMethodMessage(msg)
+			isUnsupported := common.IsUnsupportedMethodError("", 0, msg)
 			require.True(t, isUnsupported, "Message '%s' should be detected as unsupported", msg)
 		}
 
@@ -1525,10 +1521,92 @@ func TestHasUnsupportedMethodErrors(t *testing.T) {
 		}
 
 		for _, msg := range smartContractMessages {
-			isUnsupported := common.IsUnsupportedMethodMessage(msg)
+			isUnsupported := common.IsUnsupportedMethodError("", 0, msg)
 			require.False(t, isUnsupported, "Smart contract message '%s' should NOT be detected as unsupported", msg)
 		}
 	})
+}
+
+// TestRelayProcessor_RetryDecisionHonorsRetryableFlag covers the retry gate at
+// the relay processor level — the single authority consulted by both the
+// consumer and smart-router state machines via HasRequiredNodeResults →
+// shouldRetryRelay → HasNonRetryableUserFacingErrors. We assert two symmetric
+// cases:
+//   - a non-retryable node error (IsNonRetryable=true) short-circuits retries
+//   - a retryable node error (IsNonRetryable=false) allows retries
+func TestRelayProcessor_RetryDecisionHonorsRetryableFlag(t *testing.T) {
+	cases := []struct {
+		name             string
+		nonRetryable     bool
+		wantNonRetryable bool
+	}{
+		{name: "non-retryable node error stops retries", nonRetryable: true, wantNonRetryable: true},
+		{name: "retryable node error allows retries", nonRetryable: false, wantNonRetryable: false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			})
+			chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+			if closeServer != nil {
+				defer closeServer()
+			}
+			require.NoError(t, err)
+			chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			require.NoError(t, err)
+			protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
+
+			usedProviders := lavasession.NewUsedProviders(nil)
+			relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
+
+			lockCtx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
+			defer cancel()
+			require.Nil(t, usedProviders.TryLockSelection(lockCtx))
+			usedProviders.AddUsed(lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}}, nil)
+
+			go SendNodeErrorWithRetryable(relayProcessor, "lava@test", time.Millisecond*5, tc.nonRetryable)
+
+			waitCtx, waitCancel := context.WithTimeout(context.Background(), time.Millisecond*200)
+			defer waitCancel()
+			require.NoError(t, relayProcessor.WaitForResults(waitCtx))
+
+			require.Equal(t, tc.wantNonRetryable, relayProcessor.HasNonRetryableUserFacingErrors(),
+				"HasNonRetryableUserFacingErrors mismatch — retry decision must rest on the IsNonRetryable flag")
+		})
+	}
+}
+
+// TestIsNonRetryableNodeError_Classification verifies the classifier helper
+// the consumer/smart-router hot paths use to populate RelayResult.IsNonRetryable
+// correctly separates retryable transient errors from terminal deterministic
+// ones. "execution reverted" is the canonical case that regressed before this
+// fix (non-retryable in the registry, but the old code ignored Retryable=false
+// for node errors that weren't unsupported-method or user-input).
+func TestIsNonRetryableNodeError_Classification(t *testing.T) {
+	cases := []struct {
+		name    string
+		chainID string
+		status  int
+		message string
+		want    bool
+	}{
+		{name: "execution reverted is non-retryable", chainID: "ETH1", status: 200, message: "execution reverted", want: true},
+		{name: "execution reverted with data is non-retryable", chainID: "ETH1", status: 200, message: "execution reverted: NFT not found", want: true},
+		{name: "unsupported method is non-retryable (Retryable=false)", chainID: "ETH1", status: 404, message: "method not found", want: true},
+		{name: "user parse error is non-retryable", chainID: "ETH1", status: -32700, message: "parse error", want: true},
+		{name: "generic transient error is retryable", chainID: "ETH1", status: 502, message: "bad gateway", want: false},
+		{name: "unknown message is retryable (returns false)", chainID: "ETH1", status: 0, message: "totally unfamiliar garbage", want: false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := common.IsNonRetryableNodeError(tc.chainID, tc.status, tc.message)
+			require.Equal(t, tc.want, got, "message %q", tc.message)
+		})
+	}
 }
 
 // TestCrossValidationEmptyArrayResponse tests that empty arrays [] are valid for cross-validation

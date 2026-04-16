@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 	spectypes "github.com/lavanet/lava/v5/types/spec"
+	"github.com/lavanet/lava/v5/utils"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 )
@@ -379,7 +379,15 @@ type RelayResult struct {
 	ProviderTrailer     metadata.MD // the provider trailer attached to the request. used to transfer useful information (which is not signed so shouldn't be trusted completely).
 	IsNodeError         bool
 	ResponseHash        [32]byte // cached SHA256 hash of Reply.Data for cross-validation comparison, zero-value if not computed
-	IsUnsupportedMethod bool     // Indicates this node error is an unsupported method
+	IsUnsupportedMethod bool     // Indicates this node error is an unsupported method (zero CU, cached)
+	// IsNonRetryable is the umbrella flag the retry state machine consults:
+	// it's true whenever the matched registry LavaError has Retryable=false,
+	// which covers unsupported method, execution reverted, out of gas,
+	// invalid signature, double spend, etc. Retrying on another provider
+	// would just reproduce the same deterministic failure.
+	// IsUnsupportedMethod is an independent subset flag derived from the
+	// SubCategory and used to gate the zero-CU carve-out and caching policy.
+	IsNonRetryable bool
 }
 
 func (rr *RelayResult) GetReplyServer() pairingtypes.Relayer_RelaySubscribeClient {
@@ -425,4 +433,3 @@ func GetIpFromGrpcContext(ctx context.Context) string {
 	}
 	return ""
 }
-

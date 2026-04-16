@@ -124,6 +124,14 @@ type HTTPDirectRPCConnection struct {
 	nodeUrl  common.NodeUrl
 	protocol DirectRPCProtocol
 	client   *http.Client
+
+	// healthy reflects the last observed transport outcome (dial / TLS / read).
+	// It is updated by every SendRequest / DoHTTPRequest call: any transport-level
+	// error flips it to false; a successful exchange (including HTTP 4xx / 5xx,
+	// which are application-level errors, not transport failures) flips it back
+	// to true. The comprehensive probe path reads this via IsHealthy to decide
+	// whether to unblock a backup provider at epoch transition.
+	healthy atomic.Bool
 }
 
 // WebSocketDirectRPCConnection implements DirectRPCConnection for WebSocket/WSS
@@ -197,11 +205,25 @@ func NewDirectRPCConnection(
 
 	switch protocol {
 	case DirectRPCProtocolHTTP, DirectRPCProtocolHTTPS:
-		return &HTTPDirectRPCConnection{
+		// Use the shared optimized client so every smart-router HTTP connection
+		// benefits from:
+		//   - DisableCompression=true        (skips ~30% CPU on auto-gunzip inflate)
+		//   - MaxIdleConnsPerHost pooling    (reuses TCP conns under load)
+		//   - TLS session cache              (faster reconnects, less handshake CPU)
+		//   - ForceAttemptHTTP2              (multiplexes streams on one conn)
+		//
+		// The backing transport is a singleton from common.SharedHttpTransport(),
+		// so all HTTPDirectRPCConnection instances share one connection pool.
+		// Per-request deadlines still come from the caller's context via
+		// http.NewRequestWithContext; the client's own 5-minute timeout is a
+		// safety backstop.
+		conn := &HTTPDirectRPCConnection{
 			nodeUrl:  nodeUrl,
 			protocol: protocol,
-			client:   &http.Client{},
-		}, nil
+			client:   common.OptimizedHttpClient(),
+		}
+		conn.healthy.Store(true) // Start as healthy until proven otherwise
+		return conn, nil
 
 	case DirectRPCProtocolWS, DirectRPCProtocolWSS:
 		// WebSocket support is handled via a dedicated subscription/streaming layer.
@@ -275,6 +297,9 @@ func (h *HTTPDirectRPCConnection) SendRequest(
 	// (GET/POST/etc.). This transport layer sends bytes and returns bytes; method selection is driven by chain spec.
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, h.nodeUrl.AuthConfig.AddAuthPath(h.nodeUrl.Url), bytes.NewReader(data))
 	if err != nil {
+		// NewRequestWithContext only fails on malformed URL / method; not a transport
+		// failure, so leave `healthy` alone — flipping it here would give false negatives
+		// on programmer error while leaving genuine upstream outages unreported.
 		return nil, fmt.Errorf("failed to build request: %w", err)
 	}
 
@@ -286,17 +311,30 @@ func (h *HTTPDirectRPCConnection) SendRequest(
 		req.Header.Set(k, v)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	// Advertise Accept-Encoding: identity so Go's http client neither auto-adds
+	// `gzip` nor auto-decodes the response. This scoping is smart-router-only:
+	// the shared transport still lets provider chain proxies keep their
+	// standard auto-gzip behavior. Production pprof attributed ~30-39% of CPU
+	// to the auto-decode path (http2gzipReader → compress/flate.decompressor);
+	// removing it dropped the eth router from 2.47 cores to 1.23 cores.
+	// Set *after* caller headers so it cannot be accidentally overridden.
+	req.Header.Set("Accept-Encoding", "identity")
 
 	resp, err := h.client.Do(req)
 	if err != nil {
+		h.healthy.Store(false)
 		return nil, fmt.Errorf("http request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		h.healthy.Store(false)
 		return nil, fmt.Errorf("failed reading response body: %w", err)
 	}
+
+	// Got a response (even 4xx/5xx) — transport is reachable.
+	h.healthy.Store(true)
 
 	// Build response with metadata (HTTP headers)
 	response := &DirectRPCResponse{
@@ -339,8 +377,20 @@ func (h *HTTPDirectRPCConnection) Close() error {
 	return nil
 }
 
+// IsHealthy returns whether the last transport attempt through this connection
+// reached the upstream. Used by probeDirectRPCEndpoints to decide whether a
+// static HTTP backup is safe to unblock at epoch transition.
+//
+// Note: a brand-new connection that has never been exercised returns true
+// (initialized state). That means the first comprehensive probe after startup
+// may optimistically trust an unreachable upstream — the relay hot path and
+// MarkUnhealthy → endpoint.Enabled gate in probeDirectRPCEndpoints catches the
+// typical cases (connection failed at least once; or 5+ relay failures), but a
+// never-hit backup with an unreachable upstream can still be optimistically
+// unblocked on the first epoch. Closing that cold-start gap requires an active
+// probe request (chain-specific no-op), which is a separate follow-up.
 func (h *HTTPDirectRPCConnection) IsHealthy() bool {
-	return true // health tracking is done at the endpoint/QoS layer
+	return h.healthy.Load()
 }
 
 func (h *HTTPDirectRPCConnection) GetURL() string {
@@ -390,10 +440,15 @@ func (h *HTTPDirectRPCConnection) DoHTTPRequest(
 	if params.Body != nil && params.ContentType != "" {
 		req.Header.Set("Content-Type", params.ContentType)
 	}
+	// Scoped smart-router override: skip upstream gzip auto-negotiation. See
+	// SendRequest above for the full rationale. Set last so it cannot be
+	// overridden by per-request headers.
+	req.Header.Set("Accept-Encoding", "identity")
 
 	// Send request
 	resp, err := h.client.Do(req)
 	if err != nil {
+		h.healthy.Store(false)
 		return nil, fmt.Errorf("http request failed: %w", err)
 	}
 	defer resp.Body.Close()
@@ -401,8 +456,12 @@ func (h *HTTPDirectRPCConnection) DoHTTPRequest(
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		h.healthy.Store(false)
 		return nil, fmt.Errorf("failed reading response: %w", err)
 	}
+
+	// Got a response (even 4xx/5xx) — transport is reachable.
+	h.healthy.Store(true)
 
 	// Return complete response (status + headers + body)
 	// Don't return error for 4xx/5xx - client needs the response

@@ -10,9 +10,9 @@ import (
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/parser"
-	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 	spectypes "github.com/lavanet/lava/v5/types/spec"
+	"github.com/lavanet/lava/v5/utils"
 )
 
 // EndpointChainFetcher implements chaintracker.ChainFetcher for direct RPC endpoints.
@@ -125,6 +125,12 @@ func (ecf *EndpointChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64
 
 // FetchBlockHashByNum fetches the block hash for a given block number.
 // Used by ChainTracker for fork detection.
+//
+// For Solana-family chains, if the endpoint returns error code -32004
+// ("Block not available for slot X"), this method retries with previous slot
+// numbers (blockNum-1, blockNum-2, ...) up to maxBlockNotAvailableRetries times.
+// This handles both propagation delays (the latest slot data hasn't reached the
+// node yet) and skipped slots (Solana occasionally produces no block for a slot).
 func (ecf *EndpointChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
 	parsing, apiCollection, ok := ecf.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM)
 	tagName := spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM.String()
@@ -144,15 +150,57 @@ func (ecf *EndpointChainFetcher) FetchBlockHashByNum(ctx context.Context, blockN
 		)
 	}
 
-	// Substitute block number into template
+	if blockNum < 0 {
+		return "", utils.LavaFormatError(tagName+" invalid negative block number", nil,
+			utils.LogAttr("blockNum", blockNum),
+			utils.LogAttr("chainID", ecf.chainID),
+		)
+	}
+
+	if !common.IsSolanaFamily(ecf.chainID) {
+		hash, _, err := ecf.fetchSingleBlockHash(ctx, blockNum, parsing, collectionData.Type, tagName)
+		return hash, err
+	}
+
+	fetchFn := func(fCtx context.Context, block int64) (string, []byte, error) {
+		return ecf.fetchSingleBlockHash(fCtx, block, parsing, collectionData.Type, tagName)
+	}
+	hash, fetchedBlock, err := chainlib.FetchBlockHashWithSolanaRetry(ctx, blockNum, chainlib.SameSlotRetryDelay, fetchFn)
+	if err != nil {
+		return "", utils.LavaFormatError(tagName+" all block-not-available retries exhausted", err,
+			utils.LogAttr("originalBlock", blockNum),
+			utils.LogAttr("chainID", ecf.chainID),
+			utils.LogAttr("endpoint", ecf.endpointURL),
+		)
+	}
+	if fetchedBlock != blockNum {
+		utils.LavaFormatWarning("Chain Tracker fetched previous slot after block-not-available",
+			nil,
+			utils.LogAttr("originalBlock", blockNum),
+			utils.LogAttr("fetchedBlock", fetchedBlock),
+			utils.LogAttr("chainID", ecf.chainID),
+			utils.LogAttr("endpoint", ecf.endpointURL),
+		)
+	}
+	return hash, nil
+}
+
+// fetchSingleBlockHash fetches the block hash for a single block number.
+// Returns the hash, the raw response data (for error inspection), and any error.
+func (ecf *EndpointChainFetcher) fetchSingleBlockHash(
+	ctx context.Context,
+	blockNum int64,
+	parsing *spectypes.ParseDirective,
+	connectionType string,
+	tagName string,
+) (string, []byte, error) {
 	requestData := []byte(fmt.Sprintf(parsing.FunctionTemplate, blockNum))
 
-	// Send request via direct RPC connection
 	start := time.Now()
-	responseData, err := ecf.sendRawRequest(ctx, requestData, collectionData.Type, parsing.ApiName)
+	responseData, err := ecf.sendRawRequest(ctx, requestData, connectionType, parsing.ApiName)
 	if err != nil {
 		timeTaken := time.Since(start)
-		return "", utils.LavaFormatDebug(tagName+" failed sending request",
+		return "", nil, utils.LavaFormatDebug(tagName+" failed sending request",
 			utils.LogAttr("sendTime", timeTaken),
 			utils.LogAttr("error", err),
 			utils.LogAttr("chainID", ecf.chainID),
@@ -160,24 +208,22 @@ func (ecf *EndpointChainFetcher) FetchBlockHashByNum(ctx context.Context, blockN
 		)
 	}
 
-	// Craft chain message for response parsing
 	craftData := &chainlib.CraftData{
 		Path:           parsing.ApiName,
 		Data:           requestData,
-		ConnectionType: collectionData.Type,
+		ConnectionType: connectionType,
 	}
-	chainMessage, err := chainlib.CraftChainMessage(parsing, collectionData.Type, ecf.chainParser, craftData, ecf.chainFetcherMetadata())
+	chainMessage, err := chainlib.CraftChainMessage(parsing, connectionType, ecf.chainParser, craftData, ecf.chainFetcherMetadata())
 	if err != nil {
-		return "", utils.LavaFormatError(tagName+" failed CraftChainMessage", err,
+		return "", responseData, utils.LavaFormatError(tagName+" failed CraftChainMessage", err,
 			utils.LogAttr("chainID", ecf.chainID),
 			utils.LogAttr("apiInterface", ecf.apiInterface),
 		)
 	}
 
-	// Parse the response
 	parserInput, err := chainlib.FormatResponseForParsing(&pairingtypes.RelayReply{Data: responseData}, chainMessage)
 	if err != nil {
-		return "", utils.LavaFormatDebug(tagName+" failed formatResponseForParsing",
+		return "", responseData, utils.LavaFormatDebug(tagName+" failed formatResponseForParsing",
 			utils.LogAttr("error", err),
 			utils.LogAttr("chainID", ecf.chainID),
 			utils.LogAttr("endpoint", ecf.endpointURL),
@@ -188,7 +234,7 @@ func (ecf *EndpointChainFetcher) FetchBlockHashByNum(ctx context.Context, blockN
 
 	res, err := parser.ParseBlockHashFromReplyAndDecode(parserInput, parsing.ResultParsing, parsing.Parsers)
 	if err != nil {
-		return "", utils.LavaFormatDebug(tagName+" failed ParseBlockHashFromReplyAndDecode",
+		return "", responseData, utils.LavaFormatDebug(tagName+" failed ParseBlockHashFromReplyAndDecode",
 			utils.LogAttr("error", err),
 			utils.LogAttr("chainID", ecf.chainID),
 			utils.LogAttr("endpoint", ecf.endpointURL),
@@ -197,7 +243,7 @@ func (ecf *EndpointChainFetcher) FetchBlockHashByNum(ctx context.Context, blockN
 		)
 	}
 
-	return res, nil
+	return res, responseData, nil
 }
 
 // FetchEndpoint returns the endpoint information for this fetcher.
@@ -210,11 +256,20 @@ func (ecf *EndpointChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint
 	}
 }
 
-// CustomMessage sends a custom message to the endpoint.
-// Required by chaintracker.ChainFetcher interface but not used for block tracking.
+// CustomMessage sends a custom JSON-RPC / REST message to the endpoint.
+// Used by SVMChainTracker to call getLatestBlockhash (which returns slot + block
+// hash + block height together — a single call that has no equivalent in the
+// generic FetchLatestBlockNum path). Returning an error here disables the per-
+// endpoint ChainTracker on Solana, which in turn starves every per-endpoint
+// metric that depends on OnNewBlock (latest_block, fetch_latest_success, …).
+//
+// The `path` argument is accepted for interface compatibility with
+// chainlib.ChainFetcher.CustomMessage but is not needed here: POST callers
+// (like SVMChainTracker) pass the body in `data` with `path=""`, and GET
+// callers already encode the URL suffix in `data` per sendRawRequest's REST
+// convention (see connectionType == "GET" branch below).
 func (ecf *EndpointChainFetcher) CustomMessage(ctx context.Context, path string, data []byte, connectionType string, apiName string) ([]byte, error) {
-	// Not implemented for direct RPC endpoints - not needed for ChainTracker
-	return nil, fmt.Errorf("CustomMessage not supported for EndpointChainFetcher")
+	return ecf.sendRawRequest(ctx, data, connectionType, apiName)
 }
 
 // sendRawRequest sends a raw request to the endpoint and returns the response.
