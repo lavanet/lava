@@ -64,6 +64,19 @@ var (
 
 	RelaysHealthEnableFlagDefault  = true
 	RelayHealthIntervalFlagDefault = 5 * time.Minute
+
+	// polling-relief: process-wide flags that slow chain-tracker polling and widen the
+	// handleConsistency rejection gate. Zero value (flag unset) = no relief, current defaults.
+	// See agent_docs/chaintracker-polling-frequency.
+	PollingReliefTimeMultiplier    int
+	PollingReliefProbGate          float64
+	PollingReliefBlockGapFactor    int64
+)
+
+const (
+	PollingReliefTimeMultiplierFlagName = "polling-time-multiplier"
+	PollingReliefProbGateFlagName       = "consistency-probability-gate"
+	PollingReliefBlockGapFactorFlagName = "consistency-block-gap-factor"
 )
 
 // used to call SetPolicy in base chain parser so we are allowed to run verifications on the addons and extensions
@@ -620,6 +633,62 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	var chainRouter chainlib.ChainRouter
 	var loadManager *ProviderLoadManager
 
+	// polling-relief: process-wide flags that slow chain-tracker polling and widen the
+	// handleConsistency rejection gate. Zero value on any local preserves current defaults.
+	// PollingTimeMultiplier must stay >= 4 to avoid divide-by-zero in chain_tracker.go:463,465.
+	// See agent_docs/chaintracker-polling-frequency.
+	var (
+		pollingTimeMultiplier     int
+		consistencyProbGate       float64
+		consistencyBlockGapFactor int64
+	)
+	if PollingReliefTimeMultiplier != 0 {
+		if PollingReliefTimeMultiplier < 4 || PollingReliefTimeMultiplier > 16 {
+			utils.LavaFormatWarning("--"+PollingReliefTimeMultiplierFlagName+" out of allowed range [4,16]; reverting to default", nil,
+				utils.LogAttr("provided", PollingReliefTimeMultiplier),
+				utils.LogAttr("chainID", rpcProviderEndpoint.ChainID),
+			)
+		} else {
+			pollingTimeMultiplier = PollingReliefTimeMultiplier
+		}
+	}
+	if PollingReliefProbGate != 0 {
+		if PollingReliefProbGate <= 0 || PollingReliefProbGate > 1.0 {
+			utils.LavaFormatWarning("--"+PollingReliefProbGateFlagName+" out of allowed range (0,1]; reverting to default", nil,
+				utils.LogAttr("provided", PollingReliefProbGate),
+				utils.LogAttr("chainID", rpcProviderEndpoint.ChainID),
+			)
+		} else {
+			consistencyProbGate = PollingReliefProbGate
+		}
+	}
+	if PollingReliefBlockGapFactor != 0 {
+		if PollingReliefBlockGapFactor < 2 || PollingReliefBlockGapFactor > 8 {
+			utils.LavaFormatWarning("--"+PollingReliefBlockGapFactorFlagName+" out of allowed range [2,8]; reverting to default", nil,
+				utils.LogAttr("provided", PollingReliefBlockGapFactor),
+				utils.LogAttr("chainID", rpcProviderEndpoint.ChainID),
+			)
+		} else {
+			consistencyBlockGapFactor = PollingReliefBlockGapFactor
+		}
+	}
+	if pollingTimeMultiplier != 0 || consistencyProbGate > 0 || consistencyBlockGapFactor != 0 {
+		effectiveMultiplier := pollingTimeMultiplier
+		if effectiveMultiplier == 0 {
+			effectiveMultiplier = chaintracker.MostFrequentPollingMultiplier
+		}
+		utils.LavaFormatInfo("polling-relief active",
+			utils.LogAttr("chainID", rpcProviderEndpoint.ChainID),
+			utils.LogAttr("apiInterface", apiInterface),
+			utils.LogAttr("pollingTimeMultiplier", effectiveMultiplier),
+			utils.LogAttr("consistencyProbGate", consistencyProbGate),
+			utils.LogAttr("consistencyBlockGapFactor", consistencyBlockGapFactor),
+			utils.LogAttr("expectedPollIntervalMs_fast", (averageBlockTime / time.Duration(effectiveMultiplier/4)).Milliseconds()),
+			utils.LogAttr("expectedPollIntervalMs_medium", (averageBlockTime / time.Duration(effectiveMultiplier/2)).Milliseconds()),
+			utils.LogAttr("expectedPollIntervalMs_slow", (averageBlockTime / time.Duration(effectiveMultiplier)).Milliseconds()),
+		)
+	}
+
 	// Provider test-mode should not depend on external node URLs.
 	// In test-mode, relays are served from predefined responses; routing to the node is unexpected.
 	if rpcp.testMode {
@@ -712,6 +781,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 				Pmetrics:              rpcp.providerMetricsManager,
 				ChainId:               chainID,
 				ParseDirectiveEnabled: chainParser.ParseDirectiveEnabled(),
+				PollingTimeMultiplier: pollingTimeMultiplier,
 			}
 
 			chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
@@ -837,7 +907,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		)
 	}
 
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, chainTracker, rpcp.privKey, rpcp.cache, rpcp.cacheLatestBlockEnabled, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager, rpcp, numberOfRetriesAllowedOnNodeErrors, testModeConfig, resourceLimiter, rpcp.enableConsistencyChecks)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, chainTracker, rpcp.privKey, rpcp.cache, rpcp.cacheLatestBlockEnabled, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider, loadManager, rpcp, numberOfRetriesAllowedOnNodeErrors, testModeConfig, resourceLimiter, rpcp.enableConsistencyChecks, consistencyProbGate, consistencyBlockGapFactor)
 	// set up grpc listener
 	var listener *ProviderListener
 	func() {
@@ -1296,6 +1366,9 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().Bool("test_mode", false, "enable test mode - provider returns predefined responses instead of querying real nodes")
 	cmdRPCProvider.Flags().String("test_responses", "", "path to JSON file containing test responses for different API methods (required when test_mode is enabled)")
 	cmdRPCProvider.Flags().Uint64Var(&chaintracker.PollingMultiplier, chaintracker.PollingMultiplierFlagName, 1, "when set, forces the chain tracker to poll more often, improving the sync at the cost of more queries")
+	cmdRPCProvider.Flags().IntVar(&PollingReliefTimeMultiplier, PollingReliefTimeMultiplierFlagName, 0, "polling-relief: override MostFrequentPollingMultiplier (default 16). Allowed [4,16]; values outside revert to default. Smaller value = slower polling.")
+	cmdRPCProvider.Flags().Float64Var(&PollingReliefProbGate, PollingReliefProbGateFlagName, 0, "polling-relief: override handleConsistency probabilityBlockError gate (default 0.4). Allowed (0,1]; values outside revert to default.")
+	cmdRPCProvider.Flags().Int64Var(&PollingReliefBlockGapFactor, PollingReliefBlockGapFactorFlagName, 0, "polling-relief: override handleConsistency blockLagForQosSync multiplier (default 2). Allowed [2,8]; values outside revert to default.")
 	cmdRPCProvider.Flags().DurationVar(&SpecValidationInterval, SpecValidationIntervalFlagName, SpecValidationInterval, "determines the interval of which to run validation on the spec for all connected chains")
 	cmdRPCProvider.Flags().DurationVar(&SpecValidationIntervalDisabledChains, SpecValidationIntervalDisabledChainsFlagName, SpecValidationIntervalDisabledChains, "determines the interval of which to run validation on the spec for all disabled chains, determines recovery time")
 	cmdRPCProvider.Flags().Bool(common.RelaysHealthEnableFlag, true, "enables relays health check")

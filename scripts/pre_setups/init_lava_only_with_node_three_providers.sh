@@ -21,7 +21,7 @@ sleep 5
 wait_for_lava_node_to_start
 
 GASPRICE="0.00002ulava"
-specs=$(get_all_specs)
+specs="./specs/mainnet-1/specs/tendermint.json,./specs/mainnet-1/specs/ibc.json,./specs/mainnet-1/specs/cosmossdk.json,./specs/testnet-2/specs/lava.json"
 lavad tx gov submit-legacy-proposal spec-add $specs --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE &
 wait_next_block
 wait_next_block
@@ -64,11 +64,14 @@ screen -d -m -S cache_consumer bash -c "source ~/.bashrc; lavap cache \
 127.0.0.1:20100 --metrics_address 0.0.0.0:20200 --log_level debug 2>&1 | tee $LOGS_DIR/CACHE_CONSUMER.log" && sleep 0.25
 sleep 2;
 
+# Provider 1 runs with polling-relief flags enabled for A/B comparison.
+# Providers 2 and 3 below stay on positional args with no relief flags as baseline controls.
 screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
 $PROVIDER1_LISTENER LAV1 rest '$LAVA_REST' \
 $PROVIDER1_LISTENER LAV1 tendermintrpc '$LAVA_RPC,$LAVA_RPC_WS' \
 $PROVIDER1_LISTENER LAV1 grpc '$LAVA_GRPC' \
-$EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 --chain-id lava --metrics-listen-address ":7766" 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
+$EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 --chain-id lava --metrics-listen-address \":7766\" \
+--polling-time-multiplier 4 --consistency-probability-gate 0.7 --consistency-block-gap-factor 4 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 
 screen -d -m -S provider2 bash -c "source ~/.bashrc; lavap rpcprovider \
 $PROVIDER2_LISTENER LAV1 rest '$LAVA_REST' \

@@ -126,6 +126,8 @@ type RPCProviderServer struct {
 	testModeConfig                  *TestModeConfig
 	resourceLimiter                 *ResourceLimiter
 	enableConsistency               bool
+	consistencyProbGate             float64 // polling-relief: 0 = use default 0.4 in handleConsistency
+	consistencyBlockGapFactor       int64   // polling-relief: 0 = use default 2 in handleConsistency
 }
 
 type RewardServerInf interface {
@@ -173,6 +175,8 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	testModeConfig *TestModeConfig,
 	resourceLimiter *ResourceLimiter,
 	enableConsistency bool,
+	consistencyProbGate float64,
+	consistencyBlockGapFactor int64,
 ) {
 	rpcps.cache = cache
 	rpcps.cacheLatestBlockEnabled = cacheLatestBlockEnabled
@@ -200,6 +204,16 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	rpcps.verificationsStatusGetter = verificationsStatusGetter
 	rpcps.resourceLimiter = resourceLimiter
 	rpcps.enableConsistency = enableConsistency
+	rpcps.consistencyProbGate = consistencyProbGate
+	rpcps.consistencyBlockGapFactor = consistencyBlockGapFactor
+	if consistencyProbGate > 0 || consistencyBlockGapFactor > 0 {
+		utils.LavaFormatInfo("polling-relief consistency-gate active on provider server",
+			utils.LogAttr("chainID", rpcProviderEndpoint.ChainID),
+			utils.LogAttr("apiInterface", rpcProviderEndpoint.ApiInterface),
+			utils.LogAttr("consistencyProbGate", consistencyProbGate),
+			utils.LogAttr("consistencyBlockGapFactor", consistencyBlockGapFactor),
+		)
+	}
 
 	rpcps.initRelaysMonitor(ctx)
 }
@@ -1269,14 +1283,24 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, baseRelay
 			utils.LavaFormatError("invalid rate params", nil, utils.Attribute{Key: "changeTime", Value: changeTime}, utils.Attribute{Key: "averageBlockTime", Value: averageBlockTime}, utils.Attribute{Key: "eventRate", Value: eventRate}, utils.Attribute{Key: "time", Value: time.Until(deadline)}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "blockGap", Value: blockGap})
 		} else {
 			probabilityBlockError = provideroptimizer.CumulativeProbabilityFunctionForPoissonDist(uint64(blockGap-1), eventRate) // this calculates the probability we received insufficient blocks. too few when we don't wait
-			if debugConsistency {
+			// polling-relief: when the consistency gate is widened we want field visibility without flipping debugConsistency globally.
+			if debugConsistency || rpcps.consistencyProbGate > 0 {
 				utils.LavaFormatDebug("consistency calculations breakdown", utils.Attribute{Key: "averageBlockTime", Value: averageBlockTime}, utils.Attribute{Key: "eventRate", Value: eventRate}, utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "time", Value: time.Until(deadline)}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "blockGap", Value: blockGap})
 			}
 		}
 	}
 	// we only bail if there is no chance for the provider to get to the requested block and the consumer has already got a response from a different provider with that block
-	if (blockGap > blockLagForQosSync*2 || (blockGap > 1 && probabilityBlockError > 0.4)) && (seenBlock >= latestBlock) {
-		return latestBlock, 0, utils.LavaFormatWarning("Requested a block that is too new", protocolerrors.ConsistencyError, utils.Attribute{Key: "blockGap", Value: blockGap}, utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "seenBlock", Value: seenBlock}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
+	// polling-relief: zero-value on either field preserves the historical defaults (0.4 and 2).
+	probGate := 0.4
+	if rpcps.consistencyProbGate > 0 {
+		probGate = rpcps.consistencyProbGate
+	}
+	gapFactor := int64(2)
+	if rpcps.consistencyBlockGapFactor > 0 {
+		gapFactor = rpcps.consistencyBlockGapFactor
+	}
+	if (blockGap > blockLagForQosSync*gapFactor || (blockGap > 1 && probabilityBlockError > probGate)) && (seenBlock >= latestBlock) {
+		return latestBlock, 0, utils.LavaFormatWarning("Requested a block that is too new", protocolerrors.ConsistencyError, utils.Attribute{Key: "blockGap", Value: blockGap}, utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "probGate", Value: probGate}, utils.Attribute{Key: "gapFactor", Value: gapFactor}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "seenBlock", Value: seenBlock}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
 	}
 
 	if !ok {
@@ -1299,7 +1323,8 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, baseRelay
 		// meaning we can't guarantee it will work since chainTracker didn't see this requested block yet
 		return 0, sleptTime, utils.LavaFormatWarning("requested block is too new", nil, utils.Attribute{Key: "sleptTime", Value: sleptTime}, utils.Attribute{Key: "requested", Value: requestBlock}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "seenBlock", Value: seenBlock})
 	}
-	if debugConsistency {
+	if debugConsistency || rpcps.consistencyProbGate > 0 {
+		// polling-relief: sleptTime is the canary for consistency-wait regressions while relief is active.
 		utils.LavaFormatDebug("consistency sleep done", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "sleptTime", Value: sleptTime})
 	}
 	return latestBlock, sleptTime, nil

@@ -114,6 +114,143 @@ func TestHandleConsistency_TooNewBailsFast(t *testing.T) {
 	require.Equal(t, time.Duration(0), slept)
 }
 
+// TestHandleConsistency_ReliefGate_WidensRejection verifies the polling-relief gate.
+// With blockLagForQosSync=1 and blockGap=3, the default gate (blockLagForQosSync*2 = 2)
+// bails because 3 > 2. The relief-configured gate (*4 = 4) does NOT bail because 3 <= 4.
+// The changeTime is intentionally very stale so eventRate is large and probabilityBlockError
+// is ~0, keeping the second (Poisson) clause inert for both configs so the factor clause
+// is what actually differentiates them.
+func TestHandleConsistency_ReliefGate_WidensRejection(t *testing.T) {
+	newTracker := func() *sequenceChainTracker {
+		return &sequenceChainTracker{
+			DummyChainTracker: &chaintracker.DummyChainTracker{},
+			// pre-gate read sees 1000; subsequent wait-loop reads see 1003 so the
+			// relief path exits cleanly without hitting the post-wait "too new" branch.
+			seq:        []int64{1000, 1003, 1003, 1003, 1003, 1003},
+			changeTime: time.Now().Add(-10 * time.Second),
+		}
+	}
+
+	// averageBlockTime is small and changeTime is very stale => eventRate ~= 40,
+	// Poisson CDF(blockGap-1=2, lambda=40) is essentially 0, so probabilityBlockError ~= 0.
+	// That makes the second clause of the gate inert and isolates the factor-clause difference.
+	const (
+		baseRelayTimeout            = time.Second
+		seenBlock                   = int64(1003)
+		requestBlock                = int64(1003)
+		averageBlockTime            = 250 * time.Millisecond
+		blockLagForQosSync          = int64(1)
+		blockDistanceToFinalization = uint32(0)
+		blocksInFinalizationData    = uint32(0)
+	)
+
+	// Default server: no relief. gapFactor=2 -> bails because blockGap(3) > 1*2.
+	defaultServer := &RPCProviderServer{
+		chainTracker:        newTracker(),
+		rpcProviderEndpoint: &lavasession.RPCProviderEndpoint{ChainID: "TEST"},
+	}
+	ctxDefault, cancelDefault := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancelDefault()
+	_, _, errDefault := defaultServer.handleConsistency(
+		ctxDefault,
+		baseRelayTimeout,
+		seenBlock,
+		requestBlock,
+		averageBlockTime,
+		blockLagForQosSync,
+		blockDistanceToFinalization,
+		blocksInFinalizationData,
+	)
+	require.Error(t, errDefault, "default gate (gapFactor=2) should bail on blockGap=3")
+
+	// Relief server: gapFactor=4, probGate=0.7. Does NOT bail at the gate, enters wait loop,
+	// sees latest catch up to 1003 on the next tracker read, returns without error.
+	reliefServer := &RPCProviderServer{
+		chainTracker:              newTracker(),
+		rpcProviderEndpoint:       &lavasession.RPCProviderEndpoint{ChainID: "TEST"},
+		consistencyProbGate:       0.7,
+		consistencyBlockGapFactor: 4,
+	}
+	ctxRelief, cancelRelief := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancelRelief()
+	latest, slept, errRelief := reliefServer.handleConsistency(
+		ctxRelief,
+		baseRelayTimeout,
+		seenBlock,
+		requestBlock,
+		averageBlockTime,
+		blockLagForQosSync,
+		blockDistanceToFinalization,
+		blocksInFinalizationData,
+	)
+	require.NoError(t, errRelief, "relief gate (gapFactor=4) should NOT bail on blockGap=3")
+	require.Equal(t, int64(1003), latest, "relief path should observe the caught-up latest block")
+	require.Greater(t, slept, time.Duration(0), "relief path should have slept at least once before condition was met")
+}
+
+// TestHandleConsistency_ReliefGate_DefaultsPreserved verifies that a zero-value
+// RPCProviderServer (no relief configured) keeps the pre-patch gate constants
+// (gapFactor=2, probGate=0.4) via the zero-value guards in handleConsistency.
+// The first-clause bail path is already covered by TestHandleConsistency_TooNewBailsFast
+// on a zero-value server; this test adds the second-clause bail and an algebraic-identity
+// check against an explicit-default server.
+func TestHandleConsistency_ReliefGate_DefaultsPreserved(t *testing.T) {
+	t.Run("second clause bails when probabilityBlockError > 0.4", func(t *testing.T) {
+		// Fresh changeTime + small halfTimeLeft => eventRate ~0.025 =>
+		// Poisson CDF(k=1, lambda=0.025) ~ 0.9997, well above 0.4.
+		// Large blockLagForQosSync keeps the first clause dormant so the second clause
+		// (governed by probGate) is what decides.
+		tracker := NewMockChainTracker()
+		tracker.SetLatestBlock(1000, time.Now())
+
+		rpcps := &RPCProviderServer{
+			chainTracker:        tracker,
+			rpcProviderEndpoint: &lavasession.RPCProviderEndpoint{ChainID: "TEST"},
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+		defer cancel()
+
+		_, _, err := rpcps.handleConsistency(
+			ctx,
+			time.Second, // baseRelayTimeout
+			1002,        // seenBlock
+			1002,        // requestBlock; blockGap = 2 > 1
+			time.Second, // averageBlockTime => eventRate ~ halfTimeLeft/1s
+			100,         // blockLagForQosSync: 2*100=200 >> blockGap, first clause dormant
+			0, 0,
+		)
+		require.Error(t, err, "zero-value server must still use probGate=0.4 and bail here")
+	})
+
+	t.Run("zero-value matches explicit-defaults (algebraic identity)", func(t *testing.T) {
+		// Same scenario as TestHandleConsistency_TooNewBailsFast but run twice:
+		// once with both relief fields at zero, once with explicit historical defaults.
+		// The zero-value guards must produce the same bail/no-bail decision in both.
+		runCase := func(probGate float64, gapFactor int64) error {
+			tracker := NewMockChainTracker()
+			tracker.SetLatestBlock(1, time.Now().Add(-time.Second))
+			rpcps := &RPCProviderServer{
+				chainTracker:              tracker,
+				rpcProviderEndpoint:       &lavasession.RPCProviderEndpoint{ChainID: "TEST"},
+				consistencyProbGate:       probGate,
+				consistencyBlockGapFactor: gapFactor,
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+			defer cancel()
+			_, _, err := rpcps.handleConsistency(ctx, time.Second, 1000, 1000, time.Second, 1, 0, 0)
+			return err
+		}
+
+		errZero := runCase(0, 0)
+		errExplicit := runCase(0.4, 2)
+		require.Equal(t,
+			errZero != nil, errExplicit != nil,
+			"zero-value RPCProviderServer must reach the same bail decision as one with consistencyProbGate=0.4, consistencyBlockGapFactor=2",
+		)
+	})
+}
+
 func TestHandleConsistency_SleepsAndCatchesUp(t *testing.T) {
 	// First call returns 1, subsequent calls return 2.
 	seqTracker := &sequenceChainTracker{
