@@ -136,7 +136,7 @@ func TestGrpcChainProxy(t *testing.T) {
 		// Handle the incoming request and provide the desired response
 		wasCalled = true
 	})
-	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceGrpc, serverHandle, nil, "../../", nil)
+	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "GRPCTEST", spectypes.APIInterfaceGrpc, serverHandle, nil, "../../", nil)
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainProxy)
@@ -163,7 +163,7 @@ func TestParsingRequestedBlocksHeadersGrpc(t *testing.T) {
 			w.WriteHeader(244591)
 		}
 	})
-	chainParser, chainRouter, _, closeServer, _, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceGrpc, serverHandler, nil, "../../", nil)
+	chainParser, chainRouter, _, closeServer, _, err := CreateChainLibMocks(ctx, "GRPCTEST", spectypes.APIInterfaceGrpc, serverHandler, nil, "../../", nil)
 	require.NoError(t, err)
 	defer func() {
 		if closeServer != nil {
@@ -231,7 +231,7 @@ func TestSettingBlocksHeadersGrpc(t *testing.T) {
 			w.WriteHeader(244591)
 		}
 	})
-	chainParser, chainRouter, _, closeServer, _, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceGrpc, serverHandler, nil, "../../", nil)
+	chainParser, chainRouter, _, closeServer, _, err := CreateChainLibMocks(ctx, "GRPCTEST", spectypes.APIInterfaceGrpc, serverHandler, nil, "../../", nil)
 	require.NoError(t, err)
 	defer func() {
 		if closeServer != nil {

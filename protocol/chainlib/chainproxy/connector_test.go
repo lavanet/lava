@@ -16,12 +16,73 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/utils"
-	pb_pkg "github.com/lavanet/lava/v5/types/spec"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/websocket"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
+
+// ---------------------------------------------------------------------------
+// Minimal gRPC test service — replaces the deleted protobuf-generated
+// QueryShowChainInfo types that were removed with the blockchain modules.
+// ---------------------------------------------------------------------------
+
+type testRequest struct{}
+
+func (m *testRequest) Reset()                   {}
+func (m *testRequest) ProtoMessage()            {}
+func (m *testRequest) String() string           { return "{}" }
+func (m *testRequest) Marshal() ([]byte, error) { return json.Marshal(m) }
+func (m *testRequest) Unmarshal(b []byte) error { return json.Unmarshal(b, m) }
+
+type testResponse struct {
+	ChainID string `json:"chain_id"`
+}
+
+func (m *testResponse) Reset()                   { *m = testResponse{} }
+func (m *testResponse) ProtoMessage()            {}
+func (m *testResponse) String() string           { b, _ := json.Marshal(m); return string(b) }
+func (m *testResponse) Marshal() ([]byte, error) { return json.Marshal(m) }
+func (m *testResponse) Unmarshal(b []byte) error { return json.Unmarshal(b, m) }
+
+type testQueryServer interface {
+	ShowChainInfo(context.Context, *testRequest) (*testResponse, error)
+}
+
+type testQueryServerImpl struct{}
+
+func (s *testQueryServerImpl) ShowChainInfo(ctx context.Context, _ *testRequest) (*testResponse, error) {
+	md := metadata.New(map[string]string{"content-type": "text/html"})
+	grpc.SendHeader(ctx, md)
+	return &testResponse{ChainID: "Test"}, nil
+}
+
+const testServiceMethod = "lavanet.lava.spec.Query/ShowChainInfo"
+
+func registerTestQueryServer(s *grpc.Server, srv testQueryServer) {
+	s.RegisterService(&grpc.ServiceDesc{
+		ServiceName: "lavanet.lava.spec.Query",
+		HandlerType: (*testQueryServer)(nil),
+		Methods: []grpc.MethodDesc{
+			{
+				MethodName: "ShowChainInfo",
+				Handler: func(srvIface interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+					in := new(testRequest)
+					if err := dec(in); err != nil {
+						return nil, err
+					}
+					if interceptor == nil {
+						return srvIface.(testQueryServer).ShowChainInfo(ctx, in)
+					}
+					info := &grpc.UnaryServerInfo{Server: srvIface, FullMethod: "/" + testServiceMethod}
+					return interceptor(ctx, in, info, func(ctx context.Context, req interface{}) (interface{}, error) {
+						return srvIface.(testQueryServer).ShowChainInfo(ctx, req.(*testRequest))
+					})
+				},
+			},
+		},
+	}, srv)
+}
 
 var (
 	listenerAddress     = "localhost:0"
@@ -50,25 +111,12 @@ func createGRPCServer(t *testing.T) *grpc.Server {
 	return s
 }
 
-type implementedLavanetLavaSpec struct {
-	pb_pkg.UnimplementedQueryServer
-}
-
-func (is *implementedLavanetLavaSpec) ShowChainInfo(ctx context.Context, req *pb_pkg.QueryShowChainInfoRequest) (*pb_pkg.QueryShowChainInfoResponse, error) {
-	md := metadata.New(map[string]string{"content-type": "text/html"})
-	grpc.SendHeader(ctx, md)
-
-	result := &pb_pkg.QueryShowChainInfoResponse{ChainID: "Test"}
-	return result, nil
-}
-
 func createGRPCServerWithRegisteredProto(t *testing.T) *grpc.Server {
 	lis, err := net.Listen("tcp", listenerAddressGrpc)
 	listenerAddressGrpc = lis.Addr().String()
 	require.NoError(t, err)
 	s := grpc.NewServer()
-	lavanetlavaspec := &implementedLavanetLavaSpec{}
-	pb_pkg.RegisterQueryServer(s, lavanetlavaspec)
+	registerTestQueryServer(s, &testQueryServerImpl{})
 	go s.Serve(lis) // serve in a different thread
 	return s
 }
@@ -201,8 +249,8 @@ func TestConnectorGrpcAndInvoke(t *testing.T) {
 		rpc, err := conn.GetRpc(ctx, true)
 		require.NoError(t, err)
 		rpcList[i] = rpc
-		response := &pb_pkg.QueryShowChainInfoResponse{}
-		err = grpc.Invoke(ctx, "lavanet.lava.spec.Query/ShowChainInfo", &pb_pkg.QueryShowChainInfoRequest{}, response, rpc)
+		response := &testResponse{}
+		err = grpc.Invoke(ctx, testServiceMethod, &testRequest{}, response, rpc)
 		require.Equal(t, "Test", response.ChainID)
 		require.NoError(t, err)
 	}

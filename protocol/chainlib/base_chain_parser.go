@@ -13,12 +13,12 @@ import (
 
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/common"
-	"github.com/lavanet/lava/v5/utils"
-	"github.com/lavanet/lava/v5/utils/lavaslices"
-	"github.com/lavanet/lava/v5/utils/maps"
 	epochstorage "github.com/lavanet/lava/v5/types/epoch"
 	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 	spectypes "github.com/lavanet/lava/v5/types/spec"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
+	"github.com/lavanet/lava/v5/utils/maps"
 )
 
 var (
@@ -152,8 +152,8 @@ func (bcp *BaseChainParser) BuildMapFromPolicyQuery(policy PolicyInf, chainId st
 		services[addon] = struct{}{}
 	}
 	for _, consumerExtension := range extensions {
-		// store only relevant apiInterface extensions
-		if consumerExtension.ApiInterface == apiInterface {
+		// store only relevant apiInterface extensions; empty ApiInterface matches all
+		if consumerExtension.ApiInterface == "" || consumerExtension.ApiInterface == apiInterface {
 			services[consumerExtension.Extension] = struct{}{}
 		}
 	}

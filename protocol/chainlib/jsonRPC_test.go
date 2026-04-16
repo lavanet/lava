@@ -14,9 +14,9 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/common"
-	specutils "github.com/lavanet/lava/v5/utils/keeper"
 	plantypes "github.com/lavanet/lava/v5/types/plans"
 	spectypes "github.com/lavanet/lava/v5/types/spec"
+	specutils "github.com/lavanet/lava/v5/utils/keeper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -254,10 +254,10 @@ func TestExtensions(t *testing.T) {
 	configuredExtensions := map[string]struct{}{
 		"archive": {},
 	}
-	spec, err := specutils.GetASpec(specname, "../../", nil, nil)
+	spec, err := specutils.GetSpecFromLocalDirs([]string{"../../specs/mainnet-1/specs/", "../../specs/testnet-2/specs/"}, specname)
 	require.NoError(t, err)
 
-	chainParser.SetPolicy(&plantypes.Policy{ChainPolicies: []plantypes.ChainPolicy{{ChainId: specname, Requirements: []plantypes.ChainRequirement{{Collection: spectypes.CollectionData{ApiInterface: "jsonrpc"}, Extensions: []string{"archive"}}}}}}, specname, "jsonrpc")
+	chainParser.SetPolicy(&plantypes.Policy{ChainPolicies: []plantypes.ChainPolicy{{ChainID: specname, Requirements: []plantypes.ChainRequirement{{Extensions: []string{"archive"}}}}}}, specname, "jsonrpc")
 	parsingForCrafting, apiCollection, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM)
 	require.True(t, ok)
 	collectionData := apiCollection.CollectionData
