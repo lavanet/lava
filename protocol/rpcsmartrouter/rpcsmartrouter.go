@@ -1484,6 +1484,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				EpochDuration:            epochDuration,
 				EnableSelectionStats:     viper.GetBool(common.EnableSelectionStatsHeaderFlag),
 				DebugAddress:             viper.GetString("debug-address"),
+				ResponseCompression:      viper.GetString(common.ResponseCompressionFlag),
 			}
 
 			rpcSmartRouterSharedState := viper.GetBool(common.SharedStateFlag)
@@ -1511,6 +1512,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().Uint(common.MaximumConcurrentProvidersFlagName, 3, "max number of concurrent providers to communicate with")
 	cmdRPCSmartRouter.MarkFlagRequired(common.GeolocationFlag)
 	cmdRPCSmartRouter.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allow insecure provider-dialing. used for development and testing")
+	cmdRPCSmartRouter.Flags().String(common.ResponseCompressionFlag, common.DefaultResponseCompression, "client-facing response compression: gzip (default), brotli, or off")
 	cmdRPCSmartRouter.Flags().Bool("skip-policy-verification", false, "skip policy verification (no-op for smart router)")
 	cmdRPCSmartRouter.Flags().Bool("skip-relay-signing", false, "skip relay signing (no-op for smart router)")
 	cmdRPCSmartRouter.Flags().Uint64Var(&lavasession.MaximumStreamsOverASingleConnection, lavasession.MaximumStreamsOverASingleConnectionFlag, lavasession.DefaultMaximumStreamsOverASingleConnection, "maximum number of parallel streams over a single provider connection")

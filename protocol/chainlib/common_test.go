@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	websocket2 "github.com/gorilla/websocket"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/protocol/common"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -457,6 +459,95 @@ func TestCheckUTXOResponseAndFixReply(t *testing.T) {
 		errorField := parsed["error"]
 		require.NotNil(t, errorField, "error field must be preserved when not null")
 	})
+}
+
+func TestStripBrotliAcceptEncoding(t *testing.T) {
+	cases := []struct {
+		name, input, want string
+		// wantPresent distinguishes "header absent" (fasthttp.Peek == nil) from
+		// "header present with empty value" — the two cases are semantically
+		// different for downstream content negotiation.
+		wantPresent bool
+	}{
+		{"br_only_deletes_header", "br", "", false},
+		{"br_with_gzip_and_deflate", "br, gzip, deflate", " gzip, deflate", true},
+		{"br_with_qvalues", "br;q=1.0, gzip;q=0.8", " gzip;q=0.8", true},
+		{"gzip_only_no_op", "gzip, deflate", "gzip, deflate", true},
+		{"uppercase_BR_stripped", "BR, gzip", " gzip", true},
+		{"br_not_a_token_preserved", "gzip, xbr, deflate", "gzip, xbr, deflate", true},
+		{"empty_header_no_op", "", "", false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			app := fiber.New()
+			var seen string
+			var present bool
+			app.Use(stripBrotliAcceptEncoding)
+			app.Get("/", func(c *fiber.Ctx) error {
+				seen = c.Get(fiber.HeaderAcceptEncoding)
+				present = c.Request().Header.Peek(fiber.HeaderAcceptEncoding) != nil
+				return c.SendStatus(fiber.StatusOK)
+			})
+
+			req := httptest.NewRequest(fiber.MethodGet, "/", nil)
+			if tc.input != "" {
+				req.Header.Set(fiber.HeaderAcceptEncoding, tc.input)
+			}
+			resp, err := app.Test(req)
+			require.NoError(t, err)
+			defer resp.Body.Close()
+			require.Equal(t, tc.want, seen)
+			require.Equal(t, tc.wantPresent, present, "header presence mismatch (absent vs empty-value)")
+		})
+	}
+}
+
+func TestApplyResponseCompression(t *testing.T) {
+	// Payload large enough to exceed fasthttp's built-in minimum compression threshold.
+	payload := []byte(fmt.Sprintf(`{"jsonrpc":"2.0","id":1,"result":"%s"}`, strings.Repeat("a", 4096)))
+
+	cases := []struct {
+		name             string
+		mode             string
+		acceptEncoding   string
+		wantEncoding     string // "" means no Content-Encoding header
+		wantBodyPassThru bool   // true means response body should equal payload byte-for-byte
+	}{
+		{"off_mode_no_compression", common.ResponseCompressionOff, "br, gzip, deflate", "", true},
+		{"brotli_mode_encodes_br_when_advertised", common.ResponseCompressionBrotli, "br, gzip", "br", false},
+		{"brotli_mode_falls_back_to_gzip_when_br_absent", common.ResponseCompressionBrotli, "gzip, deflate", "gzip", false},
+		{"gzip_mode_strips_br_and_falls_back_to_gzip", common.ResponseCompressionGzip, "br, gzip, deflate", "gzip", false},
+		{"gzip_mode_with_no_client_br_still_uses_gzip", common.ResponseCompressionGzip, "gzip", "gzip", false},
+		{"unknown_mode_defaults_to_gzip", "something-unknown", "br, gzip", "gzip", false},
+		{"empty_mode_defaults_to_gzip", "", "br, gzip", "gzip", false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			app := fiber.New()
+			applyResponseCompression(app, tc.mode)
+			app.Get("/", func(c *fiber.Ctx) error {
+				c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSON)
+				return c.Send(payload)
+			})
+
+			req := httptest.NewRequest(fiber.MethodGet, "/", nil)
+			req.Header.Set(fiber.HeaderAcceptEncoding, tc.acceptEncoding)
+			resp, err := app.Test(req)
+			require.NoError(t, err)
+			defer resp.Body.Close()
+
+			require.Equal(t, tc.wantEncoding, resp.Header.Get(fiber.HeaderContentEncoding),
+				"unexpected Content-Encoding")
+
+			if tc.wantBodyPassThru {
+				body, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
+				require.Equal(t, payload, body, "off mode must return raw bytes")
+			}
+		})
+	}
 }
 
 func TestCompareRequestedBlockInBatch(t *testing.T) {
