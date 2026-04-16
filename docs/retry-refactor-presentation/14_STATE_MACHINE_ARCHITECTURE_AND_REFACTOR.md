@@ -806,8 +806,20 @@ The eligibility **execution** (updating `UsedProviders`) stays in the worker via
 | `gotResults` case | Calls `shouldRetry()` → `retryCondition()` (DP#1). Checks selection mode, batch, unsupported (via cross-goroutine call to RelayProcessor), max retries. | Reads `ResultsSummary` from RelayProcessor. Calls `policy.Decide(input)` — one function, all rules. |
 | `ticker.C` case | Same `shouldRetry()` call. No hedge budget. | `policy.Decide(input)` with `IsTickerHedge=true`. Hedge budget is future work. |
 | `batchUpdate` case | DP#11 circuit breaker (manual counter) + DP#12 batch retry (separate logic, separate counters) | `policy.OnSendRelayResult(err, isPairingListEmpty)` — one function merging DP#11 + DP#12. Tracks both counters internally, returns `SendStop` / `SendRetry` / `SendSuccess` |
-| Archive mutation | Hidden inside `stateTransition()` → `UpgradeToArchiveIfNeeded()` | Returned as `MutationOutput{ArchiveAction, CacheHashes}` in `DecisionOutput`. Supports combined side effects (e.g., RemoveArchive + CacheHashes). State machine applies it explicitly. |
+| Archive mutation | Hidden inside `stateTransition()` → `UpgradeToArchiveIfNeeded()` | **Dual path**: When `policy.Decide()` reaches step 6 (the default retry path), it returns `MutationOutput{ArchiveAction, CacheHashes}` and `stateTransition()` applies it via `applyMutation()`. But when `Decide()` returns early (epoch-mismatch at step 4, or any stop/retry before step 6), the mutation is zero-value (`ArchiveNoChange`) and `stateTransition()` falls back to the legacy `UpgradeToArchiveIfNeeded()` which makes its own batch-number-based archive decisions. See note below. |
 | Role | Partial decision-maker (depends on DP#3 for error counts, DP#5 for unsupported) | **Central decision authority** — post-relay rules in `policy.Decide()`, pre-relay rules in `policy.OnSendRelayResult()` (DP#11 + DP#12 merged) |
+
+#### Archive mutation: dual-path note
+
+Archive mutation is **not fully centralized** in `policy.Decide()`. The policy computes a `MutationOutput` only when `Decide()` reaches step 6 (the default retry at the bottom of the evaluation). Early returns — epoch-mismatch retry (step 4), stop decisions (steps 1-3, 5) — return a zero-value mutation (`ArchiveAction: ArchiveNoChange`).
+
+When `stateTransition()` receives a zero-value mutation, it falls back to the legacy `UpgradeToArchiveIfNeeded()`, which applies its own batch-number-based archive logic (add on attempt 1, remove on attempt 2, cache hashes on 2+ errors). This means:
+
+- **Default retry path** (step 7): archive decisions come from `decideMutation()` → `applyMutation()`.
+- **Epoch-mismatch retry** (step 4): archive decisions come from `UpgradeToArchiveIfNeeded()` using the raw batch number.
+- **Stop paths** (steps 1-3, 5): no state transition occurs, so neither path runs.
+
+In practice the two paths produce the same results for the same inputs — `decideMutation()` mirrors the batch-number thresholds in `UpgradeToArchiveIfNeeded()`. But the duplication means a future change to archive behavior must update both places. Fully eliminating the legacy fallback requires `Decide()` to always compute a mutation, even on early-return paths, which is a follow-up task.
 
 ---
 

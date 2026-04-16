@@ -135,6 +135,10 @@ func (sm *UnifiedRelayStateMachine) stateTransition(relayState *RelayState, numb
 		if mutation != nil && mutation.ArchiveAction != ArchiveNoChange {
 			upgradedProtocolMessage = sm.applyMutation(protocolMessage, archiveStatus, *mutation)
 		} else {
+			// Fallback: policy.Decide() returned no archive mutation (e.g. epoch-mismatch
+			// retry at step 4, or initial state). Legacy UpgradeToArchiveIfNeeded applies
+			// batch-number-based archive logic that mirrors decideMutation(). Both paths
+			// must stay in sync until the fallback is eliminated.
 			upgradedProtocolMessage = UpgradeToArchiveIfNeeded(sm.ctx, protocolMessage, archiveStatus, sm.relaySender, sm.relayRetriesManager, batchNumber, numberOfNodeErrors)
 		}
 
