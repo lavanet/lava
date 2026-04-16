@@ -6,8 +6,8 @@ import (
 
 // ClassifyNodeError classifies a node error using the structured error registry.
 // Wraps common.ClassifyNodeErrorForRetry with chain family and transport resolution.
-// Called from the consumer worker to set IsNonRetryable, IsUnsupportedMethod,
-// and IsUserError flags on the relay result before storage.
+// Called from the consumer worker to set IsNonRetryable and IsUnsupportedMethod
+// flags on the relay result before storage.
 func ClassifyNodeError(chainID string, apiInterface string, statusCode int, errorMessage string, replyData []byte) ErrorClassification {
 	family := common.ChainFamilyUnknown
 	if f, ok := common.GetChainFamily(chainID); ok {
@@ -28,6 +28,5 @@ func ClassifyNodeError(chainID string, apiInterface string, statusCode int, erro
 	return ErrorClassification{
 		IsNonRetryable:      c.IsNonRetryable,
 		IsUnsupportedMethod: c.IsUnsupportedMethod,
-		IsUserError:         c.IsUserError,
 	}
 }

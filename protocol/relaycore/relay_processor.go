@@ -261,19 +261,15 @@ func (rp *RelayProcessor) GetResultsSummary() ResultsSummary {
 	_ = hash
 
 	// Check node errors: IsNonRetryable is the umbrella retry gate.
-	// IsUnsupportedMethod and IsUserError are subsets kept for CU/caching only.
+	// IsUnsupportedMethod is a subset kept for zero-CU and caching only.
 	hasNonRetryableNodeError := false
 	hasUnsupportedMethod := false
-	hasUserError := false
 	for _, result := range nodeErrorResults {
 		if result.IsNonRetryable {
 			hasNonRetryableNodeError = true
 		}
 		if result.IsUnsupportedMethod {
 			hasUnsupportedMethod = true
-		}
-		if result.IsUserError {
-			hasUserError = true
 		}
 	}
 
@@ -301,7 +297,6 @@ func (rp *RelayProcessor) GetResultsSummary() ResultsSummary {
 		ProtocolErrors:            protocolErrors,
 		HasNonRetryableNodeError:  hasNonRetryableNodeError,
 		HasUnsupportedMethod:      hasUnsupportedMethod,
-		HasUserError:              hasUserError,
 		HasPermanentProtocolError: hasPermanentProtocolError,
 		HasEpochMismatch:          hasEpochMismatch,
 		HashErr:                   hashErr,

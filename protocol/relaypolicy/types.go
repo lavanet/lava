@@ -40,6 +40,5 @@ type PolicyConfig struct {
 // ErrorClassification is returned by ClassifyNodeError.
 type ErrorClassification struct {
 	IsNonRetryable      bool // umbrella flag: true if any non-retryable condition
-	IsUnsupportedMethod bool // subset of IsNonRetryable
-	IsUserError         bool // subset of IsNonRetryable
+	IsUnsupportedMethod bool // subset of IsNonRetryable, gates zero-CU + caching
 }

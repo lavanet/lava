@@ -11,24 +11,17 @@
 |---|---|
 | Phase 1: Unified Consumer + SmartRouter state machine | **Done** |
 | Phase 2: `relaypolicy.Policy` with `Decide()` and `OnSendRelayResult()` | **Done** |
-| Phase 2: `ClassifyNodeError` wired into consumer worker | **Done** — uses `ClassifyNodeErrorForRetry` from error registry. Sets `IsNonRetryable`, `IsUnsupportedMethod`, `IsUserError`. SmartRouter unchanged (preserving `main` behavior). |
-| Phase 2: `IsNonRetryable` as the retry gate in `ResultsSummary` and `policy.Decide()` | **Needs fix** — `GetResultsSummary()` currently checks `IsUnsupportedMethod` and `IsUserError` separately instead of using `IsNonRetryable`. `policy.Decide()` should check `HasNonRetryableNodeError` (the umbrella) instead of individual subcategories. See note below. |
+| Phase 2: `ClassifyNodeError` wired into consumer worker | **Done** — uses `ClassifyNodeErrorForRetry` from error registry. Sets `IsNonRetryable`, `IsUnsupportedMethod`. `IsUserError` removed (user-input errors charge normal CU). SmartRouter unchanged (preserving `main` behavior). |
+| Phase 2: `IsNonRetryable` as the retry gate in `ResultsSummary` and `policy.Decide()` | **Done** — `GetResultsSummary()` scans for `IsNonRetryable` and sets `HasNonRetryableNodeError`. `policy.Decide()` checks `HasNonRetryableNodeError` as a single stop condition. |
 | Phase 2: `DecideEligibility()` | **Done** (behavior equivalence) — identical logic in `relaypolicy` and `used_providers.go`. `shouldRetryWithThisError` is now chain-aware via `common.IsUnsupportedMethodError(chainID, ...)`. |
 | Phase 3: Simplified `HasRequiredNodeResults()` | **Done** |
 | Phase 4: Provider-side `SendNodeMessage()` refactor | Not started |
 | Hedge budget (`AllowHedge`) | Not started |
 | Section 13: `Lava-Retry-Debug` trace header | Not started |
 
-#### IsNonRetryable fix needed
+#### IsNonRetryable — implemented
 
-**Current gap**: `GetResultsSummary()` checks `IsUnsupportedMethod` and `IsUserError` individually, and `policy.Decide()` has separate `Stop("UnsupportedMethod")` and `Stop("UserError")` branches. This misses errors that the registry marks as non-retryable but that are not specifically unsupported-method or user-error (e.g., a future chain-specific permanent failure subcategory).
-
-**How `main` does it**: `HasNonRetryableUserFacingErrors()` checks `IsNonRetryable` — the umbrella flag. Any new non-retryable subcategory added to the registry is automatically caught.
-
-**Fix**:
-1. `GetResultsSummary()` should scan node errors for `IsNonRetryable == true` and set `HasNonRetryableNodeError` in the summary.
-2. `policy.Decide()` should check `HasNonRetryableNodeError` as a single stop condition, replacing the separate `HasUnsupportedMethod` and `HasUserError` checks.
-3. `HasUnsupportedMethod` and `HasUserError` remain in the summary for CU charging and caching decisions (they are NOT used by the policy for retry decisions).
+`GetResultsSummary()` scans node errors for `IsNonRetryable == true` and sets `HasNonRetryableNodeError` in the summary. `policy.Decide()` checks `HasNonRetryableNodeError` as a single stop condition. `HasUnsupportedMethod` remains in the summary for the zero-CU carve-out and caching decisions. `IsUserError`/`HasUserError` have been removed — user-input errors now charge normal CU (providers do real work on every call since responses are not cached).
 
 ---
 
@@ -425,17 +418,16 @@ The RelayProcessor runs in its own goroutine (`readResultsFromProcessor()`), cal
 
 **Why it's here**: The RelayProcessor has access to all stored results — it can scan node errors for the `IsNonRetryable` flag and protocol errors for error classification. This is fundamentally a **data query**, not a decision.
 
-**Current implementation** (after error registry PR): Supersedes the old `HasUnsupportedMethodErrors()`. The check is based on `IsNonRetryable` — the umbrella flag set by the classifier in the worker. `IsUnsupportedMethod` and `IsUserError` are strict subsets of `IsNonRetryable` used only for CU charging and caching decisions, not for retry policy.
+**Current implementation** (after error registry PR): Supersedes the old `HasUnsupportedMethodErrors()`. The check is based on `IsNonRetryable` — the umbrella flag set by the classifier in the worker. `IsUnsupportedMethod` is a strict subset of `IsNonRetryable` used only for the zero-CU carve-out and caching decisions, not for retry policy. (`IsUserError` has been removed — user-input errors charge normal CU.)
 
 **How `IsNonRetryable` flows through the current architecture**:
 
 ```
 Worker goroutine:
   ClassifyNodeErrorForRetry(family, transport, errorCode, message)
-    → NodeErrorClassification{IsNonRetryable, IsUnsupportedMethod, IsUserError}
+    → NodeErrorClassification{IsNonRetryable, IsUnsupportedMethod}
   localRelayResult.IsNonRetryable = classification.IsNonRetryable
-  localRelayResult.IsUnsupportedMethod = classification.IsUnsupportedMethod  ← for CU/caching
-  localRelayResult.IsUserError = classification.IsUserError                  ← for CU/caching
+  localRelayResult.IsUnsupportedMethod = classification.IsUnsupportedMethod  ← for zero-CU/caching
   SetResponse() → stored in RelayProcessor
 
 RelayProcessor:
@@ -449,10 +441,10 @@ State Machine (retryCondition):
     → if true → return false (don't retry)
 ```
 
-**Key point**: The retry decision uses `IsNonRetryable` (the umbrella), not `IsUnsupportedMethod` or `IsUserError`. If the error registry adds a new non-retryable subcategory (e.g., a chain-specific permanent failure), it will be caught by `IsNonRetryable` automatically — no code changes needed in the retry path.
+**Key point**: The retry decision uses `IsNonRetryable` (the umbrella), not `IsUnsupportedMethod`. If the error registry adds a new non-retryable subcategory (e.g., a chain-specific permanent failure), it will be caught by `IsNonRetryable` automatically — no code changes needed in the retry path.
 
 **What it checks**:
-- Any node error with `IsNonRetryable == true` → YES (covers unsupported method, user error, and any future non-retryable subcategory)
+- Any node error with `IsNonRetryable == true` → YES (covers unsupported method and any future non-retryable subcategory)
 - Any protocol error matching `IsUnsupportedMethodError()` → YES
 - Any protocol error that is epoch mismatch → SKIP (don't treat as non-retryable)
 - Any protocol error that is non-retryable (via `IsNonRetryableUserFacingErrorType`) → YES
@@ -474,8 +466,8 @@ Each relay worker runs in its own goroutine, handles one provider, and is respon
 
 **Why it's here**: The worker has the **raw response data** — HTTP status codes, gRPC status codes, JSON-RPC error codes, response body. Classification requires understanding protocol-specific error formats. The classification must happen here because:
 
-1. The result must be **labeled before storage** — the `IsUnsupportedMethod` and `IsUserError` flags are set on the `RelayResult` struct before `SetResponse()` stores it in the RelayProcessor. Later consumers read these flags rather than re-classifying.
-2. **CU charging depends on classification** — the worker zeros `computeUnits` for unsupported methods and user input errors before calling `OnSessionDone`.
+1. The result must be **labeled before storage** — the `IsUnsupportedMethod` flag is set on the `RelayResult` struct before `SetResponse()` stores it in the RelayProcessor. Later consumers read this flag rather than re-classifying.
+2. **CU charging depends on classification** — the worker zeros `computeUnits` for unsupported methods before calling `OnSessionDone`.
 
 **Current implementation** (after error registry PR): Classification uses the structured error registry in `protocol/common/`. Consumer and SmartRouter classify in different locations with different granularity:
 
@@ -485,13 +477,12 @@ Each relay worker runs in its own goroutine, handles one provider, and is respon
 | **Classification call** | `relaypolicy.ClassifyNodeError()` → wraps `common.ClassifyNodeErrorForRetry()` | `common.IsNonRetryableNodeErrorWithContext(family, transport, statusCode, errorMessage)` |
 | **Sets `IsNonRetryable`** | Yes | Yes |
 | **Sets `IsUnsupportedMethod`** | Yes | No |
-| **Sets `IsUserError`** | Yes | No |
 
-**Consumer**: Uses `relaypolicy.ClassifyNodeError(chainID, apiInterface, statusCode, errorMessage, replyData)` which wraps `common.ClassifyNodeErrorForRetry()`. Returns all three flags. `IsUnsupportedMethod` and `IsUserError` are used for CU charging (zero CU) and caching decisions. `IsNonRetryable` is the umbrella flag read by the retry policy.
+**Consumer**: Uses `relaypolicy.ClassifyNodeError(chainID, apiInterface, statusCode, errorMessage, replyData)` which wraps `common.ClassifyNodeErrorForRetry()`. Returns two flags: `IsNonRetryable` (umbrella, read by the retry policy) and `IsUnsupportedMethod` (used for zero-CU carve-out and caching).
 
-**SmartRouter**: Classification happens inside `direct_rpc_relay.go` where each transport handler (JSON-RPC, REST, gRPC) calls `CheckResponseError()` on the response, then `common.IsNonRetryableNodeErrorWithContext(family, transport, statusCode, errorMessage)` to set `IsNonRetryable`. The subcategory breakdown (`IsUnsupportedMethod`, `IsUserError`) is not computed — the SmartRouter only needs the umbrella flag for retry decisions. The `IsNonRetryable` flag is propagated up through `relayInnerDirect()` → `result.IsNonRetryable` → `relayResult.IsNonRetryable`.
+**SmartRouter**: Classification happens inside `direct_rpc_relay.go` where each transport handler (JSON-RPC, REST, gRPC) calls `CheckResponseError()` on the response, then `common.IsNonRetryableNodeErrorWithContext(family, transport, statusCode, errorMessage)` to set `IsNonRetryable`. The subcategory breakdown (`IsUnsupportedMethod`) is not computed — the SmartRouter only needs the umbrella flag for retry decisions. The `IsNonRetryable` flag is propagated up through `relayInnerDirect()` → `result.IsNonRetryable` → `relayResult.IsNonRetryable`.
 
-**What they should NOT do**: Workers label the error; they don't decide whether the relay retries. The retryable decision is made by `policy.Decide()` in the state machine via `HasNonRetryableNodeError` in the `ResultsSummary`.
+**What they should NOT do**: Workers label the error; they don't decide whether the relay retries. The retry decision is made by `policy.Decide()` in the state machine via `HasNonRetryableNodeError` in the `ResultsSummary`.
 
 #### DP#9 — `shouldRetryWithThisError()`: "Should this provider be excluded?"
 
@@ -611,8 +602,7 @@ type ResultsSummary struct {
     SpecialNodeErrors          int
     ProtocolErrors             int
     HasNonRetryableNodeError   bool   // any node error with IsNonRetryable flag (umbrella — THE RETRY GATE)
-    HasUnsupportedMethod       bool   // subset of non-retryable, used for caching decisions
-    HasUserError               bool   // subset of non-retryable, used for CU charging
+    HasUnsupportedMethod       bool   // subset of non-retryable, used for zero-CU and caching decisions
     HasPermanentProtocolError  bool   // any non-retryable protocol error (excluding epoch mismatch)
     HasEpochMismatch           bool   // any protocol error is epoch mismatch
     HashErr                    error  // hash computation error (nil = hash OK)
@@ -643,8 +633,7 @@ A pure Go function that wraps the structured error registry for worker-side clas
 ```go
 type ErrorClassification struct {
     IsNonRetryable      bool   // umbrella flag — THE RETRY GATE (policy reads this)
-    IsUnsupportedMethod bool   // subset, used for caching decisions
-    IsUserError         bool   // subset, used for CU charging
+    IsUnsupportedMethod bool   // subset, used for zero-CU and caching decisions
 }
 
 func ClassifyNodeError(chainID string, apiInterface string, statusCode int, errorMessage string, replyData []byte) ErrorClassification { ... }
@@ -652,13 +641,13 @@ func ClassifyNodeError(chainID string, apiInterface string, statusCode int, erro
 
 Wraps `common.ClassifyNodeErrorForRetry(family, transport, errorCode, errorMessage)` from the structured error registry. Resolves chain family and transport type from the endpoint config, and extracts JSON-RPC error codes from the response body for accurate code-based matching.
 
-**Three flags, one retry gate**: `IsNonRetryable` is the umbrella — if the registry marks any error as non-retryable (unsupported method, user input, Solana permanent, or any future subcategory), this flag is `true` and the policy stops retrying. `IsUnsupportedMethod` and `IsUserError` are strict subsets used only for CU charging (zero CU) and caching (cache unsupported responses, don't cache user errors).
+**Two flags, one retry gate**: `IsNonRetryable` is the umbrella — if the registry marks any error as non-retryable (unsupported method, Solana permanent, or any future subcategory), this flag is `true` and the policy stops retrying. `IsUnsupportedMethod` is a strict subset used only for the zero-CU carve-out and caching (cache unsupported responses). `IsUserError` has been removed — user-input errors charge normal CU since responses are not cached.
 
 Called from the consumer worker in `rpcconsumer_server.go` after `CheckResponseError()` detects a node error. Sets all three flags on the `RelayResult` before storage.
 
 **Protocol error classification** is not done in the worker — it happens in `GetResultsSummary()` which scans stored protocol errors using `chainlib.ShouldRetryError()` and `chainlib.IsUnsupportedMethodError()`.
 
-**SmartRouter note**: The SmartRouter worker does not call `ClassifyNodeError()`. On `main`, the SmartRouter never sets `IsUnsupportedMethod` or `IsUserError` — it gets `IsNodeError` from the provider response but does not classify further. This preserves current behavior.
+**SmartRouter note**: The SmartRouter worker does not call `ClassifyNodeError()`. On `main`, the SmartRouter never sets `IsUnsupportedMethod` — it gets `IsNodeError` from the provider response but does not classify further. This preserves current behavior.
 
 ### 5.4 Provider Eligibility — `relaypolicy.DecideEligibility()`
 
@@ -789,7 +778,7 @@ The eligibility **execution** (updating `UsedProviders`) stays in the worker via
 |---|---|---|
 | `HasRequiredNodeResults()` (DP#4) | Checks for success, then delegates to `shouldRetryRelay()` for retry decision | Checks for success ONLY. If no success, signals `gotResults <- false` with no retry opinion. |
 | `shouldRetryRelay()` (DP#3) | Makes retry decisions: checks unsupported method, batch, epoch mismatch, error tolerance | **ELIMINATED.** Logic absorbed into `policy.Decide()`. |
-| `HasUnsupportedMethodErrors()` (DP#5) | Scans results and makes a "is this unsupported?" determination, called from DP#1 and DP#3. Also catches non-retryable protocol errors. | Superseded by `HasNonRetryableUserFacingErrors()` which checks the `IsNonRetryable` umbrella flag on node errors. For the policy, data is exposed via `ResultsSummary.HasNonRetryableNodeError` (the retry gate) and `HasPermanentProtocolError`. `HasUnsupportedMethod` and `HasUserError` remain for CU/caching only. |
+| `HasUnsupportedMethodErrors()` (DP#5) | Scans results and makes a "is this unsupported?" determination, called from DP#1 and DP#3. Also catches non-retryable protocol errors. | Superseded by `HasNonRetryableUserFacingErrors()` which checks the `IsNonRetryable` umbrella flag on node errors. For the policy, data is exposed via `ResultsSummary.HasNonRetryableNodeError` (the retry gate) and `HasPermanentProtocolError`. `HasUnsupportedMethod` remains for zero-CU/caching only. |
 | New: `GetResultsSummary()` | Does not exist | Returns `ResultsSummary` struct with counts and flags. Pure data aggregation. |
 | Role | Result collector + retry decision-maker | Result collector + data reporter |
 
@@ -802,7 +791,7 @@ The eligibility **execution** (updating `UsedProviders`) stays in the worker via
 | Aspect | Before | After |
 |---|---|---|
 | Error classification (DP#6/7/8) | Ad-hoc pattern matching: `IsUnsupportedMethodMessage()`, REST 404/405 check, `IsSolanaNonRetryableError()` | `ClassifyNodeError(chainID, statusCode, errorMessage)` — uses structured error registry with chain-aware two-tier classification. Consumer wired. SmartRouter unchanged (does not classify). |
-| User error detection | Not detected | `ClassifyNodeError()` also sets `IsUserError` via `common.IsUserInputError()`. Zero CU, no retry, same as unsupported. |
+| User error detection | Not detected | Removed — user-input errors (Layer D) are `Retryable=false` in the registry (caught by `IsNonRetryable`) but charge normal CU (no zero-CU carve-out). |
 | Provider eligibility (DP#9) | `shouldRetryWithThisError()` (standalone function, no chain awareness) | `shouldRetryWithThisError()` is now a method on `UsedProviders` with `chainID` for chain-aware unsupported detection. `DecideEligibility()` in `relaypolicy` has identical logic (behavior equivalence). |
 | Role | Classify errors + decide provider eligibility | Classify errors via error registry (consumer) + eligibility chain-aware via `shouldRetryWithThisError` method |
 
@@ -1446,7 +1435,7 @@ Worker records and policy records are **separate lists**, not patched together. 
 |---|---|---|
 | `relaypolicy/trace.go` | **NEW** | `RetryTrace`, `WorkerRecord`, `PolicyRecord`, `SendRecord` structs + `RecordWorkerResult()`, `RecordPolicyDecision()`, `RecordSendFailure()`, `ToJSON()` methods. Records keyed by `(AttemptID, Provider)` / `AttemptID` / `SendAttemptID` — no order-dependent patching. `AttemptID` is assigned at dispatch time and carried immutably into workers. |
 | `relaypolicy/policy.go` | **MODIFY** | `Decide()` and `OnSendRelayResult()` accept `*RetryTrace` parameter (or trace is a field on `Policy`). Record decisions after each call. |
-| `relaypolicy/classify.go` | **MODIFY** | `ClassifyNodeError(chainID, statusCode, errorMessage)` returns `ErrorClassification{IsUnsupportedMethod, IsUserError}`. Worker records classification in the trace. |
+| `relaypolicy/classify.go` | **MODIFY** | `ClassifyNodeError(chainID, statusCode, errorMessage)` returns `ErrorClassification{IsNonRetryable, IsUnsupportedMethod}`. Worker records classification in the trace. |
 | `relaycore/relay_processor.go` | **MODIFY** | Add `retryTrace *RetryTrace` field. Workers access it via `relayProcessor.GetRetryTrace()` to record their results. |
 | `rpcconsumer/rpcconsumer_server.go` | **MODIFY** | (1) Create `RetryTrace` in `ProcessRelaySend()`. (2) In worker goroutine: record classification + eligibility. (3) In `appendHeadersToRelayResult()`: serialize trace to `Lava-Retry-Debug` header when `lava-debug-relay` is set. |
 | `rpcsmartrouter/rpcsmartrouter_server.go` | **MODIFY** | Same changes as rpcconsumer. |
