@@ -402,7 +402,7 @@ func TestCheckUTXOResponseAndFixReply(t *testing.T) {
 		result := checkUTXOResponseAndFixReply("DOGE", []byte(input))
 		// Should preserve error:null and strip jsonrpc (BTC uses JSON-RPC 1.0)
 		var parsed map[string]interface{}
-		require.NoError(t, json.Unmarshal([]byte(result), &parsed))
+		require.NoError(t, json.Unmarshal(result, &parsed))
 		_, hasError := parsed["error"]
 		require.True(t, hasError, "error field must be present (even when null)")
 		_, hasJsonrpc := parsed["jsonrpc"]
@@ -414,7 +414,7 @@ func TestCheckUTXOResponseAndFixReply(t *testing.T) {
 		input := `[{"jsonrpc":"2.0","id":"1","result":"hash1"},{"jsonrpc":"2.0","id":"2","result":"hash2"}]`
 		result := checkUTXOResponseAndFixReply("DOGE", []byte(input))
 		var parsed []map[string]interface{}
-		require.NoError(t, json.Unmarshal([]byte(result), &parsed))
+		require.NoError(t, json.Unmarshal(result, &parsed))
 		require.Len(t, parsed, 2)
 		for i, elem := range parsed {
 			_, hasError := elem["error"]
@@ -429,7 +429,7 @@ func TestCheckUTXOResponseAndFixReply(t *testing.T) {
 		input := `[{"jsonrpc":"2.0","id":"1773768178254-0","result":"23699c7e"}]`
 		result := checkUTXOResponseAndFixReply("DOGE", []byte(input))
 		var parsed []map[string]interface{}
-		require.NoError(t, json.Unmarshal([]byte(result), &parsed), "single-element batch must remain an array")
+		require.NoError(t, json.Unmarshal(result, &parsed), "single-element batch must remain an array")
 		require.Len(t, parsed, 1)
 		require.Equal(t, "1773768178254-0", parsed[0]["id"])
 		_, hasError := parsed[0]["error"]
@@ -440,15 +440,20 @@ func TestCheckUTXOResponseAndFixReply(t *testing.T) {
 
 	t.Run("non_btc_chain_passthrough", func(t *testing.T) {
 		input := `{"jsonrpc":"2.0","id":1,"result":"abc"}`
-		result := checkUTXOResponseAndFixReply("ETH1", []byte(input))
-		require.Equal(t, input, result, "non-BTC chains should pass through unchanged")
+		replyData := []byte(input)
+		result := checkUTXOResponseAndFixReply("ETH1", replyData)
+		require.Equal(t, input, string(result), "non-BTC chains should pass through unchanged")
+		// Zero-copy passthrough: non-UTXO chains must return the exact same backing slice
+		// (same ptr + len), not a copy. This is the core guarantee of this function for the
+		// hot path — regressing it would reintroduce the 4.5GB/12m alloc that motivated the fix.
+		require.Same(t, &replyData[0], &result[0], "non-UTXO chains must return the input slice without copying")
 	})
 
 	t.Run("btc_with_actual_error", func(t *testing.T) {
 		input := `{"id":"1","error":{"code":-8,"message":"Block height out of range"},"result":null}`
 		result := checkUTXOResponseAndFixReply("BTC", []byte(input))
 		var parsed map[string]interface{}
-		require.NoError(t, json.Unmarshal([]byte(result), &parsed))
+		require.NoError(t, json.Unmarshal(result, &parsed))
 		errorField := parsed["error"]
 		require.NotNil(t, errorField, "error field must be preserved when not null")
 	})

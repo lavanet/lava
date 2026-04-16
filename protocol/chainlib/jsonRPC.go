@@ -502,13 +502,21 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		}
 
 		response := checkUTXOResponseAndFixReply(chainID, reply.Data)
-		// Log request and response
+		// Log request and response — gate the string conversion behind the
+		// debug-level check because LogRequestAndResponse routes the happy path
+		// through LavaFormatDebug. At info/warn+ the value is never emitted,
+		// but Go evaluates arguments eagerly, so a blind string(response) would
+		// still allocate a full copy of every reply body on the hot path.
+		var loggedResponse string
+		if utils.IsDebugEnabled() {
+			loggedResponse = string(response)
+		}
 		apil.logger.LogRequestAndResponse("jsonrpc http",
 			false,
 			"POST",
 			fiberCtx.Request().URI().String(),
 			msg,
-			response,
+			loggedResponse,
 			msgSeed,
 			time.Since(startTime),
 			nil,
@@ -516,8 +524,9 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		if relayResult.GetStatusCode() != 0 {
 			fiberCtx.Status(relayResult.StatusCode)
 		}
-		// Return json response
-		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+		// Return json response — send bytes directly so we don't allocate
+		// another string(response) on top of the already-pass-through body.
+		err = addHeadersAndSendBytes(fiberCtx, reply.GetMetadata(), response)
 		return err
 	}
 	app.Post("/*", handlerPost)
