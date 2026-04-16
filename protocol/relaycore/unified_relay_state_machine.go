@@ -348,11 +348,13 @@ func (sm *UnifiedRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSendIn
 				if output.Action == ActionRetry {
 					sm.stateTransition(sm.getLatestState(), nodeErrors, &output.Mutation)
 					relayTaskChannel <- RelayStateSendInstructions{RelayState: sm.getLatestState(), NumOfProviders: 1}
-					go readResultsFromProcessor()
 				} else {
-					relayTaskChannel <- RelayStateSendInstructions{Done: true}
-					return
+					// Don't return immediately — in-flight relays from earlier batches
+					// may still succeed. validateReturnCondition waits 15ms and checks
+					// whether any relays are still CurrentlyUsed before concluding.
+					go validateReturnCondition(nil)
 				}
+				go readResultsFromProcessor()
 
 			case <-startNewBatchTicker.C:
 				if sm.config.EnableTimeoutPriority {
@@ -367,6 +369,9 @@ func (sm *UnifiedRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSendIn
 					utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", sm.usedProviders.BatchNumber()), utils.LogAttr("GUID", sm.ctx))
 					sm.stateTransition(sm.getLatestState(), nodeErrors, &output.Mutation)
 					relayTaskChannel <- RelayStateSendInstructions{RelayState: sm.getLatestState(), NumOfProviders: 1}
+					if sm.analytics != nil {
+						sm.analytics.HedgeCount++
+					}
 				}
 
 			case returnErr := <-returnCondition:
