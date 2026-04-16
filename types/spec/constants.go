@@ -19,12 +19,6 @@ const (
 
 	EncodingBase64 = "base64"
 	EncodingHex    = "hex"
-
-	// Event names
-	ParamChangeEventName = "param_change"
-	SpecAddEventName     = "spec_add"
-	SpecModifyEventName  = "spec_modify"
-	SpecRefreshEventName = "spec_refresh"
 )
 
 // IsFinalizedBlock returns true when the requested block is old enough to be

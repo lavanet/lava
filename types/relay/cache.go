@@ -225,24 +225,7 @@ func (r *RelayCacheSet) GetBlocksHashesToHeights() []*BlockHashToHeight {
 }
 
 // CacheUsage reports hit and miss statistics for the relay cache.
-type CacheUsage struct {
-	CacheHits   uint64 `json:"CacheHits"`
-	CacheMisses uint64 `json:"CacheMisses"`
-}
-
-func (c *CacheUsage) GetCacheHits() uint64 {
-	if c != nil {
-		return c.CacheHits
-	}
-	return 0
-}
-
-func (c *CacheUsage) GetCacheMisses() uint64 {
-	if c != nil {
-		return c.CacheMisses
-	}
-	return 0
-}
+type CacheUsage struct{}
 
 // CacheHash is a composite key used when computing the cache lookup hash.
 type CacheHash struct {

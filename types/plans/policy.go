@@ -17,24 +17,11 @@ type ChainRequirement struct {
 type Policy struct {
 	// ChainPolicies maps chain IDs to their per-chain requirements.
 	ChainPolicies []ChainPolicy `json:"chain_policies"`
-
-	// GeolocationProfile is the bitmask of required geolocations.
-	GeolocationProfile int32 `json:"geolocation_profile"`
-
-	// TotalCuLimit is the overall compute-unit cap for this policy.
-	TotalCuLimit uint64 `json:"total_cu_limit"`
-
-	// EpochCuLimit is the per-epoch compute-unit cap.
-	EpochCuLimit uint64 `json:"epoch_cu_limit"`
-
-	// MaxProvidersToPair is the maximum number of providers to pair.
-	MaxProvidersToPair uint64 `json:"max_providers_to_pair"`
 }
 
 // ChainPolicy contains the addon and extension policy for one chain.
 type ChainPolicy struct {
-	ChainID    string              `json:"chain_id"`
-	Apis       []ChainRequirement  `json:"apis"`
+	ChainID      string             `json:"chain_id"`
 	Requirements []ChainRequirement `json:"requirements"`
 }
 

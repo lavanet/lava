@@ -76,12 +76,6 @@ func (f FlexFloat64) Float64() float64 {
 	return float64(f)
 }
 
-// IsValid reports whether the coin has a non-empty denomination.
-func (c Coin) IsValid() bool { return c.Denom != "" }
-
-// IsPositive reports whether the coin amount is strictly positive.
-func (c Coin) IsPositive() bool { return c.Amount > 0 }
-
 // Spec describes a single blockchain specification including all API
 // collections, performance parameters, and governance metadata.
 type Spec struct {
@@ -282,18 +276,4 @@ func (spec *Spec) CombineCollections(parentsCollections map[CollectionData][]*Ap
 		spec.ApiCollections = append(spec.ApiCollections, combined)
 	}
 	return nil
-}
-
-// ServicesMap returns the set of add-on and extension names declared across
-// all api collections in the spec.
-func (spec *Spec) ServicesMap() (addons, extensions map[string]struct{}) {
-	addons = map[string]struct{}{}
-	extensions = map[string]struct{}{}
-	for _, apiCollection := range spec.ApiCollections {
-		addons[apiCollection.CollectionData.AddOn] = struct{}{}
-		for _, extension := range apiCollection.Extensions {
-			extensions[extension.Name] = struct{}{}
-		}
-	}
-	return
 }

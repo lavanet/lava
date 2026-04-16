@@ -25,20 +25,6 @@ const (
 	Geolocation_AU Geolocation = 64
 )
 
-// GeolocationsAll returns a slice of all single-region geolocation constants
-// (excluding the global wildcard GL).
-func GeolocationsAll() []Geolocation {
-	return []Geolocation{
-		Geolocation_USC,
-		Geolocation_EU,
-		Geolocation_USE,
-		Geolocation_USW,
-		Geolocation_AF,
-		Geolocation_AS,
-		Geolocation_AU,
-	}
-}
-
 // String returns a human-readable name for a geolocation constant.
 func (geo Geolocation) String() string {
 	switch geo {
@@ -61,12 +47,4 @@ func (geo Geolocation) String() string {
 	default:
 		return fmt.Sprintf("Geolocation(%d)", int32(geo))
 	}
-}
-
-// Contains reports whether geo has all the bits set that are present in other.
-func (geo Geolocation) Contains(other Geolocation) bool {
-	if geo == Geolocation_GL {
-		return true
-	}
-	return geo&other != 0
 }

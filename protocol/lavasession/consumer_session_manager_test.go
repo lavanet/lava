@@ -14,11 +14,11 @@ import (
 
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
+	pairingtypes "github.com/lavanet/lava/v5/types/relay"
+	spectypes "github.com/lavanet/lava/v5/types/spec"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/lavaslices"
 	"github.com/lavanet/lava/v5/utils/rand"
-	pairingtypes "github.com/lavanet/lava/v5/types/relay"
-	spectypes "github.com/lavanet/lava/v5/types/spec"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 	"google.golang.org/grpc"
@@ -56,8 +56,6 @@ func (rpcps *testServer) Probe(ctx context.Context, probeReq *pairingtypes.Probe
 		Guid:                  probeReq.GetGuid(),
 		LatestBlock:           1,
 		FinalizedBlocksHashes: []byte{},
-		LavaEpoch:             1,
-		LavaLatestBlock:       1,
 	}
 	time.Sleep(rpcps.delay)
 	return probeReply, nil

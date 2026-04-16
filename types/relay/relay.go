@@ -344,7 +344,6 @@ type Badge struct {
 	Address      string `json:"address"`
 	LavaChainId  string `json:"lava_chain_id"`
 	ProjectSig   []byte `json:"project_sig"`
-	VirtualEpoch uint64 `json:"virtual_epoch"`
 }
 
 func (b *Badge) GetCuAllocation() uint64 {
@@ -382,13 +381,6 @@ func (b *Badge) GetProjectSig() []byte {
 	return nil
 }
 
-func (b *Badge) GetVirtualEpoch() uint64 {
-	if b != nil {
-		return b.VirtualEpoch
-	}
-	return 0
-}
-
 // RelaySession is the on-chain portion of a relay request, signed by the consumer.
 type RelaySession struct {
 	SpecId                string                  `json:"spec_id"`
@@ -403,7 +395,6 @@ type RelaySession struct {
 	LavaChainId           string                  `json:"lava_chain_id"`
 	Sig                   []byte                  `json:"sig"`
 	Badge                 *Badge                  `json:"badge"`
-	QosExcellenceReport   *QualityOfServiceReport `json:"qos_excellence_report"`
 }
 
 func (rs *RelaySession) GetSpecId() string {
@@ -490,13 +481,6 @@ func (rs *RelaySession) GetBadge() *Badge {
 	return nil
 }
 
-func (rs *RelaySession) GetQosExcellenceReport() *QualityOfServiceReport {
-	if rs != nil {
-		return rs.QosExcellenceReport
-	}
-	return nil
-}
-
 // GetSignature implements sigs.Signable by returning the session signature.
 func (rs RelaySession) GetSignature() []byte {
 	return rs.Sig
@@ -548,7 +532,7 @@ func (rs RelaySession) HashRounds() int {
 
 // RelayRequest pairs a signed session header with the private relay data.
 type RelayRequest struct {
-	RelaySession *RelaySession    `json:"relay_session"`
+	RelaySession *RelaySession     `json:"relay_session"`
 	RelayData    *RelayPrivateData `json:"relay_data"`
 }
 
@@ -687,8 +671,6 @@ type ProbeReply struct {
 	Guid                  uint64          `json:"guid"`
 	LatestBlock           int64           `json:"latest_block"`
 	FinalizedBlocksHashes []byte          `json:"finalized_blocks_hashes"`
-	LavaEpoch             uint64          `json:"lava_epoch"`
-	LavaLatestBlock       uint64          `json:"lava_latest_block"`
 	Verifications         []*Verification `json:"verifications"`
 }
 
@@ -711,20 +693,6 @@ func (p *ProbeReply) GetFinalizedBlocksHashes() []byte {
 		return p.FinalizedBlocksHashes
 	}
 	return nil
-}
-
-func (p *ProbeReply) GetLavaEpoch() uint64 {
-	if p != nil {
-		return p.LavaEpoch
-	}
-	return 0
-}
-
-func (p *ProbeReply) GetLavaLatestBlock() uint64 {
-	if p != nil {
-		return p.LavaLatestBlock
-	}
-	return 0
 }
 
 func (p *ProbeReply) GetVerifications() []*Verification {
