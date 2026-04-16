@@ -149,7 +149,7 @@ func TestTendermintRpcChainProxy(t *testing.T) {
 		}`)
 	})
 
-	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceTendermintRPC, serverHandle, nil, "../../", nil)
+	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "LAVA", spectypes.APIInterfaceTendermintRPC, serverHandle, nil, "../../", nil)
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainProxy)
@@ -177,7 +177,7 @@ func TestTendermintRpcBatchSizeLimit(t *testing.T) {
 		fmt.Fprint(w, `{"jsonrpc":"2.0","id":1,"result":{"block_id":{},"block":{}}}`)
 	})
 
-	chainParser, _, _, closeServer, _, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceTendermintRPC, serverHandle, nil, "../../", nil)
+	chainParser, _, _, closeServer, _, err := CreateChainLibMocks(ctx, "LAVA", spectypes.APIInterfaceTendermintRPC, serverHandle, nil, "../../", nil)
 	if closeServer != nil {
 		defer closeServer()
 	}
@@ -222,7 +222,7 @@ func TestTendermintRpcBatchCall(t *testing.T) {
 		fmt.Fprint(w, response)
 	})
 
-	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceTendermintRPC, serverHandle, nil, "../../", nil)
+	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "LAVA", spectypes.APIInterfaceTendermintRPC, serverHandle, nil, "../../", nil)
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainProxy)
@@ -252,7 +252,7 @@ func TestTendermintRpcSingleElementBatchRequestedBlock(t *testing.T) {
 		fmt.Fprint(w, `[{"jsonrpc":"2.0","id":1,"result":{"block_id":{},"block":{}}}]`)
 	})
 
-	chainParser, _, _, closeServer, _, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceTendermintRPC, serverHandle, nil, "../../", nil)
+	chainParser, _, _, closeServer, _, err := CreateChainLibMocks(ctx, "LAVA", spectypes.APIInterfaceTendermintRPC, serverHandle, nil, "../../", nil)
 	if closeServer != nil {
 		defer closeServer()
 	}
@@ -291,7 +291,7 @@ func TestTendermintRpcBatchCallWithSameID(t *testing.T) {
 		fmt.Fprint(w, nodeResponse)
 	})
 
-	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceTendermintRPC, serverHandle, nil, "../../", nil)
+	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "LAVA", spectypes.APIInterfaceTendermintRPC, serverHandle, nil, "../../", nil)
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainProxy)
@@ -325,7 +325,7 @@ func TestTendermintURIRPC(t *testing.T) {
 		}`)
 	})
 
-	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceTendermintRPC, serverHandle, nil, "../../", nil)
+	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "LAVA", spectypes.APIInterfaceTendermintRPC, serverHandle, nil, "../../", nil)
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainProxy)

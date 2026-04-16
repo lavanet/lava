@@ -10,7 +10,7 @@ import (
 // This is a convenience function that creates a new Fetcher with the provided token.
 //
 // URL format: https://github.com/{owner}/{repo}/tree/{branch}/{path}
-// Example: https://github.com/lavanet/lava/tree/main/specs/mainnet-1/specs
+// Example: https://github.com/lavanet/lava/tree/main/specs
 func FetchSpecFromGitHub(ctx context.Context, repoURL, chainID, token string) (types.Spec, error) {
 	config := DefaultConfig()
 	config.Token = token

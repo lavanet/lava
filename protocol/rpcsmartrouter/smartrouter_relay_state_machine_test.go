@@ -18,11 +18,11 @@ import (
 	lavasession "github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/relaycore"
 	"github.com/lavanet/lava/v5/protocol/relaycoretest"
-	"github.com/lavanet/lava/v5/utils"
-	"github.com/lavanet/lava/v5/utils/lavaslices"
 	epochstoragetypes "github.com/lavanet/lava/v5/types/epoch"
 	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 	spectypes "github.com/lavanet/lava/v5/types/spec"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
 	"github.com/stretchr/testify/require"
 )
 
@@ -92,7 +92,7 @@ func (srsm *SmartRouterRelaySenderMock) ParseRelay(
 		// Handle the incoming request and provide the desired response
 		w.WriteHeader(http.StatusOK)
 	})
-	specId := "NEAR"
+	specId := "ETH1"
 	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceJsonRPC, serverHandler, nil, "../../", []string{"archive"})
 	defer closeServer()
 	policy := PolicySt{
@@ -114,7 +114,7 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 			// Handle the incoming request and provide the desired response
 			w.WriteHeader(http.StatusOK)
 		})
-		specId := "LAV1"
+		specId := "LAVA"
 		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
 		if closeServer != nil {
 			defer closeServer()
@@ -187,7 +187,7 @@ func TestConsumerStateMachineExhaustRetries(t *testing.T) {
 			// Handle the incoming request and provide the desired response
 			w.WriteHeader(http.StatusOK)
 		})
-		specId := "LAV1"
+		specId := "LAVA"
 		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
 		if closeServer != nil {
 			defer closeServer()
@@ -237,7 +237,7 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 			// Handle the incoming request and provide the desired response
 			w.WriteHeader(http.StatusOK)
 		})
-		specId := "NEAR"
+		specId := "ETH1"
 		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceJsonRPC, serverHandler, nil, "../../", nil)
 		if closeServer != nil {
 			defer closeServer()
@@ -340,7 +340,7 @@ func TestSmartRouterStateMachineCircuitBreakerOnPairingErrors(t *testing.T) {
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
-		specId := "LAV1"
+		specId := "LAVA"
 		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
 		if closeServer != nil {
 			defer closeServer()
@@ -390,7 +390,7 @@ func TestSmartRouterStateMachineCircuitBreakerResetsOnSuccess(t *testing.T) {
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
-		specId := "LAV1"
+		specId := "LAVA"
 		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
 		if closeServer != nil {
 			defer closeServer()
@@ -447,7 +447,7 @@ func TestSmartRouterStateMachineCircuitBreakerResetsOnDifferentError(t *testing.
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
-		specId := "LAV1"
+		specId := "LAVA"
 		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
 		if closeServer != nil {
 			defer closeServer()
@@ -507,7 +507,7 @@ func TestProcessingContextTimeoutEnforcement(t *testing.T) {
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
-		specId := "LAV1"
+		specId := "LAVA"
 		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
 		if closeServer != nil {
 			defer closeServer()
@@ -604,7 +604,7 @@ func TestProcessingContextStillValidAllowsRetries(t *testing.T) {
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
-		specId := "LAV1"
+		specId := "LAVA"
 		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
 		if closeServer != nil {
 			defer closeServer()
@@ -683,7 +683,7 @@ func TestProcessingContextRaceCondition(t *testing.T) {
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
-		specId := "LAV1"
+		specId := "LAVA"
 		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
 		if closeServer != nil {
 			defer closeServer()
@@ -1060,7 +1060,7 @@ func TestSmartRouterStateMachineRetryLimit(t *testing.T) {
 			serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
 			})
-			specId := "LAV1"
+			specId := "LAVA"
 			chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
 			if closeServer != nil {
 				defer closeServer()

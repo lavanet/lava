@@ -175,7 +175,7 @@ func (cf ChainFamily) String() string {
 }
 
 // chainFamilyMap maps chain ID strings (from spec JSON files) to their chain family.
-// Sourced from specs/mainnet-1/specs/ and specs/testnet-2/specs/.
+// Sourced from specs/.
 //
 // INVARIANT: populated at package-init time and never mutated at runtime.
 // Read paths (GetChainFamily, GetChainFamilyOrDefault, ClassifyError) rely on

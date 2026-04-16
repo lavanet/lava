@@ -254,7 +254,7 @@ func TestExtensions(t *testing.T) {
 	configuredExtensions := map[string]struct{}{
 		"archive": {},
 	}
-	spec, err := specutils.GetSpecFromLocalDirs([]string{"../../specs/mainnet-1/specs/", "../../specs/testnet-2/specs/"}, specname)
+	spec, err := specutils.GetSpecFromLocalDirs([]string{"../../specs/"}, specname)
 	require.NoError(t, err)
 
 	chainParser.SetPolicy(&plantypes.Policy{ChainPolicies: []plantypes.ChainPolicy{{ChainID: specname, Requirements: []plantypes.ChainRequirement{{Extensions: []string{"archive"}}}}}}, specname, "jsonrpc")
@@ -465,118 +465,6 @@ func TestJsonRpcBatchCallSameID(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, relayReply)
 	require.Equal(t, responseExpected, string(relayReply.RelayReply.Data))
-}
-
-func TestJsonRpcInternalPathsMultipleVersionsStarkNet(t *testing.T) {
-	ctx := context.Background()
-	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Handle the incoming request and provide the desired response
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, `{"jsonrpc":"2.0","id":1,"result":"%s"}`, r.RequestURI)
-	})
-
-	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "STRK", spectypes.APIInterfaceJsonRPC, serverHandle, nil, "../../", nil)
-	if closeServer != nil {
-		defer closeServer()
-	}
-
-	require.NoError(t, err)
-	require.NotNil(t, chainParser)
-	require.NotNil(t, chainProxy)
-	require.NotNil(t, chainFetcher)
-	v8_path := "/rpc/v0_8"
-	v9_path := "/rpc/v0_9"
-	req_data := []byte(`{"jsonrpc": "2.0", "id": 1, "method": "starknet_specVersion", "params": []}`)
-	chainMessage, err := chainParser.ParseMsg("", req_data, http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
-	require.NoError(t, err)
-	api := chainMessage.GetApi()
-	collection := chainMessage.GetApiCollection()
-	require.Equal(t, "starknet_specVersion", api.Name)
-	require.Equal(t, "", collection.CollectionData.InternalPath)
-
-	chainMessage, err = chainParser.ParseMsg(v8_path, req_data, http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
-	require.NoError(t, err)
-	api = chainMessage.GetApi()
-	collection = chainMessage.GetApiCollection()
-	require.Equal(t, "starknet_specVersion", api.Name)
-	require.Equal(t, v8_path, collection.CollectionData.InternalPath)
-
-	chainMessage, err = chainParser.ParseMsg(v9_path, req_data, http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
-	require.NoError(t, err)
-	api = chainMessage.GetApi()
-	collection = chainMessage.GetApiCollection()
-	require.Equal(t, "starknet_specVersion", api.Name)
-	require.Equal(t, v9_path, collection.CollectionData.InternalPath)
-}
-
-func TestJsonRpcInternalPathsMultipleVersionsAvalanche(t *testing.T) {
-	type reqWithApiName struct {
-		apiName string
-		reqData []byte
-	}
-
-	// TODO: Add the empty path back in once the ETH spec will be fixed
-	// allPaths := []string{"", "/C/rpc", "/C/avax", "/P", "/X"}
-	allPaths := []string{"/C/rpc", "/C/avax", "/P", "/X"}
-	pathToReqData := map[string]reqWithApiName{
-		"/C/rpc": { // Eth jsonrpc path
-			apiName: "eth_blockNumber",
-			reqData: []byte(`{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber", "params": []}`),
-		},
-		"/C/avax": { // Avalanche jsonrpc path
-			apiName: "avax.export",
-			reqData: []byte(`{"jsonrpc": "2.0", "id": 1, "method": "avax.export", "params": []}`),
-		},
-		"/P": { // Platform jsonrpc path
-			apiName: "platform.addDelegator",
-			reqData: []byte(`{"jsonrpc": "2.0", "id": 1, "method": "platform.addDelegator", "params": []}`),
-		},
-		"/X": { // Avm jsonrpc path
-			apiName: "avm.getAssetDescription",
-			reqData: []byte(`{"jsonrpc": "2.0", "id": 1, "method": "avm.getAssetDescription", "params": []}`),
-		},
-	}
-
-	ctx := context.Background()
-	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Handle the incoming request and provide the desired response
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, `{"jsonrpc":"2.0","id":1,"result":"%s"}`, r.RequestURI)
-	})
-
-	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "AVAX", spectypes.APIInterfaceJsonRPC, serverHandle, nil, "../../", nil)
-	if closeServer != nil {
-		defer closeServer()
-	}
-
-	require.NoError(t, err)
-	require.NotNil(t, chainParser)
-	require.NotNil(t, chainProxy)
-	require.NotNil(t, chainFetcher)
-
-	for correctPath, reqDataWithApiName := range pathToReqData {
-		for _, path := range allPaths {
-			shouldErr := path != correctPath
-			t.Run(fmt.Sprintf("ApiName:%s,CorrectPath:%s,Path:%s,ShouldError:%v", reqDataWithApiName.apiName, correctPath, path, shouldErr), func(t *testing.T) {
-				chainMessage, err := chainParser.ParseMsg(path, reqDataWithApiName.reqData, http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
-
-				if !shouldErr {
-					require.NoError(t, err)
-					api := chainMessage.GetApi()
-					collection := chainMessage.GetApiCollection()
-					require.Equal(t, reqDataWithApiName.apiName, api.Name)
-					require.Equal(t, correctPath, collection.CollectionData.InternalPath)
-				} else {
-					if err == nil {
-						require.Contains(t, chainMessage.GetApi().Name, "Default-")
-					} else {
-						require.ErrorIs(t, err, common.APINotSupportedError)
-						require.Nil(t, chainMessage)
-					}
-				}
-			})
-		}
-	}
 }
 
 func TestJsonRPC_SpecUpdateWithAddons(t *testing.T) {

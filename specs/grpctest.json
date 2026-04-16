@@ -1,0 +1,80 @@
+{
+  "proposal": {
+    "title": "gRPC Test Spec",
+    "description": "Minimal gRPC spec for unit testing without Cosmos proto dependencies",
+    "specs": [
+      {
+        "index": "GRPCTEST",
+        "name": "gRPC Test",
+        "enabled": true,
+        "reliability_threshold": 4294967295,
+        "data_reliability_enabled": true,
+        "block_distance_for_finalized_data": 0,
+        "blocks_in_finalization_proof": 1,
+        "average_block_time": 6000,
+        "allowed_block_lag_for_qos_sync": 2,
+        "shares": 1,
+        "min_stake_provider": {
+          "denom": "ulava",
+          "amount": "5000000000"
+        },
+        "api_collections": [
+          {
+            "enabled": true,
+            "collection_data": {
+              "api_interface": "grpc",
+              "internal_path": "",
+              "type": "",
+              "add_on": ""
+            },
+            "apis": [
+              {
+                "name": "lavatest.v1.BlockService/GetLatestBlock",
+                "block_parsing": {
+                  "parser_arg": [
+                    "latest"
+                  ],
+                  "parser_func": "DEFAULT"
+                },
+                "compute_units": 10,
+                "enabled": true,
+                "category": {
+                  "deterministic": true,
+                  "local": false,
+                  "subscription": false,
+                  "stateful": 0
+                }
+              }
+            ],
+            "headers": [
+              {
+                "name": "x-test-block-height",
+                "kind": "pass_both",
+                "function_tag": "SET_LATEST_IN_METADATA"
+              }
+            ],
+            "parse_directives": [
+              {
+                "function_template": "",
+                "function_tag": "GET_BLOCKNUM",
+                "result_parsing": {
+                  "parser_arg": [
+                    "0",
+                    "height"
+                  ],
+                  "parser_func": "PARSE_CANONICAL"
+                },
+                "api_name": "lavatest.v1.BlockService/GetLatestBlock"
+              },
+              {
+                "function_template": "%d",
+                "function_tag": "SET_LATEST_IN_METADATA",
+                "api_name": "x-test-block-height"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

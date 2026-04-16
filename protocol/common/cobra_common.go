@@ -43,7 +43,7 @@ const (
 	//
 	// Supported formats:
 	//   - Local file:      --use-static-spec ./specs/eth.json
-	//   - Local directory: --use-static-spec ./specs/mainnet-1/specs/
+	//   - Local directory: --use-static-spec ./specs/
 	//   - GitHub URL:      --use-static-spec https://github.com/owner/repo/tree/branch/path/to/specs
 	//   - GitLab URL:      --use-static-spec https://gitlab.com/owner/repo/-/tree/branch/path/to/specs
 	//

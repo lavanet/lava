@@ -49,11 +49,11 @@ func TestUpdateEpoch_FreshSessions(t *testing.T) {
 
 	// 2. Setup dependencies for SessionManager
 	rpcEndpoint := &lavasession.RPCEndpoint{
-		ChainID:        "LAV1",
+		ChainID:        "LAVA",
 		ApiInterface:   "tendermintrpc",
 		NetworkAddress: "127.0.0.1:3333",
 	}
-	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, time.Second, uint(1), nil, "LAV1")
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, time.Second, uint(1), nil, "LAVA")
 
 	chainKey := rpcEndpoint.Key()
 	sessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test-router", lavasession.NewActiveSubscriptionProvidersStorage())
@@ -112,11 +112,11 @@ func TestUpdateEpoch_ResetsDisabledEndpoints(t *testing.T) {
 	}
 
 	rpcEndpoint := &lavasession.RPCEndpoint{
-		ChainID:        "LAV1",
+		ChainID:        "LAVA",
 		ApiInterface:   "tendermintrpc",
 		NetworkAddress: "127.0.0.1:3334",
 	}
-	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, time.Second, uint(1), nil, "LAV1")
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, time.Second, uint(1), nil, "LAVA")
 	chainKey := rpcEndpoint.Key()
 	sessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test-router", lavasession.NewActiveSubscriptionProvidersStorage())
 	rpsr.sessionManagers[chainKey] = sessionManager
@@ -178,7 +178,7 @@ func TestUpdateEpoch_ResetsHealthMetric(t *testing.T) {
 	// Use unique chain/apiInterface labels per test run so we don't collide with
 	// metric values set by other tests sharing the process-global Prometheus registry.
 	const (
-		testChainID      = "LAV1_METRIC_RESET_TEST"
+		testChainID      = "LAVA_METRIC_RESET_TEST"
 		testApiInterface = "tendermintrpc"
 		primaryProvider  = "lava@primary-metric-test"
 		backupProvider   = "lava@backup-metric-test"
@@ -282,7 +282,7 @@ func TestUpdateEpoch_NilListenEndpointDoesNotPanic(t *testing.T) {
 	rand.InitRandomSeed()
 
 	rpcEndpoint := &lavasession.RPCEndpoint{
-		ChainID:        "LAV1",
+		ChainID:        "LAVA",
 		ApiInterface:   "tendermintrpc",
 		NetworkAddress: "127.0.0.1:3336",
 	}

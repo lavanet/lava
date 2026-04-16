@@ -133,7 +133,7 @@ func TestRestChainProxy(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"block": { "header": {"height": "244591"}}}`)
 	})
-	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "LAVA", spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainProxy)
@@ -164,7 +164,7 @@ func TestParsingRequestedBlocksHeadersRest(t *testing.T) {
 			fmt.Fprint(w, `{"block": { "header": {"height": "244591"}}}`)
 		}
 	})
-	chainParser, chainRouter, _, closeServer, _, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	chainParser, chainRouter, _, closeServer, _, err := CreateChainLibMocks(ctx, "LAVA", spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
 	require.NoError(t, err)
 	defer func() {
 		if closeServer != nil {
@@ -234,7 +234,7 @@ func TestSettingRequestedBlocksHeadersRest(t *testing.T) {
 		}
 		fmt.Fprint(w, `{"block": { "header": {"height": "244591"}}}`)
 	})
-	chainParser, chainRouter, _, closeServer, _, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	chainParser, chainRouter, _, closeServer, _, err := CreateChainLibMocks(ctx, "LAVA", spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
 	require.NoError(t, err)
 	defer func() {
 		if closeServer != nil {
@@ -292,7 +292,7 @@ func TestSettingRequestedBlocksHeadersRest(t *testing.T) {
 }
 
 func TestRegexParsing(t *testing.T) {
-	chainParser, _, _, closeServer, _, err := CreateChainLibMocks(context.Background(), "LAV1", spectypes.APIInterfaceRest, nil, nil, "../../", nil)
+	chainParser, _, _, closeServer, _, err := CreateChainLibMocks(context.Background(), "LAVA", spectypes.APIInterfaceRest, nil, nil, "../../", nil)
 	require.NoError(t, err)
 	defer func() {
 		if closeServer != nil {

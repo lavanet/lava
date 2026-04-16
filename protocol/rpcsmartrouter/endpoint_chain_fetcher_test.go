@@ -62,7 +62,7 @@ func TestEndpointChainTrackerManager_ForcesBlocksToSave1ForSolana(t *testing.T) 
 		{"SOLANAT", 1, "Solana testnet uses the same SVMChainTracker"},
 		{"KOII", 1, "KOII is a Solana fork — same chain tracker family"},
 		{"ETH", 10, "EVM chains keep the caller-requested blocksToSave"},
-		{"LAV1", 10, "non-SVM chains keep the caller-requested blocksToSave"},
+		{"LAVA", 10, "non-SVM chains keep the caller-requested blocksToSave"},
 	} {
 		t.Run(tc.chainID, func(t *testing.T) {
 			m := NewEndpointChainTrackerManager(ctx, EndpointChainTrackerConfig{

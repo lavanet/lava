@@ -65,7 +65,7 @@ fi
 echo ""
 
 # Use absolute path for specs
-SPECS_DIR="$PROJECT_ROOT/specs/mainnet-1/specs/ethereum.json"
+SPECS_DIR="$PROJECT_ROOT/specs/ethereum.json"
 echo "Using static specs: $SPECS_DIR"
 
 # Export RPC endpoint URLs as environment variables

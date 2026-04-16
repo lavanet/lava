@@ -32,7 +32,7 @@ import (
 // gRPC test service — programmatic proto descriptors for unit testing
 // ---------------------------------------------------------------------------
 //
-// The test gRPC spec (specs/testnet-2/specs/grpctest.json) references
+// The test gRPC spec (specs/grpctest.json) references
 // lavatest.v1.BlockService/GetLatestBlock. For gRPC reflection to resolve
 // this service, we register a FileDescriptorProto in the global proto
 // registry at init time. The mock handler uses dynamicpb messages so that
@@ -259,8 +259,7 @@ func CreateChainLibMocks(
 
 	// Load specs from all directories so cross-directory imports (e.g. LAV1 -> COSMOSSDK) resolve.
 	spec, err := specutils.GetSpecFromLocalDirs([]string{
-		getToTopMostPath + "specs/mainnet-1/specs/",
-		getToTopMostPath + "specs/testnet-2/specs/",
+		getToTopMostPath + "specs/",
 	}, specIndex)
 	if err != nil {
 		cancelConnector()

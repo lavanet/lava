@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/types/relay"
+	"github.com/lavanet/lava/v5/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -38,8 +38,8 @@ func TestReportsClientFlows(t *testing.T) {
 		defer mockServer.Close()
 		endpoint := mockServer.URL
 		serverClient := NewConsumerReportsClient(endpoint, 100*time.Millisecond)
-		serverClient.AppendReport(NewReportsRequest("lava@test", []error{fmt.Errorf("bad"), fmt.Errorf("very-bad")}, "LAV1"))
-		serverClient.AppendReport(NewReportsRequest("lava@test", []error{fmt.Errorf("bad"), fmt.Errorf("very-bad")}, "LAV1"))
+		serverClient.AppendReport(NewReportsRequest("lava@test", []error{fmt.Errorf("bad"), fmt.Errorf("very-bad")}, "LAVA"))
+		serverClient.AppendReport(NewReportsRequest("lava@test", []error{fmt.Errorf("bad"), fmt.Errorf("very-bad")}, "LAVA"))
 		serverClient.AppendConflict(NewConflictRequest(&pairingtypes.RelayRequest{
 			RelaySession: &pairingtypes.RelaySession{Provider: "lava@conflict0"},
 			RelayData:    &pairingtypes.RelayPrivateData{},
@@ -78,7 +78,7 @@ func TestReportsClientNull(t *testing.T) {
 	t.Run("null", func(t *testing.T) {
 		serverClient := NewConsumerReportsClient("")
 		require.Nil(t, serverClient)
-		serverClient.AppendReport(NewReportsRequest("lava@test", []error{fmt.Errorf("bad"), fmt.Errorf("very-bad")}, "LAV1"))
+		serverClient.AppendReport(NewReportsRequest("lava@test", []error{fmt.Errorf("bad"), fmt.Errorf("very-bad")}, "LAVA"))
 		conflictData := NewConflictRequest(&pairingtypes.RelayRequest{
 			RelaySession: &pairingtypes.RelaySession{Provider: "lava@conflict0"},
 			RelayData:    &pairingtypes.RelayPrivateData{},
@@ -97,6 +97,6 @@ func TestReportsClientNull(t *testing.T) {
 		}
 		reporter := getReporter()
 		reporter.AppendConflict(conflictData)
-		reporter.AppendReport(NewReportsRequest("lava@test", []error{fmt.Errorf("bad"), fmt.Errorf("very-bad")}, "LAV1"))
+		reporter.AppendReport(NewReportsRequest("lava@test", []error{fmt.Errorf("bad"), fmt.Errorf("very-bad")}, "LAVA"))
 	})
 }

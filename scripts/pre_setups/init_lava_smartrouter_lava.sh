@@ -52,7 +52,7 @@ LAVA_TENDERMINTRPC_WS_LOCAL="wss://lava-rpc.publicnode.com:443/websocket"
 
 # Static specs (offline) - used for routing/parsing in smart router.
 # IMPORTANT: Lava spec imports COSMOSSDK (and related deps), so we must provide the full bundle.
-SPECS_DIR="$PROJECT_ROOT/specs/mainnet-1/specs/tendermint.json,$PROJECT_ROOT/specs/mainnet-1/specs/ibc.json,$PROJECT_ROOT/specs/mainnet-1/specs/cosmossdk.json,$PROJECT_ROOT/specs/mainnet-1/specs/lava-mainnet.json"
+SPECS_DIR="$PROJECT_ROOT/specs/tendermint.json,$PROJECT_ROOT/specs/ibc.json,$PROJECT_ROOT/specs/cosmossdk.json,$PROJECT_ROOT/specs/lava.json"
 
 IFS=',' read -r -a SPEC_FILES <<< "$SPECS_DIR"
 for spec_file in "${SPEC_FILES[@]}"; do

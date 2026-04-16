@@ -19,7 +19,7 @@ func TestRESTRelay_GET_PathParameters(t *testing.T) {
 	ctx := context.Background()
 	chainParser, _, _, closeServer, endpoint, err := chainlib.CreateChainLibMocks(
 		ctx,
-		"LAV1",
+		"LAVA",
 		spectypes.APIInterfaceRest,
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.Equal(t, http.MethodGet, r.Method)
@@ -68,7 +68,7 @@ func TestRESTRelay_GET_QueryParameters(t *testing.T) {
 	ctx := context.Background()
 	chainParser, _, _, closeServer, endpoint, err := chainlib.CreateChainLibMocks(
 		ctx,
-		"LAV1",
+		"LAVA",
 		spectypes.APIInterfaceRest,
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.Equal(t, http.MethodGet, r.Method)
@@ -118,7 +118,7 @@ func TestRESTRelay_POST_JSONBody(t *testing.T) {
 	ctx := context.Background()
 	chainParser, _, _, closeServer, endpoint, err := chainlib.CreateChainLibMocks(
 		ctx,
-		"LAV1",
+		"LAVA",
 		spectypes.APIInterfaceRest,
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assert.Equal(t, http.MethodPost, r.Method)
@@ -167,7 +167,7 @@ func TestRESTRelay_404_NotFound(t *testing.T) {
 	ctx := context.Background()
 	chainParser, _, _, closeServer, endpoint, err := chainlib.CreateChainLibMocks(
 		ctx,
-		"LAV1",
+		"LAVA",
 		spectypes.APIInterfaceRest,
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
@@ -213,7 +213,7 @@ func TestRESTRelay_429_RateLimit(t *testing.T) {
 	ctx := context.Background()
 	chainParser, _, _, closeServer, endpoint, err := chainlib.CreateChainLibMocks(
 		ctx,
-		"LAV1",
+		"LAVA",
 		spectypes.APIInterfaceRest,
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusTooManyRequests)
@@ -258,7 +258,7 @@ func TestRESTRelay_503_ServiceUnavailable(t *testing.T) {
 	ctx := context.Background()
 	chainParser, _, _, closeServer, endpoint, err := chainlib.CreateChainLibMocks(
 		ctx,
-		"LAV1",
+		"LAVA",
 		spectypes.APIInterfaceRest,
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -303,7 +303,7 @@ func TestRESTRelay_ResponseHeaders(t *testing.T) {
 	ctx := context.Background()
 	chainParser, _, _, closeServer, endpoint, err := chainlib.CreateChainLibMocks(
 		ctx,
-		"LAV1",
+		"LAVA",
 		spectypes.APIInterfaceRest,
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("X-Custom-Header", "test-value")

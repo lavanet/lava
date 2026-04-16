@@ -13,7 +13,7 @@ func TestProcessingTimestampLifecycle(t *testing.T) {
 	startTime := time.Now()
 
 	// Create analytics as done in chainlib
-	analytics := metrics.NewRelayAnalytics("test-project", "LAV1", "rest")
+	analytics := metrics.NewRelayAnalytics("test-project", "LAVA", "rest")
 	analytics.SetProcessingTimestampBeforeRelay(startTime)
 
 	require.Equal(t, startTime, analytics.ProcessingTimestamp, "ProcessingTimestamp should be set after before-relay")
