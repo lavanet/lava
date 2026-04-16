@@ -5,54 +5,53 @@
 
 endpoints:
   - network-address: "0.0.0.0:3360"
-    chain-id: "LAV1"
+    chain-id: "LAVA"
     api-interface: "rest"
 
   - network-address: "0.0.0.0:3361"
-    chain-id: "LAV1"
+    chain-id: "LAVA"
     api-interface: "grpc"
 
   - network-address: "0.0.0.0:3362"
-    chain-id: "LAV1"
+    chain-id: "LAVA"
     api-interface: "tendermintrpc"
 
 direct-rpc:
   # 3 upstream REST endpoints (PublicNode TLS)
   - name: "lava-publicnode-rest-1"
-    chain-id: "LAV1"
+    chain-id: "LAVA"
     api-interface: "rest"
     node-urls:
       - url: "https://lava-rest.publicnode.com:443"
         timeout: 10s
         skip-verifications:
-          - chain-id
           - pruning
 
   - name: "lava-publicnode-rest-2"
-    chain-id: "LAV1"
+    chain-id: "LAVA"
     api-interface: "rest"
     node-urls:
       - url: "https://lava-rest.publicnode.com:443"
         timeout: 10s
         skip-verifications:
-          - chain-id
           - pruning
 
   - name: "lava-publicnode-rest-3"
-    chain-id: "LAV1"
+    chain-id: "LAVA"
     api-interface: "rest"
     node-urls:
       - url: "https://lava-rest.publicnode.com:443"
         timeout: 10s
         skip-verifications:
-          - chain-id
           - pruning
 
   # 3 upstream gRPC endpoints (PublicNode TLS)
   # Note: gRPC URLs must NOT include a scheme prefix (grpcs:// is invalid).
   # TLS is enabled via auth-config.use-tls below.
+  # Note: PublicNode gRPC blocks GetNodeInfo (used by chain-id verification),
+  # so chain-id must be skipped for gRPC. REST/TendermintRPC still verify it.
   - name: "lava-publicnode-grpc-1"
-    chain-id: "LAV1"
+    chain-id: "LAVA"
     api-interface: "grpc"
     node-urls:
       - url: "lava-grpc.publicnode.com:443"
@@ -64,7 +63,7 @@ direct-rpc:
           - tx-indexing
 
   - name: "lava-publicnode-grpc-2"
-    chain-id: "LAV1"
+    chain-id: "LAVA"
     api-interface: "grpc"
     node-urls:
       - url: "lava-grpc.publicnode.com:443"
@@ -76,7 +75,7 @@ direct-rpc:
           - tx-indexing
 
   - name: "lava-publicnode-grpc-3"
-    chain-id: "LAV1"
+    chain-id: "LAVA"
     api-interface: "grpc"
     node-urls:
       - url: "lava-grpc.publicnode.com:443"
@@ -89,43 +88,37 @@ direct-rpc:
 
   # 3 upstream Tendermint RPC endpoints (PublicNode TLS)
   - name: "lava-publicnode-tendermintrpc-1"
-    chain-id: "LAV1"
+    chain-id: "LAVA"
     api-interface: "tendermintrpc"
     node-urls:
       - url: "https://lava-rpc.publicnode.com:443"
         timeout: 10s
         skip-verifications:
-          - chain-id
           - pruning
       - url: "wss://lava-rpc.publicnode.com:443/websocket"
         skip-verifications:
-          - chain-id
           - pruning
 
   - name: "lava-publicnode-tendermintrpc-2"
-    chain-id: "LAV1"
+    chain-id: "LAVA"
     api-interface: "tendermintrpc"
     node-urls:
       - url: "https://lava-rpc.publicnode.com:443"
         timeout: 10s
         skip-verifications:
-          - chain-id
           - pruning
       - url: "wss://lava-rpc.publicnode.com:443/websocket"
         skip-verifications:
-          - chain-id
           - pruning
 
   - name: "lava-publicnode-tendermintrpc-3"
-    chain-id: "LAV1"
+    chain-id: "LAVA"
     api-interface: "tendermintrpc"
     node-urls:
       - url: "https://lava-rpc.publicnode.com:443"
         timeout: 10s
         skip-verifications:
-          - chain-id
           - pruning
       - url: "wss://lava-rpc.publicnode.com:443/websocket"
         skip-verifications:
-          - chain-id
           - pruning
