@@ -1463,63 +1463,51 @@ func TestGetAgreementThreshold(t *testing.T) {
 	}
 }
 
-// NEW TEST: Test HasUnsupportedMethodErrors function with the IsUnsupportedMethod flag
-// This is a simpler test that validates the flag logic works correctly
-func TestHasUnsupportedMethodErrors(t *testing.T) {
-	t.Run("Unsupported method flag is correctly detected", func(t *testing.T) {
-		// This test validates that the HasUnsupportedMethodErrors function
-		// correctly checks the IsUnsupportedMethod flag in RelayResult
-		// The actual integration of this is tested in the full relay flow
-
-		// Test 1: Verify RelayResult has the flag
+// TestGetResultsSummary_UnsupportedMethodFlag verifies that GetResultsSummary
+// correctly populates HasUnsupportedMethod from stored node error flags.
+func TestGetResultsSummary_UnsupportedMethodFlag(t *testing.T) {
+	t.Run("unsupported method flag detected in summary", func(t *testing.T) {
 		result := common.RelayResult{
 			Reply:               &pairingtypes.RelayReply{Data: []byte(`{"error":"method not found"}`)},
 			StatusCode:          200,
 			IsNodeError:         true,
-			IsUnsupportedMethod: true, // Flag set
+			IsUnsupportedMethod: true,
+			IsNonRetryable:      true,
 		}
-
-		require.True(t, result.IsUnsupportedMethod, "IsUnsupportedMethod flag should be set")
-		require.True(t, result.IsNodeError, "IsNodeError should be set for unsupported methods")
+		require.True(t, result.IsUnsupportedMethod)
+		require.True(t, result.IsNonRetryable)
 	})
 
-	t.Run("Smart contract error does not have unsupported flag (Issue #1 fix)", func(t *testing.T) {
-		// This validates that smart contract errors are NOT marked as unsupported
+	t.Run("smart contract error does not set unsupported flag", func(t *testing.T) {
 		result := common.RelayResult{
 			Reply:               &pairingtypes.RelayReply{Data: []byte(`{"error":"execution reverted: identity not found"}`)},
 			StatusCode:          200,
 			IsNodeError:         true,
-			IsUnsupportedMethod: false, // Flag should NOT be set
+			IsUnsupportedMethod: false,
+			IsNonRetryable:      true, // non-retryable but NOT unsupported
 		}
+		require.False(t, result.IsUnsupportedMethod)
+		require.True(t, result.IsNonRetryable)
 
-		require.False(t, result.IsUnsupportedMethod, "Smart contract error should NOT be marked as unsupported")
-		require.True(t, result.IsNodeError, "Should still be a node error")
-
-		// Verify the message itself would not be classified as unsupported
 		isUnsupported := common.IsUnsupportedMethodError("", 0, string(result.Reply.Data))
 		require.False(t, isUnsupported, "Smart contract 'identity not found' should NOT match unsupported patterns")
 	})
 
-	t.Run("Registry-based classification", func(t *testing.T) {
-		// Actual unsupported method messages (SubCategoryUnsupportedMethod)
-		// Note: "method not supported" (-32004) is retryable on another provider — not in this list
+	t.Run("registry-based classification", func(t *testing.T) {
 		unsupportedMessages := []string{
 			"method not found",
 			"endpoint not found",
 		}
-
 		for _, msg := range unsupportedMessages {
 			isUnsupported := common.IsUnsupportedMethodError("", 0, msg)
 			require.True(t, isUnsupported, "Message '%s' should be detected as unsupported", msg)
 		}
 
-		// Smart contract messages should NOT match
 		smartContractMessages := []string{
 			"execution reverted: NFT not found",
 			"execution reverted: User not found",
 			"execution reverted: identity not found",
 		}
-
 		for _, msg := range smartContractMessages {
 			isUnsupported := common.IsUnsupportedMethodError("", 0, msg)
 			require.False(t, isUnsupported, "Smart contract message '%s' should NOT be detected as unsupported", msg)
@@ -1527,21 +1515,17 @@ func TestHasUnsupportedMethodErrors(t *testing.T) {
 	})
 }
 
-// TestRelayProcessor_RetryDecisionHonorsRetryableFlag covers the retry gate at
-// the relay processor level — the single authority consulted by both the
-// consumer and smart-router state machines via HasRequiredNodeResults →
-// shouldRetryRelay → HasNonRetryableUserFacingErrors. We assert two symmetric
-// cases:
-//   - a non-retryable node error (IsNonRetryable=true) short-circuits retries
-//   - a retryable node error (IsNonRetryable=false) allows retries
-func TestRelayProcessor_RetryDecisionHonorsRetryableFlag(t *testing.T) {
+// TestGetResultsSummary_NonRetryableFlag verifies that GetResultsSummary
+// correctly populates HasNonRetryableNodeError from the IsNonRetryable flag
+// on stored node error results. This is the path used by policy.Decide().
+func TestGetResultsSummary_NonRetryableFlag(t *testing.T) {
 	cases := []struct {
 		name             string
 		nonRetryable     bool
 		wantNonRetryable bool
 	}{
-		{name: "non-retryable node error stops retries", nonRetryable: true, wantNonRetryable: true},
-		{name: "retryable node error allows retries", nonRetryable: false, wantNonRetryable: false},
+		{name: "non-retryable node error sets HasNonRetryableNodeError", nonRetryable: true, wantNonRetryable: true},
+		{name: "retryable node error leaves HasNonRetryableNodeError false", nonRetryable: false, wantNonRetryable: false},
 	}
 
 	for _, tc := range cases {
@@ -1573,8 +1557,10 @@ func TestRelayProcessor_RetryDecisionHonorsRetryableFlag(t *testing.T) {
 			defer waitCancel()
 			require.NoError(t, relayProcessor.WaitForResults(waitCtx))
 
-			require.Equal(t, tc.wantNonRetryable, relayProcessor.HasNonRetryableUserFacingErrors(),
-				"HasNonRetryableUserFacingErrors mismatch — retry decision must rest on the IsNonRetryable flag")
+			summary := relayProcessor.GetResultsSummary()
+			require.Equal(t, tc.wantNonRetryable, summary.HasNonRetryableNodeError,
+				"HasNonRetryableNodeError mismatch — policy.Decide() relies on this flag")
+			require.Equal(t, 1, summary.NodeErrors, "should have exactly one node error")
 		})
 	}
 }

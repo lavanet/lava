@@ -146,22 +146,14 @@ func (sm *UnifiedRelayStateMachine) stateTransition(relayState *RelayState, numb
 // applyMutation applies the policy's archive/cache mutation to the protocol message.
 func (sm *UnifiedRelayStateMachine) applyMutation(protocolMessage chainlib.ProtocolMessage, archiveStatus *ArchiveStatus, mutation MutationOutput) chainlib.ProtocolMessage {
 	if mutation.CacheHashes {
-		hashes := protocolMessage.GetRequestedBlocksHashes()
-		if archiveStatus.isHashCached.CompareAndSwap(false, true) {
-			for _, hash := range hashes {
-				sm.relayRetriesManager.AddHashToCache(hash)
-			}
-		}
+		cacheBlockHashes(protocolMessage, archiveStatus, sm.relayRetriesManager)
 	}
 
 	switch mutation.ArchiveAction {
 	case ArchiveAdd:
-		return UpgradeToArchiveIfNeeded(sm.ctx, protocolMessage, archiveStatus, sm.relaySender, sm.relayRetriesManager, 1, 0)
+		return addArchiveExtension(sm.ctx, protocolMessage, archiveStatus, sm.relaySender)
 	case ArchiveRemove:
-		if archiveStatus.IsUpgraded() {
-			return UpgradeToArchiveIfNeeded(sm.ctx, protocolMessage, archiveStatus, sm.relaySender, sm.relayRetriesManager, 2, 0)
-		}
-		return protocolMessage
+		return removeArchiveExtension(sm.ctx, protocolMessage, archiveStatus, sm.relaySender)
 	default:
 		return protocolMessage
 	}

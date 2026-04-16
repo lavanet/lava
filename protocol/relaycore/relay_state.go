@@ -42,8 +42,16 @@ func (as *ArchiveStatus) IsArchive() bool {
 	return as.isArchive.Load()
 }
 
+func (as *ArchiveStatus) SetArchive(v bool) {
+	as.isArchive.Store(v)
+}
+
 func (as *ArchiveStatus) IsUpgraded() bool {
 	return as.isUpgraded.Load()
+}
+
+func (as *ArchiveStatus) SetUpgraded(v bool) {
+	as.isUpgraded.Store(v)
 }
 
 func (as *ArchiveStatus) Copy() *ArchiveStatus {
@@ -165,13 +173,80 @@ func (rs *RelayState) SetProtocolMessage(protocolMessage chainlib.ProtocolMessag
 }
 
 // Static function to determine if archive upgrade is needed and return the appropriate protocol message
-// This doesn't require a RelayState object, avoiding the need to create it twice
+// addArchiveExtension adds the archive extension to the protocol message and
+// updates archiveStatus. Returns the original message on failure.
+func addArchiveExtension(ctx context.Context, protocolMessage chainlib.ProtocolMessage, archiveStatus *ArchiveStatus, relayParser RelayParserInf) chainlib.ProtocolMessage {
+	relayRequestData := protocolMessage.RelayPrivateData()
+	if relayRequestData == nil {
+		utils.LavaFormatError("Relay request data is nil", nil, utils.LogAttr("GUID", ctx))
+		return protocolMessage
+	}
+	if archiveStatus.isArchive.Load() {
+		return protocolMessage // already archive
+	}
+	userData := protocolMessage.GetUserData()
+	existingExtensionsPlusArchive := strings.Join(append(relayRequestData.Extensions, extensionslib.ArchiveExtension), ",")
+	metaDataForArchive := []pairingtypes.Metadata{{Name: common.EXTENSION_OVERRIDE_HEADER_NAME, Value: existingExtensionsPlusArchive}}
+	utils.LavaFormatTrace("[Archive] Adding archive extension", utils.LogAttr("extensions", existingExtensionsPlusArchive), utils.LogAttr("GUID", ctx))
+	newProtocolMessage, err := relayParser.ParseRelay(ctx, relayRequestData.ApiUrl, string(relayRequestData.Data), relayRequestData.ConnectionType, userData.DappId, userData.ConsumerIp, metaDataForArchive)
+	if err != nil {
+		utils.LavaFormatError("Failed adding archive extension", err, utils.LogAttr("apiUrl", relayRequestData.ApiUrl))
+		return protocolMessage
+	}
+	archiveStatus.isUpgraded.Store(true)
+	archiveStatus.isArchive.Store(true)
+	return newProtocolMessage
+}
+
+// removeArchiveExtension removes the archive extension from the protocol message
+// and updates archiveStatus. Returns the original message on failure.
+func removeArchiveExtension(ctx context.Context, protocolMessage chainlib.ProtocolMessage, archiveStatus *ArchiveStatus, relayParser RelayParserInf) chainlib.ProtocolMessage {
+	if !archiveStatus.isUpgraded.Load() {
+		return protocolMessage // nothing to remove
+	}
+	relayRequestData := protocolMessage.RelayPrivateData()
+	if relayRequestData == nil {
+		utils.LavaFormatError("Relay request data is nil", nil, utils.LogAttr("GUID", ctx))
+		return protocolMessage
+	}
+	userData := protocolMessage.GetUserData()
+	filteredExtensions := make([]string, 0, len(relayRequestData.Extensions))
+	for _, ext := range relayRequestData.Extensions {
+		if ext != extensionslib.ArchiveExtension {
+			filteredExtensions = append(filteredExtensions, ext)
+		}
+	}
+	existingExtensions := strings.Join(filteredExtensions, ",")
+	metaDataForArchive := []pairingtypes.Metadata{{Name: common.EXTENSION_OVERRIDE_HEADER_NAME, Value: existingExtensions}}
+	utils.LavaFormatTrace("[Archive] Removing archive extension", utils.LogAttr("GUID", ctx))
+	newProtocolMessage, err := relayParser.ParseRelay(ctx, relayRequestData.ApiUrl, string(relayRequestData.Data), relayRequestData.ConnectionType, userData.DappId, userData.ConsumerIp, metaDataForArchive)
+	if err != nil {
+		utils.LavaFormatError("Failed removing archive extension", err, utils.LogAttr("apiUrl", relayRequestData.ApiUrl))
+		return protocolMessage
+	}
+	archiveStatus.isArchive.Store(false)
+	return newProtocolMessage
+}
+
+// cacheBlockHashes marks all requested block hashes as irrelevant for future queries.
+func cacheBlockHashes(protocolMessage chainlib.ProtocolMessage, archiveStatus *ArchiveStatus, cache RetryHashCacheInf) {
+	hashes := protocolMessage.GetRequestedBlocksHashes()
+	if archiveStatus.isHashCached.CompareAndSwap(false, true) {
+		for _, hash := range hashes {
+			cache.AddHashToCache(hash)
+		}
+	}
+}
+
+// UpgradeToArchiveIfNeeded manages the archive extension lifecycle based on retry count.
+// On first retry (attempt #1): adds archive extension.
+// On second retry (attempt #2): removes archive extension if previously upgraded.
+// If upgraded and 2+ node errors: caches hashes and returns original message (archive failed).
 func UpgradeToArchiveIfNeeded(ctx context.Context, protocolMessage chainlib.ProtocolMessage, archiveStatus *ArchiveStatus, relayParser RelayParserInf, cache RetryHashCacheInf, numberOfRetriesLaunched int, numberOfNodeErrors uint64) chainlib.ProtocolMessage {
 	if archiveStatus == nil {
 		return protocolMessage
 	}
 
-	// Check for context cancellation early to avoid expensive operations
 	select {
 	case <-ctx.Done():
 		utils.LavaFormatTrace("Context cancelled at start of archive upgrade", utils.LogAttr("GUID", ctx))
@@ -179,68 +254,16 @@ func UpgradeToArchiveIfNeeded(ctx context.Context, protocolMessage chainlib.Prot
 	default:
 	}
 
-	hashes := protocolMessage.GetRequestedBlocksHashes()
-	// If we got upgraded and we still got a node error (>= 2) we know upgrade didn't work
+	// Archive tried and failed — cache hashes and bail
 	if archiveStatus.isUpgraded.Load() && numberOfNodeErrors >= 2 {
-		// Validate the following.
-		// 1. That we have applied archive
-		// 2. That we had more than one node error (meaning the 2nd was a successful archive [node error] 100%)
-		// Now -
-		// We know we have applied archive and failed.
-		// 1. We can remove the archive, return to the original protocol message,
-		// 2. Set all hashes as irrelevant for future queries.
-		if archiveStatus.isHashCached.CompareAndSwap(false, true) {
-			for _, hash := range hashes {
-				cache.AddHashToCache(hash)
-			}
-		}
+		cacheBlockHashes(protocolMessage, archiveStatus, cache)
 		return protocolMessage
 	}
 
-	relayRequestData := protocolMessage.RelayPrivateData()
-	if relayRequestData == nil {
-		utils.LavaFormatError("Relay request data is nil", nil, utils.LogAttr("GUID", ctx))
-		return protocolMessage
-	}
-	userData := protocolMessage.GetUserData()
 	if !archiveStatus.isArchive.Load() && numberOfRetriesLaunched == 1 {
-		utils.LavaFormatTrace("Launching archive on first retry", utils.LogAttr("GUID", ctx))
-		// Launch archive only on the second retry attempt.
-		// Create a new relay private data containing the extension.
-		// add all existing extensions including archive split by "," so the override will work
-		existingExtensionsPlusArchive := strings.Join(append(relayRequestData.Extensions, extensionslib.ArchiveExtension), ",")
-		metaDataForArchive := []pairingtypes.Metadata{{Name: common.EXTENSION_OVERRIDE_HEADER_NAME, Value: existingExtensionsPlusArchive}}
-		utils.LavaFormatTrace("[Archive Debug] Calling ParseRelay with archive extension", utils.LogAttr("existingExtensionsPlusArchive", existingExtensionsPlusArchive), utils.LogAttr("metaDataForArchive", metaDataForArchive), utils.LogAttr("apiUrl", relayRequestData.ApiUrl), utils.LogAttr("GUID", ctx))
-		newProtocolMessage, err := relayParser.ParseRelay(ctx, relayRequestData.ApiUrl, string(relayRequestData.Data), relayRequestData.ConnectionType, userData.DappId, userData.ConsumerIp, metaDataForArchive)
-		if err != nil {
-			utils.LavaFormatError("Failed converting to archive message in shouldRetry", err, utils.LogAttr("apiUrl", relayRequestData.ApiUrl), utils.LogAttr("metadata", metaDataForArchive))
-			return protocolMessage
-		} else {
-			// Update archive status
-			archiveStatus.isUpgraded.Store(true)
-			archiveStatus.isArchive.Store(true)
-			utils.LavaFormatTrace("[Archive Debug] Archive retry successful", utils.LogAttr("extensions", newProtocolMessage.GetExtensions()), utils.LogAttr("GUID", ctx))
-			return newProtocolMessage
-		}
+		return addArchiveExtension(ctx, protocolMessage, archiveStatus, relayParser)
 	} else if archiveStatus.isUpgraded.Load() && numberOfRetriesLaunched == 2 {
-		utils.LavaFormatTrace("Removing archive on second retry", utils.LogAttr("GUID", ctx))
-		// Remove archive extension when on second retry
-		filteredExtensions := make([]string, 0, len(relayRequestData.Extensions))
-		for _, ext := range relayRequestData.Extensions {
-			if ext != extensionslib.ArchiveExtension {
-				filteredExtensions = append(filteredExtensions, ext)
-			}
-		}
-		existingExtensions := strings.Join(filteredExtensions, ",")
-		metaDataForArchive := []pairingtypes.Metadata{{Name: common.EXTENSION_OVERRIDE_HEADER_NAME, Value: existingExtensions}}
-		newProtocolMessage, err := relayParser.ParseRelay(ctx, relayRequestData.ApiUrl, string(relayRequestData.Data), relayRequestData.ConnectionType, userData.DappId, userData.ConsumerIp, metaDataForArchive)
-		if err != nil {
-			utils.LavaFormatError("Failed converting to regular message in shouldRetry", err, utils.LogAttr("apiUrl", relayRequestData.ApiUrl), utils.LogAttr("metadata", metaDataForArchive))
-			return protocolMessage
-		} else {
-			archiveStatus.isArchive.Store(false)
-			return newProtocolMessage
-		}
+		return removeArchiveExtension(ctx, protocolMessage, archiveStatus, relayParser)
 	}
 	return protocolMessage
 }

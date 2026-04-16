@@ -245,6 +245,40 @@ func TestDecide_ArchiveMutation(t *testing.T) {
 		require.False(t, output.Mutation.CacheHashes)
 	})
 
+	t.Run("upgraded with 2+ errors removes archive and caches hashes", func(t *testing.T) {
+		policy := NewPolicy(PolicyConfig{MaxRetries: 10, RelayRetryLimit: 5, SendRelayAttempts: 3})
+		archiveStatus := &relaycore.ArchiveStatus{}
+		archiveStatus.SetUpgraded(true)
+		archiveStatus.SetArchive(true)
+		output := policy.Decide(DecisionInput{
+			Selection:     relaycore.Stateless,
+			AttemptNumber: 2,
+			Summary:       ResultsSummary{NodeErrors: 2},
+			ArchiveStatus: archiveStatus,
+			NodeErrors:    2,
+		})
+		require.Equal(t, Retry, output.Action)
+		require.Equal(t, RemoveArchive, output.Mutation.ArchiveAction)
+		require.True(t, output.Mutation.CacheHashes, "should cache hashes when archive failed with 2+ errors")
+	})
+
+	t.Run("upgraded with 2+ errors on attempt 1 still triggers early bail", func(t *testing.T) {
+		policy := NewPolicy(PolicyConfig{MaxRetries: 10, RelayRetryLimit: 5, SendRelayAttempts: 3})
+		archiveStatus := &relaycore.ArchiveStatus{}
+		archiveStatus.SetUpgraded(true)
+		archiveStatus.SetArchive(true)
+		output := policy.Decide(DecisionInput{
+			Selection:     relaycore.Stateless,
+			AttemptNumber: 1,
+			Summary:       ResultsSummary{NodeErrors: 2},
+			ArchiveStatus: archiveStatus,
+			NodeErrors:    2,
+		})
+		require.Equal(t, Retry, output.Action)
+		require.Equal(t, RemoveArchive, output.Mutation.ArchiveAction)
+		require.True(t, output.Mutation.CacheHashes, "early bail takes priority over attempt-based logic")
+	})
+
 	t.Run("no archive status returns no mutation", func(t *testing.T) {
 		policy := NewPolicy(PolicyConfig{MaxRetries: 10, RelayRetryLimit: 5, SendRelayAttempts: 3})
 		output := policy.Decide(DecisionInput{

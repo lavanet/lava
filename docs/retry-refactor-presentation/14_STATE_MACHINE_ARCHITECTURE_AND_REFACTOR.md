@@ -13,7 +13,7 @@
 | Phase 2: `relaypolicy.Policy` with `Decide()` and `OnSendRelayResult()` | **Done** |
 | Phase 2: `ClassifyNodeError` wired into consumer worker | **Done** — uses `ClassifyNodeErrorForRetry` from error registry. Sets `IsNonRetryable`, `IsUnsupportedMethod`. `IsUserError` removed (user-input errors charge normal CU). SmartRouter unchanged (preserving `main` behavior). |
 | Phase 2: `IsNonRetryable` as the retry gate in `ResultsSummary` and `policy.Decide()` | **Done** — `GetResultsSummary()` scans for `IsNonRetryable` and sets `HasNonRetryableNodeError`. `policy.Decide()` checks `HasNonRetryableNodeError` as a single stop condition. |
-| Phase 2: `DecideEligibility()` | **Done** (behavior equivalence) — identical logic in `relaypolicy` and `used_providers.go`. `shouldRetryWithThisError` is now chain-aware via `common.IsUnsupportedMethodError(chainID, ...)`. |
+| Phase 2: `DecideEligibility()` | **Done** — `used_providers.go:RemoveUsed()` computes eligibility inputs inline and calls `common.DecideEligibility(isUnsupportedMethod, isSyncLoss, isFirstSyncLoss)` directly. `relaypolicy.DecideEligibility` re-exports the same function. `shouldRetryWithThisError` was removed. |
 | Phase 3: Simplified `HasRequiredNodeResults()` | **Done** |
 | Phase 4: Provider-side `SendNodeMessage()` refactor | Not started |
 | Hedge budget (`AllowHedge`) | Not started |
@@ -496,7 +496,7 @@ Each relay worker runs in its own goroutine, handles one provider, and is respon
 - Session sync loss, second time → UNWANTED (second chance used up)
 - Any other error → UNWANTED (try different provider)
 
-**Relationship to policy**: `relaypolicy.DecideEligibility()` implements identical logic. Direct wiring is blocked by circular imports (`relaypolicy` imports `lavasession`). The behavioral contract is documented in both locations.
+**Relationship to policy**: `RemoveUsed()` calls `common.DecideEligibility()` directly with pre-computed boolean inputs. `relaypolicy.DecideEligibility()` re-exports the same function for API consistency. The old `shouldRetryWithThisError` method was removed.
 
 ---
 
@@ -655,13 +655,13 @@ A pure Go function that consolidates DP#9:
 
 ```go
 type EligibilityResult struct {
-    Action  EligibilityAction  // MarkUnwanted / AllowRetry
+    Action  EligibilityAction  // EligibilityMarkUnwanted / EligibilityAllowRetry
 }
 
-func DecideEligibility(err error, isFirstSyncLoss bool) EligibilityResult { ... }
+func DecideEligibility(isUnsupportedMethod bool, isSyncLoss bool, isFirstSyncLoss bool) EligibilityResult { ... }
 ```
 
-**Status**: Defined in `relaypolicy/eligibility.go` with identical logic to `used_providers.go`'s `shouldRetryWithThisError()`. Both implement the same decision: unsupported method → unwanted, first sync loss → allow retry, everything else → unwanted. Both use `common.IsUnsupportedMethodError("", 0, err.Error())` for chain-agnostic unsupported-method detection (`shouldRetryWithThisError` additionally passes `chainID` for chain-aware Tier-2 matching). Direct wiring is blocked by a circular import (`relaypolicy` imports `lavasession`), so the eligibility logic is shared via behavior equivalence.
+**Status**: Defined in `common/eligibility.go`. Re-exported by `relaypolicy/eligibility.go` for API consistency. Called directly from `used_providers.go:RemoveUsed()` which computes the boolean inputs inline (`isUnsupportedMethod` via `common.IsUnsupportedMethodError(chainID, 0, err.Error())`, `isSyncLoss` via `IsSessionSyncLoss(err)`). The old `shouldRetryWithThisError` method was removed — its logic is now inline in `RemoveUsed()`.
 
 The eligibility **execution** (updating `UsedProviders`) stays in the worker via `OnSessionFailure()` → `Free()` → `RemoveUsed()` for timing reasons — the next hedge must already see the updated exclusion list.
 
@@ -736,11 +736,11 @@ The eligibility **execution** (updating `UsedProviders`) stays in the worker via
 │   │              CacheHashes}      │ │
 │   │    Reason: "EpochMismatch"      │ │         │  Sets flags on RelayResult.    │
 │   │                                 │ │         │                                │
-│   │  if Retry:                      │ │         │ Eligibility: not yet wired     │
-│   │    apply Mutation               │ │         │  (DecideEligibility defined    │
-│   │    stateTransition()            │ │         │   but still in                 │
-│   │    send instruction             │ │         │   used_providers.go via        │
-│   │  if Stop:                       │ │         │   shouldRetryWithThisError)    │
+│   │  if Retry:                      │ │         │ Eligibility:                   │
+│   │    apply Mutation               │ │         │  common.DecideEligibility()    │
+│   │    stateTransition()            │ │         │  called inline from            │
+│   │    send instruction             │ │         │  RemoveUsed() in               │
+│   │  if Stop:                       │ │         │  used_providers.go             │
 │   │    done                         │ │         │                                │
 │   │                                 │ │         │                                │
 │   └─────────────────────────────────┘ │         │ 4. relayProcessor              │
@@ -792,7 +792,7 @@ The eligibility **execution** (updating `UsedProviders`) stays in the worker via
 |---|---|---|
 | Error classification (DP#6/7/8) | Ad-hoc pattern matching: `IsUnsupportedMethodMessage()`, REST 404/405 check, `IsSolanaNonRetryableError()` | `ClassifyNodeError(chainID, statusCode, errorMessage)` — uses structured error registry with chain-aware two-tier classification. Consumer wired. SmartRouter unchanged (does not classify). |
 | User error detection | Not detected | Removed — user-input errors (Layer D) are `Retryable=false` in the registry (caught by `IsNonRetryable`) but charge normal CU (no zero-CU carve-out). |
-| Provider eligibility (DP#9) | `shouldRetryWithThisError()` (standalone function, no chain awareness) | `shouldRetryWithThisError()` is now a method on `UsedProviders` with `chainID` for chain-aware unsupported detection. `DecideEligibility()` in `relaypolicy` has identical logic (behavior equivalence). |
+| Provider eligibility (DP#9) | `shouldRetryWithThisError()` (standalone function, no chain awareness) | `shouldRetryWithThisError()` removed. `RemoveUsed()` computes eligibility inline and calls `common.DecideEligibility()` directly. `relaypolicy.DecideEligibility` re-exports the same function. |
 | Role | Classify errors + decide provider eligibility | Classify errors via error registry (consumer) + eligibility chain-aware via `shouldRetryWithThisError` method |
 
 **Key change**: Workers no longer have functions named `ShouldRetry*`. They classify and label. The "should" questions are answered by `policy.Decide()` in the state machine.
@@ -938,7 +938,7 @@ Whether each flag is the same or different for Consumer vs SmartRouter is a **pr
 | Phase | What | Risk | Depends On |
 |---|---|---|---|
 | **Phase 1** | Unify Consumer + SmartRouter state machines | Low | **DONE** |
-| **Phase 2** | Create `relaypolicy.Policy` with `Decide()`, `OnSendRelayResult()`, `ClassifyNodeError()`. Wire `ClassifyNodeError()` into consumer worker. `DecideEligibility()` defined but not yet wired. SmartRouter worker wiring is follow-up. | Medium (see note) | Phase 1 |
+| **Phase 2** | Create `relaypolicy.Policy` with `Decide()`, `OnSendRelayResult()`, `ClassifyNodeError()`. Wire `ClassifyNodeError()` into consumer worker. `DecideEligibility()` wired via `common.DecideEligibility()` in `RemoveUsed()`. SmartRouter worker wiring is follow-up. | Medium (see note) | Phase 1 |
 | **Phase 3** | Simplify `HasRequiredNodeResults()` — remove `shouldRetryRelay()` call | Low | Phase 2 |
 | **Phase 4** | Refactor provider-side `SendNodeMessage()` to cleaner pure Go loop | Low | Independent |
 
@@ -984,11 +984,9 @@ USER SENDS: curl http://consumer:port -d '{"method":"eth_getBalance",...}'
 │      IsSolanaNonRetryable? → NO
 │      → {IsUnsupported: false, IsSolanaNonRetryable: false, IsRetryable: true}
 │
-│    relaypolicy.DecideEligibility (not yet wired)(err, isFirstSyncLoss=false):
-│      IsUnsupportedMethod? → NO
-│      IsSessionSyncLoss? → NO
+│    common.DecideEligibility(isUnsupportedMethod=false, isSyncLoss=false, isFirstSyncLoss=false):
 │      → {Action: MarkUnwanted}
-│    Worker executes: UsedProviders marks A as UNWANTED
+│    RemoveUsed() marks A as UNWANTED
 │
 │    SetResponse() → rp.responses <- {nodeError, providerA}
 │
@@ -1046,8 +1044,8 @@ USER SENDS: curl http://consumer:port -d '{"method":"eth_getBalance",...}'
 ├─ Worker B: send to Provider B (with archive extension)
 │    ← Response: rate limit exceeded (same error)
 │    relaypolicy.ClassifyNodeError → {IsRetryable: true}
-│    relaypolicy.DecideEligibility (not yet wired) → {Action: MarkUnwanted}
-│    Worker executes: B marked UNWANTED
+│    common.DecideEligibility(isUnsupportedMethod=false, ...) → {Action: MarkUnwanted}
+│    RemoveUsed() marks B as UNWANTED
 │    SetResponse() → rp.responses <- {nodeError, providerB}
 │
 ├─ Goroutine C-2: WaitForResults() → checkEndProcessing → done
