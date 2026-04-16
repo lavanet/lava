@@ -289,8 +289,8 @@ func (rp *RelayProcessor) HasUnsupportedMethodErrors() bool {
 //
 //   - Node errors: IsNonRetryable is set by the classifier when the registry
 //     marks the matched LavaError as Retryable=false. This covers unsupported
-//     method, user input error, execution reverted, out of gas, invalid
-//     signature, double spend, and every other terminal entry in the registry.
+//     method, execution reverted, out of gas, invalid signature, double spend,
+//     and every other terminal entry in the registry.
 //   - Protocol errors: ShouldRetryError consults the same registry for the
 //     wrapped error. Epoch mismatches are still explicitly allowed to retry.
 //
@@ -312,6 +312,9 @@ func (rp *RelayProcessor) HasNonRetryableUserFacingErrors() bool {
 	}
 
 	for _, protocolError := range protocolErrors {
+		if chainlib.IsUnsupportedMethodError(protocolError.GetError()) {
+			return true
+		}
 		if lavasession.EpochMismatchError.Is(protocolError.GetError()) {
 			continue
 		}

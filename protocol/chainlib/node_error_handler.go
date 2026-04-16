@@ -148,17 +148,6 @@ func IsUnsupportedMethodErrorType(err error) bool {
 	return false
 }
 
-// IsNonRetryableUserFacingErrorType checks if an error wraps a LavaError whose
-// subcategory is any "don't retry, don't charge CU" kind — currently
-// SubCategoryUnsupportedMethod or SubCategoryUserError. The retry state
-// machine uses this to short-circuit both classes uniformly.
-func IsNonRetryableUserFacingErrorType(err error) bool {
-	if le := unwrapLavaError(err); le != nil {
-		return le.SubCategory.IsNonRetryableUserFacing()
-	}
-	return false
-}
-
 // IsSolanaNonRetryableError checks if an error indicates a Solana error that should not be retried.
 // Covers -32009 (missing in long-term storage) and -32602 (invalid params).
 // Note: -32007 (ledger jump) IS retryable as another provider may have the data.

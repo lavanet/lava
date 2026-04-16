@@ -382,20 +382,14 @@ type RelayResult struct {
 	ProviderTrailer     metadata.MD // the provider trailer attached to the request. used to transfer useful information (which is not signed so shouldn't be trusted completely).
 	IsNodeError         bool
 	ResponseHash        [32]byte // cached SHA256 hash of Reply.Data for cross-validation comparison, zero-value if not computed
-	IsUnsupportedMethod bool     // Indicates this node error is an unsupported method
-	// IsUserError indicates this node error is caused by invalid client input
-	// (Layer D USER_* codes). Behavioral contract mirrors IsUnsupportedMethod:
-	// zero retries, zero CU, no provider scoring. User errors are NOT cached
-	// because the next request from the same client may carry valid input.
-	IsUserError bool
+	IsUnsupportedMethod bool     // Indicates this node error is an unsupported method (zero CU, cached)
 	// IsNonRetryable is the umbrella flag the retry state machine consults:
 	// it's true whenever the matched registry LavaError has Retryable=false,
-	// which covers unsupported method, user input error, execution reverted,
-	// out of gas, invalid signature, double spend, etc. Retrying on another
-	// provider would just reproduce the same deterministic failure.
-	// IsUnsupportedMethod and IsUserError are independent subset flags derived
-	// from the SubCategory and used only to gate CU-charging and caching
-	// policy — they do NOT narrow the retry decision below IsNonRetryable.
+	// which covers unsupported method, execution reverted, out of gas,
+	// invalid signature, double spend, etc. Retrying on another provider
+	// would just reproduce the same deterministic failure.
+	// IsUnsupportedMethod is an independent subset flag derived from the
+	// SubCategory and used to gate the zero-CU carve-out and caching policy.
 	IsNonRetryable bool
 }
 

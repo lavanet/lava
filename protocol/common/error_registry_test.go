@@ -233,7 +233,6 @@ func TestErrorCategory_String(t *testing.T) {
 func TestErrorSubCategory_String(t *testing.T) {
 	assert.Equal(t, "none", SubCategoryNone.String())
 	assert.Equal(t, "unsupported_method", SubCategoryUnsupportedMethod.String())
-	assert.Equal(t, "user_error", SubCategoryUserError.String())
 }
 
 func TestErrorSubCategory_UnsupportedMethodTagging(t *testing.T) {
@@ -255,56 +254,22 @@ func TestErrorSubCategory_UnsupportedMethodTagging(t *testing.T) {
 	}
 }
 
-// TestErrorSubCategory_UserErrorTagging enforces the invariant that every Layer D code
-// (4000-4999) plus the protocol-layer batch-size-exceeded error carries
-// SubCategoryUserError. Adding a new Layer D code without tagging it would
-// regress the consumer's "don't retry, don't charge CU" behavior for that
-// class of error — this test fails fast if that happens.
-func TestErrorSubCategory_UserErrorTagging(t *testing.T) {
-	// Inclusion: every registered Layer D code must be tagged. Iterate the
-	// registry so new Layer D entries are discovered automatically.
+// TestLayerDErrors_NoSpecialSubCategory ensures Layer D codes (4000-4999) do NOT
+// carry SubCategoryUnsupportedMethod — they are user-input errors that charge
+// normal CU (the provider does real work on every call because the response is
+// not cached).
+func TestLayerDErrors_NoSpecialSubCategory(t *testing.T) {
 	layerDFound := 0
 	for code, le := range errorRegistry {
 		if code >= 4000 && code < 5000 {
 			layerDFound++
-			assert.True(t, le.SubCategory.IsUserError(),
-				"Layer D code %d (%s) must be SubCategoryUserError; tag it in error_codes.go", code, le.Name)
+			assert.Equal(t, SubCategoryNone, le.SubCategory,
+				"Layer D code %d (%s) must NOT carry a special SubCategory — user errors charge normal CU", code, le.Name)
+			assert.False(t, le.Retryable,
+				"Layer D code %d (%s) must be non-retryable", code, le.Name)
 		}
 	}
 	require.Positive(t, layerDFound, "Layer D range should contain at least one registered error")
-
-	// Inclusion: the protocol-layer batch error is a client-side "too many
-	// requests in one batch" failure — the reviewer flagged it specifically.
-	assert.True(t, LavaErrorBatchSizeExceeded.SubCategory.IsUserError(),
-		"PROTOCOL_BATCH_SIZE_EXCEEDED must be tagged as user error")
-
-	// Exclusion: LavaErrorInvalidRelayRequest is a protocol-envelope signature/
-	// hash mismatch — it's consumer-caused but NOT user input in the Layer D
-	// sense. Keep it un-tagged per the reviewer's explicit recommendation.
-	assert.False(t, LavaErrorInvalidRelayRequest.SubCategory.IsUserError(),
-		"PROTOCOL_INVALID_RELAY_REQUEST is an envelope integrity failure, not user input")
-
-	// Exclusion spot-checks on unrelated categories.
-	exclusions := []*LavaError{
-		LavaErrorConnectionTimeout,  // internal, transport
-		LavaErrorNodeInternalError,  // node error
-		LavaErrorChainNonceTooLow,   // chain error
-		LavaErrorNodeMethodNotFound, // unsupported method — mutually exclusive subcategory
-		LavaErrorNodeMethodNotSupported,
-	}
-	for _, le := range exclusions {
-		assert.False(t, le.SubCategory.IsUserError(),
-			"%s must NOT be tagged SubCategoryUserError", le.Name)
-	}
-}
-
-// TestErrorSubCategory_IsNonRetryableUserFacing verifies the combined predicate covers both
-// subcategories and nothing else.
-func TestErrorSubCategory_IsNonRetryableUserFacing(t *testing.T) {
-	assert.True(t, SubCategoryUnsupportedMethod.IsNonRetryableUserFacing())
-	assert.True(t, SubCategoryUserError.IsNonRetryableUserFacing())
-	assert.False(t, SubCategoryNone.IsNonRetryableUserFacing())
-	assert.False(t, SubCategoryRateLimit.IsNonRetryableUserFacing(), "rate-limit is retryable with backoff, not zero-CU terminal")
 }
 
 // TestErrorSubCategory_RateLimitTagging enforces that every rate-limit code carries the
@@ -539,26 +504,28 @@ func TestClassifyError_LayerDCodesHaveMatchers(t *testing.T) {
 	}
 }
 
-// TestIsUserInputError exercises the classify-then-check helper end-to-end
-// so the consumer hot path sees the same answer the registry intends.
-func TestIsUserInputError_KnownCases(t *testing.T) {
-	// JSON-RPC parse error code → USER_PARSE_ERROR → tagged as user error
-	assert.True(t, IsUserInputError("ETH1", -32700, "parse error"))
-	// JSON-RPC invalid params → USER_INVALID_PARAMS → tagged
-	assert.True(t, IsUserInputError("ETH1", -32602, "invalid params"))
-	// Unsupported method → tagged as unsupported, NOT user error
-	assert.False(t, IsUserInputError("ETH1", -32601, "method not found"))
-	// Rate limit → retryable external, not user error
-	assert.False(t, IsUserInputError("ETH1", 0, "rate limit exceeded"))
-	// Connection timeout → internal, not user error
-	assert.False(t, IsUserInputError("ETH1", 0, "context deadline exceeded"))
+// TestLayerDErrors_AreNonRetryable verifies that Layer D user-input errors
+// are classified as non-retryable but do NOT carry SubCategoryUnsupportedMethod
+// (which would zero out CU — providers should be paid for processing invalid input).
+func TestLayerDErrors_AreNonRetryable(t *testing.T) {
+	// JSON-RPC parse error code → USER_PARSE_ERROR → non-retryable
+	le := ClassifyError(nil, ChainFamilyEVM, TransportJsonRPC, -32700, "parse error")
+	assert.Equal(t, LavaErrorUserParseError, le)
+	assert.False(t, le.Retryable)
+	assert.False(t, le.SubCategory.IsUnsupportedMethod())
+
+	// JSON-RPC invalid params → USER_INVALID_PARAMS → non-retryable
+	le = ClassifyError(nil, ChainFamilyEVM, TransportJsonRPC, -32602, "invalid params")
+	assert.Equal(t, LavaErrorUserInvalidParams, le)
+	assert.False(t, le.Retryable)
+	assert.False(t, le.SubCategory.IsUnsupportedMethod())
 }
 
 // TestClassifyNodeErrorForRetry_DerivesAllFlagsFromSingleLookup verifies the
 // single-pass helper the consumer hot path uses. Each row asserts all three
 // flags at once because the consumer relies on their mutual consistency —
-// IsUnsupportedMethod and IsUserError must always imply IsNonRetryable, and
-// unknown messages must fail open (all flags false → retryable).
+// IsUnsupportedMethod must always imply IsNonRetryable, and unknown messages
+// must fail open (all flags false → retryable).
 func TestClassifyNodeErrorForRetry_DerivesAllFlagsFromSingleLookup(t *testing.T) {
 	cases := []struct {
 		name             string
@@ -568,10 +535,9 @@ func TestClassifyNodeErrorForRetry_DerivesAllFlagsFromSingleLookup(t *testing.T)
 		message          string
 		wantNonRetryable bool
 		wantUnsupported  bool
-		wantUserErr      bool
 	}{
 		{
-			name:             "EVM execution reverted → terminal, neither unsupported nor user",
+			name:             "EVM execution reverted → terminal, not unsupported",
 			family:           ChainFamilyEVM,
 			transport:        TransportJsonRPC,
 			errorCode:        3,
@@ -588,13 +554,12 @@ func TestClassifyNodeErrorForRetry_DerivesAllFlagsFromSingleLookup(t *testing.T)
 			wantUnsupported:  true,
 		},
 		{
-			name:             "JSON-RPC body code -32700 parse error → terminal + user",
+			name:             "JSON-RPC body code -32700 parse error → terminal, not unsupported",
 			family:           ChainFamilyEVM,
 			transport:        TransportJsonRPC,
 			errorCode:        -32700,
 			message:          "parse error",
 			wantNonRetryable: true,
-			wantUserErr:      true,
 		},
 		{
 			name:             "generic transient → retryable (all flags false)",
@@ -619,11 +584,8 @@ func TestClassifyNodeErrorForRetry_DerivesAllFlagsFromSingleLookup(t *testing.T)
 			got := ClassifyNodeErrorForRetry(tc.family, tc.transport, tc.errorCode, tc.message)
 			assert.Equal(t, tc.wantNonRetryable, got.IsNonRetryable, "IsNonRetryable")
 			assert.Equal(t, tc.wantUnsupported, got.IsUnsupportedMethod, "IsUnsupportedMethod")
-			assert.Equal(t, tc.wantUserErr, got.IsUserError, "IsUserError")
-			// Invariant: the two subset flags must never be set without
-			// IsNonRetryable also being set.
-			if got.IsUnsupportedMethod || got.IsUserError {
-				assert.True(t, got.IsNonRetryable, "subset flags imply IsNonRetryable")
+			if got.IsUnsupportedMethod {
+				assert.True(t, got.IsNonRetryable, "IsUnsupportedMethod implies IsNonRetryable")
 			}
 		})
 	}

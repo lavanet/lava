@@ -179,10 +179,8 @@ func (crsm *ConsumerRelayStateMachine) shouldRetry(numberOfNodeErrors uint64) bo
 	return shouldRetry
 }
 
-// hasUnsupportedMethodErrorsInStateMachine checks if we have any non-retryable
-// user-facing errors (unsupported method or user input error) at state machine
-// level. The name retains "UnsupportedMethod" for historical continuity but
-// the check covers both SubCategoryUnsupportedMethod and SubCategoryUserError.
+// hasUnsupportedMethodErrorsInStateMachine checks if we have any unsupported
+// method errors at state machine level — these are the only zero-CU errors.
 func (crsm *ConsumerRelayStateMachine) hasUnsupportedMethodErrorsInStateMachine() bool {
 	if crsm.resultsChecker == nil {
 		return false

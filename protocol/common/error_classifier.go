@@ -155,9 +155,9 @@ var genericErrorMappings = map[TransportType][]errorMapping{
 		// --- User input validation (Layer D) ---
 		// These must be ordered BEFORE the broader chain-transaction matchers so
 		// "invalid address" / "invalid block number" don't leak into -32000 catch-all.
-		// Matchers are deliberately tight: NodeMethodNotFound carries
-		// SubCategoryUserError (zero retries, zero CU), so false positives would
-		// silently swallow real chain errors.
+		// Matchers are deliberately tight: false positives would silently
+		// classify real chain errors as user input errors (Retryable=false),
+		// stopping retries that could have succeeded on another provider.
 		//
 		// Block format: "hex string without 0x prefix" is Geth's exact phrase;
 		// "invalid block number" and "invalid block hash" are generic.
@@ -398,25 +398,8 @@ func IsUnsupportedMethodError(chainID string, statusCode int, message string) bo
 	return classifySubCategoryAcrossTransports(chainID, statusCode, message).IsUnsupportedMethod()
 }
 
-// IsUserInputError returns true when the error identified by statusCode and
-// message is classified as invalid client input (Layer D USER_* codes or
-// batch-size-exceeded). The contract mirrors IsUnsupportedMethodError: the
-// chainID enables chain-specific Tier-2 lookups so chain-native messages
-// aren't misclassified as user input. Pass "" when the chain is unknown.
-//
-// The consumer hot path uses this symmetric to IsUnsupportedMethodError to
-// short-circuit retries and charge zero CU for invalid client input.
-func IsUserInputError(chainID string, statusCode int, message string) bool {
-	return classifySubCategoryAcrossTransports(chainID, statusCode, message).IsUserError()
-}
-
 // IsNonRetryableNodeError returns true when the classified LavaError for the
-// given node-error response has Retryable=false (e.g. CHAIN_EXECUTION_REVERTED,
-// CHAIN_OUT_OF_GAS, CHAIN_DOUBLE_SPEND, CHAIN_INVALID_SIGNATURE, and every
-// other terminal error in the 3000-range). Unlike IsUserInputError /
-// IsUnsupportedMethodError this does NOT key off SubCategory — it honors the
-// Retryable flag directly so every non-retryable LavaError short-circuits
-// retries, not only the zero-CU user-facing subset.
+// given node-error response has Retryable=false.
 func IsNonRetryableNodeError(chainID string, statusCode int, message string) bool {
 	family := ChainFamilyUnknown
 	if chainID != "" {
@@ -433,10 +416,7 @@ func IsNonRetryableNodeError(chainID string, statusCode int, message string) boo
 }
 
 // IsNonRetryableNodeErrorWithContext is the variant of IsNonRetryableNodeError
-// for call sites that already know the chain family and transport exactly (e.g.
-// the smart router's direct-RPC senders). It avoids the JSON-RPC→REST→gRPC
-// scan of classifySubCategoryAcrossTransports and the chainID-to-family lookup.
-// Pass ChainFamilyUnknown when the family is genuinely unknown.
+// for call sites that already know the chain family and transport exactly.
 func IsNonRetryableNodeErrorWithContext(family ChainFamily, transport TransportType, statusCode int, message string) bool {
 	c := ClassifyError(nil, family, transport, statusCode, message)
 	if c == nil || c == LavaErrorUnknown {
@@ -445,32 +425,19 @@ func IsNonRetryableNodeErrorWithContext(family ChainFamily, transport TransportT
 	return !c.Retryable
 }
 
-// NodeErrorClassification aggregates the three policy flags derived from a
+// NodeErrorClassification aggregates the policy flags derived from a
 // single registry lookup on a node-error response:
 //   - IsNonRetryable: registry entry is Retryable=false (hard stop for retries).
-//   - IsUnsupportedMethod / IsUserError: SubCategory-based predicates used by
-//     the consumer to apply the zero-CU carve-out and caching policy. Both are
-//     strict subsets of IsNonRetryable.
+//   - IsUnsupportedMethod: SubCategory-based predicate used by the consumer
+//     to apply the zero-CU carve-out and response caching.
 type NodeErrorClassification struct {
 	IsNonRetryable      bool
 	IsUnsupportedMethod bool
-	IsUserError         bool
 }
 
 // ClassifyNodeErrorForRetry runs ClassifyError exactly once and derives the
-// three flags consumed by the consumer's retry decision and CU/caching
-// carve-outs. Prefer this over sequential IsNonRetryableNodeError /
-// IsUnsupportedMethodError / IsUserInputError calls on hot error paths — each
-// of those internally scans all three transports, which is wasteful when the
-// caller already knows family and transport.
-//
-// errorCode semantics depend on transport:
-//   - TransportJsonRPC: pass the JSON-RPC error.code from the response body
-//     (e.g. -32700, -32602). HTTP status is usually 200 for JSON-RPC node
-//     errors and would miss the code-based registry mappings.
-//   - TransportREST / TransportGRPC: the HTTP / gRPC status code.
-//
-// Unknown classifications fail open (all flags false → retryable).
+// policy flags consumed by the consumer's retry decision and CU/caching
+// carve-outs.
 func ClassifyNodeErrorForRetry(family ChainFamily, transport TransportType, errorCode int, message string) NodeErrorClassification {
 	c := ClassifyError(nil, family, transport, errorCode, message)
 	if c == nil || c == LavaErrorUnknown {
@@ -479,14 +446,11 @@ func ClassifyNodeErrorForRetry(family ChainFamily, transport TransportType, erro
 	return NodeErrorClassification{
 		IsNonRetryable:      !c.Retryable,
 		IsUnsupportedMethod: c.SubCategory.IsUnsupportedMethod(),
-		IsUserError:         c.SubCategory.IsUserError(),
 	}
 }
 
 // ApiInterfaceToTransport maps a spec API interface string (jsonrpc,
 // tendermintrpc, rest, grpc) to the TransportType used by the error registry.
-// Unknown or empty inputs fall through to TransportJsonRPC, which is the most
-// common transport and matches the broadest set of registry matchers.
 func ApiInterfaceToTransport(apiInterface string) TransportType {
 	switch apiInterface {
 	case "rest":

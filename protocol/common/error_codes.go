@@ -82,7 +82,6 @@ var (
 	})
 	LavaErrorBatchSizeExceeded = registerError(&LavaError{
 		Code: 1022, Name: "PROTOCOL_BATCH_SIZE_EXCEEDED", Category: CategoryInternal,
-		SubCategory: SubCategoryUserError, // caller sent too many requests — not retryable, no CU
 		Description: "Batch request size exceeded limit", Retryable: false,
 	})
 	LavaErrorCUMismatch = registerError(&LavaError{
@@ -564,43 +563,37 @@ var (
 // Errors caused by malformed or invalid client requests.
 // ---------------------------------------------------------------------------
 
-// All Layer D codes carry SubCategoryUserError so the consumer hot path can
-// short-circuit retries and charge zero CU uniformly for invalid client input.
-// The subcategory tagging is enforced by a test in error_registry_test.go.
+// Layer D errors are classified for metrics/observability but do NOT receive
+// special CU treatment — providers still charge normal CU for processing
+// invalid client requests (since responses are not cached and the provider
+// does real work on every call).
 var (
 	LavaErrorUserParseError = registerError(&LavaError{
 		Code: 4001, Name: "USER_PARSE_ERROR", Category: CategoryExternal,
-		SubCategory: SubCategoryUserError,
 		Description: "Invalid JSON in request", Retryable: false,
 	})
 	LavaErrorUserInvalidRequest = registerError(&LavaError{
 		Code: 4002, Name: "USER_INVALID_REQUEST", Category: CategoryExternal,
-		SubCategory: SubCategoryUserError,
 		Description: "Request is not a valid JSON-RPC/REST/gRPC object", Retryable: false,
 	})
 	LavaErrorUserInvalidParams = registerError(&LavaError{
 		Code: 4003, Name: "USER_INVALID_PARAMS", Category: CategoryExternal,
-		SubCategory: SubCategoryUserError,
 		Description: "Invalid method parameters", Retryable: false,
 	})
 	LavaErrorUserInvalidBlockFormat = registerError(&LavaError{
 		Code: 4004, Name: "USER_INVALID_BLOCK_FORMAT", Category: CategoryExternal,
-		SubCategory: SubCategoryUserError,
 		Description: "Invalid block number format (e.g., non-hex)", Retryable: false,
 	})
 	LavaErrorUserInvalidAddress = registerError(&LavaError{
 		Code: 4005, Name: "USER_INVALID_ADDRESS", Category: CategoryExternal,
-		SubCategory: SubCategoryUserError,
 		Description: "Invalid address format", Retryable: false,
 	})
 	LavaErrorUserRequestTooLarge = registerError(&LavaError{
 		Code: 4006, Name: "USER_REQUEST_TOO_LARGE", Category: CategoryExternal,
-		SubCategory: SubCategoryUserError,
 		Description: "Request body exceeds size limit", Retryable: false,
 	})
 	LavaErrorUserInvalidHex = registerError(&LavaError{
 		Code: 4007, Name: "USER_INVALID_HEX", Category: CategoryExternal,
-		SubCategory: SubCategoryUserError,
 		Description: "Invalid hex encoding", Retryable: false,
 	})
 )
