@@ -113,7 +113,7 @@ func SendNodeError(relayProcessor *RelayProcessor, provider string, delay time.D
 
 // SendNodeErrorWithRetryable sends a node error and lets the caller set the
 // IsNonRetryable flag that the classifier would normally populate. Used to
-// exercise the retry gate in HasNonRetryableUserFacingErrors.
+// exercise the retry gate via GetResultsSummary().HasNonRetryableNodeError.
 func SendNodeErrorWithRetryable(relayProcessor *RelayProcessor, provider string, delay time.Duration, nonRetryable bool) {
 	time.Sleep(delay)
 	relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), nil)

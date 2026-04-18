@@ -184,17 +184,19 @@ func (up *UsedProviders) RemoveUsed(provider string, routerKey RouterKey, err er
 		uniqueUsedProviders.erroredProviders[provider] = struct{}{}
 	}
 
-	// Check if this is a NEW sync loss that should be retried
+	// Compute eligibility inputs for the policy
 	_, alreadyBlocked := uniqueUsedProviders.blockOnSyncLoss[provider]
-	isNewSyncLoss := err != nil && up.shouldRetryWithThisError(err) && !alreadyBlocked
+	isUnsupportedMethod := err != nil && common.IsUnsupportedMethodError(up.chainID, 0, err.Error())
+	isSyncLoss := err != nil && IsSessionSyncLoss(err)
+	isFirstSyncLoss := isSyncLoss && !alreadyBlocked
 
-	if isNewSyncLoss {
-		// First sync loss for this provider - allow one retry
+	// Eligibility decision via the policy engine
+	result := common.DecideEligibility(isUnsupportedMethod, isSyncLoss, isFirstSyncLoss)
+
+	if result.Action == common.EligibilityAllowRetry {
 		uniqueUsedProviders.blockOnSyncLoss[provider] = struct{}{}
 		utils.LavaFormatWarning("Identified SyncLoss in provider, allowing retry", err, utils.Attribute{Key: "address", Value: provider})
 	} else {
-		// All other cases: mark provider as unwanted
-		// This includes: no error, non-retryable errors, and subsequent sync losses
 		up.setUnwanted(uniqueUsedProviders, provider)
 	}
 
@@ -303,23 +305,4 @@ func (up *UsedProviders) GetUnwantedProvidersToSend(routerKey RouterKey) map[str
 		unwantedProvidersToSend[provider] = struct{}{}
 	}
 	return unwantedProvidersToSend
-}
-
-// shouldRetryWithThisError is called from RemoveUsed with up.lock already held
-// for writing, so it reads up.chainID directly without additional locking.
-// Never call this from an unlocked context.
-func (up *UsedProviders) shouldRetryWithThisError(err error) bool {
-	chainID := ""
-	if up != nil {
-		chainID = up.chainID
-	}
-	// Never retry unsupported method errors. Passing chainID enables Tier-2
-	// lookups so chain-native messages that happen to overlap broad Tier-1
-	// substring matchers are not misclassified as unsupported-method.
-	if common.IsUnsupportedMethodError(chainID, 0, err.Error()) {
-		return false
-	}
-
-	// Allow retries for session sync loss errors
-	return IsSessionSyncLoss(err)
 }

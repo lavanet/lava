@@ -18,11 +18,11 @@ import (
 	lavasession "github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/relaycore"
 	"github.com/lavanet/lava/v5/protocol/relaycoretest"
+	"github.com/lavanet/lava/v5/utils"
+	"github.com/lavanet/lava/v5/utils/lavaslices"
 	epochstoragetypes "github.com/lavanet/lava/v5/types/epoch"
 	pairingtypes "github.com/lavanet/lava/v5/types/relay"
 	spectypes "github.com/lavanet/lava/v5/types/spec"
-	"github.com/lavanet/lava/v5/utils"
-	"github.com/lavanet/lava/v5/utils/lavaslices"
 	"github.com/stretchr/testify/require"
 )
 
@@ -49,7 +49,7 @@ type SmartRouterRelaySenderMock struct {
 	tickerValue time.Duration
 }
 
-func (srsm *SmartRouterRelaySenderMock) getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
+func (srsm *SmartRouterRelaySenderMock) GetProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
 	if srsm.tickerValue != 0 {
 		return time.Second * 50000, srsm.tickerValue
 	}
@@ -62,7 +62,7 @@ type SmartRouterRelaySenderMockWithTimeout struct {
 	processingTimeout time.Duration
 }
 
-func (srsm *SmartRouterRelaySenderMockWithTimeout) getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
+func (srsm *SmartRouterRelaySenderMockWithTimeout) GetProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
 	return srsm.processingTimeout, 10 * time.Second
 }
 

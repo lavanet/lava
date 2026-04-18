@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gogo/status"
+	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 )
@@ -114,11 +115,9 @@ func TestUsedProviderContextTimeout(t *testing.T) {
 	})
 }
 
-// NEW TEST: Verify shouldRetryWithThisError logic with unsupported methods
-func TestShouldRetryWithThisError(t *testing.T) {
-	up := NewUsedProviders(nil)
-
-	t.Run("Should NOT retry unsupported methods", func(t *testing.T) {
+// TestDecideEligibility verifies the eligibility logic used by RemoveUsed.
+func TestDecideEligibility(t *testing.T) {
+	t.Run("unsupported method marks unwanted", func(t *testing.T) {
 		unsupportedErrors := []error{
 			fmt.Errorf("method not found"),
 			fmt.Errorf("endpoint not found"),
@@ -126,18 +125,33 @@ func TestShouldRetryWithThisError(t *testing.T) {
 		}
 
 		for _, err := range unsupportedErrors {
-			result := up.shouldRetryWithThisError(err)
-			require.False(t, result, "Should not retry unsupported method: %s", err.Error())
+			isUnsupported := common.IsUnsupportedMethodError("", 0, err.Error())
+			isSyncLoss := IsSessionSyncLoss(err)
+			result := common.DecideEligibility(isUnsupported, isSyncLoss, !isSyncLoss)
+			require.Equal(t, common.EligibilityMarkUnwanted, result.Action,
+				"Should mark unwanted for unsupported method: %s", err.Error())
 		}
 	})
 
-	t.Run("Should retry session sync loss", func(t *testing.T) {
+	t.Run("first sync loss allows retry", func(t *testing.T) {
 		err := status.Error(codes.Code(SessionOutOfSyncGRPCCode), "session out of sync")
-		result := up.shouldRetryWithThisError(err)
-		require.True(t, result, "Should retry session sync loss")
+		isUnsupported := common.IsUnsupportedMethodError("", 0, err.Error())
+		isSyncLoss := IsSessionSyncLoss(err)
+		result := common.DecideEligibility(isUnsupported, isSyncLoss, true)
+		require.Equal(t, common.EligibilityAllowRetry, result.Action,
+			"Should allow retry on first sync loss")
 	})
 
-	t.Run("Should NOT retry normal errors", func(t *testing.T) {
+	t.Run("second sync loss marks unwanted", func(t *testing.T) {
+		err := status.Error(codes.Code(SessionOutOfSyncGRPCCode), "session out of sync")
+		isUnsupported := common.IsUnsupportedMethodError("", 0, err.Error())
+		isSyncLoss := IsSessionSyncLoss(err)
+		result := common.DecideEligibility(isUnsupported, isSyncLoss, false)
+		require.Equal(t, common.EligibilityMarkUnwanted, result.Action,
+			"Should mark unwanted on second sync loss")
+	})
+
+	t.Run("normal errors mark unwanted", func(t *testing.T) {
 		normalErrors := []error{
 			fmt.Errorf("execution reverted: some error"),
 			fmt.Errorf("internal server error"),
@@ -145,8 +159,11 @@ func TestShouldRetryWithThisError(t *testing.T) {
 		}
 
 		for _, err := range normalErrors {
-			result := up.shouldRetryWithThisError(err)
-			require.False(t, result, "Should not retry normal error: %s", err.Error())
+			isUnsupported := common.IsUnsupportedMethodError("", 0, err.Error())
+			isSyncLoss := IsSessionSyncLoss(err)
+			result := common.DecideEligibility(isUnsupported, isSyncLoss, true)
+			require.Equal(t, common.EligibilityMarkUnwanted, result.Action,
+				"Should mark unwanted for normal error: %s", err.Error())
 		}
 	})
 }

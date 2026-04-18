@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"math"
 	"regexp"
 	"strings"
 )
@@ -175,7 +176,7 @@ func (cf ChainFamily) String() string {
 }
 
 // chainFamilyMap maps chain ID strings (from spec JSON files) to their chain family.
-// Sourced from specs/.
+// Sourced from specs/mainnet-1/specs/ and specs/testnet-2/specs/.
 //
 // INVARIANT: populated at package-init time and never mutated at runtime.
 // Read paths (GetChainFamily, GetChainFamilyOrDefault, ClassifyError) rely on
@@ -416,6 +417,9 @@ type grpcCodeMatcher struct {
 }
 
 func (m grpcCodeMatcher) Matches(errorCode int, _ string) bool {
+	if errorCode < 0 || errorCode > math.MaxUint32 {
+		return false
+	}
 	return uint32(errorCode) == m.code
 }
 
