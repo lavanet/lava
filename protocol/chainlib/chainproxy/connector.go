@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -375,7 +376,18 @@ func (connector *GRPCConnector) numberOfUsedClients() int {
 }
 
 func (connector *GRPCConnector) createConnection(ctx context.Context, nodeUrl common.NodeUrl, currentNumberOfConnections int) (*grpc.ClientConn, error) {
+	// grpc.DialContext expects host:port, not a URL with scheme. The grpc:// /
+	// grpcs:// prefixes are a config-time convention enforced by the direct-RPC
+	// validator (see protocol/lavasession/direct_rpc_connection.go validateURL).
+	// When the grpcs:// prefix is present, also auto-enable TLS on the local
+	// nodeUrl copy so config can rely on the scheme alone.
 	addr := nodeUrl.Url
+	if strings.HasPrefix(addr, "grpcs://") {
+		addr = strings.TrimPrefix(addr, "grpcs://")
+		nodeUrl.AuthConfig.UseTLS = true
+	} else if strings.HasPrefix(addr, "grpc://") {
+		addr = strings.TrimPrefix(addr, "grpc://")
+	}
 	var rpcClient *grpc.ClientConn
 	var err error
 	numberOfConnectionAttempts := 0

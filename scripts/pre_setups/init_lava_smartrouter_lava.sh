@@ -44,9 +44,10 @@ sleep 2
 
 # PublicNode upstream endpoints (TLS)
 LAVA_REST_LOCAL="https://lava-rest.publicnode.com:443"
-# gRPC URLs must NOT have a scheme prefix (grpcs:// is invalid for grpc.DialContext).
-# TLS is enabled via auth-config.use-tls in the node-url config instead.
-LAVA_GRPC_LOCAL="lava-grpc.publicnode.com:443"
+# gRPC URLs MUST have a scheme prefix; the validator in
+# protocol/lavasession/direct_rpc_connection.go (validateURL) rejects anything
+# else. Use grpcs:// for TLS — it implicitly sets AuthConfig.UseTLS=true.
+LAVA_GRPC_LOCAL="grpcs://lava-grpc.publicnode.com:443"
 LAVA_TENDERMINTRPC_LOCAL="https://lava-rpc.publicnode.com:443"
 LAVA_TENDERMINTRPC_WS_LOCAL="wss://lava-rpc.publicnode.com:443/websocket"
 
@@ -124,8 +125,8 @@ direct-rpc:
           - pruning
 
   # 3 upstream gRPC endpoints (PublicNode TLS)
-  # Note: gRPC URLs must NOT include a scheme prefix (grpcs:// is invalid).
-  # TLS is enabled via auth-config.use-tls below.
+  # Note: gRPC URLs MUST include a scheme prefix; grpcs:// implies TLS so the
+  # explicit use-tls below is redundant but kept for documentation clarity.
   # PublicNode gRPC blocks GetNodeInfo, so chain-id verification must be skipped.
   - name: "lava-publicnode-grpc-1"
     chain-id: "LAVA"
@@ -221,7 +222,8 @@ smartrouter_lava.yml \
 --cache-be \"127.0.0.1:20100\" \
 --use-static-spec \"$SPECS_DIR\" \
 --metrics-listen-address ':7779' \
---concurrent-providers 1 2>&1 | tee \"$LOGS_DIR/SMARTROUTER_LAVA.log\"" && sleep 0.25
+--concurrent-providers 1 \
+--min-relay-timeout 5s 2>&1 | tee \"$LOGS_DIR/SMARTROUTER_LAVA.log\"" && sleep 0.25
 
 sleep 3
 
