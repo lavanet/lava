@@ -1235,6 +1235,19 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 			// get here only if performed a regular relay successfully
 			go rpccs.rpcConsumerLogs.RecordProviderLatency(chainId, apiInterface, providerPublicAddress, protocolMessage.GetApi().GetName(), float64(relayLatency.Milliseconds()))
+
+			// Extract HTTP status code from the provider trailer metadata.
+			// The provider sends the node's HTTP status code (e.g. 500 for server errors)
+			// via gRPC trailer so the consumer can detect REST node errors.
+			statuses := localRelayResult.ProviderTrailer.Get(common.StatusCodeMetadataKey)
+			if len(statuses) > 0 {
+				codeNum, errStatus := strconv.Atoi(statuses[0])
+				if errStatus != nil {
+					utils.LavaFormatWarning("failed converting status code", errStatus, utils.LogAttr("statuses", statuses), utils.LogAttr("GUID", ctx))
+				}
+				localRelayResult.StatusCode = codeNum
+			}
+
 			expectedBH := int64(math.MaxInt64) // Default to max since we don't track expected block height anymore
 			pairingAddressesLen := rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()
 			latestBlock := localRelayResult.Reply.LatestBlock

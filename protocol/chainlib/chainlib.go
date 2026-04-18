@@ -200,7 +200,10 @@ func (*TestModeChainRouter) SendNodeMsg(ctx context.Context, ch chan interface{}
 }
 
 func (*TestModeChainRouter) ExtensionsSupported(internalPath string, extensions []string) bool {
-	return false
+	// In test mode, support base requests (no extensions) so relays reach
+	// the test-response handler. Non-empty extensions (e.g. archive) are
+	// not supported since there is no real node behind test mode.
+	return len(extensions) == 0
 }
 
 type ChainProxy interface {
