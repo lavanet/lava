@@ -306,4 +306,3 @@ func (up *UsedProviders) GetUnwantedProvidersToSend(routerKey RouterKey) map[str
 	}
 	return unwantedProvidersToSend
 }
-

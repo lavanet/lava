@@ -77,11 +77,11 @@ func TestDecide_LimitChecks(t *testing.T) {
 
 func TestDecide_ErrorTolerance(t *testing.T) {
 	tests := []struct {
-		name           string
+		name            string
 		relayRetryLimit int
-		nodeErrors     int
-		expectedAction Action
-		expectedReason string
+		nodeErrors      int
+		expectedAction  Action
+		expectedReason  string
 	}{
 		{
 			name:            "under limit retries",

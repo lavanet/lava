@@ -297,7 +297,6 @@ func (rp *RelayProcessor) GetResultsSummary() ResultsSummary {
 	}
 }
 
-
 func (rp *RelayProcessor) HasRequiredNodeResults(tries int) (bool, int) {
 	if rp == nil {
 		return false, 0

@@ -124,7 +124,7 @@ type DecisionInput struct {
 	// NodeErrors is from the state machine's atomic counter (set by HasRequiredNodeResults).
 	// Used only by decideMutation() for archive threshold checks. Differs from
 	// Summary.NodeErrors (from GetResultsSummary scan) in source but should converge.
-	NodeErrors uint64
+	NodeErrors    uint64
 	IsTickerHedge bool // true when called from ticker.C (hedge), false from gotResults (retry)
 }
 
