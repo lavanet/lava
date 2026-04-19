@@ -118,6 +118,28 @@ func SendNodeError(relayProcessor *relaycore.RelayProcessor, provider string, de
 	relayProcessor.SetResponse(response)
 }
 
+// SendNodeErrorWithRetryable sends a node error and lets the caller set the
+// IsNonRetryable flag that the classifier would normally populate.
+func SendNodeErrorWithRetryable(relayProcessor *relaycore.RelayProcessor, provider string, delay time.Duration, nonRetryable bool) {
+	time.Sleep(delay)
+	relayProcessor.GetUsedProviders().RemoveUsed(provider, lavasession.NewRouterKey(nil), nil)
+	response := &relaycore.RelayResponse{
+		RelayResult: common.RelayResult{
+			Request: &pairingtypes.RelayRequest{
+				RelaySession: &pairingtypes.RelaySession{},
+				RelayData:    &pairingtypes.RelayPrivateData{},
+			},
+			Reply:          &pairingtypes.RelayReply{Data: []byte(`{"message":"bad","code":123}`)},
+			ProviderInfo:   common.ProviderInfo{ProviderAddress: provider},
+			StatusCode:     500,
+			IsNodeError:    true,
+			IsNonRetryable: nonRetryable,
+		},
+		Err: nil,
+	}
+	relayProcessor.SetResponse(response)
+}
+
 // SendNodeErrorJsonRpc sends a JSON-RPC node error response to the relay processor
 func SendNodeErrorJsonRpc(relayProcessor *relaycore.RelayProcessor, provider string, delay time.Duration) {
 	time.Sleep(delay)

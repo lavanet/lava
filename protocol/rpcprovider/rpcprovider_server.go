@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -367,6 +368,13 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		} else {
 			// Try sending relay
 			reply, replyWrapper, execErr = rpcps.TryRelayWithWrapper(ctx, request, consumerAddress, chainMessage)
+		}
+
+		// In test mode the chain proxy is bypassed, so the StatusCode from
+		// the test response is not set via grpc.SetTrailer by the proxy layer.
+		// Propagate it here so the consumer can detect REST node errors.
+		if replyWrapper != nil && replyWrapper.StatusCode != 0 {
+			grpc.SetTrailer(ctx, metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(replyWrapper.StatusCode)))
 		}
 
 		isErroredRelay = execErr != nil || common.ContextOutOfTime(ctx)

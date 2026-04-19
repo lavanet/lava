@@ -1,0 +1,85 @@
+{
+  "test_mode": true,
+  "responses": {
+    "status": {
+      "success_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"node_info\":{\"network\":\"lava-testnet\"},\"sync_info\":{\"latest_block_height\":\"1234\"}}}",
+      "error_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"Server error\"}}",
+      "rate_limit_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":429,\"message\":\"Too many requests\"}}",
+      "success_probability": 0.0,
+      "error_probability": 1.0,
+      "rate_limit_probability": 0.0
+    },
+    "abci_info": {
+      "success_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"response\":{\"data\":\"lava\",\"version\":\"1.0.0\"}}}",
+      "error_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32601,\"message\":\"method not found\"}}",
+      "rate_limit_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":429,\"message\":\"Too many requests\"}}",
+      "success_probability": 0.0,
+      "error_probability": 1.0,
+      "rate_limit_probability": 0.0
+    },
+    "abci_query": {
+      "success_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"response\":{\"code\":0,\"value\":\"abc\"}}}",
+      "error_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"execution reverted: insufficient balance\"}}",
+      "rate_limit_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":429,\"message\":\"Too many requests\"}}",
+      "success_probability": 0.0,
+      "error_probability": 1.0,
+      "rate_limit_probability": 0.0
+    },
+    "/cosmos/base/tendermint/v1beta1/blocks/latest": {
+      "success_reply": "{\"block\":{\"header\":{\"height\":\"1234\",\"time\":\"2023-01-01T00:00:00Z\"}}}",
+      "error_reply": "{\"code\":500,\"message\":\"Internal server error\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 1.0,
+      "rate_limit_probability": 0.0
+    },
+    "/cosmos/base/tendermint/v1beta1/blocks/{height}": {
+      "success_reply": "{\"block\":{\"header\":{\"height\":\"1234\",\"time\":\"2023-01-01T00:00:00Z\"}}}",
+      "error_reply": "{\"code\":500,\"message\":\"Internal server error\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.0,
+      "error_probability": 1.0,
+      "rate_limit_probability": 0.0
+    },
+    "/cosmos/base/tendermint/v1beta1/node_info": {
+      "success_reply": "{\"default_node_info\":{\"protocol_version\":{\"p2p\":\"8\",\"block\":\"11\",\"app\":\"0\"},\"default_node_id\":\"abc123\",\"listen_addr\":\"tcp://0.0.0.0:26656\",\"network\":\"lava-testnet\",\"version\":\"v0.34.24\",\"channels\":\"4020212223303800\",\"moniker\":\"lava-node\",\"other\":{\"tx_index\":\"on\",\"rpc_address\":\"tcp://0.0.0.0:26657\"}}}",
+      "error_reply": "{\"code\":500,\"message\":\"Internal server error\"}",
+      "rate_limit_reply": "{\"code\":429,\"message\":\"Too many requests\"}",
+      "success_probability": 0.9,
+      "error_probability": 0.05,
+      "rate_limit_probability": 0.05
+    },
+    "query": {
+      "success_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"node_info\":{\"network\":\"lava-testnet\"},\"sync_info\":{\"latest_block_height\":\"1234\"}}}",
+      "error_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"Server error\"}}",
+      "rate_limit_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":429,\"message\":\"Too many requests\"}}",
+      "success_probability": 0.9,
+      "error_probability": 0.05,
+      "rate_limit_probability": 0.05
+    },
+    "Default-/": {
+      "success_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"status\":\"ok\"}}",
+      "error_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"Server error\"}}",
+      "rate_limit_reply": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":429,\"message\":\"Too many requests\"}}",
+      "success_probability": 0.9,
+      "error_probability": 0.05,
+      "rate_limit_probability": 0.05
+    },
+    "cosmos.base.tendermint.v1beta1.Service/GetLatestBlock": {
+      "success_reply": "{\"block\":{\"header\":{\"height\":\"1234\",\"time\":\"2023-01-01T00:00:00Z\"}}}",
+      "error_reply": "{\"error\":{\"code\":500,\"message\":\"Internal server error\"}}",
+      "rate_limit_reply": "{\"error\":{\"code\":429,\"message\":\"Too many requests\"}}",
+      "success_probability": 0.9,
+      "error_probability": 0.05,
+      "rate_limit_probability": 0.05
+    },
+    "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo": {
+      "success_reply": "{\"default_node_info\":{\"protocol_version\":{\"p2p\":\"8\",\"block\":\"11\",\"app\":\"0\"},\"default_node_id\":\"abc123\",\"listen_addr\":\"tcp://0.0.0.0:26656\",\"network\":\"lava-testnet\",\"version\":\"v0.34.24\"}}",
+      "error_reply": "{\"error\":{\"code\":500,\"message\":\"Internal server error\"}}",
+      "rate_limit_reply": "{\"error\":{\"code\":429,\"message\":\"Too many requests\"}}",
+      "success_probability": 0.9,
+      "error_probability": 0.05,
+      "rate_limit_probability": 0.05
+    }
+  }
+}

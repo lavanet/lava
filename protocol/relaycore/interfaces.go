@@ -2,6 +2,7 @@ package relaycore
 
 import (
 	"context"
+	"time"
 
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/common"
@@ -28,6 +29,7 @@ type ResultsCheckerInf interface {
 	WaitForResults(ctx context.Context) error
 	HasRequiredNodeResults(tries int) (bool, int)
 	GetCrossValidationParams() *common.CrossValidationParams // nil for Stateless/Stateful, non-nil for CrossValidation
+	GetResultsSummary() ResultsSummary
 }
 
 // MetricsInterface for relay processor metrics
@@ -51,4 +53,99 @@ type RelayStateSendInstructions struct {
 
 func (rssi *RelayStateSendInstructions) IsDone() bool {
 	return rssi.Done || rssi.Err != nil
+}
+
+// RelaySenderInf is the unified interface for relay senders (Consumer and SmartRouter).
+// Both ConsumerRelaySender and SmartRouterRelaySender have identical signatures.
+type RelaySenderInf interface {
+	RelayParserInf
+	GetProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration)
+	GetChainIdAndApiInterface() (string, string)
+}
+
+// ResultsSummary is pure data reported by the RelayProcessor for the policy engine.
+type ResultsSummary struct {
+	SuccessCount              int
+	NodeErrors                int
+	SpecialNodeErrors         int
+	ProtocolErrors            int
+	HasNonRetryableNodeError  bool  // any node error with IsNonRetryable flag (umbrella — THE RETRY GATE)
+	HasUnsupportedMethod      bool  // subset of non-retryable, for caching decisions and zero-CU
+	HasPermanentProtocolError bool  // any non-retryable protocol error (excluding epoch mismatch)
+	HasEpochMismatch          bool  // any protocol error is epoch mismatch
+	HashErr                   error // hash computation error (nil = hash OK)
+}
+
+// Action represents the post-relay decision action.
+type Action int
+
+const (
+	ActionRetry Action = iota
+	ActionStop
+)
+
+// SendResult represents the pre-relay send result decision.
+type SendResult int
+
+const (
+	SendSuccess SendResult = iota
+	SendRetry
+	SendStop
+)
+
+// ArchiveAction represents the archive mutation to apply.
+type ArchiveAction int
+
+const (
+	ArchiveNoChange ArchiveAction = iota
+	ArchiveAdd
+	ArchiveRemove
+)
+
+// MutationOutput holds archive + cache side effects.
+type MutationOutput struct {
+	ArchiveAction ArchiveAction
+	CacheHashes   bool
+}
+
+// DecisionOutput tells the state machine what to do.
+type DecisionOutput struct {
+	Action   Action
+	Mutation MutationOutput
+	Reason   string
+}
+
+// DecisionInput is assembled by the state machine for the policy engine.
+type DecisionInput struct {
+	Selection     Selection
+	AttemptNumber int
+	IsBatch       bool
+	Summary       ResultsSummary
+	ArchiveStatus *ArchiveStatus
+	// NodeErrors is from the state machine's atomic counter (set by HasRequiredNodeResults).
+	// Used only by decideMutation() for archive threshold checks. Differs from
+	// Summary.NodeErrors (from GetResultsSummary scan) in source but should converge.
+	NodeErrors    uint64
+	IsTickerHedge bool // true when called from ticker.C (hedge), false from gotResults (retry)
+}
+
+// RelayPolicyInf is the interface that the policy engine must implement.
+type RelayPolicyInf interface {
+	Decide(input DecisionInput) DecisionOutput
+	OnSendRelayResult(err error, isPairingListEmpty bool) SendResult
+	GetConsecutiveBatchErrors() int
+}
+
+// StateMachineConfig configures behavior differences between Consumer and SmartRouter state machines
+type StateMachineConfig struct {
+	// EnableCircuitBreaker enables the PairingListEmptyError circuit breaker (SmartRouter only)
+	EnableCircuitBreaker bool
+	// CircuitBreakerThreshold is the number of consecutive pairing errors before tripping (default: 2)
+	CircuitBreakerThreshold int
+	// EnableTimeoutPriority enables priority timeout checks before each select case (SmartRouter only)
+	EnableTimeoutPriority bool
+	// MaxRetries is the maximum number of ticker relay retries
+	MaxRetries int
+	// SendRelayAttempts is the number of consecutive batch errors before giving up
+	SendRelayAttempts int
 }

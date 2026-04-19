@@ -32,6 +32,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/parser"
 	"github.com/lavanet/lava/v5/protocol/performance"
 	"github.com/lavanet/lava/v5/protocol/relaycore"
+	"github.com/lavanet/lava/v5/protocol/relaypolicy"
 
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
@@ -277,6 +278,7 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 	var err error
 	usedProviders := lavasession.NewUsedProviders(nil)
 	usedProviders.SetChainID(rpccs.listenEndpoint.ChainID)
+	usedProviders.SetEligibilityFunc(relaypolicy.DecideEligibility)
 
 	// Create state machine first - it determines Selection type based on cross-validation headers
 	stateMachine, err := NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, nil, rpccs.debugRelays)
@@ -520,6 +522,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 	defer cancel()
 	usedProviders := lavasession.NewUsedProviders(protocolMessage)
 	usedProviders.SetChainID(rpccs.listenEndpoint.ChainID)
+	usedProviders.SetEligibilityFunc(relaypolicy.DecideEligibility)
 
 	// Create state machine first - it determines Selection type based on cross-validation headers
 	stateMachine, err := NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, analytics, rpccs.debugRelays)
@@ -1205,7 +1208,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 			// unique per dappId and ip
 			consumerToken := common.GetUniqueToken(userData)
-			processingTimeout, expectedRelayTimeoutForQOS := rpccs.getProcessingTimeout(protocolMessage)
+			processingTimeout, expectedRelayTimeoutForQOS := rpccs.GetProcessingTimeout(protocolMessage)
 			deadline, ok := ctx.Deadline()
 			if ok { // we have ctx deadline. we cant go past it.
 				processingTimeout = time.Until(deadline)
@@ -1234,6 +1237,19 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 			// get here only if performed a regular relay successfully
 			go rpccs.rpcConsumerLogs.RecordProviderLatency(chainId, apiInterface, providerPublicAddress, protocolMessage.GetApi().GetName(), float64(relayLatency.Milliseconds()))
+
+			// Extract HTTP status code from the provider trailer metadata.
+			// The provider sends the node's HTTP status code (e.g. 500 for server errors)
+			// via gRPC trailer so the consumer can detect REST node errors.
+			statuses := localRelayResult.ProviderTrailer.Get(common.StatusCodeMetadataKey)
+			if len(statuses) > 0 {
+				codeNum, errStatus := strconv.Atoi(statuses[0])
+				if errStatus != nil {
+					utils.LavaFormatWarning("failed converting status code", errStatus, utils.LogAttr("statuses", statuses), utils.LogAttr("GUID", ctx))
+				}
+				localRelayResult.StatusCode = codeNum
+			}
+
 			expectedBH := int64(math.MaxInt64) // Default to max since we don't track expected block height anymore
 			pairingAddressesLen := rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()
 			latestBlock := localRelayResult.Reply.LatestBlock
@@ -1285,22 +1301,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			// gas, invalid signature, double spend, unsupported method, ...),
 			// IsUnsupportedMethod gates the zero-CU + caching carve-out.
 			if isNodeError {
-				family := common.ChainFamilyUnknown
-				if f, ok := common.GetChainFamily(rpccs.listenEndpoint.ChainID); ok {
-					family = f
+				var replyData []byte
+				if localRelayResult.Reply != nil {
+					replyData = localRelayResult.Reply.Data
 				}
-				transport := common.ApiInterfaceToTransport(rpccs.listenEndpoint.ApiInterface)
-				// JSON-RPC node errors typically come back as HTTP 200 with the
-				// real code in error.code (e.g. -32601, -32004). The registry's
-				// code-based JSON-RPC matchers only fire if we feed them that
-				// body code rather than the HTTP status.
-				errorCode := localRelayResult.StatusCode
-				if transport == common.TransportJsonRPC && localRelayResult.Reply != nil {
-					if jsonrpcCode := common.ExtractJSONRPCErrorCode(localRelayResult.Reply.Data); jsonrpcCode != 0 {
-						errorCode = jsonrpcCode
-					}
-				}
-				classification := common.ClassifyNodeErrorForRetry(family, transport, errorCode, errorMessage)
+				classification := relaypolicy.ClassifyNodeError(rpccs.listenEndpoint.ChainID, rpccs.listenEndpoint.ApiInterface, localRelayResult.StatusCode, errorMessage, replyData)
 				localRelayResult.IsNonRetryable = classification.IsNonRetryable
 				localRelayResult.IsUnsupportedMethod = classification.IsUnsupportedMethod
 
@@ -1797,7 +1802,7 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 // This function was responsible for sending verification relays to secondary providers
 // and detecting conflicts between provider responses
 
-func (rpccs *RPCConsumerServer) getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
+func (rpccs *RPCConsumerServer) GetProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
 	_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()
 	relayTimeout = chainlib.GetRelayTimeout(chainMessage, averageBlockTime)
 	processingTimeout = common.GetTimeoutForProcessing(relayTimeout, chainlib.GetTimeoutInfo(chainMessage))

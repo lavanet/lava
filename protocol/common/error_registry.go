@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"math"
 	"regexp"
 	"strings"
 )
@@ -416,6 +417,9 @@ type grpcCodeMatcher struct {
 }
 
 func (m grpcCodeMatcher) Matches(errorCode int, _ string) bool {
+	if errorCode < 0 || errorCode > math.MaxUint32 {
+		return false
+	}
 	return uint32(errorCode) == m.code
 }
 

@@ -38,6 +38,7 @@ func NewUsedProviders(blockedProviders BlockedProvidersInf) *UsedProviders {
 		// we keep the original unwanted providers so when we create more unique used providers
 		// we can reuse it as its the user's instructions.
 		originalUnwantedProviders: originalUnwantedProviders,
+		eligibilityFunc:           common.DecideEligibility, // default; overridden via SetEligibilityFunc
 	}
 }
 
@@ -50,6 +51,11 @@ type UniqueUsedProviders struct {
 	blockOnSyncLoss   map[string]struct{}
 }
 
+// EligibilityFunc is the function signature for provider eligibility decisions.
+// Injected via SetEligibilityFunc so that lavasession can call relaypolicy
+// without a direct import (breaking the circular dependency).
+type EligibilityFunc func(isUnsupportedMethod, isSyncLoss, isFirstSyncLoss bool) common.EligibilityResult
+
 type UsedProviders struct {
 	lock                      sync.RWMutex
 	uniqueUsedProviders       map[string]*UniqueUsedProviders
@@ -57,11 +63,14 @@ type UsedProviders struct {
 	selecting                 bool
 	sessionsLatestBatch       int
 	batchNumber               int
-	// chainID is used by shouldRetryWithThisError to do chain-aware
-	// unsupported-method detection (so chain-native messages don't collide
-	// with broad Tier-1 substring matchers). Empty means the chain is not
-	// known and classification falls back to Tier-1 only.
+	// chainID is used for chain-aware unsupported-method detection (so
+	// chain-native messages don't collide with broad Tier-1 substring
+	// matchers). Empty means classification falls back to Tier-1 only.
 	chainID string
+	// eligibilityFunc is the injected eligibility decision function.
+	// Defaults to common.DecideEligibility; overridden via SetEligibilityFunc
+	// to use relaypolicy.DecideEligibility (breaking the circular import).
+	eligibilityFunc EligibilityFunc
 }
 
 // SetChainID attaches a chain ID to this UsedProviders instance so that
@@ -74,6 +83,19 @@ func (up *UsedProviders) SetChainID(chainID string) {
 	up.lock.Lock()
 	defer up.lock.Unlock()
 	up.chainID = chainID
+}
+
+// SetEligibilityFunc overrides the default eligibility function with one from
+// a higher-level package (e.g. relaypolicy.DecideEligibility). This breaks the
+// circular import: lavasession cannot import relaypolicy, but the caller can
+// inject relaypolicy's function here.
+func (up *UsedProviders) SetEligibilityFunc(fn EligibilityFunc) {
+	if up == nil || fn == nil {
+		return
+	}
+	up.lock.Lock()
+	defer up.lock.Unlock()
+	up.eligibilityFunc = fn
 }
 
 func (up *UsedProviders) CurrentlyUsed() int {
@@ -184,17 +206,19 @@ func (up *UsedProviders) RemoveUsed(provider string, routerKey RouterKey, err er
 		uniqueUsedProviders.erroredProviders[provider] = struct{}{}
 	}
 
-	// Check if this is a NEW sync loss that should be retried
+	// Compute eligibility inputs for the policy
 	_, alreadyBlocked := uniqueUsedProviders.blockOnSyncLoss[provider]
-	isNewSyncLoss := err != nil && up.shouldRetryWithThisError(err) && !alreadyBlocked
+	isUnsupportedMethod := err != nil && common.IsUnsupportedMethodError(up.chainID, 0, err.Error())
+	isSyncLoss := err != nil && IsSessionSyncLoss(err)
+	isFirstSyncLoss := isSyncLoss && !alreadyBlocked
 
-	if isNewSyncLoss {
-		// First sync loss for this provider - allow one retry
+	// Eligibility decision via the injected policy function
+	result := up.eligibilityFunc(isUnsupportedMethod, isSyncLoss, isFirstSyncLoss)
+
+	if result.Action == common.EligibilityAllowRetry {
 		uniqueUsedProviders.blockOnSyncLoss[provider] = struct{}{}
 		utils.LavaFormatWarning("Identified SyncLoss in provider, allowing retry", err, utils.Attribute{Key: "address", Value: provider})
 	} else {
-		// All other cases: mark provider as unwanted
-		// This includes: no error, non-retryable errors, and subsequent sync losses
 		up.setUnwanted(uniqueUsedProviders, provider)
 	}
 
@@ -303,23 +327,4 @@ func (up *UsedProviders) GetUnwantedProvidersToSend(routerKey RouterKey) map[str
 		unwantedProvidersToSend[provider] = struct{}{}
 	}
 	return unwantedProvidersToSend
-}
-
-// shouldRetryWithThisError is called from RemoveUsed with up.lock already held
-// for writing, so it reads up.chainID directly without additional locking.
-// Never call this from an unlocked context.
-func (up *UsedProviders) shouldRetryWithThisError(err error) bool {
-	chainID := ""
-	if up != nil {
-		chainID = up.chainID
-	}
-	// Never retry unsupported method errors. Passing chainID enables Tier-2
-	// lookups so chain-native messages that happen to overlap broad Tier-1
-	// substring matchers are not misclassified as unsupported-method.
-	if common.IsUnsupportedMethodError(chainID, 0, err.Error()) {
-		return false
-	}
-
-	// Allow retries for session sync loss errors
-	return IsSessionSyncLoss(err)
 }
