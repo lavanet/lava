@@ -38,6 +38,7 @@ func NewUsedProviders(blockedProviders BlockedProvidersInf) *UsedProviders {
 		// we keep the original unwanted providers so when we create more unique used providers
 		// we can reuse it as its the user's instructions.
 		originalUnwantedProviders: originalUnwantedProviders,
+		eligibilityFunc:           common.DecideEligibility, // default; overridden via SetEligibilityFunc
 	}
 }
 
@@ -50,6 +51,11 @@ type UniqueUsedProviders struct {
 	blockOnSyncLoss   map[string]struct{}
 }
 
+// EligibilityFunc is the function signature for provider eligibility decisions.
+// Injected via SetEligibilityFunc so that lavasession can call relaypolicy
+// without a direct import (breaking the circular dependency).
+type EligibilityFunc func(isUnsupportedMethod, isSyncLoss, isFirstSyncLoss bool) common.EligibilityResult
+
 type UsedProviders struct {
 	lock                      sync.RWMutex
 	uniqueUsedProviders       map[string]*UniqueUsedProviders
@@ -57,11 +63,14 @@ type UsedProviders struct {
 	selecting                 bool
 	sessionsLatestBatch       int
 	batchNumber               int
-	// chainID is used by shouldRetryWithThisError to do chain-aware
-	// unsupported-method detection (so chain-native messages don't collide
-	// with broad Tier-1 substring matchers). Empty means the chain is not
-	// known and classification falls back to Tier-1 only.
+	// chainID is used for chain-aware unsupported-method detection (so
+	// chain-native messages don't collide with broad Tier-1 substring
+	// matchers). Empty means classification falls back to Tier-1 only.
 	chainID string
+	// eligibilityFunc is the injected eligibility decision function.
+	// Defaults to common.DecideEligibility; overridden via SetEligibilityFunc
+	// to use relaypolicy.DecideEligibility (breaking the circular import).
+	eligibilityFunc EligibilityFunc
 }
 
 // SetChainID attaches a chain ID to this UsedProviders instance so that
@@ -74,6 +83,19 @@ func (up *UsedProviders) SetChainID(chainID string) {
 	up.lock.Lock()
 	defer up.lock.Unlock()
 	up.chainID = chainID
+}
+
+// SetEligibilityFunc overrides the default eligibility function with one from
+// a higher-level package (e.g. relaypolicy.DecideEligibility). This breaks the
+// circular import: lavasession cannot import relaypolicy, but the caller can
+// inject relaypolicy's function here.
+func (up *UsedProviders) SetEligibilityFunc(fn EligibilityFunc) {
+	if up == nil || fn == nil {
+		return
+	}
+	up.lock.Lock()
+	defer up.lock.Unlock()
+	up.eligibilityFunc = fn
 }
 
 func (up *UsedProviders) CurrentlyUsed() int {
@@ -190,8 +212,8 @@ func (up *UsedProviders) RemoveUsed(provider string, routerKey RouterKey, err er
 	isSyncLoss := err != nil && IsSessionSyncLoss(err)
 	isFirstSyncLoss := isSyncLoss && !alreadyBlocked
 
-	// Eligibility decision via the policy engine
-	result := common.DecideEligibility(isUnsupportedMethod, isSyncLoss, isFirstSyncLoss)
+	// Eligibility decision via the injected policy function
+	result := up.eligibilityFunc(isUnsupportedMethod, isSyncLoss, isFirstSyncLoss)
 
 	if result.Action == common.EligibilityAllowRetry {
 		uniqueUsedProviders.blockOnSyncLoss[provider] = struct{}{}
