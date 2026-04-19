@@ -168,10 +168,7 @@ func (sm *UnifiedRelayStateMachine) getResultsSummary() ResultsSummary {
 	if sm.resultsChecker == nil {
 		return ResultsSummary{}
 	}
-	if relayProcessor, ok := sm.resultsChecker.(*RelayProcessor); ok {
-		return relayProcessor.GetResultsSummary()
-	}
-	return ResultsSummary{}
+	return sm.resultsChecker.GetResultsSummary()
 }
 
 // buildDecisionInput assembles the DecisionInput for the policy engine.

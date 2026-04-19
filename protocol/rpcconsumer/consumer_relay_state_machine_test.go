@@ -17,6 +17,7 @@ import (
 	lavasession "github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/relaycore"
 	"github.com/lavanet/lava/v5/protocol/relaycoretest"
+	"github.com/lavanet/lava/v5/protocol/relaypolicy"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/lavaslices"
 	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
@@ -803,4 +804,87 @@ func TestConsumerStateMachineRetryLimit(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestConsumerStateMachineNonRetryableStopsImmediately verifies the unified
+// state machine stops after a single attempt when it encounters a non-retryable
+// node error (IsNonRetryable=true). The policy should return NonRetryableNodeError.
+func TestConsumerStateMachineNonRetryableStopsImmediately(t *testing.T) {
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	specId := "LAV1"
+	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+	chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "dapp", "127.0.0.1")
+
+	usedProviders := lavasession.NewUsedProviders(nil)
+	stateMachine, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil}, protocolMessage, nil, false)
+	require.NoError(t, err)
+	relayProcessor := relaycore.NewRelayProcessor(ctx, nil, nil, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
+
+	consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}}
+	relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
+	require.NoError(t, err)
+	taskNumber := 0
+	for task := range relayTaskChannel {
+		switch taskNumber {
+		case 0:
+			require.False(t, task.IsDone())
+			usedProviders.AddUsed(consumerSessionsMap, nil)
+			relayProcessor.UpdateBatch(nil)
+			// Send a non-retryable node error (e.g. execution reverted)
+			go relaycoretest.SendNodeErrorWithRetryable(relayProcessor, "lava@test", time.Millisecond*5, true)
+		case 1:
+			// Should be done — policy stops on NonRetryableNodeError
+			require.True(t, task.IsDone(), "Expected Done after non-retryable error, got another retry task")
+			return
+		default:
+			require.Fail(t, "Should have stopped after 1 attempt for non-retryable error")
+		}
+		taskNumber++
+	}
+}
+
+// TestConsumerStateMachineBatchErrorCounterResetsOnSuccess verifies that the
+// policy's consecutive batch error counter resets when a batch succeeds. This
+// tests the OnSendRelayResult interaction in the unified state machine.
+func TestConsumerStateMachineBatchErrorCounterResetsOnSuccess(t *testing.T) {
+	// Test via the policy directly since the state machine integration is
+	// complex with channel timing. This validates the counter reset logic
+	// that the state machine's batchUpdate case relies on.
+	policy := relaypolicy.NewPolicy(relaypolicy.PolicyConfig{
+		MaxRetries:        10,
+		RelayRetryLimit:   5,
+		SendRelayAttempts: 3,
+	})
+
+	// Send 2 batch errors (below threshold of 3)
+	result := policy.OnSendRelayResult(fmt.Errorf("send failed"), false)
+	require.Equal(t, relaycore.SendRetry, result, "First error should retry")
+	require.Equal(t, 1, policy.GetConsecutiveBatchErrors())
+
+	result = policy.OnSendRelayResult(fmt.Errorf("send failed"), false)
+	require.Equal(t, relaycore.SendRetry, result, "Second error should retry")
+	require.Equal(t, 2, policy.GetConsecutiveBatchErrors())
+
+	// Success resets the counter
+	result = policy.OnSendRelayResult(nil, false)
+	require.Equal(t, relaycore.SendSuccess, result)
+	require.Equal(t, 0, policy.GetConsecutiveBatchErrors(), "Counter should reset on success")
+
+	// Now 3 more errors should be needed to trigger stop (not 1)
+	policy.OnSendRelayResult(fmt.Errorf("err"), false)
+	policy.OnSendRelayResult(fmt.Errorf("err"), false)
+	result = policy.OnSendRelayResult(fmt.Errorf("err"), false)
+	require.Equal(t, relaycore.SendRetry, result, "Third error should still retry (counter was reset)")
+
+	result = policy.OnSendRelayResult(fmt.Errorf("err"), false)
+	require.Equal(t, relaycore.SendStop, result, "Fourth error (>3) should stop")
 }
