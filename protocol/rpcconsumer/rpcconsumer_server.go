@@ -278,6 +278,7 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 	var err error
 	usedProviders := lavasession.NewUsedProviders(nil)
 	usedProviders.SetChainID(rpccs.listenEndpoint.ChainID)
+	usedProviders.SetEligibilityFunc(relaypolicy.DecideEligibility)
 
 	// Create state machine first - it determines Selection type based on cross-validation headers
 	stateMachine, err := NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, nil, rpccs.debugRelays)
@@ -521,6 +522,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 	defer cancel()
 	usedProviders := lavasession.NewUsedProviders(protocolMessage)
 	usedProviders.SetChainID(rpccs.listenEndpoint.ChainID)
+	usedProviders.SetEligibilityFunc(relaypolicy.DecideEligibility)
 
 	// Create state machine first - it determines Selection type based on cross-validation headers
 	stateMachine, err := NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, analytics, rpccs.debugRelays)
