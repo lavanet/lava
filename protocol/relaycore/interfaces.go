@@ -29,6 +29,7 @@ type ResultsCheckerInf interface {
 	WaitForResults(ctx context.Context) error
 	HasRequiredNodeResults(tries int) (bool, int)
 	GetCrossValidationParams() *common.CrossValidationParams // nil for Stateless/Stateful, non-nil for CrossValidation
+	GetResultsSummary() ResultsSummary
 }
 
 // MetricsInterface for relay processor metrics

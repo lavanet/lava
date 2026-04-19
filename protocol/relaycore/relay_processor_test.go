@@ -85,6 +85,10 @@ func (m *mockRelayStateMachine) SetResultsChecker(resultsChecker ResultsCheckerI
 func (m *mockRelayStateMachine) SetRelayRetriesManager(relayRetriesManager *lavaprotocol.RelayRetriesManager) {
 }
 
+func (m *mockRelayStateMachine) GetResultsSummary() ResultsSummary {
+	return ResultsSummary{}
+}
+
 func TestRelayProcessorHappyFlow(t *testing.T) {
 	t.Run("happy", func(t *testing.T) {
 		ctx := context.Background()
