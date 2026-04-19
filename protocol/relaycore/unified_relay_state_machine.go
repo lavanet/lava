@@ -133,7 +133,7 @@ func (sm *UnifiedRelayStateMachine) stateTransition(relayState *RelayState, numb
 		archiveStatus := relayState.GetArchiveStatus()
 
 		var upgradedProtocolMessage chainlib.ProtocolMessage
-		if mutation != nil && mutation.ArchiveAction != ArchiveNoChange {
+		if mutation != nil && (mutation.ArchiveAction != ArchiveNoChange || mutation.CacheHashes) {
 			upgradedProtocolMessage = sm.applyMutation(protocolMessage, archiveStatus, *mutation)
 		} else {
 			// Fallback: policy.Decide() returned no archive mutation (e.g. epoch-mismatch
