@@ -5,6 +5,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 
+	"github.com/lavanet/lava/v5/ecosystem/cache"
 	"github.com/lavanet/lava/v5/protocol/performance/connection"
 	"github.com/lavanet/lava/v5/protocol/rpcsmartrouter"
 	protocoltypes "github.com/lavanet/lava/v5/types/protocol"
@@ -29,6 +30,7 @@ func main() {
 
 	rootCmd.AddCommand(cmdVersion)
 	rootCmd.AddCommand(cmdRPCSmartRouter)
+	rootCmd.AddCommand(cache.CreateCacheCobraCommand())
 
 	testCmd := &cobra.Command{
 		Use:   "test",
