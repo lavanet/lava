@@ -305,7 +305,13 @@ func (sm *UnifiedRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSendIn
 				case SendSuccess:
 					// continue to select loop
 				case SendStop:
-					if sm.usedProviders.BatchNumber() == 0 && sm.policy.GetConsecutiveBatchErrors() == sm.config.SendRelayAttempts+1 {
+					if isPairingListEmpty && sm.config.EnableCircuitBreaker {
+						utils.LavaFormatWarning("Circuit breaker triggered: All providers exhausted, stopping retries",
+							nil,
+							utils.LogAttr("GUID", sm.ctx),
+							utils.LogAttr("batchNumber", sm.usedProviders.BatchNumber()),
+						)
+					} else if sm.usedProviders.BatchNumber() == 0 && sm.policy.GetConsecutiveBatchErrors() == sm.config.SendRelayAttempts+1 {
 						utils.LavaFormatWarning("Failed Sending First Message", err, utils.LogAttr("consecutive errors", sm.policy.GetConsecutiveBatchErrors()), utils.LogAttr("GUID", sm.ctx))
 					}
 					go validateReturnCondition(err)
