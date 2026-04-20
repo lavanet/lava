@@ -85,6 +85,10 @@ echo "Using static specs: $SPECS_DIR"
 export ETH_RPC_URL_1="${ETH_RPC_URL_1:-https://eth.llamarpc.com}"
 export ETH_RPC_URL_2="${ETH_RPC_URL_2:-https://json-rpc.8zfcse2amst1lajmh299uq4jn.blockchainnodeengine.com/?key=AIzaSyDyUtm6b-e-xKDQgVWzlroHdVTytiXEDik}"
 export ETH_RPC_URL_3="${ETH_RPC_URL_3:-https://ethereum-rpc.publicnode.com}"
+# Optional backup endpoint — emitted under `backup-direct-rpc:` only when set.
+# Backup providers are consulted by the smart router only when every primary
+# `direct-rpc` peer is exhausted (see consumer_session_manager.go backup fallback chain).
+export ETH_RPC_URL_4="${ETH_RPC_URL_4:-}"
 
 # WebSocket endpoints (required for subscriptions)
 #   export ETH_WS_URL_1="wss://mainnet.infura.io/ws/v3/YOUR_INFURA_KEY"
@@ -125,6 +129,9 @@ echo "Direct RPC Configuration:"
 echo "  HTTP Endpoint 1: ${ETH_RPC_URL_1:0:50}..."
 echo "  HTTP Endpoint 2: ${ETH_RPC_URL_2:0:50}..."
 echo "  HTTP Endpoint 3: ${ETH_RPC_URL_3:0:50}..."
+if [[ -n "$ETH_RPC_URL_4" ]]; then
+    echo "  Backup Endpoint: ${ETH_RPC_URL_4:0:50}... (fallback-only)"
+fi
 echo ""
 echo "  WebSocket Endpoints (Phase 5 - Subscriptions):"
 echo "    WS Endpoint 1: ${ETH_WS_URL_1:0:50}..."
@@ -203,6 +210,23 @@ direct-rpc:
       - url: "$ETH_WS_URL_3"
 EOF
 
+# Optional: emergency-fallback tier consulted only when every primary direct-rpc peer is exhausted.
+if [[ -n "$ETH_RPC_URL_4" ]]; then
+cat >> $CONFIG_FILE <<EOF
+
+backup-direct-rpc:
+  # Backup HTTP Endpoint (used only when all primary direct-rpc peers are exhausted)
+  - name: "eth-rpc-backup"
+    chain-id: "ETH1"
+    api-interface: "jsonrpc"
+    node-urls:
+      - url: "$ETH_RPC_URL_4"
+        skip-verifications:
+          - chain-id
+          - pruning
+EOF
+fi
+
 # Verify config file was created
 echo ""
 echo "Verifying generated config file..."
@@ -241,6 +265,10 @@ echo "   - HTTP Endpoints: 3 endpoints (parallel relay + cross-validation)"
 echo "     Endpoint 1: ${ETH_RPC_URL_1:0:40}..."
 echo "     Endpoint 2: ${ETH_RPC_URL_2:0:40}..."
 echo "     Endpoint 3: ${ETH_RPC_URL_3:0:40}..."
+if [[ -n "$ETH_RPC_URL_4" ]]; then
+    echo "   - Backup:    1 endpoint (used only when all primaries exhausted)"
+    echo "     Endpoint 4: ${ETH_RPC_URL_4:0:40}..."
+fi
 if [[ -n "$ETH_WS_URL_1" ]]; then
     echo "   - WS Endpoint 1: ${ETH_WS_URL_1:0:40}..."
 fi
@@ -291,6 +319,11 @@ echo "Direct RPC Endpoints (Parallel Relay + Cross-Validation):"
 echo "  HTTP 1: ${ETH_RPC_URL_1:0:50}..."
 echo "  HTTP 2: ${ETH_RPC_URL_2:0:50}..."
 echo "  HTTP 3: ${ETH_RPC_URL_3:0:50}..."
+if [[ -n "$ETH_RPC_URL_4" ]]; then
+    echo ""
+    echo "Backup Endpoint (emergency fallback, not queried in parallel):"
+    echo "  HTTP 4: ${ETH_RPC_URL_4:0:50}..."
+fi
 if [[ "$WS_ENABLED" == "true" ]]; then
     echo ""
     echo "WebSocket Endpoints (Subscriptions):"
