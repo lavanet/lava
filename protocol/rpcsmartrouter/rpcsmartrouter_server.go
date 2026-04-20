@@ -549,12 +549,15 @@ func (rpcss *RPCSmartRouterServer) SendParsedRelay(
 		return nil, err
 	}
 
-	ctx, processSpan := tracing.StartInternalSpan(ctx, tracing.SpanProcessingResult)
-	defer processSpan.End()
-	returnedResult, err := relayProcessor.ProcessingResult()
-	if returnedResult != nil && returnedResult.Reply != nil {
-		tracing.RecordBody(processSpan, tracing.AttrRelayResponseBody, returnedResult.Reply.Data)
-	}
+	returnedResult, err := func() (*common.RelayResult, error) {
+		_, processSpan := tracing.StartInternalSpan(ctx, tracing.SpanProcessingResult)
+		defer processSpan.End()
+		r, e := relayProcessor.ProcessingResult()
+		if r != nil && r.Reply != nil {
+			tracing.RecordBody(processSpan, tracing.AttrRelayResponseBody, r.Reply.Data)
+		}
+		return r, e
+	}()
 
 	utils.LavaFormatInfo("ProcessingResult RETURNED",
 		utils.LogAttr("has_result", returnedResult != nil),
@@ -836,8 +839,10 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 			// Derive from ctx so IP forwarding metadata (and other values) are preserved.
 			goroutineCtx, goroutineCtxCancel := context.WithCancel(ctx)
 
-			guid, _ := utils.GetUniqueIdentifier(ctx)
-			goroutineCtx = utils.WithUniqueIdentifier(goroutineCtx, guid)
+			guid, found := utils.GetUniqueIdentifier(ctx)
+			if found {
+				goroutineCtx = utils.WithUniqueIdentifier(goroutineCtx, guid)
+			}
 
 			// StartInternalSpan declines to create a span when there is no
 			// recording parent in context, which protects against orphan root
@@ -1584,23 +1589,26 @@ func (rpcss *RPCSmartRouterServer) sendRelayToEndpoint(
 						utils.LogAttr("lookupFinalized", lookupFinalized),
 					)
 
-					_, cacheSpan := tracing.StartInternalSpan(ctx, tracing.SpanCacheLookup)
-					cacheStart := time.Now()
-					cacheReply, cacheError = rpcss.cache.GetEntry(cacheCtx, &pairingtypes.RelayCacheGet{
-						RequestHash:           hashKey,
-						RequestedBlock:        requestedBlockForCache,
-						ChainId:               chainId,
-						BlockHash:             nil,
-						Finalized:             lookupFinalized,
-						SharedStateId:         sharedStateId,
-						SeenBlock:             localRelayData.SeenBlock,
-						BlocksHashesToHeights: rpcss.newBlocksHashesToHeightsSliceFromRequestedBlockHashes(protocolMessage.GetRequestedBlocksHashes()),
-					}) // caching in the consumer doesn't care about hashes, and we don't have data on finalization yet
-					cancel()
-					cacheLatencyMs := float64(time.Since(cacheStart).Milliseconds())
-					cacheHit := cacheError == nil && cacheReply != nil && cacheReply.GetReply() != nil
-					tracing.RecordCacheResult(ctx, cacheSpan, cacheHit, cacheLatencyMs)
-					cacheSpan.End()
+					cacheLatencyMs := func() float64 {
+						_, cacheSpan := tracing.StartInternalSpan(ctx, tracing.SpanCacheLookup)
+						defer cacheSpan.End()
+						cacheStart := time.Now()
+						cacheReply, cacheError = rpcss.cache.GetEntry(cacheCtx, &pairingtypes.RelayCacheGet{
+							RequestHash:           hashKey,
+							RequestedBlock:        requestedBlockForCache,
+							ChainId:               chainId,
+							BlockHash:             nil,
+							Finalized:             lookupFinalized,
+							SharedStateId:         sharedStateId,
+							SeenBlock:             localRelayData.SeenBlock,
+							BlocksHashesToHeights: rpcss.newBlocksHashesToHeightsSliceFromRequestedBlockHashes(protocolMessage.GetRequestedBlocksHashes()),
+						}) // caching in the consumer doesn't care about hashes, and we don't have data on finalization yet
+						cancel()
+						latencyMs := float64(time.Since(cacheStart).Milliseconds())
+						cacheHit := cacheError == nil && cacheReply != nil && cacheReply.GetReply() != nil
+						tracing.RecordCacheResult(ctx, cacheSpan, cacheHit, latencyMs)
+						return latencyMs
+					}()
 
 					// Generate the actual cache key that will be used for lookup
 					actualLookupCacheKey := make([]byte, len(hashKey))
