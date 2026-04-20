@@ -77,6 +77,11 @@ type TraceConfig struct {
 // Set once during New() and read concurrently — safe because it's only written at startup.
 var traceBodyEnabled bool
 
+// bodyAttrLimit mirrors the SDK's SpanLimits.AttributeValueLengthLimit so
+// RecordBody can pre-truncate before allocating a string from the body
+// slice. Only positive values are applied; anything else means unlimited.
+var bodyAttrLimit int
+
 // IsTraceBodyEnabled returns true when --otel-trace-body is active.
 // Instrumentation sites call this to decide whether to record request/response bodies.
 func IsTraceBodyEnabled() bool {
@@ -114,6 +119,11 @@ func New(ctx context.Context, cfg TraceConfig) (*TraceManager, error) {
 	}
 
 	traceBodyEnabled = cfg.TraceBody
+	// Snapshot the SDK's env-derived attribute-value length limit so RecordBody
+	// can clip large payloads before allocating a string. NewSpanLimits() honours
+	// OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT (and its fallbacks); we use the same
+	// limit on the same spans, so we cannot disagree with the SDK.
+	bodyAttrLimit = sdktrace.NewSpanLimits().AttributeValueLengthLimit
 
 	res, err := resource.New(ctx,
 		resource.WithAttributes(semconv.ServiceName(defaultServiceName)),

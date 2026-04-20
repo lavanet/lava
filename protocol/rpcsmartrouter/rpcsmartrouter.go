@@ -1638,6 +1638,9 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	// configuration. Body size is delegated to the SDK via
 	// OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT (SDK default: unlimited).
 	cmdRPCSmartRouter.Flags().Bool(tracing.TraceBodyFlag, false, "record request/response bodies on trace spans (size limit delegated to OTel SDK via OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT)")
+	if err := viper.BindPFlag(tracing.TraceBodyFlag, cmdRPCSmartRouter.Flags().Lookup(tracing.TraceBodyFlag)); err != nil {
+		utils.LavaFormatFatal("failed binding otel-trace-body flag", err)
+	}
 
 	common.AddRollingLogConfig(cmdRPCSmartRouter)
 	return cmdRPCSmartRouter

@@ -89,13 +89,17 @@ func RecordError(span trace.Span, err error) {
 }
 
 // RecordBody conditionally records a body attribute on the span when
-// --otel-trace-body is enabled. Truncation of the recorded value is handled
-// by the SDK's SpanLimits, which reads OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT
-// (default: unlimited). Operators who want a body cap should set that env var.
+// --otel-trace-body is enabled. We pre-truncate to the SDK's configured
+// OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT so a large body with a small cap
+// doesn't pay a full string allocation before the SDK truncates.
 func RecordBody(span trace.Span, attrKey string, body []byte) {
-	if traceBodyEnabled && span.IsRecording() {
-		span.SetAttributes(attribute.String(attrKey, string(body)))
+	if !traceBodyEnabled || !span.IsRecording() {
+		return
 	}
+	if bodyAttrLimit > 0 && len(body) > bodyAttrLimit {
+		body = body[:bodyAttrLimit]
+	}
+	span.SetAttributes(attribute.String(attrKey, string(body)))
 }
 
 // RecordRelayAttributes records the standard relay identification attributes
