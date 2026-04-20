@@ -222,7 +222,6 @@ smartrouter_lava.yml \
 --cache-be \"127.0.0.1:20100\" \
 --use-static-spec \"$SPECS_DIR\" \
 --metrics-listen-address ':7779' \
---concurrent-providers 1 \
 --min-relay-timeout 5s 2>&1 | tee \"$LOGS_DIR/SMARTROUTER_LAVA.log\"" && sleep 0.25
 
 sleep 3
