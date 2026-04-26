@@ -1058,6 +1058,48 @@ func TestNoPairingsError(t *testing.T) {
 	require.True(t, PairingListEmptyError.Is(err))
 }
 
+func TestGetValidProviderAddresses_IgnoresNonOverlappingIgnoredProviders(t *testing.T) {
+	ctx := context.Background()
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil)
+	require.NoError(t, err)
+	time.Sleep(5 * time.Millisecond) // let probes finish
+
+	validAddresses := csm.getValidAddresses("", nil, ctx)
+	require.NotEmpty(t, validAddresses)
+
+	ignoredProviders := map[string]struct{}{}
+	for i := 0; i < len(validAddresses); i++ {
+		ignoredProviders[fmt.Sprintf("non-overlap-%d", i)] = struct{}{}
+	}
+
+	addresses, err := csm.getValidProviderAddresses(ctx, 1, ignoredProviders, cuForFirstRequest, servicedBlockNumber, "", nil, common.NO_STATE, "", "")
+	require.NoError(t, err)
+	require.Len(t, addresses, 1)
+	require.Contains(t, validAddresses, addresses[0])
+}
+
+func TestGetValidProviderAddresses_ReturnsEmptyWhenAllValidProvidersIgnored(t *testing.T) {
+	ctx := context.Background()
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil)
+	require.NoError(t, err)
+	time.Sleep(5 * time.Millisecond) // let probes finish
+
+	validAddresses := csm.getValidAddresses("", nil, ctx)
+	require.NotEmpty(t, validAddresses)
+
+	ignoredProviders := make(map[string]struct{}, len(validAddresses))
+	for _, address := range validAddresses {
+		ignoredProviders[address] = struct{}{}
+	}
+
+	_, err = csm.getValidProviderAddresses(ctx, 1, ignoredProviders, cuForFirstRequest, servicedBlockNumber, "", nil, common.NO_STATE, "", "")
+	require.ErrorIs(t, err, PairingListEmptyError)
+}
+
 func TestPairingWithStateful(t *testing.T) {
 	ctx := context.Background()
 	t.Run("stateful", func(t *testing.T) {

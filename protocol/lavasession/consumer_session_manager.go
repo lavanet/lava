@@ -1082,10 +1082,7 @@ func convertSelectionStatsToMetrics(stats *provideroptimizer.SelectionStats) (al
 // Get a valid provider address.
 func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context, wantedProviders int, ignoredProvidersList map[string]struct{}, cu uint64, requestedBlock int64, addon string, extensions []string, stateful uint32, stickiness string, selectedProvider string) (addresses []string, err error) {
 	// cs.Lock must be Rlocked here.
-	ignoredProvidersListLength := len(ignoredProvidersList)
 	validAddresses := csm.getValidAddresses(addon, extensions, ctx)
-	validAddressesLength := len(validAddresses)
-	totalValidLength := validAddressesLength - ignoredProvidersListLength
 
 	// Handle provider selection via header (smartrouter only)
 	if selectedProvider != "" {
@@ -1126,19 +1123,17 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 		}
 	}
 
-	if totalValidLength <= 0 {
-		// check all ignored are actually valid addresses
-		ignoredProvidersListLength = 0
-		for _, address := range validAddresses {
-			if _, ok := ignoredProvidersList[address]; ok {
-				ignoredProvidersListLength++
-			}
+	hasRemainingValidProvider := false
+	for _, address := range validAddresses {
+		if _, ignored := ignoredProvidersList[address]; !ignored {
+			hasRemainingValidProvider = true
+			break
 		}
-		if validAddressesLength-ignoredProvidersListLength <= 0 {
-			utils.LavaFormatDebug("Pairing list empty", utils.Attribute{Key: "Provider list", Value: validAddresses}, utils.Attribute{Key: "IgnoredProviderList", Value: ignoredProvidersList}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions}, utils.LogAttr("GUID", ctx))
-			err = PairingListEmptyError
-			return addresses, err
-		}
+	}
+	if !hasRemainingValidProvider {
+		utils.LavaFormatDebug("Pairing list empty", utils.Attribute{Key: "Provider list", Value: validAddresses}, utils.Attribute{Key: "IgnoredProviderList", Value: ignoredProvidersList}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions}, utils.LogAttr("GUID", ctx))
+		err = PairingListEmptyError
+		return addresses, err
 	}
 	var providers []string
 	if stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS && csm.providerOptimizer.Strategy() != provideroptimizer.StrategyCost {
