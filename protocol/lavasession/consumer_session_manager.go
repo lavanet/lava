@@ -1141,6 +1141,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 		}
 	}
 	var providers []string
+	effectiveIgnoredProvidersList := ignoredProvidersList
 	if stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS && csm.providerOptimizer.Strategy() != provideroptimizer.StrategyCost {
 		providers = csm.getTopTenProvidersForStatefulCalls(validAddresses, ignoredProvidersList)
 	} else if stickiness != "" {
@@ -1178,6 +1179,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 		for k, v := range ignoredProvidersList {
 			ignoredProvidersListCopy[k] = v
 		}
+		effectiveIgnoredProvidersList = ignoredProvidersListCopy
 		for i := 0; i < wantedProviders; i++ {
 			provider, selectionStats := csm.providerOptimizer.ChooseProviderWithStats(ctx, validAddresses, ignoredProvidersListCopy, cu, requestedBlock)
 			if len(provider) == 0 {
@@ -1217,7 +1219,8 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 
 	utils.LavaFormatInfo("Choosing providers",
 		utils.LogAttr("validAddresses", validAddresses),
-		utils.LogAttr("ignoredProvidersList", ignoredProvidersList),
+		utils.LogAttr("ignoredProvidersListInput", ignoredProvidersList),
+		utils.LogAttr("effectiveIgnoredProvidersList", effectiveIgnoredProvidersList),
 		utils.LogAttr("chosenProviders", providers),
 		utils.LogAttr("addon", addon),
 		utils.LogAttr("extensions", extensions),
