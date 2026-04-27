@@ -39,6 +39,7 @@ func gatherHealthGauge(t *testing.T, spec, apiInterface, endpointID string) (flo
 	}
 	return 0, false
 }
+
 // createTestRPCSmartRouter creates an RPCSmartRouter with all maps initialized and an epoch timer.
 func createTestRPCSmartRouter() *RPCSmartRouter {
 	return &RPCSmartRouter{
@@ -373,7 +374,8 @@ func TestUpdateEpoch_NilListenEndpointDoesNotPanic(t *testing.T) {
 	// Even without the metric reset, the in-memory struct reset (from commit 1559d6b29) must still run.
 	require.True(t, disabledEndpoint.Enabled,
 		"endpoint.ResetHealth() must still fire even when listenEndpoint is nil — the metric reset is optional but the struct reset is load-bearing")
-	}
+}
+
 // ============================================================================= */
 // Graceful Verification Failure Tests
 // =============================================================================
@@ -574,10 +576,14 @@ func TestGracefulFailure_MixedStaticAndBackupFiltering(t *testing.T) {
 // Scenario 20: Duplicate provider names — healthy one gets excluded as collateral.
 func TestGracefulFailure_DuplicateNameCollision(t *testing.T) {
 	providers := []*lavasession.RPCStaticProviderEndpoint{
-		{Name: "my-node", ChainID: "LAV1", ApiInterface: "tendermintrpc",
-			NodeUrls: []common.NodeUrl{{Url: "http://healthy:8080"}}},
-		{Name: "my-node", ChainID: "LAV1", ApiInterface: "tendermintrpc",
-			NodeUrls: []common.NodeUrl{{Url: "http://dead:8080"}}},
+		{
+			Name: "my-node", ChainID: "LAV1", ApiInterface: "tendermintrpc",
+			NodeUrls: []common.NodeUrl{{Url: "http://healthy:8080"}},
+		},
+		{
+			Name: "my-node", ChainID: "LAV1", ApiInterface: "tendermintrpc",
+			NodeUrls: []common.NodeUrl{{Url: "http://dead:8080"}},
+		},
 	}
 
 	// The dead one fails, name "my-node" is added to failedStaticNames
