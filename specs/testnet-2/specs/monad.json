@@ -1,0 +1,328 @@
+{
+    "proposal": {
+        "title": "Add Specs: Monad",
+        "description": "Adding new specification support for relaying Monad data on Lava",
+        "specs": [
+            {
+                "index": "MONAD",
+                "name": "monad mainnet",
+                "enabled": true,
+                "imports": [
+                    "ETH1"
+                ],
+                "reliability_threshold": 268435455,
+                "data_reliability_enabled": true,
+                "block_distance_for_finalized_data": 2,
+                "blocks_in_finalization_proof": 3,
+                "average_block_time": 400,
+                "allowed_block_lag_for_qos_sync": 25,
+                "shares": 1,
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "5000000000"
+                },
+                "api_collections": [
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis": [
+                            {
+                                "name": "eth_fillTransaction",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 100,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "eth_sendRawTransactionSync",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 100,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "txpool_statusByAddress",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "txpool_statusByHash",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "eth_accounts",
+                                "compute_units": 10,
+                                "enabled": false
+                            },
+                            {
+                                "name": "eth_coinbase",
+                                "compute_units": 10,
+                                "enabled": false
+                            },
+                            {
+                                "name": "eth_compileLLL",
+                                "compute_units": 10,
+                                "enabled": false
+                            },
+                            {
+                                "name": "eth_getCompilers",
+                                "compute_units": 10,
+                                "enabled": false
+                            },
+                            {
+                                "name": "eth_getFilterChanges",
+                                "compute_units": 20,
+                                "enabled": false
+                            },
+                            {
+                                "name": "eth_getFilterLogs",
+                                "compute_units": 60,
+                                "enabled": false
+                            },
+                            {
+                                "name": "eth_getProof",
+                                "compute_units": 20,
+                                "enabled": false
+                            },
+                            {
+                                "name": "eth_getUncleByBlockHashAndIndex",
+                                "compute_units": 15,
+                                "enabled": false
+                            },
+                            {
+                                "name": "eth_getUncleByBlockNumberAndIndex",
+                                "compute_units": 15,
+                                "enabled": false
+                            },
+                            {
+                                "name": "eth_getUncleCountByBlockHash",
+                                "compute_units": 20,
+                                "enabled": false
+                            },
+                            {
+                                "name": "eth_getUncleCountByBlockNumber",
+                                "compute_units": 10,
+                                "enabled": false
+                            },
+                            {
+                                "name": "eth_getWork",
+                                "compute_units": 10,
+                                "enabled": false
+                            },
+                            {
+                                "name": "eth_hashrate",
+                                "compute_units": 10,
+                                "enabled": false
+                            },
+                            {
+                                "name": "eth_mining",
+                                "compute_units": 10,
+                                "enabled": false
+                            },
+                            {
+                                "name": "eth_newBlockFilter",
+                                "compute_units": 20,
+                                "enabled": false
+                            },
+                            {
+                                "name": "eth_newFilter",
+                                "compute_units": 20,
+                                "enabled": false
+                            },
+                            {
+                                "name": "eth_newPendingTransactionFilter",
+                                "compute_units": 20,
+                                "enabled": false
+                            },
+                            {
+                                "name": "eth_sendTransaction",
+                                "compute_units": 10,
+                                "enabled": false
+                            },
+                            {
+                                "name": "eth_sign",
+                                "compute_units": 10,
+                                "enabled": false
+                            },
+                            {
+                                "name": "eth_signTransaction",
+                                "compute_units": 10,
+                                "enabled": false
+                            },
+                            {
+                                "name": "eth_uninstallFilter",
+                                "compute_units": 10,
+                                "enabled": false
+                            },
+                            {
+                                "name": "eth_protocolVersion",
+                                "compute_units": 10,
+                                "enabled": false
+                            },
+                            {
+                                "name": "net_listening",
+                                "compute_units": 10,
+                                "enabled": false
+                            },
+                            {
+                                "name": "net_peerCount",
+                                "compute_units": 10,
+                                "enabled": false
+                            },
+                            {
+                                "name": "rpc_modules",
+                                "compute_units": 1,
+                                "enabled": false
+                            },
+                            {
+                                "name": "web3_sha3",
+                                "compute_units": 15,
+                                "enabled": false
+                            }
+                        ],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "0x8f"
+                                    }
+                                ]
+                            }
+                        ],
+                        "extensions": []
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": "debug"
+                        },
+                        "apis": [
+                            {
+                                "name": "debug_traceBlock",
+                                "compute_units": 20,
+                                "enabled": false
+                            },
+                            {
+                                "name": "debug_storageRangeAt",
+                                "compute_units": 200,
+                                "enabled": false
+                            },
+                            {
+                                "name": "debug_getBadBlocks",
+                                "compute_units": 200,
+                                "enabled": false
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "index": "MONADT",
+                "name": "monad testnet",
+                "enabled": true,
+                "imports": [
+                    "MONAD"
+                ],
+                "reliability_threshold": 268435455,
+                "data_reliability_enabled": true,
+                "block_distance_for_finalized_data": 2,
+                "blocks_in_finalization_proof": 3,
+                "average_block_time": 400,
+                "allowed_block_lag_for_qos_sync": 25,
+                "shares": 1,
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "5000000000"
+                },
+                "api_collections": [
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "0x279f"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "deposit": "10000000ulava"
+}
