@@ -56,6 +56,7 @@ endpoints:
       address: 127.0.0.1:2220
     node-urls:
       - url: https://testnet-rpc.monad.xyz
+      - url: wss://testnet-rpc.monad.xyz
 EOF
 
 screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
