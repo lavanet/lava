@@ -1096,6 +1096,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 			rpcEndpoint.ChainID,
 			rpcEndpoint.ApiInterface,
 			wsEndpoints,
+			nil,       // wsBackupEndpoints — Phase 2 will populate from relevantBackupProviderList
 			optimizer, // Pass optimizer for endpoint selection
 			nil,       // Use default WebSocket config (configurable via CLI flags later)
 		)
@@ -1146,6 +1147,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 			rpcEndpoint.ChainID,
 			rpcEndpoint.ApiInterface,
 			grpcEndpoints,
+			nil,       // grpcBackupEndpoints — Phase 2 will populate from relevantBackupProviderList
 			optimizer, // Pass optimizer for endpoint selection (same as WS manager)
 			nil,       // Use default GRPCStreamingConfig
 		)

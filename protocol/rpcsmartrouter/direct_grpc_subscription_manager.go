@@ -77,9 +77,13 @@ type DirectGRPCSubscriptionManager struct {
 	chainID        string
 	apiInterface   string
 
-	// Upstream gRPC endpoints
-	grpcEndpoints  []*common.NodeUrl
-	endpointsByURL map[string]*common.NodeUrl
+	// Upstream gRPC endpoints — two-tier separation matches HTTP backup model.
+	// Primary tier serves all selections; backup tier is only consulted when
+	// primary is exhausted (analogous to ConsumerSessionManager's
+	// pairing/backupProviders split).
+	grpcEndpoints       []*common.NodeUrl          // Primary tier — selected first
+	grpcBackupEndpoints []*common.NodeUrl          // Backup tier — used only when primary exhausted
+	endpointsByURL      map[string]*common.NodeUrl // Lookup across both tiers (sticky-session uniformity)
 
 	// Endpoint selection (can be nil)
 	optimizer WebSocketEndpointOptimizer
@@ -106,12 +110,17 @@ type DirectGRPCSubscriptionManager struct {
 	lock sync.RWMutex
 }
 
-// NewDirectGRPCSubscriptionManager creates a new gRPC subscription manager
+// NewDirectGRPCSubscriptionManager creates a new gRPC subscription manager.
+//
+// grpcEndpoints is the primary tier — selectEndpoint serves these first.
+// grpcBackupEndpoints is the backup tier — only consulted when primary is exhausted.
+// Either slice may be nil or empty, but at least one must be non-empty for selection to succeed.
 func NewDirectGRPCSubscriptionManager(
 	metricsManager metrics.ConsumerMetricsManagerInf,
 	chainID string,
 	apiInterface string,
 	grpcEndpoints []*common.NodeUrl,
+	grpcBackupEndpoints []*common.NodeUrl,
 	optimizer WebSocketEndpointOptimizer,
 	config *GRPCStreamingConfig,
 ) *DirectGRPCSubscriptionManager {
@@ -130,7 +139,8 @@ func NewDirectGRPCSubscriptionManager(
 		chainID:              chainID,
 		apiInterface:         apiInterface,
 		grpcEndpoints:        grpcEndpoints,
-		endpointsByURL:       make(map[string]*common.NodeUrl),
+		grpcBackupEndpoints:  grpcBackupEndpoints,
+		endpointsByURL:       make(map[string]*common.NodeUrl, len(grpcEndpoints)+len(grpcBackupEndpoints)),
 		optimizer:            optimizer,
 		config:               config,
 		rateLimiter:          NewGRPCClientRateLimiter(config),
@@ -140,8 +150,11 @@ func NewDirectGRPCSubscriptionManager(
 		cancel:               cancel,
 	}
 
-	// Build endpoint lookup map
+	// Build endpoint lookup map across both tiers
 	for _, endpoint := range grpcEndpoints {
+		manager.endpointsByURL[endpoint.Url] = endpoint
+	}
+	for _, endpoint := range grpcBackupEndpoints {
 		manager.endpointsByURL[endpoint.Url] = endpoint
 	}
 
@@ -385,7 +398,7 @@ func (dgm *DirectGRPCSubscriptionManager) createNewSubscription(
 	clientKey string,
 ) (*pairingtypes.RelayReply, <-chan *pairingtypes.RelayReply, error) {
 	// Select endpoint
-	endpoint, err := dgm.selectEndpoint(clientKey)
+	endpoint, err := dgm.selectEndpoint(ctx, clientKey)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to select endpoint: %w", err)
 	}
@@ -862,31 +875,73 @@ func (dgm *DirectGRPCSubscriptionManager) getOrCreatePool(ctx context.Context, e
 	return pool, nil
 }
 
-func (dgm *DirectGRPCSubscriptionManager) selectEndpoint(clientKey string) (*common.NodeUrl, error) {
-	// Check sticky session
+// selectEndpoint picks a gRPC endpoint for the given client, with primary→backup cascade.
+// Mirrors DirectWSSubscriptionManager.selectEndpoint and the HTTP backup-fallback model
+// (consumer_session_manager.go:820-852).
+func (dgm *DirectGRPCSubscriptionManager) selectEndpoint(ctx context.Context, clientKey string) (*common.NodeUrl, error) {
+	// Tier 0: sticky (resolves across both tiers via endpointsByURL).
 	dgm.lock.RLock()
 	stickyURL, hasSticky := dgm.stickySessions[clientKey]
 	dgm.lock.RUnlock()
-
 	if hasSticky {
 		if endpoint, exists := dgm.endpointsByURL[stickyURL]; exists {
 			return endpoint, nil
 		}
 	}
 
-	// Select first available endpoint (could be enhanced with optimizer)
-	if len(dgm.grpcEndpoints) == 0 {
-		return nil, fmt.Errorf("no gRPC endpoints available")
+	// Tier 1: primary (optimizer-aware).
+	if endpoint, err := dgm.selectFromTier(ctx, dgm.grpcEndpoints); err == nil {
+		dgm.lock.Lock()
+		dgm.stickySessions[clientKey] = endpoint.Url
+		dgm.lock.Unlock()
+		return endpoint, nil
 	}
 
-	endpoint := dgm.grpcEndpoints[0]
+	// Tier 2: backup (only when primary is empty/unavailable).
+	utils.LavaFormatDebug("DirectGRPC: primary endpoints exhausted, falling back to backup",
+		utils.LogAttr("backupCount", len(dgm.grpcBackupEndpoints)),
+	)
+	if endpoint, err := dgm.selectFromTier(ctx, dgm.grpcBackupEndpoints); err == nil {
+		dgm.lock.Lock()
+		dgm.stickySessions[clientKey] = endpoint.Url
+		dgm.lock.Unlock()
+		return endpoint, nil
+	}
 
-	// Set sticky session
-	dgm.lock.Lock()
-	dgm.stickySessions[clientKey] = endpoint.Url
-	dgm.lock.Unlock()
+	return nil, fmt.Errorf("no gRPC endpoints available")
+}
 
-	return endpoint, nil
+// selectFromTier picks an endpoint from a single tier using the optimizer when
+// available, falling back to first-available. Tier-agnostic — the cascade order
+// is the caller's responsibility.
+func (dgm *DirectGRPCSubscriptionManager) selectFromTier(ctx context.Context, tier []*common.NodeUrl) (*common.NodeUrl, error) {
+	if len(tier) == 0 {
+		return nil, fmt.Errorf("tier is empty")
+	}
+
+	// Single endpoint or no optimizer: first-available.
+	if len(tier) == 1 || dgm.optimizer == nil {
+		return tier[0], nil
+	}
+
+	// Optimizer over this tier.
+	allURLs := make([]string, 0, len(tier))
+	for _, ep := range tier {
+		allURLs = append(allURLs, ep.Url)
+	}
+	// cu=1 and requestedBlock=LATEST_BLOCK (-2) are sensible defaults for subscriptions.
+	selectedURLs := dgm.optimizer.ChooseProvider(ctx, allURLs, nil, 1, -2)
+
+	if len(selectedURLs) == 0 {
+		// Optimizer returned nothing — fall back to first-available within tier.
+		return tier[0], nil
+	}
+
+	selectedURL := selectedURLs[0]
+	if endpoint, exists := dgm.endpointsByURL[selectedURL]; exists {
+		return endpoint, nil
+	}
+	return nil, fmt.Errorf("optimizer selected unknown endpoint: %s", selectedURL)
 }
 
 func (dgm *DirectGRPCSubscriptionManager) checkClientSubscriptionLimit(clientKey string) error {

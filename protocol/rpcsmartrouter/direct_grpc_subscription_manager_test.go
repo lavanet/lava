@@ -24,6 +24,7 @@ func TestNewDirectGRPCSubscriptionManager(t *testing.T) {
 		chainID,
 		apiInterface,
 		endpoints,
+		nil, // grpcBackupEndpoints — none for primary-only test
 		nil, // optimizer
 		nil, // config (use defaults)
 	)
@@ -55,6 +56,7 @@ func TestNewDirectGRPCSubscriptionManager_WithConfig(t *testing.T) {
 		"ETH",
 		"grpc",
 		[]*common.NodeUrl{{Url: "grpc://localhost:9090"}},
+		nil, // grpcBackupEndpoints — none for primary-only test
 		nil,
 		config,
 	)
@@ -71,6 +73,7 @@ func TestNewDirectGRPCSubscriptionManager_EmptyEndpoints(t *testing.T) {
 		"ETH",
 		"grpc",
 		[]*common.NodeUrl{}, // Empty endpoints
+		nil,                 // grpcBackupEndpoints — none for primary-only test
 		nil,
 		nil,
 	)
@@ -92,6 +95,7 @@ func TestDirectGRPCSubscriptionManager_EndpointLookup(t *testing.T) {
 		"COSMOSHUB",
 		"grpc",
 		endpoints,
+		nil, // grpcBackupEndpoints — none for primary-only test
 		nil,
 		nil,
 	)
@@ -109,6 +113,7 @@ func TestDirectGRPCSubscriptionManager_StartStop(t *testing.T) {
 		"ETH",
 		"grpc",
 		[]*common.NodeUrl{{Url: "grpc://localhost:9090"}},
+		nil, // grpcBackupEndpoints — none for primary-only test
 		nil,
 		nil,
 	)
@@ -137,6 +142,7 @@ func TestDirectGRPCSubscriptionManager_Stop_Idempotent(t *testing.T) {
 		"ETH",
 		"grpc",
 		[]*common.NodeUrl{{Url: "grpc://localhost:9090"}},
+		nil, // grpcBackupEndpoints — none for primary-only test
 		nil,
 		nil,
 	)
@@ -155,6 +161,7 @@ func TestDirectGRPCSubscriptionManager_TotalSubscriptions(t *testing.T) {
 		"ETH",
 		"grpc",
 		[]*common.NodeUrl{{Url: "grpc://localhost:9090"}},
+		nil, // grpcBackupEndpoints — none for primary-only test
 		nil,
 		nil,
 	)
@@ -181,6 +188,7 @@ func TestDirectGRPCSubscriptionManager_RateLimiter(t *testing.T) {
 		"ETH",
 		"grpc",
 		[]*common.NodeUrl{{Url: "grpc://localhost:9090"}},
+		nil, // grpcBackupEndpoints — none for primary-only test
 		nil,
 		config,
 	)
@@ -201,6 +209,7 @@ func TestDirectGRPCSubscriptionManager_IDMapper(t *testing.T) {
 		"ETH",
 		"grpc",
 		[]*common.NodeUrl{{Url: "grpc://localhost:9090"}},
+		nil, // grpcBackupEndpoints — none for primary-only test
 		nil,
 		nil,
 	)
@@ -245,6 +254,7 @@ func TestDirectGRPCSubscriptionManager_StickySessions(t *testing.T) {
 			{Url: "grpc://node1:9090"},
 			{Url: "grpc://node2:9090"},
 		},
+		nil, // grpcBackupEndpoints — none for primary-only test
 		nil,
 		nil,
 	)
@@ -270,6 +280,7 @@ func TestDirectGRPCSubscriptionManager_ClientSubscriptionTracking(t *testing.T) 
 		"ETH",
 		"grpc",
 		[]*common.NodeUrl{{Url: "grpc://localhost:9090"}},
+		nil, // grpcBackupEndpoints — none for primary-only test
 		nil,
 		nil,
 	)
@@ -312,6 +323,7 @@ func TestDirectGRPCSubscriptionManager_ContextCancellation(t *testing.T) {
 		"ETH",
 		"grpc",
 		[]*common.NodeUrl{{Url: "grpc://localhost:9090"}},
+		nil, // grpcBackupEndpoints — none for primary-only test
 		nil,
 		nil,
 	)
@@ -393,6 +405,7 @@ func TestDirectGRPCSubscriptionManager_DefaultConfig(t *testing.T) {
 		"ETH",
 		"grpc",
 		[]*common.NodeUrl{{Url: "grpc://localhost:9090"}},
+		nil, // grpcBackupEndpoints — none for primary-only test
 		nil,
 		nil, // nil config should use defaults
 	)
@@ -402,4 +415,172 @@ func TestDirectGRPCSubscriptionManager_DefaultConfig(t *testing.T) {
 	assert.Equal(t, 10000, manager.config.MaxTotalSubscriptions)
 	assert.Equal(t, "warn", manager.config.PerClientLimitEnforcement)
 	assert.True(t, manager.config.SubscriptionSharingEnabled)
+}
+
+func TestSelectEndpoint_GRPC_PrimaryOnly_NilBackup(t *testing.T) {
+	primary := []*common.NodeUrl{{Url: "grpc://primary-1.example.com:9090"}}
+	manager := NewDirectGRPCSubscriptionManager(
+		nil, "ETH", "grpc",
+		primary,
+		nil, // grpcBackupEndpoints — none
+		nil, nil,
+	)
+	ep, err := manager.selectEndpoint(context.Background(), "client-1")
+	require.NoError(t, err)
+	assert.Equal(t, "grpc://primary-1.example.com:9090", ep.Url)
+}
+
+func TestSelectEndpoint_GRPC_PrimaryEmpty_BackupOnly(t *testing.T) {
+	backup := []*common.NodeUrl{{Url: "grpc://backup-1.example.com:9090"}}
+	manager := NewDirectGRPCSubscriptionManager(
+		nil, "ETH", "grpc",
+		nil, // primary empty
+		backup,
+		nil, nil,
+	)
+	ep, err := manager.selectEndpoint(context.Background(), "client-1")
+	require.NoError(t, err)
+	assert.Equal(t, "grpc://backup-1.example.com:9090", ep.Url)
+	// Sticky should be set to the backup URL.
+	manager.lock.RLock()
+	defer manager.lock.RUnlock()
+	assert.Equal(t, "grpc://backup-1.example.com:9090", manager.stickySessions["client-1"])
+}
+
+func TestSelectEndpoint_GRPC_StickyOnBackup_Returns(t *testing.T) {
+	primary := []*common.NodeUrl{{Url: "grpc://primary-1.example.com:9090"}}
+	backup := []*common.NodeUrl{{Url: "grpc://backup-1.example.com:9090"}}
+	manager := NewDirectGRPCSubscriptionManager(
+		nil, "ETH", "grpc",
+		primary,
+		backup,
+		nil, nil,
+	)
+
+	// Pre-seed sticky to point at the backup URL.
+	manager.lock.Lock()
+	manager.stickySessions["client-1"] = "grpc://backup-1.example.com:9090"
+	manager.lock.Unlock()
+
+	ep, err := manager.selectEndpoint(context.Background(), "client-1")
+	require.NoError(t, err)
+	assert.Equal(t, "grpc://backup-1.example.com:9090", ep.Url)
+}
+
+func TestSelectEndpoint_GRPC_BothEmpty_ReturnsError(t *testing.T) {
+	manager := NewDirectGRPCSubscriptionManager(
+		nil, "ETH", "grpc",
+		nil, nil,
+		nil, nil,
+	)
+	_, err := manager.selectEndpoint(context.Background(), "client-1")
+	require.Error(t, err)
+}
+
+func TestSelectEndpoint_GRPC_OptimizerOverPrimary(t *testing.T) {
+	primary := []*common.NodeUrl{
+		{Url: "grpc://primary-1.example.com:9090"},
+		{Url: "grpc://primary-2.example.com:9090"},
+	}
+
+	calls := 0
+	opt := &fakeSubscriptionOptimizer{
+		chooseFn: func(addresses []string, _ map[string]struct{}) []string {
+			calls++
+			// Always return primary-2 — backup tier must never reach the optimizer.
+			return []string{"grpc://primary-2.example.com:9090"}
+		},
+	}
+	manager := NewDirectGRPCSubscriptionManager(
+		nil, "ETH", "grpc",
+		primary,
+		nil, // grpcBackupEndpoints — none for primary-only test
+		opt,
+		nil,
+	)
+
+	ep, err := manager.selectEndpoint(context.Background(), "client-1")
+	require.NoError(t, err)
+	assert.Equal(t, "grpc://primary-2.example.com:9090", ep.Url)
+	// Optimizer must run exactly once (against primary tier).
+	assert.Equal(t, 1, calls)
+	// Sticky must be set to the optimizer-selected URL.
+	manager.lock.RLock()
+	defer manager.lock.RUnlock()
+	assert.Equal(t, "grpc://primary-2.example.com:9090", manager.stickySessions["client-1"])
+}
+
+func TestSelectEndpoint_GRPC_OptimizerOverBackup(t *testing.T) {
+	backup := []*common.NodeUrl{
+		{Url: "grpc://backup-1.example.com:9090"},
+		{Url: "grpc://backup-2.example.com:9090"},
+	}
+
+	calls := 0
+	opt := &fakeSubscriptionOptimizer{
+		chooseFn: func(addresses []string, _ map[string]struct{}) []string {
+			calls++
+			return []string{"grpc://backup-2.example.com:9090"}
+		},
+	}
+	manager := NewDirectGRPCSubscriptionManager(
+		nil, "ETH", "grpc",
+		nil, // primary empty — cascade must reach backup tier
+		backup,
+		opt,
+		nil,
+	)
+
+	ep, err := manager.selectEndpoint(context.Background(), "client-1")
+	require.NoError(t, err)
+	assert.Equal(t, "grpc://backup-2.example.com:9090", ep.Url)
+	// Optimizer must run exactly once (against backup tier — primary is empty
+	// so selectFromTier returns "tier is empty" without invoking the optimizer).
+	assert.Equal(t, 1, calls)
+	manager.lock.RLock()
+	defer manager.lock.RUnlock()
+	assert.Equal(t, "grpc://backup-2.example.com:9090", manager.stickySessions["client-1"])
+}
+
+func TestSelectEndpoint_GRPC_OptimizerNil_FallsBackToFirst(t *testing.T) {
+	primary := []*common.NodeUrl{
+		{Url: "grpc://primary-1.example.com:9090"},
+		{Url: "grpc://primary-2.example.com:9090"},
+	}
+	manager := NewDirectGRPCSubscriptionManager(
+		nil, "ETH", "grpc",
+		primary,
+		nil, // grpcBackupEndpoints — none
+		nil, // optimizer nil — first-available branch
+		nil,
+	)
+
+	ep, err := manager.selectEndpoint(context.Background(), "client-1")
+	require.NoError(t, err)
+	// No optimizer → selectFromTier returns tier[0] directly.
+	assert.Equal(t, "grpc://primary-1.example.com:9090", ep.Url)
+}
+
+func TestSelectEndpoint_GRPC_OptimizerReturnsEmpty_FallsBackToFirst(t *testing.T) {
+	primary := []*common.NodeUrl{
+		{Url: "grpc://primary-1.example.com:9090"},
+		{Url: "grpc://primary-2.example.com:9090"},
+	}
+	opt := &fakeSubscriptionOptimizer{
+		chooseFn: func(_ []string, _ map[string]struct{}) []string {
+			return nil // simulate optimizer returning nothing
+		},
+	}
+	manager := NewDirectGRPCSubscriptionManager(
+		nil, "ETH", "grpc",
+		primary,
+		nil,
+		opt,
+		nil,
+	)
+
+	ep, err := manager.selectEndpoint(context.Background(), "client-1")
+	require.NoError(t, err)
+	// Optimizer returned empty → selectFromTier falls back to tier[0].
+	assert.Equal(t, "grpc://primary-1.example.com:9090", ep.Url)
 }
