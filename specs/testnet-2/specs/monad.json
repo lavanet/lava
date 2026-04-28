@@ -39,13 +39,13 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 100,
+                                "compute_units": 20,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 1
+                                    "stateful": 0
                                 },
                                 "extra_compute_units": 0
                             },
@@ -58,6 +58,7 @@
                                     "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 100,
+                                "timeout_ms": 10000,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -246,9 +247,61 @@
                                         "expected_value": "0x8f"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "parse_directive": {
+                                    "function_tag": "GET_EARLIEST_BLOCK"
+                                },
+                                "values": [
+                                    {
+                                        "latest_distance": 90000
+                                    },
+                                    {
+                                        "extension": "archive",
+                                        "expected_value": "0x0"
+                                    }
+                                ]
                             }
                         ],
-                        "extensions": []
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 90000
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": "admin"
+                        },
+                        "apis": [
+                            {
+                                "name": "admin_ethCallStatistics",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            }
+                        ]
                     },
                     {
                         "enabled": true,
@@ -274,7 +327,36 @@
                                 "compute_units": 200,
                                 "enabled": false
                             }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 90000
+                                }
+                            }
                         ]
+                    },
+                    {
+                        "enabled": false,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": "trace"
+                        },
+                        "apis": []
+                    },
+                    {
+                        "enabled": false,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": "bundler"
+                        },
+                        "apis": []
                     }
                 ]
             },
