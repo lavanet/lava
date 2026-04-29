@@ -261,6 +261,39 @@ func TestInjectHTTP_OverwritesExistingTraceparent(t *testing.T) {
 	}
 }
 
+// TestInjectHTTP_OverwritesAllCaseInsensitiveDuplicates guards against the
+// case where the inbound metadata carries both "traceparent" and
+// "Traceparent". Replace-in-place must refresh every matching slot —
+// otherwise a stale value would survive and reach the provider as a
+// duplicate traceparent header.
+func TestInjectHTTP_OverwritesAllCaseInsensitiveDuplicates(t *testing.T) {
+	tracer := setupTestTracing(t)
+	ctx, span := tracer.Start(context.Background(), "outbound")
+	defer span.End()
+
+	stale := "00-00000000000000000000000000000001-0000000000000001-01"
+	headers := []pairingtypes.Metadata{
+		{Name: "X-Custom", Value: "keep"},
+		{Name: "traceparent", Value: stale},
+		{Name: "Traceparent", Value: stale},
+	}
+
+	result := InjectHTTP(ctx, headers)
+
+	freshTraceID := span.SpanContext().TraceID().String()
+	var matches int
+	for _, md := range result {
+		if !strings.EqualFold(md.Name, "traceparent") {
+			continue
+		}
+		matches++
+		require.NotEqual(t, stale, md.Value, "no slot may keep the stale value")
+		require.Contains(t, md.Value, freshTraceID)
+	}
+	require.Equal(t, 2, matches, "both inbound slots must be preserved and refreshed")
+	require.Equal(t, "keep", findMetadata(result, "X-Custom"))
+}
+
 // TestRoundTrip_HTTP_Tracestate confirms tracestate (the W3C "ts" sibling
 // header to traceparent) survives inject → extract via the HTTP carrier
 // helpers. The product spec explicitly calls out tracestate forwarding,

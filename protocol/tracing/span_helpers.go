@@ -88,12 +88,15 @@ func RecordError(span trace.Span, err error) {
 	span.SetStatus(otelcodes.Error, err.Error())
 }
 
-// RecordBody conditionally records a body attribute on the span when
-// --otel-trace-body is enabled. We pre-truncate to the SDK's configured
-// OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT so a large body with a small cap
-// doesn't pay a full string allocation before the SDK truncates.
+// RecordBody records a body attribute on the span. Callers MUST gate the
+// call with IsTraceBodyEnabled() — this function does not check the flag
+// itself, so that the caller can also avoid the []byte conversion (and any
+// other prep work) when --otel-trace-body is off. We pre-truncate to the
+// SDK's configured OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT so a large body
+// with a small cap doesn't pay a full string allocation before the SDK
+// truncates.
 func RecordBody(span trace.Span, attrKey string, body []byte) {
-	if !traceBodyEnabled || !span.IsRecording() {
+	if !span.IsRecording() {
 		return
 	}
 	if bodyAttrLimit > 0 && len(body) > bodyAttrLimit {

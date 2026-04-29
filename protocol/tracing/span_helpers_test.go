@@ -91,32 +91,24 @@ func TestRecordError(t *testing.T) {
 func TestRecordBody(t *testing.T) {
 	shortBody := []byte(`{"jsonrpc":"2.0","id":1}`)
 
+	// RecordBody no longer self-gates on traceBodyEnabled — that check now
+	// lives at the call site (see IsTraceBodyEnabled). These cases cover
+	// what RecordBody itself is responsible for: handing the body to the
+	// SDK and pre-truncating to the configured attribute-value limit.
 	tests := []struct {
 		name        string
-		bodyEnabled bool
 		envLimit    string // OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT ("" = unset)
 		body        []byte
-		expectAttr  bool   // whether the attribute should appear
-		expectValue string // expected attribute value (if expectAttr)
+		expectValue string
 	}{
 		{
-			name:        "enabled with short body",
-			bodyEnabled: true,
+			name:        "short body",
 			body:        shortBody,
-			expectAttr:  true,
 			expectValue: string(shortBody),
 		},
 		{
-			name:        "disabled records nothing",
-			bodyEnabled: false,
-			body:        shortBody,
-			expectAttr:  false,
-		},
-		{
-			name:        "enabled with nil body",
-			bodyEnabled: true,
+			name:        "nil body",
 			body:        nil,
-			expectAttr:  true,
 			expectValue: "",
 		},
 		{
@@ -124,21 +116,17 @@ func TestRecordBody(t *testing.T) {
 			// (1) the attribute is still PRESENT (SDK truncates, doesn't drop)
 			// (2) value is the first `limit` bytes of the original
 			// (3) no "...(truncated)" marker is added by the SDK
-			name:        "enabled with body exceeding env limit, truncated by SDK",
-			bodyEnabled: true,
+			name:        "body exceeding env limit, truncated by SDK",
 			envLimit:    "100",
 			body:        []byte(strings.Repeat("x", 200)),
-			expectAttr:  true,
 			expectValue: strings.Repeat("x", 100),
 		},
 		{
 			// With no env var set, the SDK default is -1 (unlimited), so the
 			// full body must round-trip onto the span unchanged.
-			name:        "enabled with no env limit, full body recorded",
-			bodyEnabled: true,
+			name:        "no env limit, full body recorded",
 			envLimit:    "",
 			body:        []byte(strings.Repeat("x", 8192)),
-			expectAttr:  true,
 			expectValue: strings.Repeat("x", 8192),
 		},
 	}
@@ -155,9 +143,6 @@ func TestRecordBody(t *testing.T) {
 			}
 
 			tracer, exporter := setupTestTracingWithExporter(t)
-
-			traceBodyEnabled = tc.bodyEnabled
-			t.Cleanup(func() { traceBodyEnabled = false })
 
 			_, span := tracer.Start(context.Background(), "test-span")
 			RecordBody(span, AttrRelayRequestBody, tc.body)
@@ -176,12 +161,8 @@ func TestRecordBody(t *testing.T) {
 				}
 			}
 
-			if tc.expectAttr {
-				require.True(t, found, "body attribute must be recorded")
-				require.Equal(t, tc.expectValue, value)
-			} else {
-				require.False(t, found, "body attribute must not be recorded")
-			}
+			require.True(t, found, "body attribute must be recorded")
+			require.Equal(t, tc.expectValue, value)
 		})
 	}
 }

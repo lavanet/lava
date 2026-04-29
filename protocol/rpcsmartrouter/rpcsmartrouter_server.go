@@ -472,7 +472,9 @@ func (rpcss *RPCSmartRouterServer) SendRelay(
 	chainId, apiInterface := rpcss.GetChainIdAndApiInterface()
 	guid, _ := utils.GetUniqueIdentifier(ctx)
 	tracing.RecordRelayAttributes(span, guid, chainId, apiInterface)
-	tracing.RecordBody(span, tracing.AttrRelayRequestBody, []byte(req))
+	if tracing.IsTraceBodyEnabled() {
+		tracing.RecordBody(span, tracing.AttrRelayRequestBody, []byte(req))
+	}
 
 	protocolMessage, err := rpcss.ParseRelay(ctx, url, req, connectionType, dappID, consumerIp, metadata)
 	if err != nil {
@@ -554,7 +556,9 @@ func (rpcss *RPCSmartRouterServer) SendParsedRelay(
 		defer processSpan.End()
 		r, e := relayProcessor.ProcessingResult()
 		if r != nil && r.Reply != nil {
-			tracing.RecordBody(processSpan, tracing.AttrRelayResponseBody, r.Reply.Data)
+			if tracing.IsTraceBodyEnabled() {
+				tracing.RecordBody(processSpan, tracing.AttrRelayResponseBody, r.Reply.Data)
+			}
 		}
 		return r, e
 	}()

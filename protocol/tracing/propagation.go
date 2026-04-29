@@ -26,14 +26,21 @@ func InjectHTTP(ctx context.Context, headers []pairingtypes.Metadata) []pairingt
 	// The W3C TraceContext / Baggage propagators emit canonical lowercase
 	// keys ("traceparent", "tracestate", "baggage"), so we can index the
 	// carrier with a lowercased header name directly.
+	// Overwrite every case-insensitive match so duplicates (e.g. both
+	// "traceparent" and "Traceparent") all receive the fresh value rather
+	// than leaving the second occurrence stale.
+	seen := make(map[string]struct{}, len(carrier))
 	for i := range headers {
 		lower := strings.ToLower(headers[i].Name)
 		if v, ok := carrier[lower]; ok {
 			headers[i].Value = v
-			delete(carrier, lower)
+			seen[lower] = struct{}{}
 		}
 	}
 	for k, v := range carrier {
+		if _, ok := seen[k]; ok {
+			continue
+		}
 		headers = append(headers, pairingtypes.Metadata{Name: k, Value: v})
 	}
 	return headers
