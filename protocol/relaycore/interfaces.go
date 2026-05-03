@@ -132,7 +132,7 @@ type DecisionInput struct {
 // RelayPolicyInf is the interface that the policy engine must implement.
 type RelayPolicyInf interface {
 	Decide(input DecisionInput) DecisionOutput
-	OnSendRelayResult(err error, isPairingListEmpty bool) SendResult
+	OnSendRelayResult(err error, isPairingListEmpty bool, selection Selection) SendResult
 	GetConsecutiveBatchErrors() int
 }
 

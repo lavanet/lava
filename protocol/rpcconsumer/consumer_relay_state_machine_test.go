@@ -866,25 +866,25 @@ func TestConsumerStateMachineBatchErrorCounterResetsOnSuccess(t *testing.T) {
 	})
 
 	// Send 2 batch errors (below threshold of 3)
-	result := policy.OnSendRelayResult(fmt.Errorf("send failed"), false)
+	result := policy.OnSendRelayResult(fmt.Errorf("send failed"), false, relaycore.Stateless)
 	require.Equal(t, relaycore.SendRetry, result, "First error should retry")
 	require.Equal(t, 1, policy.GetConsecutiveBatchErrors())
 
-	result = policy.OnSendRelayResult(fmt.Errorf("send failed"), false)
+	result = policy.OnSendRelayResult(fmt.Errorf("send failed"), false, relaycore.Stateless)
 	require.Equal(t, relaycore.SendRetry, result, "Second error should retry")
 	require.Equal(t, 2, policy.GetConsecutiveBatchErrors())
 
 	// Success resets the counter
-	result = policy.OnSendRelayResult(nil, false)
+	result = policy.OnSendRelayResult(nil, false, relaycore.Stateless)
 	require.Equal(t, relaycore.SendSuccess, result)
 	require.Equal(t, 0, policy.GetConsecutiveBatchErrors(), "Counter should reset on success")
 
 	// Now 3 more errors should be needed to trigger stop (not 1)
-	policy.OnSendRelayResult(fmt.Errorf("err"), false)
-	policy.OnSendRelayResult(fmt.Errorf("err"), false)
-	result = policy.OnSendRelayResult(fmt.Errorf("err"), false)
+	policy.OnSendRelayResult(fmt.Errorf("err"), false, relaycore.Stateless)
+	policy.OnSendRelayResult(fmt.Errorf("err"), false, relaycore.Stateless)
+	result = policy.OnSendRelayResult(fmt.Errorf("err"), false, relaycore.Stateless)
 	require.Equal(t, relaycore.SendRetry, result, "Third error should still retry (counter was reset)")
 
-	result = policy.OnSendRelayResult(fmt.Errorf("err"), false)
+	result = policy.OnSendRelayResult(fmt.Errorf("err"), false, relaycore.Stateless)
 	require.Equal(t, relaycore.SendStop, result, "Fourth error (>3) should stop")
 }

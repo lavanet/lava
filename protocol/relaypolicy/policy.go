@@ -104,11 +104,22 @@ func (p *Policy) decideMutation(input DecisionInput) MutationOutput {
 
 // OnSendRelayResult handles pre-relay send decisions. Called from the state machine's
 // batchUpdate case. Merges DP#11 (circuit breaker) and DP#12 (batch send retry).
-func (p *Policy) OnSendRelayResult(err error, isPairingListEmpty bool) SendResult {
+func (p *Policy) OnSendRelayResult(err error, isPairingListEmpty bool, selection relaycore.Selection) relaycore.SendResult {
 	if err == nil {
 		p.consecutiveBatchErrors = 0
 		p.consecutivePairingErrors = 0
 		return SendSuccess
+	}
+
+	// CrossValidation cannot meaningfully retry at the batch level — the
+	// SendRetry path forces NumOfProviders=1, which silently violates the
+	// user's quorum requirement and lets a generic "failed relay,
+	// insufficient results" error mask the precise cause (e.g. consistency-
+	// filter shortfall). Stop immediately so the original err is what the
+	// state machine surfaces, mirroring the CrossValidation short-circuit
+	// at the top of Decide.
+	if selection == relaycore.CrossValidation {
+		return SendStop
 	}
 
 	p.consecutiveBatchErrors++
