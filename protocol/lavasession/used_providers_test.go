@@ -57,6 +57,61 @@ func TestUsedProviders(t *testing.T) {
 	})
 }
 
+func TestReleaseFromLatestBatch(t *testing.T) {
+	t.Run("decrements batch counter and is idempotent", func(t *testing.T) {
+		usedProviders := NewUsedProviders(nil)
+		consumerSessionsMap := ConsumerSessionsMap{
+			"p1": &SessionInfo{},
+			"p2": &SessionInfo{},
+			"p3": &SessionInfo{},
+		}
+		usedProviders.AddUsed(consumerSessionsMap, nil)
+		require.Equal(t, 3, usedProviders.SessionsLatestBatch())
+		require.Equal(t, 3, usedProviders.CurrentlyUsed())
+
+		// Release p1: counter drops, currentlyUsed drops, p1 marked unwanted.
+		usedProviders.ReleaseFromLatestBatch("p1", NewRouterKey(nil), fmt.Errorf("filtered"))
+		require.Equal(t, 2, usedProviders.SessionsLatestBatch())
+		require.Equal(t, 2, usedProviders.CurrentlyUsed())
+		unwanted := usedProviders.GetUnwantedProvidersToSend(NewRouterKey(nil))
+		require.Contains(t, unwanted, "p1")
+
+		// Idempotent: second call for p1 must not double-decrement.
+		usedProviders.ReleaseFromLatestBatch("p1", NewRouterKey(nil), fmt.Errorf("filtered"))
+		require.Equal(t, 2, usedProviders.SessionsLatestBatch())
+		require.Equal(t, 2, usedProviders.CurrentlyUsed())
+
+		// Release the rest: counter floors at 0, no underflow.
+		usedProviders.ReleaseFromLatestBatch("p2", NewRouterKey(nil), nil)
+		usedProviders.ReleaseFromLatestBatch("p3", NewRouterKey(nil), nil)
+		require.Zero(t, usedProviders.SessionsLatestBatch())
+		require.Zero(t, usedProviders.CurrentlyUsed())
+
+		// Releasing an unknown provider is a no-op (no panic, no underflow).
+		usedProviders.ReleaseFromLatestBatch("never-added", NewRouterKey(nil), nil)
+		require.Zero(t, usedProviders.SessionsLatestBatch())
+	})
+
+	t.Run("response-path RemoveUsed leaves counter alone, ReleaseFromLatestBatch decrements", func(t *testing.T) {
+		usedProviders := NewUsedProviders(nil)
+		consumerSessionsMap := ConsumerSessionsMap{
+			"p1": &SessionInfo{},
+			"p2": &SessionInfo{},
+		}
+		usedProviders.AddUsed(consumerSessionsMap, nil)
+		require.Equal(t, 2, usedProviders.SessionsLatestBatch())
+
+		// Simulate a normal response cycle for p1: RemoveUsed must NOT decrement
+		// the batch counter (responsesCount on the RelayProcessor side handles it).
+		usedProviders.RemoveUsed("p1", NewRouterKey(nil), nil)
+		require.Equal(t, 2, usedProviders.SessionsLatestBatch())
+
+		// Simulate a pre-dispatch filter dropping p2: counter must drop.
+		usedProviders.ReleaseFromLatestBatch("p2", NewRouterKey(nil), fmt.Errorf("filtered"))
+		require.Equal(t, 1, usedProviders.SessionsLatestBatch())
+	})
+}
+
 func TestUsedProvidersAsync(t *testing.T) {
 	t.Run("concurrency", func(t *testing.T) {
 		usedProviders := NewUsedProviders(nil)

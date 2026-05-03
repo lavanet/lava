@@ -193,6 +193,45 @@ func (up *UsedProviders) AddUnwantedAddresses(address string, routerKey RouterKe
 	uniqueUsedProviders.unwantedProviders[address] = struct{}{}
 }
 
+// ReleaseFromLatestBatch removes a provider from the current batch as if it
+// had never dispatched. Use when a session is dropped AFTER AddUsed but BEFORE
+// any response was sent to the RelayProcessor (e.g. by a pre-dispatch filter
+// such as filterEndpointsByConsistency in the smart router).
+//
+// Decrements sessionsLatestBatch so RelayProcessor.checkEndProcessing's
+// "all workers reported back" exit (responsesCount >= sessionsLatestBatch)
+// matches the number of goroutines actually launched. Also removes the
+// provider from the in-flight set, marks it unwanted so subsequent retries
+// skip it, and records it as errored for debugging.
+//
+// Idempotent: a second call for the same provider is a no-op (the providers
+// map check guards against double-decrement).
+//
+// MUST NOT be called from the response path. The response path goes through
+// SingleConsumerSession.Free → RemoveUsed, which intentionally leaves
+// sessionsLatestBatch alone — the RelayProcessor counts via responsesCount.
+func (up *UsedProviders) ReleaseFromLatestBatch(provider string, routerKey RouterKey, err error) {
+	if up == nil {
+		return
+	}
+	up.lock.Lock()
+	defer up.lock.Unlock()
+	uniqueUsedProviders := up.createOrUseUniqueUsedProvidersForKey(routerKey)
+
+	if _, inBatch := uniqueUsedProviders.providers[provider]; !inBatch {
+		return
+	}
+
+	delete(uniqueUsedProviders.providers, provider)
+	up.setUnwanted(uniqueUsedProviders, provider)
+	if err != nil {
+		uniqueUsedProviders.erroredProviders[provider] = struct{}{}
+	}
+	if up.sessionsLatestBatch > 0 {
+		up.sessionsLatestBatch--
+	}
+}
+
 func (up *UsedProviders) RemoveUsed(provider string, routerKey RouterKey, err error) {
 	if up == nil {
 		return

@@ -751,10 +751,15 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 	// Pre-request consistency validation: filter out endpoints that are too far behind
 	validSessions, failedSessions, filterErr := rpcss.filterEndpointsByConsistency(ctx, sessions, protocolMessage)
 
-	// Release failed sessions via OnSessionFailure:
-	// - Provides QoS punishment (AppendRelayFailure)
-	// - Properly unlocks the session
-	// - Adds provider to unwantedProviders for retry exclusion
+	// Release failed sessions:
+	// - ReleaseFromLatestBatch decrements UsedProviders.sessionsLatestBatch so
+	//   RelayProcessor.checkEndProcessing matches the goroutines we will
+	//   actually launch. Without this the CV path can wait the full
+	//   processingTimeout (~30s) for responses that never arrive.
+	// - OnSessionFailure provides QoS punishment, unlocks the session, and
+	//   marks the provider unwanted for retry exclusion.
+	usedProviders := relayProcessor.GetUsedProviders()
+	releaseRouterKey := lavasession.NewRouterKeyFromExtensions(protocolMessage.GetExtensions())
 	for endpointAddress, sessionInfo := range failedSessions {
 		if sessionInfo != nil && sessionInfo.Session != nil {
 			utils.LavaFormatDebug("releasing stale session via OnSessionFailure",
@@ -762,6 +767,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 				utils.LogAttr("error", lavasession.ConsistencyPreValidationError),
 				utils.LogAttr("GUID", ctx),
 			)
+			usedProviders.ReleaseFromLatestBatch(endpointAddress, releaseRouterKey, lavasession.ConsistencyPreValidationError)
 			rpcss.sessionManager.OnSessionFailure(sessionInfo.Session, lavasession.ConsistencyPreValidationError)
 		}
 	}
@@ -769,6 +775,25 @@ func (rpcss *RPCSmartRouterServer) sendRelayToDirectEndpoints(
 	// If ALL sessions failed consistency validation, return error to trigger retry with different providers
 	if filterErr != nil {
 		return filterErr
+	}
+
+	// Post-filter CV guard: even with the counter fixed, fail fast (and with
+	// a precise error message) when the filter dropped the surviving session
+	// count below the agreement threshold. Returning PairingListEmptyError
+	// lets the state machine retry with a fresh batch; the consistency-failed
+	// providers are already in unwantedProviders.
+	selection := relayProcessor.GetSelection()
+	crossValidationParams := relayProcessor.GetCrossValidationParams()
+	if selection == relaycore.CrossValidation && crossValidationParams != nil &&
+		len(validSessions) < crossValidationParams.AgreementThreshold {
+		return utils.LavaFormatError("insufficient sessions for cross-validation consensus after consistency filter",
+			lavasession.PairingListEmptyError,
+			utils.LogAttr("agreementThreshold", crossValidationParams.AgreementThreshold),
+			utils.LogAttr("sessionsAcquired", len(sessions)),
+			utils.LogAttr("sessionsAfterFilter", len(validSessions)),
+			utils.LogAttr("sessionsFiltered", len(failedSessions)),
+			utils.LogAttr("GUID", ctx),
+		)
 	}
 
 	sessions = validSessions
