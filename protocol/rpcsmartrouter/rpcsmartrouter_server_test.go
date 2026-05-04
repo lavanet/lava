@@ -94,8 +94,8 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 		// Call the function
 		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api", nil, true)
 
-		// Verify the result - should have single provider header + user request type header
-		require.Len(t, relayResult.Reply.Metadata, 2)
+		// Verify the result - should have single provider header + user request type header + CU used header
+		require.Len(t, relayResult.Reply.Metadata, 3)
 
 		// Find the provider address header
 		var providerHeader *pairingtypes.Metadata
@@ -141,8 +141,8 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 		// Call the function
 		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api", nil, true)
 
-		// Verify the result - should have status, all-providers, agreeing-providers, and user request type headers
-		require.Len(t, relayResult.Reply.Metadata, 4)
+		// Verify the result - should have status, all-providers, agreeing-providers, user request type, CU used headers
+		require.Len(t, relayResult.Reply.Metadata, 5)
 
 		// Find and verify headers
 		var statusHeader, allProvidersHeader, agreeingProvidersHeader *pairingtypes.Metadata
@@ -204,8 +204,8 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 		// Call the function
 		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api", nil, true)
 
-		// Verify the result - should have 4 headers: status, all-providers, agreeing-providers, user-request-type
-		require.Len(t, relayResult.Reply.Metadata, 4)
+		// Verify the result - should have 5 headers: status, all-providers, agreeing-providers, user-request-type, cu-used
+		require.Len(t, relayResult.Reply.Metadata, 5)
 
 		// Find all CV headers
 		var statusHeader, allProvidersHeader, agreeingProvidersHeader *pairingtypes.Metadata
@@ -267,8 +267,8 @@ func TestAppendHeadersToRelayResultIntegration(t *testing.T) {
 		// Call the function
 		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "test-api", nil, true)
 
-		// Verify the result - should have 4 headers (status, all-providers, agreeing-providers, user-request-type)
-		require.Len(t, relayResult.Reply.Metadata, 4)
+		// Verify the result - should have 5 headers (status, all-providers, agreeing-providers, user-request-type, cu-used)
+		require.Len(t, relayResult.Reply.Metadata, 5)
 
 		// Find and verify headers
 		var statusHeader, allProvidersHeader, agreeingProvidersHeader *pairingtypes.Metadata
@@ -519,6 +519,67 @@ func TestRetryCountHeader(t *testing.T) {
 	})
 }
 
+// TestCuUsedHeader verifies that the lava-cu-used header reflects the spec
+// CU per request, except for unsupported-method node errors where it must be
+// 0 to match the on-chain billing carve-out.
+func TestCuUsedHeader(t *testing.T) {
+	ctx := context.Background()
+
+	findHeader := func(metadata []pairingtypes.Metadata, name string) *pairingtypes.Metadata {
+		for i := range metadata {
+			if metadata[i].Name == name {
+				return &metadata[i]
+			}
+		}
+		return nil
+	}
+
+	t.Run("supported method - header reports spec CU", func(t *testing.T) {
+		relayProcessor := &MockRelayProcessorForHeaders{
+			successResults: []common.RelayResult{
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider1"}},
+			},
+		}
+		relayResult := &common.RelayResult{
+			ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider1"},
+			Reply:        &pairingtypes.RelayReply{Metadata: []pairingtypes.Metadata{}},
+		}
+
+		rpcSmartRouterServer := &RPCSmartRouterServer{}
+		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, &MockProtocolMessage{
+			api: &spectypes.Api{Name: "eth_blockNumber", ComputeUnits: 10},
+		}, "eth_blockNumber", nil, true)
+
+		cuHeader := findHeader(relayResult.Reply.Metadata, common.LAVA_CU_USED_HEADER)
+		require.NotNil(t, cuHeader)
+		require.Equal(t, "10", cuHeader.Value)
+	})
+
+	t.Run("unsupported method - header reports 0 CU", func(t *testing.T) {
+		relayProcessor := &MockRelayProcessorForHeaders{
+			nodeErrors: []common.RelayResult{
+				{ProviderInfo: common.ProviderInfo{ProviderAddress: "lava@provider1"}},
+			},
+		}
+		relayResult := &common.RelayResult{
+			ProviderInfo:        common.ProviderInfo{ProviderAddress: "lava@provider1"},
+			Reply:               &pairingtypes.RelayReply{Metadata: []pairingtypes.Metadata{}},
+			IsNodeError:         true,
+			IsUnsupportedMethod: true,
+			IsNonRetryable:      true,
+		}
+
+		rpcSmartRouterServer := &RPCSmartRouterServer{}
+		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, &MockProtocolMessage{
+			api: &spectypes.Api{Name: "seth_blockNumber", ComputeUnits: 10},
+		}, "seth_blockNumber", nil, false)
+
+		cuHeader := findHeader(relayResult.Reply.Metadata, common.LAVA_CU_USED_HEADER)
+		require.NotNil(t, cuHeader)
+		require.Equal(t, "0", cuHeader.Value)
+	})
+}
+
 // TestStatefulRelayTargetsHeader tests the stateful API header functionality
 func TestStatefulRelayTargetsHeader(t *testing.T) {
 	ctx := context.Background()
@@ -566,7 +627,8 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 		// 2. Stateful API header
 		// 3. Stateful all providers header
 		// 4. User request type header
-		require.Len(t, relayResult.Reply.Metadata, 4)
+		// 5. CU used header
+		require.Len(t, relayResult.Reply.Metadata, 5)
 
 		// Find and verify the stateful API header
 		var statefulHeader *pairingtypes.Metadata
@@ -632,7 +694,7 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_sendRawTransaction", nil, true)
 
 		// Verify the result
-		require.Len(t, relayResult.Reply.Metadata, 4)
+		require.Len(t, relayResult.Reply.Metadata, 5)
 
 		// Find and verify the stateful all providers header
 		var allProvidersHeader *pairingtypes.Metadata
@@ -682,8 +744,8 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_sendTransaction", nil, true)
 
 		// Verify the result - should NOT have stateful all providers header (empty list)
-		// Should have: single provider header, stateful API header, user request type header
-		require.Len(t, relayResult.Reply.Metadata, 3)
+		// Should have: single provider header, stateful API header, user request type header, CU used header
+		require.Len(t, relayResult.Reply.Metadata, 4)
 
 		// Verify stateful all providers header is NOT present
 		for _, meta := range relayResult.Reply.Metadata {
@@ -737,8 +799,8 @@ func TestStatefulRelayTargetsHeader(t *testing.T) {
 		// Call the function
 		rpcSmartRouterServer.appendHeadersToRelayResult(ctx, relayResult, 0, relayProcessor, mockProtocolMessage, "eth_getBlockByNumber", nil, true)
 
-		// Verify the result - should only have: single provider header + user request type header
-		require.Len(t, relayResult.Reply.Metadata, 2)
+		// Verify the result - should only have: single provider header + user request type header + CU used header
+		require.Len(t, relayResult.Reply.Metadata, 3)
 
 		// Verify NO stateful headers are present
 		for _, meta := range relayResult.Reply.Metadata {

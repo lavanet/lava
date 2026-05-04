@@ -29,6 +29,7 @@ const (
 	REPORTED_PROVIDERS_HEADER_NAME                  = "Lava-Reported-Providers"
 	LAVA_RELAY_PROTOCOL_HEADER_NAME                 = "Lava-Relay-Protocol"
 	USER_REQUEST_TYPE                               = "lava-user-request-type"
+	LAVA_CU_USED_HEADER                             = "lava-cu-used"
 	STATEFUL_API_HEADER                             = "lava-stateful-api"
 	STATEFUL_ALL_PROVIDERS_HEADER_NAME              = "lava-fast-tx-participants"
 	REQUESTED_BLOCK_HEADER_NAME                     = "lava-parsed-requested-block"

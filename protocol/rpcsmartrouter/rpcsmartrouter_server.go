@@ -2263,6 +2263,16 @@ func (rpcss *RPCSmartRouterServer) appendHeadersToRelayResult(ctx context.Contex
 			Value: apiName,
 		})
 
+	cuUsed := chainlib.GetComputeUnits(protocolMessage)
+	if relayResult.IsUnsupportedMethod {
+		cuUsed = 0
+	}
+	metadataReply = append(metadataReply,
+		pairingtypes.Metadata{
+			Name:  common.LAVA_CU_USED_HEADER,
+			Value: strconv.FormatUint(cuUsed, 10),
+		})
+
 	// add is node error flag
 	if relayResult.IsNodeError {
 		metadataReply = append(metadataReply,
