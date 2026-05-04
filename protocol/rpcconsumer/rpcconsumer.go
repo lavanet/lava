@@ -47,7 +47,6 @@ const (
 	DefaultRPCConsumerFileName = "rpcconsumer.yml"
 	DebugRelaysFlagName        = "debug-relays"
 	DebugProbesFlagName        = "debug-probes"
-	reportsSendBEAddress       = "reports-be-address"
 )
 
 var (
@@ -112,7 +111,6 @@ type AnalyticsServerAddresses struct {
 	UsageOTelExportTimeout time.Duration
 	UsageOTelServiceName   string
 	UsageOTelInstanceID    string
-	ReportsAddressFlag     string
 	OptimizerQoSListen     bool
 }
 type RPCConsumer struct {
@@ -171,7 +169,6 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	if common.IsTestMode(ctx) {
 		testModeWarn("RPCConsumer running tests")
 	}
-	consumerReportsManager := metrics.NewConsumerReportsClient(options.analyticsServerAddresses.ReportsAddressFlag)
 
 	consumerAddr, privKey, err := getConsumerAddressAndKeys(options.clientCtx)
 	if err != nil {
@@ -261,7 +258,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 			defer wg.Done()
 			_, err := rpcc.CreateConsumerEndpoint(ctx, rpcEndpoint, errCh, consumerAddr, consumerStateTracker,
 				policyUpdaters, optimizers, consumerConsistencies, chainMutexes,
-				options, privKey, lavaChainID, rpcConsumerMetrics, consumerReportsManager, consumerOptimizerQoSClient,
+				options, privKey, lavaChainID, rpcConsumerMetrics, consumerOptimizerQoSClient,
 				consumerMetricsManager, relaysMonitorAggregator)
 			return err
 		}(rpcEndpoint)
@@ -446,7 +443,6 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	privKey *secp256k1.PrivateKey,
 	lavaChainID string,
 	rpcConsumerMetrics *metrics.RPCConsumerLogs,
-	consumerReportsManager *metrics.ConsumerReportsClient,
 	consumerOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient,
 	consumerMetricsManager *metrics.ConsumerMetricsManager,
 	relaysMonitorAggregator *metrics.RelaysMonitorAggregator,
@@ -526,7 +522,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 
 	// Create active subscription provider storage for each unique chain
 	activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
-	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
+	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
 
 	// Set callback to get Lava blockchain block height for RelaySession.Epoch
 	consumerSessionManager.SetLavaBlockHeightCallback(func() int64 {
@@ -555,7 +551,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, specMethodType, chainParser, activeSubscriptionProvidersStorage, consumerMetricsManager)
 
 	utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
-	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, options.cmdFlags, options.stateShare, consumerReportsManager, consumerWsSubscriptionManager)
+	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, options.cmdFlags, options.stateShare, consumerWsSubscriptionManager)
 	if err != nil {
 		err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 		errCh <- err
@@ -786,7 +782,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				UsageOTelExportTimeout: viper.GetDuration(metrics.UsageOTelExportTimeoutFlagName),
 				UsageOTelServiceName:   viper.GetString(metrics.UsageOTelServiceNameFlagName),
 				UsageOTelInstanceID:    viper.GetString(metrics.UsageOTelInstanceIDFlagName),
-				ReportsAddressFlag:     viper.GetString(reportsSendBEAddress),
 				OptimizerQoSListen:     viper.GetBool(common.OptimizerQosListenFlag),
 			}
 
@@ -903,7 +898,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	// relays health check related flags
 	cmdRPCConsumer.Flags().Bool(common.RelaysHealthEnableFlag, RelaysHealthEnableFlagDefault, "enables relays health check")
 	cmdRPCConsumer.Flags().Duration(common.RelayHealthIntervalFlag, RelayHealthIntervalFlagDefault, "interval between relay health checks")
-	cmdRPCConsumer.Flags().String(reportsSendBEAddress, "", "address to send reports to")
 	cmdRPCConsumer.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
 	cmdRPCConsumer.Flags().DurationVar(&updaters.TimeOutForFetchingLavaBlocks, common.TimeOutForFetchingLavaBlocksFlag, time.Second*5, "setting the timeout for fetching lava blocks")
 	cmdRPCConsumer.Flags().StringArray(common.UseStaticSpecFlag, nil, "load specs from file, directory, or remote URL (GitHub/GitLab). Can be specified multiple times; later sources override earlier ones for same chain ID")

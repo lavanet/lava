@@ -73,7 +73,6 @@ const (
 	DefaultRPCSmartRouterFileName = "rpcsmartrouter.yml"
 	DebugRelaysFlagName           = "debug-relays"
 	DebugProbesFlagName           = "debug-probes"
-	reportsSendBEAddress          = "reports-be-address"
 )
 
 var (
@@ -156,7 +155,6 @@ type AnalyticsServerAddresses struct {
 	UsageOTelExportTimeout time.Duration
 	UsageOTelServiceName   string
 	UsageOTelInstanceID    string
-	ReportsAddressFlag     string
 	OptimizerQoSListen     bool
 }
 type RPCSmartRouter struct {
@@ -227,7 +225,6 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 	)
 
 	metrics.InitErrorMetrics()
-	smartRouterReportsManager := metrics.NewConsumerReportsClient(options.analyticsServerAddresses.ReportsAddressFlag)
 
 	// Smart router doesn't need consumer address from blockchain
 	// Using a static identifier for metrics and logging
@@ -299,7 +296,7 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 			defer wg.Done()
 			err := rpsr.CreateSmartRouterEndpoint(ctx, rpcEndpoint, errCh,
 				optimizers, smartRouterConsistencies, chainMutexes,
-				options, smartRouterIdentifier, rpcSmartRouterMetrics, smartRouterReportsManager, smartRouterOptimizerQoSClient,
+				options, smartRouterIdentifier, rpcSmartRouterMetrics, smartRouterOptimizerQoSClient,
 				smartRouterMetricsManager, relaysMonitorAggregator)
 			return err
 		}(rpcEndpoint)
@@ -471,7 +468,6 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	options *rpcSmartRouterStartOptions,
 	smartRouterIdentifier string,
 	rpcSmartRouterMetrics *metrics.RPCConsumerLogs,
-	smartRouterReportsManager *metrics.ConsumerReportsClient,
 	smartRouterOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient,
 	smartRouterMetricsManager *metrics.SmartRouterMetricsManager,
 	relaysMonitorAggregator *metrics.RelaysMonitorAggregator,
@@ -632,7 +628,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 
 	// Create active subscription provider storage for each unique chain
 	activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
-	sessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, smartRouterMetricsManager, smartRouterReportsManager, smartRouterIdentifier, activeSubscriptionProvidersStorage)
+	sessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, smartRouterMetricsManager, smartRouterIdentifier, activeSubscriptionProvidersStorage)
 
 	// Set callback to get Lava blockchain block height for RelaySession.Epoch
 	// Smart router doesn't connect to blockchain, so calculate approximate block height from epoch
@@ -1537,7 +1533,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				UsageOTelExportTimeout: viper.GetDuration(metrics.UsageOTelExportTimeoutFlagName),
 				UsageOTelServiceName:   viper.GetString(metrics.UsageOTelServiceNameFlagName),
 				UsageOTelInstanceID:    viper.GetString(metrics.UsageOTelInstanceIDFlagName),
-				ReportsAddressFlag:     viper.GetString(reportsSendBEAddress),
 				OptimizerQoSListen:     viper.GetBool(common.OptimizerQosListenFlag),
 			}
 
@@ -1665,7 +1660,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	// relays health check related flags
 	cmdRPCSmartRouter.Flags().Bool(common.RelaysHealthEnableFlag, RelaysHealthEnableFlagDefault, "enables relays health check")
 	cmdRPCSmartRouter.Flags().Duration(common.RelayHealthIntervalFlag, RelayHealthIntervalFlagDefault, "interval between relay health checks")
-	cmdRPCSmartRouter.Flags().String(reportsSendBEAddress, "", "address to send reports to")
 	cmdRPCSmartRouter.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
 	cmdRPCSmartRouter.Flags().StringArray(common.UseStaticSpecFlag, nil, "load specs from file, directory, or remote URL (GitHub/GitLab). Can be specified multiple times; later sources override earlier ones for same chain ID")
 	cmdRPCSmartRouter.Flags().String(common.GitHubTokenFlag, "", "GitHub personal access token for accessing private repositories and higher API rate limits (5,000 requests/hour vs 60 for unauthenticated)")

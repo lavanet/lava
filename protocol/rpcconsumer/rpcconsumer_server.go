@@ -89,7 +89,6 @@ type RPCConsumerServer struct {
 	consumerConsistency            relaycore.Consistency
 	sharedState                    bool // using the cache backend to sync the latest seen block with other consumers
 	relaysMonitor                  *metrics.RelaysMonitor
-	reporter                       metrics.Reporter
 	debugRelays                    bool
 	connectedSubscriptionsContexts map[string]*CancelableContextHolder
 	chainListener                  chainlib.ChainListener
@@ -118,7 +117,6 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	relaysMonitor *metrics.RelaysMonitor,
 	cmdFlags common.ConsumerCmdFlags,
 	sharedState bool,
-	reporter metrics.Reporter,
 	consumerWsSubscriptionManager *chainlib.ConsumerWSSubscriptionManager,
 ) (err error) {
 	rpccs.consumerSessionManager = consumerSessionManager
@@ -133,7 +131,6 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.ConsumerAddress = consumerAddress
 	rpccs.consumerConsistency = consumerConsistency
 	rpccs.sharedState = sharedState
-	rpccs.reporter = reporter
 	rpccs.debugRelays = cmdFlags.DebugRelays
 	rpccs.enableSelectionStats = cmdFlags.EnableSelectionStats
 	rpccs.connectedSubscriptionsContexts = make(map[string]*CancelableContextHolder)
