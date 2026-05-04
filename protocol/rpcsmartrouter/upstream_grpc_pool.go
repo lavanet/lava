@@ -16,6 +16,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/utils"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -94,18 +95,27 @@ func (c *UpstreamGRPCStreamConnection) connect(ctx context.Context, timeout time
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
-	// Add standard options
+	// 512MB for large responses
 	dialOpts = append(dialOpts,
-		grpc.WithBlock(),
-		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(512*1024*1024)), // 512MB for large responses
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(512*1024*1024)),
 	)
 
-	// Create connection with timeout
+	// grpc.NewClient is lazy — it does not establish a connection here.
+	// We force a state transition under the configured timeout so the
+	// caller still gets a fast failure for unreachable endpoints, the way
+	// the previous grpc.DialContext + WithBlock behaved.
+	grpcConn, err := grpc.NewClient(target, dialOpts...)
+	if err != nil {
+		c.healthy.Store(false)
+		c.lastError.Store(err)
+		return fmt.Errorf("failed to construct gRPC client for %s: %w", c.sanitizedURL, err)
+	}
 	connectCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-
-	grpcConn, err := grpc.DialContext(connectCtx, target, dialOpts...)
-	if err != nil {
+	grpcConn.Connect()
+	if !grpcConn.WaitForStateChange(connectCtx, connectivity.Idle) {
+		_ = grpcConn.Close()
+		err := connectCtx.Err()
 		c.healthy.Store(false)
 		c.lastError.Store(err)
 		return fmt.Errorf("failed to dial gRPC %s: %w", c.sanitizedURL, err)
