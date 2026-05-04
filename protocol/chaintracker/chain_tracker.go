@@ -418,6 +418,7 @@ func (cs *ChainTracker) start(ctx context.Context, pollingTime time.Duration) er
 	cs.timer = time.NewTimer(initialPollingTime)
 	err := cs.fetchInitDataWithRetry(ctx)
 	if err != nil {
+		cs.timer.Stop()
 		return err
 	}
 	utils.LavaFormatDebug("ChainTracker fetched init data successfully")

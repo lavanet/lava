@@ -2,9 +2,13 @@ package rpcsmartrouter
 
 import (
 	"context"
+	"errors"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/stretchr/testify/require"
@@ -52,6 +56,26 @@ func (m *mockDirectRPCConnection) GetNodeUrl() *common.NodeUrl {
 	return nil
 }
 
+type retryingDummyChainTracker struct {
+	*chaintracker.DummyChainTracker
+
+	failuresRemaining atomic.Int32
+	attempts          atomic.Int32
+	started           chan struct{}
+	startedOnce       sync.Once
+}
+
+func (r *retryingDummyChainTracker) StartAndServe(context.Context) error {
+	r.attempts.Add(1)
+	if r.failuresRemaining.Add(-1) >= 0 {
+		return errors.New("startup probe failed")
+	}
+	r.startedOnce.Do(func() {
+		close(r.started)
+	})
+	return nil
+}
+
 func TestEndpointChainTrackerManager_GetOrCreateTracker(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -91,6 +115,77 @@ func TestEndpointChainTrackerManager_GetLatestBlockNum(t *testing.T) {
 
 	// Cleanup
 	manager.Stop()
+}
+
+func TestEndpointChainTrackerManager_GetTrackerState(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	manager := NewEndpointChainTrackerManager(ctx, EndpointChainTrackerConfig{
+		ChainID:          "ETH",
+		ApiInterface:     "jsonrpc",
+		AverageBlockTime: 12 * time.Second,
+		BlocksToSave:     10,
+	})
+	require.NotNil(t, manager)
+	defer manager.Stop()
+
+	state, lastError, exists := manager.GetTrackerState("http://non-existent:8545")
+	require.False(t, exists)
+	require.Equal(t, EndpointChainTrackerMissing, state)
+	require.Empty(t, lastError)
+}
+
+func TestEndpointChainTrackerManager_StartTrackerRetriesAfterStartupFailure(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	manager := NewEndpointChainTrackerManager(ctx, EndpointChainTrackerConfig{
+		ChainID:          "ETH",
+		ApiInterface:     "jsonrpc",
+		AverageBlockTime: 12 * time.Second,
+		BlocksToSave:     10,
+	})
+	require.NotNil(t, manager)
+	defer manager.Stop()
+	manager.retryMinDelay = time.Millisecond
+	manager.retryMaxDelay = 2 * time.Millisecond
+
+	endpointURL := "http://test:8545"
+	tracker := &retryingDummyChainTracker{
+		DummyChainTracker: &chaintracker.DummyChainTracker{},
+		started:           make(chan struct{}),
+	}
+	tracker.failuresRemaining.Store(2)
+
+	manager.mu.Lock()
+	manager.trackers[endpointURL] = tracker
+	manager.trackerStates[endpointURL] = EndpointChainTrackerNoBlockYet
+	manager.mu.Unlock()
+
+	done := make(chan struct{})
+	go func() {
+		manager.startTrackerWithRetry(tracker, ctx, endpointURL)
+		close(done)
+	}()
+
+	select {
+	case <-tracker.started:
+	case <-time.After(time.Second):
+		require.FailNow(t, "tracker startup retry did not recover")
+	}
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		require.FailNow(t, "startup retry loop did not exit after successful start")
+	}
+
+	state, lastError, exists := manager.GetTrackerState(endpointURL)
+	require.True(t, exists)
+	require.Equal(t, EndpointChainTrackerPolling, state)
+	require.Empty(t, lastError)
+	require.Equal(t, int32(3), tracker.attempts.Load(), "tracker should retry until startup succeeds")
 }
 
 func TestEndpointChainTrackerManager_ValidateEndpointSync(t *testing.T) {
