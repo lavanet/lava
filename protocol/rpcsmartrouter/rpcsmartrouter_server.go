@@ -1083,20 +1083,6 @@ func (rpcss *RPCSmartRouterServer) filterEndpointsByConsistency(
 
 		// If we still have no block data, skip validation for this endpoint (allow first relay)
 		if endpointLatest == 0 {
-			trackerState := EndpointChainTrackerMissing
-			trackerLastError := ""
-			if rpcss.endpointChainTrackerManager != nil && endpointURL != "" {
-				trackerState, trackerLastError, _ = rpcss.endpointChainTrackerManager.GetTrackerState(endpointURL)
-			}
-			utils.LavaFormatDebug("skipping consistency validation because endpoint latest block is unknown",
-				utils.LogAttr("endpoint", endpointAddress),
-				utils.LogAttr("endpointURL", endpointURL),
-				utils.LogAttr("seenBlock", seenBlock),
-				utils.LogAttr("requestedBlock", reqBlock),
-				utils.LogAttr("trackerState", trackerState),
-				utils.LogAttr("trackerLastError", trackerLastError),
-				utils.LogAttr("GUID", ctx),
-			)
 			validSessions[endpointAddress] = sessionInfo
 			continue
 		}
@@ -1115,7 +1101,7 @@ func (rpcss *RPCSmartRouterServer) filterEndpointsByConsistency(
 				utils.LogAttr("endpointLatest", endpointLatest),
 				utils.LogAttr("seenBlock", seenBlock),
 				utils.LogAttr("source", func() string {
-					if rpcss.endpointChainTrackerManager != nil && endpointURL != "" && rpcss.endpointChainTrackerManager.GetLatestBlockNum(endpointURL) > 0 {
+					if rpcss.endpointChainTrackerManager != nil && rpcss.endpointChainTrackerManager.GetLatestBlockNum(endpointAddress) > 0 {
 						return "ChainTracker"
 					}
 					return "reactive"
