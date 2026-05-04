@@ -14,16 +14,22 @@ import (
 )
 
 const (
-	MetricsListenFlagName         = "metrics-listen-address"
-	RelayServerFlagName           = "relay-server-address"
-	RelayKafkaFlagName            = "relay-kafka-address"
-	RelayKafkaTopicFlagName       = "relay-kafka-topic"
-	RelayKafkaUsernameFlagName    = "relay-kafka-username"
-	RelayKafkaPasswordFlagName    = "relay-kafka-password"
-	RelayKafkaMechanismFlagName   = "relay-kafka-mechanism"
-	RelayKafkaTLSEnabledFlagName  = "relay-kafka-tls-enabled"
-	RelayKafkaTLSInsecureFlagName = "relay-kafka-tls-insecure"
-	DisabledFlagOption            = "disabled"
+	MetricsListenFlagName = "metrics-listen-address"
+
+	// Usage telemetry (OTel) — disabled by default. When off the relay path
+	// pays one virtual call per relay and nothing else; no SDK setup, no
+	// goroutines, no batching. Flip on when you have a collector ready.
+	UsageOTelEnabledFlagName       = "usage-otel-enabled"
+	UsageOTelEndpointFlagName      = "usage-otel-endpoint"
+	UsageOTelInsecureFlagName      = "usage-otel-insecure"
+	UsageOTelQueueSizeFlagName     = "usage-otel-queue-size"
+	UsageOTelBatchSizeFlagName     = "usage-otel-batch-size"
+	UsageOTelFlushIntervalFlagName = "usage-otel-flush-interval"
+	UsageOTelExportTimeoutFlagName = "usage-otel-export-timeout"
+	UsageOTelServiceNameFlagName   = "usage-otel-service-name"
+	UsageOTelInstanceIDFlagName    = "usage-otel-service-instance-id"
+
+	DisabledFlagOption = "disabled"
 )
 
 var ShowProviderEndpointInProviderMetrics = false

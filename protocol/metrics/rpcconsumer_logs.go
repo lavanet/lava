@@ -35,20 +35,21 @@ type RPCConsumerLogs struct {
 	excludeMetricsReferrers    string
 	excludedUserAgent          []string
 	consumerMetricsManager     ConsumerMetricsManagerInf
-	consumerRelayServerClient  *ConsumerRelayServerClient
-	consumerKafkaClient        *ConsumerKafkaClient
+	usageSink                  UsageEventSink
 	consumerOptimizerQoSClient *ConsumerOptimizerQoSClient
 }
 
-func NewRPCConsumerLogs(consumerMetricsManager ConsumerMetricsManagerInf, consumerRelayServerClient *ConsumerRelayServerClient, consumerKafkaClient *ConsumerKafkaClient, consumerOptimizerQoSClient *ConsumerOptimizerQoSClient) (*RPCConsumerLogs, error) {
+func NewRPCConsumerLogs(consumerMetricsManager ConsumerMetricsManagerInf, usageSink UsageEventSink, consumerOptimizerQoSClient *ConsumerOptimizerQoSClient) (*RPCConsumerLogs, error) {
 	consumerMetricsManager = SafeMetrics(consumerMetricsManager)
+	if usageSink == nil {
+		usageSink = NoopUsageSink{}
+	}
 	err := godotenv.Load()
 	if err != nil {
 		utils.LavaFormatInfo("New relic missing environment file")
 		return &RPCConsumerLogs{
 			consumerMetricsManager:     consumerMetricsManager,
-			consumerRelayServerClient:  consumerRelayServerClient,
-			consumerKafkaClient:        consumerKafkaClient,
+			usageSink:                  usageSink,
 			consumerOptimizerQoSClient: consumerOptimizerQoSClient,
 		}, nil // newRelicApplication is nil safe to use
 	}
@@ -59,8 +60,7 @@ func NewRPCConsumerLogs(consumerMetricsManager ConsumerMetricsManagerInf, consum
 		utils.LavaFormatInfo("New relic missing environment variables")
 		return &RPCConsumerLogs{
 			consumerMetricsManager:     consumerMetricsManager,
-			consumerRelayServerClient:  consumerRelayServerClient,
-			consumerKafkaClient:        consumerKafkaClient,
+			usageSink:                  usageSink,
 			consumerOptimizerQoSClient: consumerOptimizerQoSClient,
 		}, nil
 	}
@@ -90,8 +90,7 @@ func NewRPCConsumerLogs(consumerMetricsManager ConsumerMetricsManagerInf, consum
 		newRelicApplication:        newRelicApplication,
 		StoreMetricData:            false,
 		consumerMetricsManager:     consumerMetricsManager,
-		consumerRelayServerClient:  consumerRelayServerClient,
-		consumerKafkaClient:        consumerKafkaClient,
+		usageSink:                  usageSink,
 		consumerOptimizerQoSClient: consumerOptimizerQoSClient,
 	}
 	isMetricEnabled, _ := strconv.ParseBool(os.Getenv("IS_METRICS_ENABLED"))
@@ -236,8 +235,7 @@ func (rpccl *RPCConsumerLogs) RecordProviderLatency(chainId string, apiInterface
 
 func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, headers map[string][]string) {
 	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
-	rpccl.consumerRelayServerClient.SetRelayMetrics(data)
-	rpccl.consumerKafkaClient.SetRelayMetrics(data)
+	rpccl.usageSink.Emit(NewRelayUsageEvent(data))
 	refererHeaderValue := strings.Join(headers[RefererHeaderKey], ", ")
 	userAgentHeaderValue := strings.Join(headers[UserAgentHeaderKey], ", ")
 	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {
@@ -248,8 +246,7 @@ func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, he
 
 func (rpccl *RPCConsumerLogs) AddMetricForWebSocket(data *RelayMetrics, err error, c *websocket.Conn) {
 	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
-	rpccl.consumerRelayServerClient.SetRelayMetrics(data)
-	rpccl.consumerKafkaClient.SetRelayMetrics(data)
+	rpccl.usageSink.Emit(NewRelayUsageEvent(data))
 	refererHeaderValue, _ := c.Locals(RefererHeaderKey).(string)
 	userAgentHeaderValue, _ := c.Locals(UserAgentHeaderKey).(string)
 	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {
@@ -268,8 +265,7 @@ func (rpccl *RPCConsumerLogs) AddMetricForGrpc(data *RelayMetrics, err error, me
 		return headerValue
 	}
 	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
-	rpccl.consumerRelayServerClient.SetRelayMetrics(data)
-	rpccl.consumerKafkaClient.SetRelayMetrics(data)
+	rpccl.usageSink.Emit(NewRelayUsageEvent(data))
 	refererHeaderValue := getMetadataHeaderOrDefault(RefererHeaderKey)
 	userAgentHeaderValue := getMetadataHeaderOrDefault(UserAgentHeaderKey)
 	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {

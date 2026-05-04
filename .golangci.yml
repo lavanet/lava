@@ -57,6 +57,15 @@ issues:
     - text: 'SA1019:.*"github.com/golang/protobuf/proto" is deprecated.*' # proto is deprecated, but some places couldn't be removed
       linters:
         - staticcheck
+    # gRPC bumped grpc.DialContext / grpc.Dial / grpc.WithBlock /
+    # grpc.WithReturnConnectionError to deprecated in v1.63 in favor of
+    # grpc.NewClient. Migration is non-trivial (NewClient is lazy, no
+    # context, no WithBlock semantics). The 1.x branch will keep
+    # supporting the old API "throughout 1.x" per upstream — exclude
+    # until a dedicated migration PR.
+    - text: 'SA1019:.*grpc\.(DialContext|Dial|WithBlock|WithReturnConnectionError) is deprecated.*'
+      linters:
+        - staticcheck
     - path: "migrations"
       text: "SA1019:"
       linters:
