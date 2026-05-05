@@ -1,15 +1,22 @@
 package metrics
 
-// UsageEventSink is a non-blocking sink for raw relay-usage events. The
-// relay-serving path calls Emit once per relay; implementations MUST never
-// block the caller — full buffers should drop the event and account for it
-// in DroppedCount via Stats. Telemetry latency must never become relay
-// latency.
+// UsageEventSink is a non-blocking sink for telemetry events emitted by the
+// consumer / smart-router. Two event shapes are currently routed through it:
 //
-// Implementations are responsible for their own buffering, batching, retry,
-// and shutdown semantics. The hot path is fire-and-forget.
+//   - RelayUsageEvent: one per relay, fired from the chainlib transports
+//     (rest, jsonRPC, tendermintRPC, grpc, websocket).
+//   - OptimizerQoSReportToSend: periodic per-(chain, provider) score
+//     snapshots, fired from ConsumerOptimizerQoSClient on its sampling tick.
+//
+// Both call paths MUST be non-blocking: implementations drop events on full
+// buffers and account for them in DroppedCount via Stats. Telemetry latency
+// must never become hot-path latency.
+//
+// Implementations own their buffering, batching, retry, and shutdown
+// semantics. The producer side is fire-and-forget.
 type UsageEventSink interface {
 	Emit(event RelayUsageEvent)
+	EmitOptimizerQoS(report OptimizerQoSReportToSend)
 	Stats() SinkStats
 	Close()
 }
@@ -27,6 +34,7 @@ type SinkStats struct {
 // a no-op so the relay path pays nothing beyond a single virtual call.
 type NoopUsageSink struct{}
 
-func (NoopUsageSink) Emit(RelayUsageEvent) {}
-func (NoopUsageSink) Stats() SinkStats     { return SinkStats{} }
-func (NoopUsageSink) Close()               {}
+func (NoopUsageSink) Emit(RelayUsageEvent)                      {}
+func (NoopUsageSink) EmitOptimizerQoS(OptimizerQoSReportToSend) {}
+func (NoopUsageSink) Stats() SinkStats                          { return SinkStats{} }
+func (NoopUsageSink) Close()                                    {}

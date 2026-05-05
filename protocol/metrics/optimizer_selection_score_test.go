@@ -29,7 +29,7 @@ func newSmartRouterForOptimizerTest(client *ConsumerOptimizerQoSClient) *SmartRo
 }
 
 func TestStartSelectionStatsUpdater_WritesToOptimizerMetric(t *testing.T) {
-	coqc := NewConsumerOptimizerQoSClient("addr", "", 1)
+	coqc := NewConsumerOptimizerQoSClient("addr", nil, 1)
 	coqc.SetReportsToSend([]OptimizerQoSReportToSend{
 		{
 			ChainId:               "ETH1",
@@ -60,7 +60,7 @@ func TestStartSelectionStatsUpdater_WritesToOptimizerMetric(t *testing.T) {
 }
 
 func TestStartSelectionStatsUpdater_DoesNotWriteToEndpointMetric(t *testing.T) {
-	coqc := NewConsumerOptimizerQoSClient("addr", "", 1)
+	coqc := NewConsumerOptimizerQoSClient("addr", nil, 1)
 	coqc.SetReportsToSend([]OptimizerQoSReportToSend{
 		{
 			ChainId:            "ETH1",

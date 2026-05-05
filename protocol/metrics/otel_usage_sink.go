@@ -179,6 +179,47 @@ func (s *OTelUsageSink) Emit(event RelayUsageEvent) {
 	s.sentCount.Add(1)
 }
 
+// EmitOptimizerQoS ships one periodic optimizer-QoS snapshot as an OTLP
+// log record with body="optimizer_qos". Same non-blocking semantics as
+// Emit — the BatchProcessor's queue absorbs the call.
+//
+// The sampling cadence (one report per (chain, provider) per
+// OptimizerQosServerSamplingInterval) is set in
+// ConsumerOptimizerQoSClient and is independent of the per-relay flow.
+func (s *OTelUsageSink) EmitOptimizerQoS(r OptimizerQoSReportToSend) {
+	if s == nil {
+		return
+	}
+
+	var rec otellog.Record
+	rec.SetTimestamp(r.Timestamp)
+	rec.SetBody(otellog.StringValue("optimizer_qos"))
+	rec.AddAttributes(
+		otellog.String("provider", r.ProviderAddress),
+		otellog.String("consumer_hostname", r.ConsumerHostname),
+		otellog.String("consumer_pub_address", r.ConsumerAddress),
+		otellog.String("chain_id", r.ChainId),
+		otellog.Int64("epoch", int64(r.Epoch)),
+		otellog.Int64("entry_index", int64(r.EntryIndex)),
+		otellog.Int64("geo_location", int64(r.GeoLocation)),
+		otellog.Int64("provider_stake", r.ProviderStake),
+		// WRS normalized scores
+		otellog.Float64("selection_availability", r.SelectionAvailability),
+		otellog.Float64("selection_latency", r.SelectionLatency),
+		otellog.Float64("selection_sync", r.SelectionSync),
+		otellog.Float64("selection_stake", r.SelectionStake),
+		otellog.Float64("selection_composite", r.SelectionComposite),
+		// Weighted contributions
+		otellog.Float64("availability_contribution", r.AvailabilityContribution),
+		otellog.Float64("latency_contribution", r.LatencyContribution),
+		otellog.Float64("sync_contribution", r.SyncContribution),
+		otellog.Float64("stake_contribution", r.StakeContribution),
+	)
+
+	s.logger.Emit(context.Background(), rec)
+	s.sentCount.Add(1)
+}
+
 // Stats returns counter snapshots.
 func (s *OTelUsageSink) Stats() SinkStats {
 	if s == nil {

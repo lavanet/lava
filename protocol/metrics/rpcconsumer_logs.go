@@ -111,7 +111,9 @@ func (rpccl *RPCConsumerLogs) SetWebSocketConnectionActive(chainId string, apiIn
 }
 
 func (rpccl *RPCConsumerLogs) SetRelaySentToProviderMetric(providerAddress, chainId, apiInterface string) {
-	rpccl.consumerOptimizerQoSClient.SetRelaySentToProvider(providerAddress, chainId)
+	// no-op: per-relay accounting is now derived downstream from the
+	// per-relay usage events emitted via the OTel usage sink, no
+	// per-(chain, provider) counter is maintained here.
 }
 
 func (rpccl *RPCConsumerLogs) SetRelayNodeErrorMetric(chainId, apiInterface, providerAddress, method string) {
@@ -121,7 +123,6 @@ func (rpccl *RPCConsumerLogs) SetRelayNodeErrorMetric(chainId, apiInterface, pro
 	}
 
 	rpccl.consumerMetricsManager.SetRelayNodeErrorMetric(chainId, apiInterface, providerAddress, method)
-	rpccl.consumerOptimizerQoSClient.SetNodeErrorToProvider(providerAddress, chainId)
 }
 
 func (rpccl *RPCConsumerLogs) SetCrossValidationMetric(
