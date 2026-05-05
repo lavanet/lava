@@ -113,7 +113,6 @@ type AnalyticsServerAddresses struct {
 	UsageOTelServiceName   string
 	UsageOTelInstanceID    string
 	ReportsAddressFlag     string
-	OptimizerQoSAddress    string
 	OptimizerQoSListen     bool
 }
 type RPCConsumer struct {
@@ -195,8 +194,8 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 		}
 	}
 	var consumerOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient
-	if options.analyticsServerAddresses.OptimizerQoSAddress != "" || options.analyticsServerAddresses.OptimizerQoSListen {
-		consumerOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(consumerAddr.String(), options.analyticsServerAddresses.OptimizerQoSAddress, options.geoLocation, metrics.OptimizerQosServerPushInterval) // start up optimizer qos client
+	if options.analyticsServerAddresses.OptimizerQoSListen || options.analyticsServerAddresses.UsageOTelEnabled {
+		consumerOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(consumerAddr.String(), usageSink, options.geoLocation)
 		consumerOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, metrics.OptimizerQosServerSamplingInterval)
 	}
 	metrics.InitErrorMetrics()
@@ -788,7 +787,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				UsageOTelServiceName:   viper.GetString(metrics.UsageOTelServiceNameFlagName),
 				UsageOTelInstanceID:    viper.GetString(metrics.UsageOTelInstanceIDFlagName),
 				ReportsAddressFlag:     viper.GetString(reportsSendBEAddress),
-				OptimizerQoSAddress:    viper.GetString(common.OptimizerQosServerAddressFlag),
 				OptimizerQoSListen:     viper.GetBool(common.OptimizerQosListenFlag),
 			}
 
@@ -917,10 +915,10 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	if err := viper.BindPFlag(common.ProbeUpdateWeightFlagName, cmdRPCConsumer.Flags().Lookup(common.ProbeUpdateWeightFlagName)); err != nil {
 		utils.LavaFormatFatal("failed binding probe update weight flag", err)
 	}
-	// optimizer qos reports
-	cmdRPCConsumer.Flags().String(common.OptimizerQosServerAddressFlag, "", "address to send optimizer qos reports to")
+	// optimizer qos reports — emission goes through the OTel usage sink
+	// when --usage-otel-enabled is set. The Listen flag is independent
+	// (it just exposes a Prometheus-style endpoint for QoS scraping).
 	cmdRPCConsumer.Flags().Bool(common.OptimizerQosListenFlag, false, "enable listening for optimizer qos reports on metrics endpoint i.e GET -> localhost:7779/provider_optimizer_metrics")
-	cmdRPCConsumer.Flags().DurationVar(&metrics.OptimizerQosServerPushInterval, common.OptimizerQosServerPushIntervalFlag, time.Minute*5, "interval to push optimizer qos reports")
 	cmdRPCConsumer.Flags().DurationVar(&metrics.OptimizerQosServerSamplingInterval, common.OptimizerQosServerSamplingIntervalFlag, time.Second*1, "interval to sample optimizer qos reports")
 	// metrics
 	cmdRPCConsumer.Flags().BoolVar(&metrics.ShowProviderEndpointInMetrics, common.ShowProviderEndpointInMetricsFlagName, metrics.ShowProviderEndpointInMetrics, "show provider endpoint in consumer metrics")

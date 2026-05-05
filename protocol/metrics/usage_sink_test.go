@@ -27,9 +27,22 @@ func TestNoopUsageSink_NilSafetyByValue(t *testing.T) {
 	var sink NoopUsageSink
 	require.NotPanics(t, func() {
 		sink.Emit(RelayUsageEvent{})
+		sink.EmitOptimizerQoS(OptimizerQoSReportToSend{})
 		_ = sink.Stats()
 		sink.Close()
 	})
+}
+
+func TestNoopUsageSink_OptimizerQoSIsZeroCost(t *testing.T) {
+	var sink UsageEventSink = NoopUsageSink{}
+	for i := 0; i < 1000; i++ {
+		sink.EmitOptimizerQoS(OptimizerQoSReportToSend{
+			Timestamp:       time.Now(),
+			ProviderAddress: "lava@p",
+			ChainId:         "eth",
+		})
+	}
+	require.Equal(t, SinkStats{}, sink.Stats())
 }
 
 func TestNewRelayUsageEvent_FullFidelity(t *testing.T) {
