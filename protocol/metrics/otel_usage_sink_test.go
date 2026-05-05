@@ -59,6 +59,7 @@ func TestOTelUsageSink_NilSafety(t *testing.T) {
 	var sink *OTelUsageSink
 	require.NotPanics(t, func() {
 		sink.Emit(RelayUsageEvent{})
+		sink.EmitOptimizerQoS(OptimizerQoSReportToSend{})
 		_ = sink.Stats()
 		sink.Close()
 	})
@@ -96,8 +97,23 @@ func TestOTelUsageSink_BadEndpoint_DoesNotPanic(t *testing.T) {
 		}
 	})
 
+	// Optimizer-QoS path: also non-blocking, no panics, counters advance.
+	report := OptimizerQoSReportToSend{
+		Timestamp:        time.Now(),
+		ProviderAddress:  "lava@p",
+		ConsumerHostname: "host01",
+		ChainId:          "eth",
+		Epoch:            1234,
+	}
+	require.NotPanics(t, func() {
+		for i := 0; i < 16; i++ {
+			sink.EmitOptimizerQoS(report)
+		}
+	})
+
 	stats := sink.Stats()
 	// We count handed-to-SDK records; whether they actually shipped is
-	// the SDK's concern. The point is Emit didn't panic or block.
-	require.GreaterOrEqual(t, stats.Sent, uint64(1))
+	// the SDK's concern. The point is Emit/EmitOptimizerQoS didn't panic
+	// or block, and both paths increment Sent.
+	require.GreaterOrEqual(t, stats.Sent, uint64(2))
 }

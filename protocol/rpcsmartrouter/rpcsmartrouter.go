@@ -158,7 +158,6 @@ type AnalyticsServerAddresses struct {
 	UsageOTelServiceName   string
 	UsageOTelInstanceID    string
 	ReportsAddressFlag     string
-	OptimizerQoSAddress    string
 	OptimizerQoSListen     bool
 }
 type RPCSmartRouter struct {
@@ -255,8 +254,8 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 		}
 	}
 	var smartRouterOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient
-	if options.analyticsServerAddresses.OptimizerQoSAddress != "" || options.analyticsServerAddresses.OptimizerQoSListen {
-		smartRouterOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(smartRouterIdentifier, options.analyticsServerAddresses.OptimizerQoSAddress, options.geoLocation, metrics.OptimizerQosServerPushInterval) // start up optimizer qos client
+	if options.analyticsServerAddresses.OptimizerQoSListen || options.analyticsServerAddresses.UsageOTelEnabled {
+		smartRouterOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(smartRouterIdentifier, usageSink, options.geoLocation)
 		smartRouterOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, metrics.OptimizerQosServerSamplingInterval)
 	}
 	// SmartRouterMetricsManager is the single metrics owner for the smart router.
@@ -1540,7 +1539,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 				UsageOTelServiceName:   viper.GetString(metrics.UsageOTelServiceNameFlagName),
 				UsageOTelInstanceID:    viper.GetString(metrics.UsageOTelInstanceIDFlagName),
 				ReportsAddressFlag:     viper.GetString(reportsSendBEAddress),
-				OptimizerQoSAddress:    viper.GetString(common.OptimizerQosServerAddressFlag),
 				OptimizerQoSListen:     viper.GetBool(common.OptimizerQosListenFlag),
 			}
 
@@ -1692,10 +1690,10 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().Duration(common.EpochDurationFlag, 0, "duration of each epoch for time-based epoch system (e.g., 30m, 1h). If not set, epochs are disabled")
 	cmdRPCSmartRouter.Flags().IntVar(&relaycore.RelayRetryLimit, common.SetRelayRetryLimitFlag, 2, "max total relay retry attempts across all error types (node and protocol errors combined; 0 disables retries)")
 	cmdRPCSmartRouter.Flags().BoolVar(&rpcInterfaceMessages.BatchNodeErrorOnAny, common.BatchNodeErrorOnAnyFlag, false, "if true, batch requests are treated as node errors if ANY sub-request fails; if false (default), only if ALL fail")
-	// optimizer qos reports
-	cmdRPCSmartRouter.Flags().String(common.OptimizerQosServerAddressFlag, "", "address to send optimizer qos reports to")
+	// optimizer qos reports — emission goes through the OTel usage sink
+	// when --usage-otel-enabled is set. The Listen flag is independent
+	// (it just exposes a Prometheus-style endpoint for QoS scraping).
 	cmdRPCSmartRouter.Flags().Bool(common.OptimizerQosListenFlag, false, "enable listening for optimizer qos reports on metrics endpoint i.e GET -> localhost:7779/provider_optimizer_metrics")
-	cmdRPCSmartRouter.Flags().DurationVar(&metrics.OptimizerQosServerPushInterval, common.OptimizerQosServerPushIntervalFlag, time.Minute*5, "interval to push optimizer qos reports")
 	cmdRPCSmartRouter.Flags().DurationVar(&metrics.OptimizerQosServerSamplingInterval, common.OptimizerQosServerSamplingIntervalFlag, time.Second*1, "interval to sample optimizer qos reports")
 	// metrics
 	cmdRPCSmartRouter.Flags().BoolVar(&metrics.ShowProviderEndpointInMetrics, common.ShowProviderEndpointInMetricsFlagName, metrics.ShowProviderEndpointInMetrics, "show provider endpoint in consumer metrics")

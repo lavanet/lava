@@ -804,7 +804,6 @@ func (pme *ConsumerMetricsManager) SetProviderSelected(chainId string, _ string,
 				utils.LogAttr("qosScore", selectedQoSScore),
 				utils.LogAttr("rngValue", rngValue),
 			)
-			selectedQoSScore = 0
 		} else if selectedQoSScore == 0 {
 			utils.LavaFormatWarning("Selected provider composite score is zero",
 				nil,
@@ -814,9 +813,6 @@ func (pme *ConsumerMetricsManager) SetProviderSelected(chainId string, _ string,
 			)
 		}
 	}
-
-	// Forward to optimizer QoS client for additional tracking
-	pme.consumerOptimizerQoSClient.SetProviderSelected(providerAddress, chainId, selectedQoSScore, rngValue)
 }
 
 func (pme *ConsumerMetricsManager) SetWsSubscriptionRequestMetric(chainId string, apiInterface string) {
@@ -919,28 +915,4 @@ func (pme *ConsumerMetricsManager) UpdateSelectionStatsFromOptimizerReports() {
 		}
 		pme.selectionStatsMetric.WithLabelValues(compositeLabels).Set(report.SelectionComposite)
 	}
-}
-
-func (pme *ConsumerMetricsManager) handleOptimizerQoS(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	var report OptimizerQoSReportToSend
-	if err := json.NewDecoder(r.Body).Decode(&report); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	// Process the received QoS report here
-	utils.LavaFormatDebug("Received QoS report",
-		utils.LogAttr("provider", report.ProviderAddress),
-		utils.LogAttr("chain_id", report.ChainId),
-		utils.LogAttr("sync_score", report.SyncScore),
-		utils.LogAttr("availability_score", report.AvailabilityScore),
-		utils.LogAttr("latency_score", report.LatencyScore),
-	)
-
-	w.WriteHeader(http.StatusOK)
 }
