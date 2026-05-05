@@ -34,7 +34,7 @@ For **decentralized/trustless** operation with on-chain provider discovery, use 
 - **Transaction Broadcasting**: Sends transactions to all providers for faster propagation
 - **WebSocket Support**: Full support for subscription-based APIs
 - **Metrics & Monitoring**: Prometheus metrics and health endpoints
-- **Analytics Integration**: Kafka support for detailed analytics
+- **Analytics Integration**: OTel-based usage telemetry (relay_usage + optimizer_qos events) routable to S3/Kafka/ClickHouse via a host-local collector
 
 ## Installation
 
@@ -158,9 +158,11 @@ Choose provider selection strategy with `--strategy`:
 # Prometheus metrics
 --metrics-listen-address ":7779"
 
-# Kafka analytics
---relay-kafka-addr "localhost:9092"
---relay-kafka-topic "lava-relay-metrics"
+# Usage telemetry — emit relay_usage and optimizer_qos events as OTel logs
+# to a host-local collector. Off by default.
+--usage-otel-enabled
+--usage-otel-endpoint "127.0.0.1:4318"
+--usage-otel-service-name "lava-rpcsmartrouter"
 
 # Performance tuning
 --max-concurrent-providers 5
@@ -391,7 +393,7 @@ lavap rpcsmartrouter config.yml \
   --geolocation 1 \
   --cache-be "redis:7778" \
   --metrics-listen-address "0.0.0.0:7779" \
-  --relay-kafka-addr "kafka:9092" \
+  --usage-otel-enabled \
   --log_level info \
   --max-concurrent-providers 5 \
   --strategy balanced
