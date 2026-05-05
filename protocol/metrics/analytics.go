@@ -70,10 +70,11 @@ func (rm *RelayMetrics) SetProcessingTimestampAfterRelay(timestamp time.Time) {
 	rm.ProcessingTimestamp = timestamp
 }
 
-// RelayUsageEvent is the wire format for raw per-relay usage events emitted to
-// Kafka. One event per relay, no consumer-side aggregation — the destination
-// rolls up by (timestamp, project, chain, ...) at query time. JSON tags are
-// kept short to minimize payload size at scale.
+// RelayUsageEvent is the wire format for raw per-relay usage events emitted as
+// OTel logs (body="relay_usage") to the host-local collector. One event per
+// relay, no consumer-side aggregation — the destination rolls up by
+// (timestamp, project, chain, ...) at query time. JSON tags are kept short to
+// minimize payload size at scale.
 type RelayUsageEvent struct {
 	TimestampNs     int64  `json:"ts"`
 	ProjectHash     string `json:"project"`
