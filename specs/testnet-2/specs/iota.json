@@ -51,9 +51,9 @@
                 "name": "iota_getProtocolConfig",
                 "block_parsing": {
                   "parser_arg": [
-                    "latest"
+                    ""
                   ],
-                  "parser_func": "DEFAULT"
+                  "parser_func": "EMPTY"
                 },
                 "compute_units": 10,
                 "enabled": true,
@@ -105,9 +105,9 @@
                 "name": "iota_getCheckpoint",
                 "block_parsing": {
                   "parser_arg": [
-                    "0"
+                    "latest"
                   ],
-                  "parser_func": "PARSE_BY_ARG"
+                  "parser_func": "DEFAULT"
                 },
                 "compute_units": 20,
                 "enabled": true,
@@ -253,7 +253,7 @@
                   ],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": 10,
+                "compute_units": 20,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
@@ -995,7 +995,7 @@
                 "enabled": true,
                 "category": {
                   "deterministic": false,
-                  "local": true,
+                  "local": false,
                   "subscription": true,
                   "stateful": 0
                 },
@@ -1013,7 +1013,7 @@
                 "enabled": true,
                 "category": {
                   "deterministic": false,
-                  "local": true,
+                  "local": false,
                   "subscription": true,
                   "stateful": 0
                 },
@@ -1045,7 +1045,7 @@
                   ],
                   "parser_func": "DEFAULT"
                 },
-                "compute_units": 20,
+                "compute_units": 10,
                 "enabled": true,
                 "category": {
                   "deterministic": true,
