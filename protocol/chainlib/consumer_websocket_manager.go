@@ -220,7 +220,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 			continue
 		}
 
-		dappID, ok := websocketConn.Locals("dapp-id").(string)
+		dappID, ok := websocketConn.Locals(ProjectIDHeader).(string)
 		if !ok {
 			// Log and remove the analyze
 			formatterMsg := logger.AnalyzeWebSocketErrorAndGetFormattedMessage(websocketConn.LocalAddr().String(), nil, msgSeed, []byte("Unable to extract dappID"), cwm.apiInterface, time.Since(startTime))
