@@ -120,7 +120,15 @@ func (bcp *BaseChainProxy) CapTimeoutForSend(ctx context.Context, chainMessage C
 }
 
 func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
-	dappID = c.Get(ProjectIDHeader)
+	// fiber.Ctx.Get returns a string aliased to fasthttp's per-request
+	// header buffer (zero-copy via unsafe). The buffer is recycled when
+	// the request completes and reused for subsequent requests on the
+	// same worker. RelayMetrics.ProjectHash is enqueued asynchronously
+	// into the OTel BatchLogProcessor and serialized after the request
+	// returns — by then the backing array may already hold another
+	// request's headers, prefix-overwriting the project hash. Clone to
+	// detach from fasthttp's pool.
+	dappID = strings.Clone(c.Get(ProjectIDHeader))
 	if dappID == "" {
 		dappID = generateNewDappID()
 	}
@@ -131,7 +139,10 @@ func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 func extractDappIDFromGrpcHeader(metadataValues metadata.MD) string {
 	dappId := generateNewDappID()
 	if values, ok := metadataValues[ProjectIDHeader]; ok && len(values) > 0 {
-		dappId = values[0]
+		// Same hazard as the HTTP path: gRPC metadata strings can alias
+		// the receive buffer depending on the transport implementation.
+		// Clone before retaining past the handler return.
+		dappId = strings.Clone(values[0])
 	}
 	return dappId
 }
