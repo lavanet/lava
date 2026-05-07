@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,7 +40,7 @@ func TestNewDirectGRPCSubscriptionManager(t *testing.T) {
 	assert.NotNil(t, manager.idMapper)
 	assert.NotNil(t, manager.config)
 	assert.NotNil(t, manager.rateLimiter)
-	assert.NotNil(t, manager.stickySessions)
+	assert.NotNil(t, manager.stickyStore)
 	assert.NotNil(t, manager.clientSubscriptions)
 }
 
@@ -260,18 +261,19 @@ func TestDirectGRPCSubscriptionManager_StickySessions(t *testing.T) {
 	)
 
 	// Initially no sticky sessions
-	assert.Empty(t, manager.stickySessions)
+	_, exists := manager.stickyStore.Get("client-1")
+	assert.False(t, exists)
 
 	// Simulate setting a sticky session
-	manager.lock.Lock()
-	manager.stickySessions["client-1"] = "grpc://node1:9090"
-	manager.stickySessions["client-2"] = "grpc://node2:9090"
-	manager.lock.Unlock()
+	manager.stickyStore.Set("client-1", &lavasession.StickySession{Provider: "grpc://node1:9090"})
+	manager.stickyStore.Set("client-2", &lavasession.StickySession{Provider: "grpc://node2:9090"})
 
-	manager.lock.RLock()
-	assert.Equal(t, "grpc://node1:9090", manager.stickySessions["client-1"])
-	assert.Equal(t, "grpc://node2:9090", manager.stickySessions["client-2"])
-	manager.lock.RUnlock()
+	s1, ok1 := manager.stickyStore.Get("client-1")
+	require.True(t, ok1)
+	assert.Equal(t, "grpc://node1:9090", s1.Provider)
+	s2, ok2 := manager.stickyStore.Get("client-2")
+	require.True(t, ok2)
+	assert.Equal(t, "grpc://node2:9090", s2.Provider)
 }
 
 func TestDirectGRPCSubscriptionManager_ClientSubscriptionTracking(t *testing.T) {
@@ -425,7 +427,7 @@ func TestSelectEndpoint_GRPC_PrimaryOnly_NilBackup(t *testing.T) {
 		nil, // grpcBackupEndpoints — none
 		nil, nil,
 	)
-	ep, err := manager.selectEndpoint(context.Background(), "client-1")
+	ep, err := manager.selectEndpoint(context.Background(), "client-1", nil)
 	require.NoError(t, err)
 	assert.Equal(t, "grpc://primary-1.example.com:9090", ep.Url)
 }
@@ -438,13 +440,9 @@ func TestSelectEndpoint_GRPC_PrimaryEmpty_BackupOnly(t *testing.T) {
 		backup,
 		nil, nil,
 	)
-	ep, err := manager.selectEndpoint(context.Background(), "client-1")
+	ep, err := manager.selectEndpoint(context.Background(), "client-1", nil)
 	require.NoError(t, err)
 	assert.Equal(t, "grpc://backup-1.example.com:9090", ep.Url)
-	// Sticky should be set to the backup URL.
-	manager.lock.RLock()
-	defer manager.lock.RUnlock()
-	assert.Equal(t, "grpc://backup-1.example.com:9090", manager.stickySessions["client-1"])
 }
 
 func TestSelectEndpoint_GRPC_StickyOnBackup_Returns(t *testing.T) {
@@ -458,11 +456,11 @@ func TestSelectEndpoint_GRPC_StickyOnBackup_Returns(t *testing.T) {
 	)
 
 	// Pre-seed sticky to point at the backup URL.
-	manager.lock.Lock()
-	manager.stickySessions["client-1"] = "grpc://backup-1.example.com:9090"
-	manager.lock.Unlock()
+	manager.stickyStore.Set("client-1", &lavasession.StickySession{
+		Provider: "grpc://backup-1.example.com:9090",
+	})
 
-	ep, err := manager.selectEndpoint(context.Background(), "client-1")
+	ep, err := manager.selectEndpoint(context.Background(), "client-1", nil)
 	require.NoError(t, err)
 	assert.Equal(t, "grpc://backup-1.example.com:9090", ep.Url)
 }
@@ -473,7 +471,7 @@ func TestSelectEndpoint_GRPC_BothEmpty_ReturnsError(t *testing.T) {
 		nil, nil,
 		nil, nil,
 	)
-	_, err := manager.selectEndpoint(context.Background(), "client-1")
+	_, err := manager.selectEndpoint(context.Background(), "client-1", nil)
 	require.Error(t, err)
 }
 
@@ -499,15 +497,11 @@ func TestSelectEndpoint_GRPC_OptimizerOverPrimary(t *testing.T) {
 		nil,
 	)
 
-	ep, err := manager.selectEndpoint(context.Background(), "client-1")
+	ep, err := manager.selectEndpoint(context.Background(), "client-1", nil)
 	require.NoError(t, err)
 	assert.Equal(t, "grpc://primary-2.example.com:9090", ep.Url)
 	// Optimizer must run exactly once (against primary tier).
 	assert.Equal(t, 1, calls)
-	// Sticky must be set to the optimizer-selected URL.
-	manager.lock.RLock()
-	defer manager.lock.RUnlock()
-	assert.Equal(t, "grpc://primary-2.example.com:9090", manager.stickySessions["client-1"])
 }
 
 func TestSelectEndpoint_GRPC_OptimizerOverBackup(t *testing.T) {
@@ -531,15 +525,12 @@ func TestSelectEndpoint_GRPC_OptimizerOverBackup(t *testing.T) {
 		nil,
 	)
 
-	ep, err := manager.selectEndpoint(context.Background(), "client-1")
+	ep, err := manager.selectEndpoint(context.Background(), "client-1", nil)
 	require.NoError(t, err)
 	assert.Equal(t, "grpc://backup-2.example.com:9090", ep.Url)
 	// Optimizer must run exactly once (against backup tier — primary is empty
 	// so selectFromTier returns "tier is empty" without invoking the optimizer).
 	assert.Equal(t, 1, calls)
-	manager.lock.RLock()
-	defer manager.lock.RUnlock()
-	assert.Equal(t, "grpc://backup-2.example.com:9090", manager.stickySessions["client-1"])
 }
 
 func TestSelectEndpoint_GRPC_OptimizerNil_FallsBackToFirst(t *testing.T) {
@@ -555,10 +546,97 @@ func TestSelectEndpoint_GRPC_OptimizerNil_FallsBackToFirst(t *testing.T) {
 		nil,
 	)
 
-	ep, err := manager.selectEndpoint(context.Background(), "client-1")
+	ep, err := manager.selectEndpoint(context.Background(), "client-1", nil)
 	require.NoError(t, err)
 	// No optimizer → selectFromTier returns tier[0] directly.
 	assert.Equal(t, "grpc://primary-1.example.com:9090", ep.Url)
+}
+
+func TestSelectEndpoint_GRPC_DoesNotWriteSticky(t *testing.T) {
+	// selectEndpoint must not write sticky sessions — the write must happen
+	// in createNewSubscription only after the upstream connection is verified.
+	// Otherwise a sticky entry pointing at a primary that fails to connect
+	// will pin the client to that dead URL on every subsequent call,
+	// preventing the cascade from ever reaching the backup tier.
+	primary := []*common.NodeUrl{{Url: "grpc://primary-1.example.com:9090"}}
+	backup := []*common.NodeUrl{{Url: "grpc://backup-1.example.com:9090"}}
+	manager := NewDirectGRPCSubscriptionManager(
+		nil, "ETH", "grpc",
+		primary,
+		backup,
+		nil, nil,
+	)
+
+	_, err := manager.selectEndpoint(context.Background(), "client-1", nil)
+	require.NoError(t, err)
+
+	_, exists := manager.stickyStore.Get("client-1")
+	assert.False(t, exists, "selectEndpoint must not write sticky sessions")
+}
+
+func TestSelectEndpoint_GRPC_IgnoredSticky_ClearsAndCascades(t *testing.T) {
+	// When the sticky URL is in ignoredEndpoints, sticky must be cleared and
+	// selection must fall through to the next tier. Mirrors WS behavior.
+	primary := []*common.NodeUrl{{Url: "grpc://primary-1.example.com:9090"}}
+	backup := []*common.NodeUrl{{Url: "grpc://backup-1.example.com:9090"}}
+	manager := NewDirectGRPCSubscriptionManager(
+		nil, "ETH", "grpc",
+		primary,
+		backup,
+		nil, nil,
+	)
+
+	manager.stickyStore.Set("client-1", &lavasession.StickySession{
+		Provider: "grpc://primary-1.example.com:9090",
+	})
+
+	ignored := map[string]struct{}{
+		"grpc://primary-1.example.com:9090": {},
+	}
+	ep, err := manager.selectEndpoint(context.Background(), "client-1", ignored)
+	require.NoError(t, err)
+	// Primary is ignored → cascade to backup.
+	assert.Equal(t, "grpc://backup-1.example.com:9090", ep.Url)
+	// Sticky must have been cleared so the next call re-cascades cleanly.
+	_, exists := manager.stickyStore.Get("client-1")
+	assert.False(t, exists, "ignored sticky endpoint must be cleared")
+}
+
+func TestSelectEndpoint_GRPC_IgnoredInPrimary_CascadesToBackup(t *testing.T) {
+	// When all primary endpoints are ignored, selection must reach the backup tier.
+	primary := []*common.NodeUrl{{Url: "grpc://primary-1.example.com:9090"}}
+	backup := []*common.NodeUrl{{Url: "grpc://backup-1.example.com:9090"}}
+	manager := NewDirectGRPCSubscriptionManager(
+		nil, "ETH", "grpc",
+		primary,
+		backup,
+		nil, nil,
+	)
+
+	ignored := map[string]struct{}{
+		"grpc://primary-1.example.com:9090": {},
+	}
+	ep, err := manager.selectEndpoint(context.Background(), "client-1", ignored)
+	require.NoError(t, err)
+	assert.Equal(t, "grpc://backup-1.example.com:9090", ep.Url)
+}
+
+func TestSelectEndpoint_GRPC_IgnoredEverywhere_ReturnsError(t *testing.T) {
+	primary := []*common.NodeUrl{{Url: "grpc://primary-1.example.com:9090"}}
+	backup := []*common.NodeUrl{{Url: "grpc://backup-1.example.com:9090"}}
+	manager := NewDirectGRPCSubscriptionManager(
+		nil, "ETH", "grpc",
+		primary,
+		backup,
+		nil, nil,
+	)
+
+	ignored := map[string]struct{}{
+		"grpc://primary-1.example.com:9090": {},
+		"grpc://backup-1.example.com:9090":  {},
+	}
+	_, err := manager.selectEndpoint(context.Background(), "client-1", ignored)
+	require.Error(t, err)
 }
 
 func TestSelectEndpoint_GRPC_OptimizerReturnsEmpty_FallsBackToFirst(t *testing.T) {
@@ -579,7 +657,7 @@ func TestSelectEndpoint_GRPC_OptimizerReturnsEmpty_FallsBackToFirst(t *testing.T
 		nil,
 	)
 
-	ep, err := manager.selectEndpoint(context.Background(), "client-1")
+	ep, err := manager.selectEndpoint(context.Background(), "client-1", nil)
 	require.NoError(t, err)
 	// Optimizer returned empty → selectFromTier falls back to tier[0].
 	assert.Equal(t, "grpc://primary-1.example.com:9090", ep.Url)

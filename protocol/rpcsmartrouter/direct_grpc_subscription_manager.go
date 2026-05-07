@@ -14,6 +14,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
@@ -94,8 +95,11 @@ type DirectGRPCSubscriptionManager struct {
 	// Rate limiting
 	rateLimiter *GRPCClientRateLimiter
 
-	// Sticky sessions (client -> endpoint affinity)
-	stickySessions map[string]string // clientKey -> endpoint URL
+	// Sticky sessions (client -> endpoint affinity).
+	// Written in createNewSubscription only after the upstream connection is
+	// established, so a primary that fails to connect doesn't pin the client
+	// and prevent the cascade from reaching the backup tier.
+	stickyStore *lavasession.StickySessionStore
 
 	// Total subscription counter
 	totalSubscriptions atomic.Int64
@@ -144,7 +148,7 @@ func NewDirectGRPCSubscriptionManager(
 		optimizer:            optimizer,
 		config:               config,
 		rateLimiter:          NewGRPCClientRateLimiter(config),
-		stickySessions:       make(map[string]string),
+		stickyStore:          lavasession.NewStickySessionStore(),
 		clientSubscriptions:  make(map[string]map[string]struct{}),
 		ctx:                  ctx,
 		cancel:               cancel,
@@ -398,7 +402,7 @@ func (dgm *DirectGRPCSubscriptionManager) createNewSubscription(
 	clientKey string,
 ) (*pairingtypes.RelayReply, <-chan *pairingtypes.RelayReply, error) {
 	// Select endpoint
-	endpoint, err := dgm.selectEndpoint(ctx, clientKey)
+	endpoint, err := dgm.selectEndpoint(ctx, clientKey, nil)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to select endpoint: %w", err)
 	}
@@ -414,6 +418,14 @@ func (dgm *DirectGRPCSubscriptionManager) createNewSubscription(
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get connection: %w", err)
 	}
+
+	// Connection established — pin client to this endpoint for future
+	// subscriptions. Mirrors DirectWSSubscriptionManager.startUpstreamSubscription
+	// (Epoch is unused for direct RPC — there's no provider rotation).
+	dgm.stickyStore.Set(clientKey, &lavasession.StickySession{
+		Provider: endpoint.Url,
+		Epoch:    0,
+	})
 
 	// Parse service and method
 	svc, methodName := rpcInterfaceMessages.ParseSymbol(methodPath)
@@ -801,8 +813,8 @@ func (dgm *DirectGRPCSubscriptionManager) UnsubscribeAll(
 	// Cleanup client tracking
 	dgm.lock.Lock()
 	delete(dgm.clientSubscriptions, clientKey)
-	delete(dgm.stickySessions, clientKey)
 	dgm.lock.Unlock()
+	dgm.stickyStore.Delete(clientKey)
 
 	dgm.rateLimiter.CleanupClient(clientKey)
 
@@ -876,24 +888,38 @@ func (dgm *DirectGRPCSubscriptionManager) getOrCreatePool(ctx context.Context, e
 }
 
 // selectEndpoint picks a gRPC endpoint for the given client, with primary→backup cascade.
+// Selection priority:
+//  1. Sticky session (any tier — endpointsByURL spans both)
+//  2. Primary tier (optimizer or first-available)
+//  3. Backup tier (optimizer or first-available) — only when primary is exhausted
+//
 // Mirrors DirectWSSubscriptionManager.selectEndpoint and the HTTP backup-fallback model
-// (consumer_session_manager.go:820-852).
-func (dgm *DirectGRPCSubscriptionManager) selectEndpoint(ctx context.Context, clientKey string) (*common.NodeUrl, error) {
-	// Tier 0: sticky (resolves across both tiers via endpointsByURL).
-	dgm.lock.RLock()
-	stickyURL, hasSticky := dgm.stickySessions[clientKey]
-	dgm.lock.RUnlock()
-	if hasSticky {
-		if endpoint, exists := dgm.endpointsByURL[stickyURL]; exists {
-			return endpoint, nil
+// (consumer_session_manager.go:820-852). Sticky writes happen in createNewSubscription
+// after the upstream connection is verified, not here, so a primary that fails to
+// connect doesn't pin the client and block the cascade.
+func (dgm *DirectGRPCSubscriptionManager) selectEndpoint(ctx context.Context, clientKey string, ignoredEndpoints map[string]struct{}) (*common.NodeUrl, error) {
+	// Tier 0: sticky session for this client (resolves across both tiers).
+	if clientKey != "" {
+		if stickySession, exists := dgm.stickyStore.Get(clientKey); exists {
+			if stickyEndpoint, found := dgm.endpointsByURL[stickySession.Provider]; found {
+				if ignoredEndpoints == nil {
+					return stickyEndpoint, nil
+				}
+				if _, ignored := ignoredEndpoints[stickySession.Provider]; !ignored {
+					return stickyEndpoint, nil
+				}
+				// Sticky endpoint is ignored — clear and continue to cascade.
+				utils.LavaFormatDebug("DirectGRPC: sticky endpoint ignored, clearing affinity",
+					utils.LogAttr("clientKey", clientKey),
+					utils.LogAttr("ignoredEndpoint", stickySession.Provider),
+				)
+				dgm.stickyStore.Delete(clientKey)
+			}
 		}
 	}
 
 	// Tier 1: primary (optimizer-aware).
-	if endpoint, err := dgm.selectFromTier(ctx, dgm.grpcEndpoints); err == nil {
-		dgm.lock.Lock()
-		dgm.stickySessions[clientKey] = endpoint.Url
-		dgm.lock.Unlock()
+	if endpoint, err := dgm.selectFromTier(ctx, dgm.grpcEndpoints, ignoredEndpoints); err == nil {
 		return endpoint, nil
 	}
 
@@ -901,10 +927,7 @@ func (dgm *DirectGRPCSubscriptionManager) selectEndpoint(ctx context.Context, cl
 	utils.LavaFormatDebug("DirectGRPC: primary endpoints exhausted, falling back to backup",
 		utils.LogAttr("backupCount", len(dgm.grpcBackupEndpoints)),
 	)
-	if endpoint, err := dgm.selectFromTier(ctx, dgm.grpcBackupEndpoints); err == nil {
-		dgm.lock.Lock()
-		dgm.stickySessions[clientKey] = endpoint.Url
-		dgm.lock.Unlock()
+	if endpoint, err := dgm.selectFromTier(ctx, dgm.grpcBackupEndpoints, ignoredEndpoints); err == nil {
 		return endpoint, nil
 	}
 
@@ -912,16 +935,24 @@ func (dgm *DirectGRPCSubscriptionManager) selectEndpoint(ctx context.Context, cl
 }
 
 // selectFromTier picks an endpoint from a single tier using the optimizer when
-// available, falling back to first-available. Tier-agnostic — the cascade order
-// is the caller's responsibility.
-func (dgm *DirectGRPCSubscriptionManager) selectFromTier(ctx context.Context, tier []*common.NodeUrl) (*common.NodeUrl, error) {
+// available, falling back to first-non-ignored. Tier-agnostic — the cascade
+// order is the caller's responsibility.
+func (dgm *DirectGRPCSubscriptionManager) selectFromTier(ctx context.Context, tier []*common.NodeUrl, ignoredEndpoints map[string]struct{}) (*common.NodeUrl, error) {
 	if len(tier) == 0 {
 		return nil, fmt.Errorf("tier is empty")
 	}
 
-	// Single endpoint or no optimizer: first-available.
+	// Single endpoint or no optimizer: first-non-ignored.
 	if len(tier) == 1 || dgm.optimizer == nil {
-		return tier[0], nil
+		for _, ep := range tier {
+			if ignoredEndpoints == nil {
+				return ep, nil
+			}
+			if _, ignored := ignoredEndpoints[ep.Url]; !ignored {
+				return ep, nil
+			}
+		}
+		return nil, fmt.Errorf("all endpoints in tier are ignored/unavailable")
 	}
 
 	// Optimizer over this tier.
@@ -930,11 +961,19 @@ func (dgm *DirectGRPCSubscriptionManager) selectFromTier(ctx context.Context, ti
 		allURLs = append(allURLs, ep.Url)
 	}
 	// cu=1 and requestedBlock=LATEST_BLOCK (-2) are sensible defaults for subscriptions.
-	selectedURLs := dgm.optimizer.ChooseProvider(ctx, allURLs, nil, 1, -2)
+	selectedURLs := dgm.optimizer.ChooseProvider(ctx, allURLs, ignoredEndpoints, 1, -2)
 
 	if len(selectedURLs) == 0 {
-		// Optimizer returned nothing — fall back to first-available within tier.
-		return tier[0], nil
+		// Optimizer returned nothing — fall back to first-non-ignored within tier.
+		for _, ep := range tier {
+			if ignoredEndpoints == nil {
+				return ep, nil
+			}
+			if _, ignored := ignoredEndpoints[ep.Url]; !ignored {
+				return ep, nil
+			}
+		}
+		return nil, fmt.Errorf("optimizer returned no endpoints and all fallbacks in tier are ignored")
 	}
 
 	selectedURL := selectedURLs[0]
