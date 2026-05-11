@@ -1071,32 +1071,21 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	// and direct RPC (DirectWSSubscriptionManager) implementations
 	var wsSubscriptionManager chainlib.WSSubscriptionManager
 
-	// Collect ALL WebSocket-capable endpoints from static providers for direct subscriptions
-	// WebSocket URLs are identified by ws:// or wss:// prefix
-	var wsEndpoints []*common.NodeUrl
-	for _, provider := range healthyStaticProviders {
-		for i := range provider.NodeUrls {
-			url := strings.ToLower(provider.NodeUrls[i].Url)
-			if strings.HasPrefix(url, "ws://") || strings.HasPrefix(url, "wss://") {
-				wsEndpoints = append(wsEndpoints, &provider.NodeUrls[i])
-				utils.LavaFormatInfo("Found WebSocket endpoint for direct subscriptions",
-					utils.LogAttr("url", provider.NodeUrls[i].Url),
-					utils.LogAttr("provider", provider.Name),
-					utils.LogAttr("chainID", provider.ChainID),
-				)
-			}
-		}
-	}
+	// Collect WebSocket-capable endpoints for direct subscriptions.
+	// Primary tier serves all selections; backup tier is consulted on primary exhaustion.
+	wsEndpoints := collectWSEndpoints(healthyStaticProviders, "primary")
+	wsBackupEndpoints := collectWSEndpoints(healthyBackupProviders, "backup")
 
-	// Create DirectWSSubscriptionManager if WebSocket endpoints are available
-	// Otherwise fall back to provider-based subscription manager
-	if len(wsEndpoints) > 0 {
+	// Create DirectWSSubscriptionManager if any WebSocket endpoints are available
+	// (primary or backup); otherwise install the NoOp manager.
+	if len(wsEndpoints) > 0 || len(wsBackupEndpoints) > 0 {
 		directWSManager := NewDirectWSSubscriptionManager(
 			smartRouterMetricsManager,
 			spectypes.APIInterfaceJsonRPC, // WebSocket subscriptions use JSON-RPC
 			rpcEndpoint.ChainID,
 			rpcEndpoint.ApiInterface,
 			wsEndpoints,
+			wsBackupEndpoints,
 			optimizer, // Pass optimizer for endpoint selection
 			nil,       // Use default WebSocket config (configurable via CLI flags later)
 		)
@@ -1107,6 +1096,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 			utils.LogAttr("chainID", rpcEndpoint.ChainID),
 			utils.LogAttr("apiInterface", rpcEndpoint.ApiInterface),
 			utils.LogAttr("wsEndpointCount", len(wsEndpoints)),
+			utils.LogAttr("wsBackupEndpointCount", len(wsBackupEndpoints)),
 			utils.LogAttr("optimizerEnabled", optimizer != nil),
 		)
 	} else {
@@ -1122,31 +1112,23 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	}
 
 	// Create gRPC streaming subscription manager for gRPC server-streaming methods
-	// This supports Cosmos Event Streaming, Solana Geyser, and other gRPC streaming protocols
-	var grpcEndpoints []*common.NodeUrl
+	// This supports Cosmos Event Streaming, Solana Geyser, and other gRPC streaming protocols.
+	// Primary tier from healthy static providers; backup tier from healthy backup providers.
+	var grpcEndpoints, grpcBackupEndpoints []*common.NodeUrl
 	if rpcEndpoint.ApiInterface == spectypes.APIInterfaceGrpc {
-		// Collect gRPC endpoints from static providers
-		for _, provider := range healthyStaticProviders {
-			if provider.ApiInterface == spectypes.APIInterfaceGrpc {
-				for i := range provider.NodeUrls {
-					grpcEndpoints = append(grpcEndpoints, &provider.NodeUrls[i])
-					utils.LavaFormatInfo("Found gRPC endpoint for streaming subscriptions",
-						utils.LogAttr("url", provider.NodeUrls[i].Url),
-						utils.LogAttr("provider", provider.Name),
-						utils.LogAttr("chainID", provider.ChainID),
-					)
-				}
-			}
-		}
+		grpcEndpoints = collectGRPCEndpoints(healthyStaticProviders, "primary")
+		grpcBackupEndpoints = collectGRPCEndpoints(healthyBackupProviders, "backup")
 	}
 
-	// Initialize DirectGRPCSubscriptionManager if gRPC endpoints are available
-	if len(grpcEndpoints) > 0 {
+	// Initialize DirectGRPCSubscriptionManager if any gRPC endpoints are available
+	// (primary or backup).
+	if len(grpcEndpoints) > 0 || len(grpcBackupEndpoints) > 0 {
 		grpcSubManager := NewDirectGRPCSubscriptionManager(
 			smartRouterMetricsManager, // Metrics manager for tracking
 			rpcEndpoint.ChainID,
 			rpcEndpoint.ApiInterface,
 			grpcEndpoints,
+			grpcBackupEndpoints,
 			optimizer, // Pass optimizer for endpoint selection (same as WS manager)
 			nil,       // Use default GRPCStreamingConfig
 		)
@@ -1157,6 +1139,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 			utils.LogAttr("chainID", rpcEndpoint.ChainID),
 			utils.LogAttr("apiInterface", rpcEndpoint.ApiInterface),
 			utils.LogAttr("grpcEndpointCount", len(grpcEndpoints)),
+			utils.LogAttr("grpcBackupEndpointCount", len(grpcBackupEndpoints)),
 			utils.LogAttr("optimizerEnabled", optimizer != nil),
 		)
 	}
@@ -2070,4 +2053,47 @@ func testModeWarn(desc string) {
 	utils.LavaFormatWarning("------------------------------test mode --------------------------------\n\t\t\t"+
 		desc+"\n\t\t\t"+
 		"------------------------------test mode --------------------------------\n", nil)
+}
+
+// collectWSEndpoints returns every ws://|wss:// NodeUrl from the given providers.
+// tierLabel ("primary" / "backup") is logged so operators can see which tier each
+// endpoint came from.
+func collectWSEndpoints(providers []*lavasession.RPCStaticProviderEndpoint, tierLabel string) []*common.NodeUrl {
+	var endpoints []*common.NodeUrl
+	for _, provider := range providers {
+		for i := range provider.NodeUrls {
+			url := strings.ToLower(provider.NodeUrls[i].Url)
+			if strings.HasPrefix(url, "ws://") || strings.HasPrefix(url, "wss://") {
+				endpoints = append(endpoints, &provider.NodeUrls[i])
+				utils.LavaFormatInfo("Found WebSocket endpoint for direct subscriptions",
+					utils.LogAttr("tier", tierLabel),
+					utils.LogAttr("url", provider.NodeUrls[i].Url),
+					utils.LogAttr("provider", provider.Name),
+					utils.LogAttr("chainID", provider.ChainID),
+				)
+			}
+		}
+	}
+	return endpoints
+}
+
+// collectGRPCEndpoints returns every NodeUrl from providers whose ApiInterface is gRPC.
+// tierLabel ("primary" / "backup") is logged for operator visibility.
+func collectGRPCEndpoints(providers []*lavasession.RPCStaticProviderEndpoint, tierLabel string) []*common.NodeUrl {
+	var endpoints []*common.NodeUrl
+	for _, provider := range providers {
+		if provider.ApiInterface != spectypes.APIInterfaceGrpc {
+			continue
+		}
+		for i := range provider.NodeUrls {
+			endpoints = append(endpoints, &provider.NodeUrls[i])
+			utils.LavaFormatInfo("Found gRPC endpoint for streaming subscriptions",
+				utils.LogAttr("tier", tierLabel),
+				utils.LogAttr("url", provider.NodeUrls[i].Url),
+				utils.LogAttr("provider", provider.Name),
+				utils.LogAttr("chainID", provider.ChainID),
+			)
+		}
+	}
+	return endpoints
 }

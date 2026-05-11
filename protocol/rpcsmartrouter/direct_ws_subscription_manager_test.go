@@ -17,6 +17,7 @@ import (
 	rpcclient "github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
@@ -285,6 +286,7 @@ func TestNewDirectWSSubscriptionManager(t *testing.T) {
 		"ETH",
 		"jsonrpc",
 		wsEndpoints,
+		nil, // wsBackupEndpoints — none for primary-only test
 		nil, // No optimizer for basic test
 		nil, // Use default WebSocket config
 	)
@@ -320,6 +322,7 @@ func TestGetOrCreatePool(t *testing.T) {
 		"ETH",
 		"jsonrpc",
 		wsEndpoints,
+		nil, // wsBackupEndpoints — none for primary-only test
 		nil,
 		nil, // Use default WebSocket config
 	)
@@ -356,6 +359,7 @@ func TestDirectWSSubscriptionManager_UnsubscribeAll_NoSubscriptions(t *testing.T
 		"ETH",
 		"jsonrpc",
 		wsEndpoints,
+		nil, // wsBackupEndpoints — none for primary-only test
 		nil,
 		nil, // Use default WebSocket config
 	)
@@ -379,6 +383,7 @@ func TestDirectWSSubscriptionManager_Unsubscribe_NoSubscriptions(t *testing.T) {
 		"ETH",
 		"jsonrpc",
 		wsEndpoints,
+		nil, // wsBackupEndpoints — none for primary-only test
 		nil,
 		nil, // Use default WebSocket config
 	)
@@ -409,6 +414,7 @@ func TestDirectWSSubscriptionManager_StartSubscription_ConnectionFailure(t *test
 		"ETH",
 		"jsonrpc",
 		wsEndpoints,
+		nil, // wsBackupEndpoints — none for primary-only test
 		nil,
 		nil, // Use default WebSocket config
 	)
@@ -533,6 +539,7 @@ func TestActiveSubscriptionTracksPerClientRouterIDs(t *testing.T) {
 		"ETH",
 		"jsonrpc",
 		wsEndpoints,
+		nil, // wsBackupEndpoints — none for primary-only test
 		nil,
 		nil,
 	)
@@ -612,6 +619,7 @@ func TestUnsubscribeRateLimiting(t *testing.T) {
 		"ETH",
 		"jsonrpc",
 		wsEndpoints,
+		nil, // wsBackupEndpoints — none for primary-only test
 		nil,
 		config,
 	)
@@ -669,6 +677,7 @@ func TestUnsubscribeAllNotRateLimited(t *testing.T) {
 		"ETH",
 		"jsonrpc",
 		wsEndpoints,
+		nil, // wsBackupEndpoints — none for primary-only test
 		nil,
 		config,
 	)
@@ -705,6 +714,7 @@ func TestMultiClientJoinExistingSubscription(t *testing.T) {
 		"ETH",
 		"jsonrpc",
 		wsEndpoints,
+		nil, // wsBackupEndpoints — none for primary-only test
 		nil,
 		nil,
 	)
@@ -814,6 +824,7 @@ func TestMultiClientIndependentUnsubscribe(t *testing.T) {
 		"ETH",
 		"jsonrpc",
 		wsEndpoints,
+		nil, // wsBackupEndpoints — none for primary-only test
 		nil,
 		nil,
 	)
@@ -948,6 +959,7 @@ func TestRouteMessageToClientsPerClientID(t *testing.T) {
 		"ETH",
 		"jsonrpc",
 		wsEndpoints,
+		nil, // wsBackupEndpoints — none for primary-only test
 		nil,
 		nil,
 	)
@@ -1041,6 +1053,7 @@ func TestReconnectionUpdatesConnectionBookkeeping(t *testing.T) {
 		"ETH",
 		"jsonrpc",
 		wsEndpoints,
+		nil, // wsBackupEndpoints — none for primary-only test
 		nil,
 		config,
 	)
@@ -1163,6 +1176,7 @@ func TestUnsubscribeRouterIDOwnershipValidation(t *testing.T) {
 		"ETH",
 		"jsonrpc",
 		wsEndpoints,
+		nil, // wsBackupEndpoints — none for primary-only test
 		nil,
 		config,
 	)
@@ -1394,6 +1408,7 @@ func TestDirectWSSubscriptionManager_TendermintAPIInterface(t *testing.T) {
 		"COSMOSHUB",
 		"tendermintrpc", // Tendermint API interface
 		wsEndpoints,
+		nil, // wsBackupEndpoints — none for primary-only test
 		nil,
 		nil,
 	)
@@ -1586,4 +1601,321 @@ func TestTendermintSubscriptionEndToEnd(t *testing.T) {
 		// Should NOT have the router ID injected
 		assert.NotContains(t, string(rewritten), "some-router-id")
 	})
+}
+
+// fakeSubscriptionOptimizer is a minimal WebSocketEndpointOptimizer for cascade tests.
+// Used by both DirectWSSubscriptionManager and DirectGRPCSubscriptionManager test suites
+// (the interface is shared across both subscription managers despite its name).
+// It returns a configurable address from ChooseProvider; relay-data callbacks are no-ops.
+type fakeSubscriptionOptimizer struct {
+	chooseFn func(allAddresses []string, ignored map[string]struct{}) []string
+}
+
+func (f *fakeSubscriptionOptimizer) ChooseProvider(_ context.Context, allAddresses []string, ignored map[string]struct{}, _ uint64, _ int64) []string {
+	if f.chooseFn != nil {
+		return f.chooseFn(allAddresses, ignored)
+	}
+	return nil
+}
+
+func (f *fakeSubscriptionOptimizer) AppendRelayData(_ string, _ time.Duration, _, _ uint64) {}
+func (f *fakeSubscriptionOptimizer) AppendRelayFailure(_ string)                            {}
+
+func TestSelectEndpoint_WS_PrimaryOnly_NilBackup(t *testing.T) {
+	primary := []*common.NodeUrl{
+		{Url: "wss://primary-1.example.com"},
+		{Url: "wss://primary-2.example.com"},
+	}
+	manager := NewDirectWSSubscriptionManager(
+		getTestMetricsManager(),
+		"jsonrpc",
+		"ETH",
+		"jsonrpc",
+		primary,
+		nil, // wsBackupEndpoints — none
+		nil, // optimizer
+		nil, // config
+	)
+
+	ep, err := manager.selectEndpoint(context.Background(), "client-1", nil)
+	require.NoError(t, err)
+	require.NotNil(t, ep)
+	// First-available branch with no optimizer and no ignored set returns first endpoint.
+	assert.Equal(t, "wss://primary-1.example.com", ep.Url)
+}
+
+func TestSelectEndpoint_WS_PrimaryOnly_EmptyBackup(t *testing.T) {
+	primary := []*common.NodeUrl{{Url: "wss://primary-1.example.com"}}
+	manager := NewDirectWSSubscriptionManager(
+		getTestMetricsManager(),
+		"jsonrpc",
+		"ETH",
+		"jsonrpc",
+		primary,
+		[]*common.NodeUrl{}, // empty backup, regression guard for nil-vs-empty equivalence
+		nil,
+		nil,
+	)
+
+	ep, err := manager.selectEndpoint(context.Background(), "client-1", nil)
+	require.NoError(t, err)
+	assert.Equal(t, "wss://primary-1.example.com", ep.Url)
+}
+
+func TestSelectEndpoint_WS_PrimaryExhausted_FallsBackToBackup(t *testing.T) {
+	primary := []*common.NodeUrl{
+		{Url: "wss://primary-1.example.com"},
+		{Url: "wss://primary-2.example.com"},
+	}
+	backup := []*common.NodeUrl{
+		{Url: "wss://backup-1.example.com"},
+	}
+	manager := NewDirectWSSubscriptionManager(
+		getTestMetricsManager(),
+		"jsonrpc",
+		"ETH",
+		"jsonrpc",
+		primary,
+		backup,
+		nil, // optimizer nil — first-available branch
+		nil,
+	)
+
+	ignored := map[string]struct{}{
+		"wss://primary-1.example.com": {},
+		"wss://primary-2.example.com": {},
+	}
+	ep, err := manager.selectEndpoint(context.Background(), "client-1", ignored)
+	require.NoError(t, err)
+	require.NotNil(t, ep)
+	assert.Equal(t, "wss://backup-1.example.com", ep.Url)
+}
+
+func TestSelectEndpoint_WS_PrimaryEmpty_BackupOnly(t *testing.T) {
+	backup := []*common.NodeUrl{
+		{Url: "wss://backup-1.example.com"},
+		{Url: "wss://backup-2.example.com"},
+	}
+	manager := NewDirectWSSubscriptionManager(
+		getTestMetricsManager(),
+		"jsonrpc",
+		"ETH",
+		"jsonrpc",
+		nil, // primary empty
+		backup,
+		nil,
+		nil,
+	)
+
+	ep, err := manager.selectEndpoint(context.Background(), "client-1", nil)
+	require.NoError(t, err)
+	require.NotNil(t, ep)
+	assert.Equal(t, "wss://backup-1.example.com", ep.Url)
+}
+
+func TestSelectEndpoint_WS_BothExhausted_ReturnsError(t *testing.T) {
+	primary := []*common.NodeUrl{{Url: "wss://primary-1.example.com"}}
+	backup := []*common.NodeUrl{{Url: "wss://backup-1.example.com"}}
+	manager := NewDirectWSSubscriptionManager(
+		getTestMetricsManager(),
+		"jsonrpc",
+		"ETH",
+		"jsonrpc",
+		primary,
+		backup,
+		nil,
+		nil,
+	)
+
+	ignored := map[string]struct{}{
+		"wss://primary-1.example.com": {},
+		"wss://backup-1.example.com":  {},
+	}
+	_, err := manager.selectEndpoint(context.Background(), "client-1", ignored)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "primary and backup both exhausted")
+}
+
+func TestSelectEndpoint_WS_BothEmpty_ReturnsError(t *testing.T) {
+	manager := NewDirectWSSubscriptionManager(
+		getTestMetricsManager(),
+		"jsonrpc",
+		"ETH",
+		"jsonrpc",
+		nil,
+		nil,
+		nil,
+		nil,
+	)
+	_, err := manager.selectEndpoint(context.Background(), "client-1", nil)
+	require.Error(t, err)
+}
+
+func TestSelectEndpoint_WS_StickyOnPrimary_Returns(t *testing.T) {
+	primary := []*common.NodeUrl{{Url: "wss://primary-1.example.com"}}
+	backup := []*common.NodeUrl{{Url: "wss://backup-1.example.com"}}
+	manager := NewDirectWSSubscriptionManager(
+		getTestMetricsManager(),
+		"jsonrpc",
+		"ETH",
+		"jsonrpc",
+		primary,
+		backup,
+		nil,
+		nil,
+	)
+
+	// Manually set a sticky entry pointing at the primary.
+	manager.stickyStore.Set("client-1", &lavasession.StickySession{Provider: "wss://primary-1.example.com"})
+
+	ep, err := manager.selectEndpoint(context.Background(), "client-1", nil)
+	require.NoError(t, err)
+	assert.Equal(t, "wss://primary-1.example.com", ep.Url)
+}
+
+func TestSelectEndpoint_WS_StickyOnBackup_Returns(t *testing.T) {
+	primary := []*common.NodeUrl{{Url: "wss://primary-1.example.com"}}
+	backup := []*common.NodeUrl{{Url: "wss://backup-1.example.com"}}
+	manager := NewDirectWSSubscriptionManager(
+		getTestMetricsManager(),
+		"jsonrpc",
+		"ETH",
+		"jsonrpc",
+		primary,
+		backup,
+		nil,
+		nil,
+	)
+
+	manager.stickyStore.Set("client-1", &lavasession.StickySession{Provider: "wss://backup-1.example.com"})
+
+	ep, err := manager.selectEndpoint(context.Background(), "client-1", nil)
+	require.NoError(t, err)
+	// Sticky-on-backup must resolve directly via endpointsByURL (which spans both tiers).
+	assert.Equal(t, "wss://backup-1.example.com", ep.Url)
+}
+
+func TestSelectEndpoint_WS_StickyIgnored_FallsThroughCascade(t *testing.T) {
+	primary := []*common.NodeUrl{{Url: "wss://primary-1.example.com"}}
+	backup := []*common.NodeUrl{{Url: "wss://backup-1.example.com"}}
+	manager := NewDirectWSSubscriptionManager(
+		getTestMetricsManager(),
+		"jsonrpc",
+		"ETH",
+		"jsonrpc",
+		primary,
+		backup,
+		nil,
+		nil,
+	)
+
+	manager.stickyStore.Set("client-1", &lavasession.StickySession{Provider: "wss://primary-1.example.com"})
+
+	ignored := map[string]struct{}{
+		"wss://primary-1.example.com": {},
+	}
+	ep, err := manager.selectEndpoint(context.Background(), "client-1", ignored)
+	require.NoError(t, err)
+	assert.Equal(t, "wss://backup-1.example.com", ep.Url)
+}
+
+func TestSelectEndpoint_WS_OptimizerOverPrimary_NotConsultedForBackup(t *testing.T) {
+	primary := []*common.NodeUrl{
+		{Url: "wss://primary-1.example.com"},
+		{Url: "wss://primary-2.example.com"},
+	}
+	backup := []*common.NodeUrl{{Url: "wss://backup-1.example.com"}}
+
+	calls := 0
+	opt := &fakeSubscriptionOptimizer{
+		chooseFn: func(addresses []string, _ map[string]struct{}) []string {
+			calls++
+			// Always return the second primary URL — backup must never reach the optimizer.
+			return []string{"wss://primary-2.example.com"}
+		},
+	}
+	manager := NewDirectWSSubscriptionManager(
+		getTestMetricsManager(),
+		"jsonrpc",
+		"ETH",
+		"jsonrpc",
+		primary,
+		backup,
+		opt,
+		nil,
+	)
+
+	ep, err := manager.selectEndpoint(context.Background(), "client-1", nil)
+	require.NoError(t, err)
+	assert.Equal(t, "wss://primary-2.example.com", ep.Url)
+	// Optimizer must run exactly once (against primary tier). If the cascade
+	// erroneously fell into the backup tier, the optimizer would be invoked twice.
+	assert.Equal(t, 1, calls)
+}
+
+func TestSelectEndpoint_WS_OptimizerOverBackup(t *testing.T) {
+	primary := []*common.NodeUrl{
+		{Url: "wss://primary-1.example.com"},
+		{Url: "wss://primary-2.example.com"},
+	}
+	backup := []*common.NodeUrl{
+		{Url: "wss://backup-1.example.com"},
+		{Url: "wss://backup-2.example.com"},
+	}
+
+	calls := 0
+	opt := &fakeSubscriptionOptimizer{
+		chooseFn: func(addresses []string, ignored map[string]struct{}) []string {
+			calls++
+			// When invoked over the backup tier, return backup-2.
+			// When invoked over the primary tier (with both primaries ignored),
+			// return nothing so the cascade falls through.
+			for _, addr := range addresses {
+				if addr == "wss://backup-2.example.com" {
+					return []string{"wss://backup-2.example.com"}
+				}
+			}
+			return nil
+		},
+	}
+	manager := NewDirectWSSubscriptionManager(
+		getTestMetricsManager(),
+		"jsonrpc",
+		"ETH",
+		"jsonrpc",
+		primary,
+		backup,
+		opt,
+		nil,
+	)
+
+	ignored := map[string]struct{}{
+		"wss://primary-1.example.com": {},
+		"wss://primary-2.example.com": {},
+	}
+	ep, err := manager.selectEndpoint(context.Background(), "client-1", ignored)
+	require.NoError(t, err)
+	assert.Equal(t, "wss://backup-2.example.com", ep.Url)
+	// Optimizer must be consulted for both tiers: once over primary (returns nil
+	// → cascade falls through), then once over backup (returns backup-2).
+	assert.Equal(t, 2, calls)
+}
+
+func TestSelectEndpoint_WS_EndpointsByURL_IncludesBothTiers(t *testing.T) {
+	primary := []*common.NodeUrl{{Url: "wss://primary-1.example.com"}}
+	backup := []*common.NodeUrl{{Url: "wss://backup-1.example.com"}}
+	manager := NewDirectWSSubscriptionManager(
+		getTestMetricsManager(),
+		"jsonrpc",
+		"ETH",
+		"jsonrpc",
+		primary,
+		backup,
+		nil,
+		nil,
+	)
+
+	require.Len(t, manager.endpointsByURL, 2)
+	assert.NotNil(t, manager.endpointsByURL["wss://primary-1.example.com"])
+	assert.NotNil(t, manager.endpointsByURL["wss://backup-1.example.com"])
 }
