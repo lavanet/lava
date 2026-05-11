@@ -233,10 +233,6 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 
 	var usageSink metrics.UsageEventSink = metrics.NoopUsageSink{}
 	if options.analyticsServerAddresses.UsageOTelEnabled {
-		serviceName := options.analyticsServerAddresses.UsageOTelServiceName
-		if serviceName == "" {
-			serviceName = "lava-rpcsmartrouter"
-		}
 		if otelSink := metrics.NewOTelUsageSink(metrics.OTelUsageSinkConfig{
 			Endpoint:          options.analyticsServerAddresses.UsageOTelEndpoint,
 			Insecure:          options.analyticsServerAddresses.UsageOTelInsecure,
@@ -244,16 +240,18 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 			BatchSize:         options.analyticsServerAddresses.UsageOTelBatchSize,
 			FlushInterval:     options.analyticsServerAddresses.UsageOTelFlushInterval,
 			ExportTimeout:     options.analyticsServerAddresses.UsageOTelExportTimeout,
-			ServiceName:       serviceName,
+			ServiceName:       options.analyticsServerAddresses.UsageOTelServiceName,
 			ServiceInstanceID: options.analyticsServerAddresses.UsageOTelInstanceID,
 		}); otelSink != nil {
 			usageSink = otelSink
 		}
 	}
+	defer usageSink.Close()
+	optimizerQoSSamplingInterval := viper.GetDuration(common.OptimizerQosServerSamplingIntervalFlag)
 	var smartRouterOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient
 	if options.analyticsServerAddresses.OptimizerQoSListen || options.analyticsServerAddresses.UsageOTelEnabled {
 		smartRouterOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(smartRouterIdentifier, usageSink, options.geoLocation)
-		smartRouterOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, metrics.OptimizerQosServerSamplingInterval)
+		smartRouterOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, optimizerQoSSamplingInterval)
 	}
 	// SmartRouterMetricsManager is the single metrics owner for the smart router.
 	// It serves its own HTTP endpoint and implements ConsumerMetricsManagerInf so it
@@ -271,7 +269,7 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 	}
 
 	smartRouterMetricsManager.SetVersion(upgrade.GetCurrentVersion().ConsumerVersion)
-	smartRouterMetricsManager.StartSelectionStatsUpdater(ctx, metrics.OptimizerQosServerSamplingInterval)
+	smartRouterMetricsManager.StartSelectionStatsUpdater(ctx, optimizerQoSSamplingInterval)
 
 	// we want one provider optimizer per chain so we will store them for reuse across rpcEndpoints
 	chainMutexes := map[string]*sync.Mutex{}
@@ -1657,7 +1655,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	}
 	cmdRPCSmartRouter.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
 	cmdRPCSmartRouter.Flags().Bool(metrics.UsageOTelEnabledFlagName, false, "emit per-relay usage events as OTLP logs to a collector (off by default; relay path pays nothing when off)")
-	cmdRPCSmartRouter.Flags().String(metrics.UsageOTelEndpointFlagName, "", "OTLP/gRPC endpoint for the local OTel collector (default: localhost:4317 / OTEL_EXPORTER_OTLP_ENDPOINT)")
+	cmdRPCSmartRouter.Flags().String(metrics.UsageOTelEndpointFlagName, "", "OTLP/HTTP endpoint for the local OTel collector (default: localhost:4318 / OTEL_EXPORTER_OTLP_ENDPOINT)")
 	cmdRPCSmartRouter.Flags().Bool(metrics.UsageOTelInsecureFlagName, true, "skip TLS for OTLP exporter (default true; expected target is a sidecar collector)")
 	cmdRPCSmartRouter.Flags().Int(metrics.UsageOTelQueueSizeFlagName, 50000, "in-memory queue capacity for usage events; full queue drops events")
 	cmdRPCSmartRouter.Flags().Int(metrics.UsageOTelBatchSizeFlagName, 1000, "usage event batch size flush trigger")
@@ -1688,7 +1686,7 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	// when --usage-otel-enabled is set. The Listen flag is independent
 	// (it just exposes a Prometheus-style endpoint for QoS scraping).
 	cmdRPCSmartRouter.Flags().Bool(common.OptimizerQosListenFlag, false, "enable listening for optimizer qos reports on metrics endpoint i.e GET -> localhost:7779/provider_optimizer_metrics")
-	cmdRPCSmartRouter.Flags().DurationVar(&metrics.OptimizerQosServerSamplingInterval, common.OptimizerQosServerSamplingIntervalFlag, time.Second*1, "interval to sample optimizer qos reports")
+	cmdRPCSmartRouter.Flags().Duration(common.OptimizerQosServerSamplingIntervalFlag, time.Second*1, "interval to sample optimizer qos reports")
 	// metrics
 	cmdRPCSmartRouter.Flags().BoolVar(&metrics.ShowProviderEndpointInMetrics, common.ShowProviderEndpointInMetricsFlagName, metrics.ShowProviderEndpointInMetrics, "show provider endpoint in consumer metrics")
 	// websocket flags

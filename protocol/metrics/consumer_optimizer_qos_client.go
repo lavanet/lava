@@ -23,8 +23,6 @@ func sanitizeFloat(v float64) float64 {
 	return v
 }
 
-var OptimizerQosServerSamplingInterval time.Duration
-
 // ConsumerOptimizerQoSClient is a pure pass-through sampler — no internal
 // aggregation, no rate calculations, no per-provider counters. On each
 // sampling tick it asks every registered optimizer for its current QoS
@@ -145,12 +143,14 @@ func (coqc *ConsumerOptimizerQoSClient) StartOptimizersQoSReportsCollecting(ctx 
 
 	utils.LavaFormatTrace("Starting ConsumerOptimizerQoSClient reports collecting")
 	go func() {
+		ticker := time.NewTicker(samplingInterval)
+		defer ticker.Stop()
 		for {
 			select {
 			case <-ctx.Done():
 				utils.LavaFormatTrace("ConsumerOptimizerQoSClient context done")
 				return
-			case <-time.After(samplingInterval):
+			case <-ticker.C:
 				coqc.sampleAndEmit()
 			}
 		}
@@ -229,10 +229,10 @@ func (coqc *ConsumerOptimizerQoSClient) sampleAndEmit() {
 		addresses := maps.Keys(stakes)
 		reports := optimizer.CalculateQoSScoresForMetrics(addresses, ignoredProviders, cu, requestedBlock)
 		for _, report := range reports {
-			stake := int64(0)
-			if report != nil {
-				stake = stakes[report.ProviderAddress]
+			if report == nil {
+				continue
 			}
+			stake := stakes[report.ProviderAddress]
 			batch = append(batch, coqc.buildAndEmit(now, chainId, currentEpoch, stake, report))
 		}
 	}

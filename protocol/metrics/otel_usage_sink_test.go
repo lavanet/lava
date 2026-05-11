@@ -17,7 +17,7 @@ func TestApplyOTelSinkDefaults_FillsMissing(t *testing.T) {
 	require.Equal(t, defaultOTelBatchSize, cfg.BatchSize)
 	require.Equal(t, defaultOTelFlushInterval, cfg.FlushInterval)
 	require.Equal(t, defaultOTelExportTimeout, cfg.ExportTimeout)
-	require.Equal(t, defaultOTelServiceName, cfg.ServiceName)
+	require.Empty(t, cfg.ServiceName, "ServiceName has no package-level default; callers set it via flag defValue")
 	require.NotEmpty(t, cfg.ServiceInstanceID, "instance ID should default to hostname-pid")
 	require.Contains(t, cfg.ServiceInstanceID, "-", "default instance ID is hostname-pid format")
 }
