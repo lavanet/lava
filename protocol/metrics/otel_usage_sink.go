@@ -19,9 +19,9 @@ import (
 // OTelUsageSinkConfig captures the tunables for the OTel-backed usage sink.
 // All durations and sizes apply safe defaults when zero.
 type OTelUsageSinkConfig struct {
-	// Endpoint is the OTLP/gRPC endpoint to ship logs to. Empty means use
+	// Endpoint is the OTLP/HTTP endpoint to ship logs to. Empty means use
 	// the SDK's default discovery (OTEL_EXPORTER_OTLP_ENDPOINT env var or
-	// localhost:4317). Pointing at a sidecar collector is the expected
+	// localhost:4318). Pointing at a sidecar collector is the expected
 	// deployment.
 	Endpoint string
 
@@ -62,25 +62,21 @@ const (
 	defaultOTelBatchSize     = 1000
 	defaultOTelFlushInterval = 500 * time.Millisecond
 	defaultOTelExportTimeout = 10 * time.Second
-	defaultOTelServiceName   = "lava-rpcconsumer"
 	otelInstrumentationName  = "github.com/lavanet/lava/protocol/metrics"
 )
 
 // OTelUsageSink emits raw relay-usage events as OTLP log records to a
 // configured collector (typically a sidecar). The hot path is non-blocking:
-// full BatchProcessor queues drop and increment DroppedCount.
+// full BatchProcessor queues drop silently inside the SDK.
 type OTelUsageSink struct {
 	provider *sdklog.LoggerProvider
 	logger   otellog.Logger
 	cfg      OTelUsageSinkConfig
 
-	// Counters. The OTel SDK does not expose per-record send/fail status
-	// from the API surface, so Sent counts records handed to the SDK and
-	// Failed counts marshal failures. Dropped is what the producer side
-	// (us) drops before handing to the SDK.
-	sentCount    atomic.Uint64
-	failedCount  atomic.Uint64
-	droppedCount atomic.Uint64
+	// sentCount tracks records handed to the SDK. Drop / send-failure
+	// accounting lives inside the OTel SDK and surfaces through its own
+	// diagnostics — we don't shadow it here.
+	sentCount atomic.Uint64
 }
 
 // NewOTelUsageSink constructs and starts an OTel-backed sink. Returns nil on
@@ -225,11 +221,7 @@ func (s *OTelUsageSink) Stats() SinkStats {
 	if s == nil {
 		return SinkStats{}
 	}
-	return SinkStats{
-		Sent:    s.sentCount.Load(),
-		Failed:  s.failedCount.Load(),
-		Dropped: s.droppedCount.Load(),
-	}
+	return SinkStats{Sent: s.sentCount.Load()}
 }
 
 // Close flushes pending records and shuts down the underlying provider.
@@ -243,11 +235,8 @@ func (s *OTelUsageSink) Close() {
 	if err := s.provider.Shutdown(ctx); err != nil {
 		utils.LavaFormatWarning("Error shutting down OTel usage sink", err)
 	}
-	stats := s.Stats()
 	utils.LavaFormatInfo("OTel usage sink closed",
-		utils.LogAttr("sent_total", stats.Sent),
-		utils.LogAttr("failed_total", stats.Failed),
-		utils.LogAttr("dropped_total", stats.Dropped),
+		utils.LogAttr("sent_total", s.Stats().Sent),
 	)
 }
 
@@ -264,9 +253,11 @@ func applyOTelSinkDefaults(cfg *OTelUsageSinkConfig) {
 	if cfg.ExportTimeout <= 0 {
 		cfg.ExportTimeout = defaultOTelExportTimeout
 	}
-	if cfg.ServiceName == "" {
-		cfg.ServiceName = defaultOTelServiceName
-	}
+	// ServiceName intentionally has no package-level default — the consumer
+	// and smart router each set their own via their respective cobra flag's
+	// defValue ("lava-rpcconsumer" / "lava-rpcsmartrouter"), and the
+	// constructor logs the resolved value so an empty one is visible to the
+	// operator at startup.
 	if cfg.ServiceInstanceID == "" {
 		// Default to hostname-pid so multiple consumer processes on the
 		// same bare-metal host (e.g., one process per chain) get unique

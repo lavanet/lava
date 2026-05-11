@@ -190,10 +190,12 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 			usageSink = otelSink
 		}
 	}
+	defer usageSink.Close()
+	optimizerQoSSamplingInterval := viper.GetDuration(common.OptimizerQosServerSamplingIntervalFlag)
 	var consumerOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient
 	if options.analyticsServerAddresses.OptimizerQoSListen || options.analyticsServerAddresses.UsageOTelEnabled {
 		consumerOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(consumerAddr.String(), usageSink, options.geoLocation)
-		consumerOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, metrics.OptimizerQosServerSamplingInterval)
+		consumerOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, optimizerQoSSamplingInterval)
 	}
 	metrics.InitErrorMetrics()
 	consumerMetricsManager := metrics.NewConsumerMetricsManager(metrics.ConsumerMetricsManagerOptions{
@@ -210,7 +212,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 
 	// Start periodic selection stats metrics updates
 	if consumerOptimizerQoSClient != nil {
-		consumerMetricsManager.StartSelectionStatsUpdater(ctx, metrics.OptimizerQosServerSamplingInterval)
+		consumerMetricsManager.StartSelectionStatsUpdater(ctx, optimizerQoSSamplingInterval)
 	}
 
 	// spawn up ConsumerStateTracker
@@ -878,7 +880,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	}
 	cmdRPCConsumer.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
 	cmdRPCConsumer.Flags().Bool(metrics.UsageOTelEnabledFlagName, false, "emit per-relay usage events as OTLP logs to a collector (off by default; relay path pays nothing when off)")
-	cmdRPCConsumer.Flags().String(metrics.UsageOTelEndpointFlagName, "", "OTLP/gRPC endpoint for the local OTel collector (default: localhost:4317 / OTEL_EXPORTER_OTLP_ENDPOINT)")
+	cmdRPCConsumer.Flags().String(metrics.UsageOTelEndpointFlagName, "", "OTLP/HTTP endpoint for the local OTel collector (default: localhost:4318 / OTEL_EXPORTER_OTLP_ENDPOINT)")
 	cmdRPCConsumer.Flags().Bool(metrics.UsageOTelInsecureFlagName, true, "skip TLS for OTLP exporter (default true; expected target is a sidecar collector)")
 	cmdRPCConsumer.Flags().Int(metrics.UsageOTelQueueSizeFlagName, 50000, "in-memory queue capacity for usage events; full queue drops events")
 	cmdRPCConsumer.Flags().Int(metrics.UsageOTelBatchSizeFlagName, 1000, "usage event batch size flush trigger")
@@ -913,7 +915,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	// when --usage-otel-enabled is set. The Listen flag is independent
 	// (it just exposes a Prometheus-style endpoint for QoS scraping).
 	cmdRPCConsumer.Flags().Bool(common.OptimizerQosListenFlag, false, "enable listening for optimizer qos reports on metrics endpoint i.e GET -> localhost:7779/provider_optimizer_metrics")
-	cmdRPCConsumer.Flags().DurationVar(&metrics.OptimizerQosServerSamplingInterval, common.OptimizerQosServerSamplingIntervalFlag, time.Second*1, "interval to sample optimizer qos reports")
+	cmdRPCConsumer.Flags().Duration(common.OptimizerQosServerSamplingIntervalFlag, time.Second*1, "interval to sample optimizer qos reports")
 	// metrics
 	cmdRPCConsumer.Flags().BoolVar(&metrics.ShowProviderEndpointInMetrics, common.ShowProviderEndpointInMetricsFlagName, metrics.ShowProviderEndpointInMetrics, "show provider endpoint in consumer metrics")
 	// websocket flags
