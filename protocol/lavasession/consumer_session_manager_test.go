@@ -166,7 +166,7 @@ func CreateConsumerSessionManager() *ConsumerSessionManager {
 	rand.InitRandomSeed()
 	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, 0, 1, nil, "dontcare")
 	optimizer.SetDeterministicSeed(1234567)
-	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", false, "/", 0}, optimizer, nil, nil, "lava@test", NewActiveSubscriptionProvidersStorage())
+	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", false, "/", 0}, optimizer, nil, "lava@test", NewActiveSubscriptionProvidersStorage())
 }
 
 func TestMain(m *testing.M) {
@@ -1746,7 +1746,7 @@ func TestBlockProvider_BackupProviderIsTracked(t *testing.T) {
 	backupAddr := backupList[0].PublicLavaAddress
 
 	// Block the backup provider
-	err = csm.blockProvider(context.Background(), backupAddr, false, firstEpochHeight, 0, 0, false, nil, nil)
+	err = csm.blockProvider(context.Background(), backupAddr, false, firstEpochHeight, 0, 0, false, nil)
 	require.NoError(t, err)
 
 	csm.lock.RLock()
@@ -1790,7 +1790,7 @@ func TestUpdateAllProviders_BlockedBackupProviderPersistedAcrossEpoch(t *testing
 	backupAddr := backupList[0].PublicLavaAddress
 
 	// Block it in the first epoch
-	err = csm.blockProvider(context.Background(), backupAddr, false, firstEpochHeight, 0, 0, false, nil, nil)
+	err = csm.blockProvider(context.Background(), backupAddr, false, firstEpochHeight, 0, 0, false, nil)
 	require.NoError(t, err)
 
 	csm.lock.RLock()
@@ -1830,7 +1830,7 @@ func TestUpdateAllProviders_NormalProviderBlockedAsBackupInNextEpoch(t *testing.
 
 	// Block a normal provider
 	normalAddr := pairingList[0].PublicLavaAddress
-	err = csm.blockProvider(context.Background(), normalAddr, false, firstEpochHeight, 0, 0, false, nil, nil)
+	err = csm.blockProvider(context.Background(), normalAddr, false, firstEpochHeight, 0, 0, false, nil)
 	require.NoError(t, err)
 
 	csm.lock.RLock()
@@ -1931,7 +1931,7 @@ func TestCheckAndUnblock_BackupUnblockedWhenHealthy(t *testing.T) {
 
 	backupAddr := backupList[0].PublicLavaAddress
 
-	err = csm.blockProvider(context.Background(), backupAddr, false, firstEpochHeight, 0, 0, false, nil, nil)
+	err = csm.blockProvider(context.Background(), backupAddr, false, firstEpochHeight, 0, 0, false, nil)
 	require.NoError(t, err)
 
 	// New epoch, same backup address, still pointing at the healthy gRPC listener.
@@ -1969,7 +1969,7 @@ func TestGenerateReconnectCallback_BackupProviderUnblocked(t *testing.T) {
 
 	backupAddr := backupList[0].PublicLavaAddress
 
-	err = csm.blockProvider(context.Background(), backupAddr, false, firstEpochHeight, 0, 0, false, nil, nil)
+	err = csm.blockProvider(context.Background(), backupAddr, false, firstEpochHeight, 0, 0, false, nil)
 	require.NoError(t, err)
 
 	csm.lock.RLock()
@@ -1999,7 +1999,7 @@ func TestGenerateReconnectCallback_NonBackupUsesValidAddressesPath(t *testing.T)
 	require.NoError(t, err)
 
 	regularAddr := pairingList[0].PublicLavaAddress
-	err = csm.blockProvider(context.Background(), regularAddr, false, firstEpochHeight, 0, 0, false, nil, nil)
+	err = csm.blockProvider(context.Background(), regularAddr, false, firstEpochHeight, 0, 0, false, nil)
 	require.NoError(t, err)
 
 	// blockProvider removes from validAddresses and adds to currentlyBlockedProviderAddresses.
@@ -2055,7 +2055,7 @@ func TestGenerateReconnectCallback_OverlapBothPairingAndBackup(t *testing.T) {
 
 	// Block as primary — lands in currentlyBlockedProviderAddresses, removed from
 	// validAddresses.
-	err = csm.blockProvider(context.Background(), overlapAddr, false, firstEpochHeight, 0, 0, false, nil, nil)
+	err = csm.blockProvider(context.Background(), overlapAddr, false, firstEpochHeight, 0, 0, false, nil)
 	require.NoError(t, err)
 
 	// Seed the overlap: same address also registered as a backup, and blocked there.
