@@ -164,7 +164,11 @@ func constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled f
 		if isMetricEnabled {
 			c.Locals(metrics.RefererHeaderKey, c.Get(metrics.RefererHeaderKey, ""))
 			c.Locals(metrics.UserAgentHeaderKey, c.Get(metrics.UserAgentHeaderKey, ""))
-			c.Locals(metrics.OriginHeaderKey, c.Get(metrics.OriginHeaderKey, ""))
+			// Clone Origin: it crosses the request boundary into the
+			// websocket handler and from there into RelayMetrics, which the
+			// OTel sink serializes asynchronously after fasthttp has
+			// recycled the request buffer.
+			c.Locals(metrics.OriginHeaderKey, strings.Clone(c.Get(metrics.OriginHeaderKey, "")))
 		}
 		return webSocketCallback(c) // uses external dappID
 	}

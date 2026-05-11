@@ -293,16 +293,17 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 					if formatterMsg != nil {
 						websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: formatterMsg}
 					}
-					continue
-				}
-
-				relayResultReply := relayResult.GetReply()
-				if relayResultReply != nil {
+				} else if relayResultReply := relayResult.GetReply(); relayResultReply != nil {
 					// No need to verify signature since this is already happening inside the SendParsedRelay flow
-					websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: relayResult.GetReply().Data}
+					websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: relayResultReply.Data}
 				} else {
 					utils.LavaFormatError("Relay result is nil over websocket normal request flow, should not happen", err, utils.LogAttr("messageType", messageType))
 				}
+				// Emit the relay_usage event for every normal WS relay
+				// (success or failure). The pre-existing flow `continue`d
+				// before reaching AddMetricForWebSocket below, so normal WS
+				// relays were silently dropped from the analytics pipeline.
+				go logger.AddMetricForWebSocket(metricsData, err, websocketConn)
 				continue
 			}
 		}
@@ -339,6 +340,13 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 			continue
 		}
 
+		// Snapshot the populated RelayMetrics fields for per-delivery
+		// emits. The start-of-subscription emit below races with the
+		// per-message emits on the same pointer (AddMetricForWebSocket
+		// mutates Success and Origin) — copy by value so each per-message
+		// goroutine works on its own struct.
+		subscriptionFields := *metricsData
+
 		if subscriptionMsgsChan != nil { // if == nil, it means that we already have an active subscription running on this query
 			go func() {
 				utils.LavaFormatTrace("created go routine for new websocketSubMsgsChan",
@@ -351,6 +359,14 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 				for subscriptionMsgReply := range subscriptionMsgsChan {
 					idleFor.Store(time.Now().Unix())
 					websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: outputFormatter(subscriptionMsgReply.Data)}
+					// Per-delivery metric emission. Each streamed
+					// subscription message is a relay over the
+					// established subscription and carries the same
+					// project / chain / API / provider / CU as the
+					// original eth_subscribe.
+					perMessage := subscriptionFields
+					perMessage.Timestamp = time.Now()
+					go logger.AddMetricForWebSocket(&perMessage, nil, websocketConn)
 				}
 
 				utils.LavaFormatTrace("subscriptionMsgsChan was closed",

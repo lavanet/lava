@@ -235,24 +235,31 @@ func (rpccl *RPCConsumerLogs) RecordProviderLatency(chainId string, apiInterface
 }
 
 func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, headers map[string][]string) {
+	// Set OTel-bound fields before Emit. Success matters on the smart-router
+	// path too, where consumerMetricsManager.SetRelayMetrics is a no-op.
+	data.Success = err == nil
 	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
-	rpccl.usageSink.Emit(NewRelayUsageEvent(data))
 	refererHeaderValue := strings.Join(headers[RefererHeaderKey], ", ")
 	userAgentHeaderValue := strings.Join(headers[UserAgentHeaderKey], ", ")
+	// strings.Join always allocates; result is independent of any request buffer.
+	data.Origin = strings.Join(headers[OriginHeaderKey], ", ")
+	rpccl.usageSink.Emit(NewRelayUsageEvent(data))
 	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {
-		originHeaderValue := headers[OriginHeaderKey]
-		rpccl.SendMetrics(data, err, strings.Join(originHeaderValue, ", "))
+		rpccl.SendMetrics(data)
 	}
 }
 
 func (rpccl *RPCConsumerLogs) AddMetricForWebSocket(data *RelayMetrics, err error, c *websocket.Conn) {
+	data.Success = err == nil
 	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
-	rpccl.usageSink.Emit(NewRelayUsageEvent(data))
 	refererHeaderValue, _ := c.Locals(RefererHeaderKey).(string)
 	userAgentHeaderValue, _ := c.Locals(UserAgentHeaderKey).(string)
+	// Origin was cloned at Locals-storage time in constructFiberCallback...
+	originHeaderValue, _ := c.Locals(OriginHeaderKey).(string)
+	data.Origin = originHeaderValue
+	rpccl.usageSink.Emit(NewRelayUsageEvent(data))
 	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {
-		originHeaderValue, _ := c.Locals(OriginHeaderKey).(string)
-		rpccl.SendMetrics(data, err, originHeaderValue)
+		rpccl.SendMetrics(data)
 	}
 }
 
@@ -265,13 +272,16 @@ func (rpccl *RPCConsumerLogs) AddMetricForGrpc(data *RelayMetrics, err error, me
 		}
 		return headerValue
 	}
+	data.Success = err == nil
 	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
-	rpccl.usageSink.Emit(NewRelayUsageEvent(data))
 	refererHeaderValue := getMetadataHeaderOrDefault(RefererHeaderKey)
 	userAgentHeaderValue := getMetadataHeaderOrDefault(UserAgentHeaderKey)
+	// gRPC metadata values can alias the receive buffer; detach before the
+	// value crosses into the async OTel emit path.
+	data.Origin = strings.Clone(getMetadataHeaderOrDefault(OriginHeaderKey))
+	rpccl.usageSink.Emit(NewRelayUsageEvent(data))
 	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {
-		originHeaderValue := getMetadataHeaderOrDefault(OriginHeaderKey)
-		rpccl.SendMetrics(data, err, originHeaderValue)
+		rpccl.SendMetrics(data)
 	}
 }
 
@@ -292,9 +302,7 @@ func (rpccl *RPCConsumerLogs) shouldCountMetrics(refererHeaderValue string, user
 	return true
 }
 
-func (rpccl *RPCConsumerLogs) SendMetrics(data *RelayMetrics, err error, origin string) {
-	data.Success = err == nil
-	data.Origin = origin
+func (rpccl *RPCConsumerLogs) SendMetrics(data *RelayMetrics) {
 	rpccl.MetricService.SendData(*data)
 }
 
