@@ -4,7 +4,6 @@ import (
 	"sync"
 	"time"
 
-	metrics "github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
@@ -18,8 +17,6 @@ type ReportedProviders struct {
 	addedToPurgeAndReport map[string]*ReportedProviderEntry // list of purged providers to report for QoS unavailability. (easier to search maps.)
 	lock                  sync.RWMutex
 	generation            uint64 // incremented on Reset(); used to discard stale reconnect candidates
-	reporter              metrics.Reporter
-	chainId               string
 }
 
 type ReportedProviderEntry struct {
@@ -55,14 +52,14 @@ func (rp *ReportedProviders) GetReportedProviders() []*pairingtypes.ReportedProv
 	return reportedProviders
 }
 
-func (rp *ReportedProviders) ReportProvider(providerAddr string, errors uint64, disconnections uint64, reconnectCB func() error, errorsForReport []error) {
+func (rp *ReportedProviders) ReportProvider(providerAddr string, errors uint64, disconnections uint64, reconnectCB func() error) {
 	rp.lock.Lock()
 	defer rp.lock.Unlock()
-	rp.reportProviderLocked(providerAddr, errors, disconnections, reconnectCB, errorsForReport)
+	rp.reportProviderLocked(providerAddr, errors, disconnections, reconnectCB)
 }
 
 // reportProviderLocked performs the actual report. Caller must hold rp.lock.Lock().
-func (rp *ReportedProviders) reportProviderLocked(providerAddr string, errors uint64, disconnections uint64, reconnectCB func() error, errorsForReport []error) {
+func (rp *ReportedProviders) reportProviderLocked(providerAddr string, errors uint64, disconnections uint64, reconnectCB func() error) {
 	if _, ok := rp.addedToPurgeAndReport[providerAddr]; !ok { // add if it doesn't exist already
 		utils.LavaFormatInfo("Reporting Provider for unresponsiveness", utils.Attribute{Key: "Provider address", Value: providerAddr})
 		rp.addedToPurgeAndReport[providerAddr] = &ReportedProviderEntry{}
@@ -76,9 +73,6 @@ func (rp *ReportedProviders) reportProviderLocked(providerAddr string, errors ui
 	if debugReportedProviders {
 		utils.LavaFormatDebug("[debugReportedProviders] adding provider to reported providers", utils.LogAttr("rp.addedToPurgeAndReport", rp.addedToPurgeAndReport))
 	}
-
-	// update metrics on the report.
-	go rp.AppendReport(metrics.NewReportsRequest(providerAddr, errorsForReport, rp.chainId))
 }
 
 // will be called after a disconnected provider got a valid connection
@@ -150,7 +144,7 @@ func (rp *ReportedProviders) ReconnectProviders() {
 					}
 					delete(rp.addedToPurgeAndReport, candidate.address)
 				} else {
-					rp.reportProviderLocked(candidate.address, 0, 1, nil, []error{err})
+					rp.reportProviderLocked(candidate.address, 0, 1, nil)
 				}
 				return false
 			}()
@@ -164,18 +158,8 @@ func (rp *ReportedProviders) ReconnectProviders() {
 	}
 }
 
-func (rp *ReportedProviders) AppendReport(report metrics.ReportsRequest) {
-	if rp == nil || rp.reporter == nil {
-		return
-	}
-	if debugReportedProviders {
-		utils.LavaFormatDebug("[debugReportedProviders] Sending report on provider", utils.LogAttr("provider", report.Provider))
-	}
-	rp.reporter.AppendReport(report)
-}
-
-func NewReportedProviders(reporter metrics.Reporter, chainId string) *ReportedProviders {
-	rp := &ReportedProviders{addedToPurgeAndReport: map[string]*ReportedProviderEntry{}, reporter: reporter, chainId: chainId}
+func NewReportedProviders() *ReportedProviders {
+	rp := &ReportedProviders{addedToPurgeAndReport: map[string]*ReportedProviderEntry{}}
 	go func() {
 		ticker := time.NewTicker(ReconnectCandidateTime)
 		defer ticker.Stop()

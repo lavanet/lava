@@ -16,6 +16,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/utils"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -94,21 +95,47 @@ func (c *UpstreamGRPCStreamConnection) connect(ctx context.Context, timeout time
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
-	// Add standard options
+	// 512MB for large responses
 	dialOpts = append(dialOpts,
-		grpc.WithBlock(),
-		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(512*1024*1024)), // 512MB for large responses
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(512*1024*1024)),
 	)
 
-	// Create connection with timeout
-	connectCtx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
-	grpcConn, err := grpc.DialContext(connectCtx, target, dialOpts...)
+	// grpc.NewClient is lazy — it does not establish a connection here.
+	// We force a state transition under the configured timeout so the
+	// caller still gets a fast failure for unreachable endpoints, the way
+	// the previous grpc.DialContext + WithBlock behaved.
+	grpcConn, err := grpc.NewClient(target, dialOpts...)
 	if err != nil {
 		c.healthy.Store(false)
 		c.lastError.Store(err)
-		return fmt.Errorf("failed to dial gRPC %s: %w", c.sanitizedURL, err)
+		return fmt.Errorf("failed to construct gRPC client for %s: %w", c.sanitizedURL, err)
+	}
+	connectCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	grpcConn.Connect()
+	// WaitForStateChange returns on ANY state transition (including
+	// Connecting → TransientFailure), so a single call would accept a
+	// channel that's failing. Loop until we either reach Ready or the
+	// timeout fires — matching WithBlock semantics.
+	for {
+		state := grpcConn.GetState()
+		if state == connectivity.Ready {
+			break
+		}
+		if state == connectivity.Shutdown {
+			_ = grpcConn.Close()
+			err := fmt.Errorf("gRPC channel entered Shutdown before Ready")
+			c.healthy.Store(false)
+			c.lastError.Store(err)
+			return fmt.Errorf("failed to dial gRPC %s: %w", c.sanitizedURL, err)
+		}
+		if !grpcConn.WaitForStateChange(connectCtx, state) {
+			_ = grpcConn.Close()
+			err := connectCtx.Err()
+			c.healthy.Store(false)
+			c.lastError.Store(err)
+			return fmt.Errorf("failed to dial gRPC %s: %w", c.sanitizedURL, err)
+		}
 	}
 
 	c.conn = grpcConn

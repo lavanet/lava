@@ -24,7 +24,12 @@ import (
 )
 
 const (
-	ContextUserValueKeyDappID  = "dappID"
+	// ProjectIDHeader is the canonical wire-level key the consumer reads
+	// to attribute a relay to a project for billing analytics. Used as the
+	// HTTP header name, the gRPC metadata key (lower-cased per gRPC
+	// convention), and the fiber Locals key passing the value from the
+	// HTTP upgrade context to the websocket handler.
+	ProjectIDHeader            = "project-id"
 	RetryListeningInterval     = 10 // seconds
 	debug                      = false
 	relayMsgLogMaxChars        = 200
@@ -115,19 +120,29 @@ func (bcp *BaseChainProxy) CapTimeoutForSend(ctx context.Context, chainMessage C
 }
 
 func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
-	// Read the dappID from the headers
-	dappID = c.Get("dapp-id")
+	// fiber.Ctx.Get returns a string aliased to fasthttp's per-request
+	// header buffer (zero-copy via unsafe). The buffer is recycled when
+	// the request completes and reused for subsequent requests on the
+	// same worker. RelayMetrics.ProjectHash is enqueued asynchronously
+	// into the OTel BatchLogProcessor and serialized after the request
+	// returns — by then the backing array may already hold another
+	// request's headers, prefix-overwriting the project hash. Clone to
+	// detach from fasthttp's pool.
+	dappID = strings.Clone(c.Get(ProjectIDHeader))
 	if dappID == "" {
 		dappID = generateNewDappID()
 	}
 	return dappID
 }
 
-// extractDappIDFromGrpcHeader extracts dappID from GRPC header
+// extractDappIDFromGrpcHeader extracts the project id from gRPC metadata.
 func extractDappIDFromGrpcHeader(metadataValues metadata.MD) string {
 	dappId := generateNewDappID()
-	if values, ok := metadataValues["dapp-id"]; ok && len(values) > 0 {
-		dappId = values[0]
+	if values, ok := metadataValues[ProjectIDHeader]; ok && len(values) > 0 {
+		// Same hazard as the HTTP path: gRPC metadata strings can alias
+		// the receive buffer depending on the transport implementation.
+		// Clone before retaining past the handler return.
+		dappId = strings.Clone(values[0])
 	}
 	return dappId
 }
@@ -141,16 +156,19 @@ func generateNewDappID() string {
 func constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled fiber.Handler, isMetricEnabled bool) fiber.Handler {
 	webSocketCallback := callbackToBeCalled
 	handler := func(c *fiber.Ctx) error {
-		// Extract dappID from headers
+		// Extract project id from headers and stash it in the request-scoped
+		// fiber context for the websocket handler to read after the upgrade.
 		dappID := extractDappIDFromFiberContext(c)
-
-		// Store dappID in the local context
-		c.Locals("dapp-id", dappID)
+		c.Locals(ProjectIDHeader, dappID)
 
 		if isMetricEnabled {
 			c.Locals(metrics.RefererHeaderKey, c.Get(metrics.RefererHeaderKey, ""))
 			c.Locals(metrics.UserAgentHeaderKey, c.Get(metrics.UserAgentHeaderKey, ""))
-			c.Locals(metrics.OriginHeaderKey, c.Get(metrics.OriginHeaderKey, ""))
+			// Clone Origin: it crosses the request boundary into the
+			// websocket handler and from there into RelayMetrics, which the
+			// OTel sink serializes asynchronously after fasthttp has
+			// recycled the request buffer.
+			c.Locals(metrics.OriginHeaderKey, strings.Clone(c.Get(metrics.OriginHeaderKey, "")))
 		}
 		return webSocketCallback(c) // uses external dappID
 	}

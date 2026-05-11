@@ -47,7 +47,6 @@ const (
 	DefaultRPCConsumerFileName = "rpcconsumer.yml"
 	DebugRelaysFlagName        = "debug-relays"
 	DebugProbesFlagName        = "debug-probes"
-	reportsSendBEAddress       = "reports-be-address"
 )
 
 var (
@@ -102,18 +101,17 @@ type ConsumerStateTrackerInf interface {
 }
 
 type AnalyticsServerAddresses struct {
-	MetricsListenAddress  string
-	RelayServerAddress    string
-	RelayKafkaAddress     string
-	RelayKafkaTopic       string
-	RelayKafkaUsername    string
-	RelayKafkaPassword    string
-	RelayKafkaMechanism   string
-	RelayKafkaTLSEnabled  bool
-	RelayKafkaTLSInsecure bool
-	ReportsAddressFlag    string
-	OptimizerQoSAddress   string
-	OptimizerQoSListen    bool
+	MetricsListenAddress   string
+	UsageOTelEnabled       bool
+	UsageOTelEndpoint      string
+	UsageOTelInsecure      bool
+	UsageOTelQueueSize     int
+	UsageOTelBatchSize     int
+	UsageOTelFlushInterval time.Duration
+	UsageOTelExportTimeout time.Duration
+	UsageOTelServiceName   string
+	UsageOTelInstanceID    string
+	OptimizerQoSListen     bool
 }
 type RPCConsumer struct {
 	consumerStateTracker ConsumerStateTrackerInf
@@ -171,19 +169,33 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	if common.IsTestMode(ctx) {
 		testModeWarn("RPCConsumer running tests")
 	}
-	consumerReportsManager := metrics.NewConsumerReportsClient(options.analyticsServerAddresses.ReportsAddressFlag)
 
 	consumerAddr, privKey, err := getConsumerAddressAndKeys(options.clientCtx)
 	if err != nil {
 		utils.LavaFormatFatal("failed to get consumer address and keys", err)
 	}
 
-	consumerUsageServeManager := metrics.NewConsumerRelayServerClient(options.analyticsServerAddresses.RelayServerAddress)                                                                                                                                                                                                                                                                                                                     // start up relay server reporting
-	consumerKafkaClient := metrics.NewConsumerKafkaClient(options.analyticsServerAddresses.RelayKafkaAddress, options.analyticsServerAddresses.RelayKafkaTopic, options.analyticsServerAddresses.RelayKafkaUsername, options.analyticsServerAddresses.RelayKafkaPassword, options.analyticsServerAddresses.RelayKafkaMechanism, options.analyticsServerAddresses.RelayKafkaTLSEnabled, options.analyticsServerAddresses.RelayKafkaTLSInsecure) // start up kafka client
+	var usageSink metrics.UsageEventSink = metrics.NoopUsageSink{}
+	if options.analyticsServerAddresses.UsageOTelEnabled {
+		if otelSink := metrics.NewOTelUsageSink(metrics.OTelUsageSinkConfig{
+			Endpoint:          options.analyticsServerAddresses.UsageOTelEndpoint,
+			Insecure:          options.analyticsServerAddresses.UsageOTelInsecure,
+			QueueSize:         options.analyticsServerAddresses.UsageOTelQueueSize,
+			BatchSize:         options.analyticsServerAddresses.UsageOTelBatchSize,
+			FlushInterval:     options.analyticsServerAddresses.UsageOTelFlushInterval,
+			ExportTimeout:     options.analyticsServerAddresses.UsageOTelExportTimeout,
+			ServiceName:       options.analyticsServerAddresses.UsageOTelServiceName,
+			ServiceInstanceID: options.analyticsServerAddresses.UsageOTelInstanceID,
+		}); otelSink != nil {
+			usageSink = otelSink
+		}
+	}
+	defer usageSink.Close()
+	optimizerQoSSamplingInterval := viper.GetDuration(common.OptimizerQosServerSamplingIntervalFlag)
 	var consumerOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient
-	if options.analyticsServerAddresses.OptimizerQoSAddress != "" || options.analyticsServerAddresses.OptimizerQoSListen {
-		consumerOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(consumerAddr.String(), options.analyticsServerAddresses.OptimizerQoSAddress, options.geoLocation, metrics.OptimizerQosServerPushInterval) // start up optimizer qos client
-		consumerOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, metrics.OptimizerQosServerSamplingInterval)
+	if options.analyticsServerAddresses.OptimizerQoSListen || options.analyticsServerAddresses.UsageOTelEnabled {
+		consumerOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(consumerAddr.String(), usageSink, options.geoLocation)
+		consumerOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, optimizerQoSSamplingInterval)
 	}
 	metrics.InitErrorMetrics()
 	consumerMetricsManager := metrics.NewConsumerMetricsManager(metrics.ConsumerMetricsManagerOptions{
@@ -191,7 +203,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 		EnableQoSListener:          options.analyticsServerAddresses.OptimizerQoSListen,
 		ConsumerOptimizerQoSClient: consumerOptimizerQoSClient,
 	}) // start up prometheus metrics
-	rpcConsumerMetrics, err := metrics.NewRPCConsumerLogs(consumerMetricsManager, consumerUsageServeManager, consumerKafkaClient, consumerOptimizerQoSClient)
+	rpcConsumerMetrics, err := metrics.NewRPCConsumerLogs(consumerMetricsManager, usageSink, consumerOptimizerQoSClient)
 	if err != nil {
 		utils.LavaFormatFatal("failed creating RPCConsumer logs", err)
 	}
@@ -200,7 +212,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 
 	// Start periodic selection stats metrics updates
 	if consumerOptimizerQoSClient != nil {
-		consumerMetricsManager.StartSelectionStatsUpdater(ctx, metrics.OptimizerQosServerSamplingInterval)
+		consumerMetricsManager.StartSelectionStatsUpdater(ctx, optimizerQoSSamplingInterval)
 	}
 
 	// spawn up ConsumerStateTracker
@@ -248,7 +260,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 			defer wg.Done()
 			_, err := rpcc.CreateConsumerEndpoint(ctx, rpcEndpoint, errCh, consumerAddr, consumerStateTracker,
 				policyUpdaters, optimizers, consumerConsistencies, chainMutexes,
-				options, privKey, lavaChainID, rpcConsumerMetrics, consumerReportsManager, consumerOptimizerQoSClient,
+				options, privKey, lavaChainID, rpcConsumerMetrics, consumerOptimizerQoSClient,
 				consumerMetricsManager, relaysMonitorAggregator)
 			return err
 		}(rpcEndpoint)
@@ -433,7 +445,6 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	privKey *secp256k1.PrivateKey,
 	lavaChainID string,
 	rpcConsumerMetrics *metrics.RPCConsumerLogs,
-	consumerReportsManager *metrics.ConsumerReportsClient,
 	consumerOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient,
 	consumerMetricsManager *metrics.ConsumerMetricsManager,
 	relaysMonitorAggregator *metrics.RelaysMonitorAggregator,
@@ -513,7 +524,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 
 	// Create active subscription provider storage for each unique chain
 	activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
-	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
+	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
 
 	// Set callback to get Lava blockchain block height for RelaySession.Epoch
 	consumerSessionManager.SetLavaBlockHeightCallback(func() int64 {
@@ -542,7 +553,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, specMethodType, chainParser, activeSubscriptionProvidersStorage, consumerMetricsManager)
 
 	utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
-	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, options.cmdFlags, options.stateShare, consumerReportsManager, consumerWsSubscriptionManager)
+	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, options.cmdFlags, options.stateShare, consumerWsSubscriptionManager)
 	if err != nil {
 		err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 		errCh <- err
@@ -763,18 +774,17 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			}
 
 			analyticsServerAddresses := AnalyticsServerAddresses{
-				MetricsListenAddress:  viper.GetString(metrics.MetricsListenFlagName),
-				RelayServerAddress:    viper.GetString(metrics.RelayServerFlagName),
-				RelayKafkaAddress:     viper.GetString(metrics.RelayKafkaFlagName),
-				RelayKafkaTopic:       viper.GetString(metrics.RelayKafkaTopicFlagName),
-				RelayKafkaUsername:    viper.GetString(metrics.RelayKafkaUsernameFlagName),
-				RelayKafkaPassword:    viper.GetString(metrics.RelayKafkaPasswordFlagName),
-				RelayKafkaMechanism:   viper.GetString(metrics.RelayKafkaMechanismFlagName),
-				RelayKafkaTLSEnabled:  viper.GetBool(metrics.RelayKafkaTLSEnabledFlagName),
-				RelayKafkaTLSInsecure: viper.GetBool(metrics.RelayKafkaTLSInsecureFlagName),
-				ReportsAddressFlag:    viper.GetString(reportsSendBEAddress),
-				OptimizerQoSAddress:   viper.GetString(common.OptimizerQosServerAddressFlag),
-				OptimizerQoSListen:    viper.GetBool(common.OptimizerQosListenFlag),
+				MetricsListenAddress:   viper.GetString(metrics.MetricsListenFlagName),
+				UsageOTelEnabled:       viper.GetBool(metrics.UsageOTelEnabledFlagName),
+				UsageOTelEndpoint:      viper.GetString(metrics.UsageOTelEndpointFlagName),
+				UsageOTelInsecure:      viper.GetBool(metrics.UsageOTelInsecureFlagName),
+				UsageOTelQueueSize:     viper.GetInt(metrics.UsageOTelQueueSizeFlagName),
+				UsageOTelBatchSize:     viper.GetInt(metrics.UsageOTelBatchSizeFlagName),
+				UsageOTelFlushInterval: viper.GetDuration(metrics.UsageOTelFlushIntervalFlagName),
+				UsageOTelExportTimeout: viper.GetDuration(metrics.UsageOTelExportTimeoutFlagName),
+				UsageOTelServiceName:   viper.GetString(metrics.UsageOTelServiceNameFlagName),
+				UsageOTelInstanceID:    viper.GetString(metrics.UsageOTelInstanceIDFlagName),
+				OptimizerQoSListen:     viper.GetBool(common.OptimizerQosListenFlag),
 			}
 
 			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)
@@ -869,14 +879,15 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 		utils.LavaFormatFatal("failed binding min selection chance flag", err)
 	}
 	cmdRPCConsumer.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
-	cmdRPCConsumer.Flags().String(metrics.RelayServerFlagName, metrics.DisabledFlagOption, "the http address of the relay usage server api endpoint (example http://127.0.0.1:8080)")
-	cmdRPCConsumer.Flags().String(metrics.RelayKafkaFlagName, metrics.DisabledFlagOption, "the kafka address for sending relay metrics (example localhost:9092)")
-	cmdRPCConsumer.Flags().String(metrics.RelayKafkaTopicFlagName, "lava-relay-metrics", "the kafka topic for sending relay metrics")
-	cmdRPCConsumer.Flags().String(metrics.RelayKafkaUsernameFlagName, "", "kafka username for SASL authentication")
-	cmdRPCConsumer.Flags().String(metrics.RelayKafkaPasswordFlagName, "", "kafka password for SASL authentication")
-	cmdRPCConsumer.Flags().String(metrics.RelayKafkaMechanismFlagName, "SCRAM-SHA-512", "kafka SASL mechanism (PLAIN, SCRAM-SHA-256, SCRAM-SHA-512)")
-	cmdRPCConsumer.Flags().Bool(metrics.RelayKafkaTLSEnabledFlagName, false, "enable TLS for kafka connections")
-	cmdRPCConsumer.Flags().Bool(metrics.RelayKafkaTLSInsecureFlagName, false, "skip TLS certificate verification for kafka connections")
+	cmdRPCConsumer.Flags().Bool(metrics.UsageOTelEnabledFlagName, false, "emit per-relay usage events as OTLP logs to a collector (off by default; relay path pays nothing when off)")
+	cmdRPCConsumer.Flags().String(metrics.UsageOTelEndpointFlagName, "", "OTLP/HTTP endpoint for the local OTel collector (default: localhost:4318 / OTEL_EXPORTER_OTLP_ENDPOINT)")
+	cmdRPCConsumer.Flags().Bool(metrics.UsageOTelInsecureFlagName, true, "skip TLS for OTLP exporter (default true; expected target is a sidecar collector)")
+	cmdRPCConsumer.Flags().Int(metrics.UsageOTelQueueSizeFlagName, 50000, "in-memory queue capacity for usage events; full queue drops events")
+	cmdRPCConsumer.Flags().Int(metrics.UsageOTelBatchSizeFlagName, 1000, "usage event batch size flush trigger")
+	cmdRPCConsumer.Flags().Duration(metrics.UsageOTelFlushIntervalFlagName, 500*time.Millisecond, "usage event time-based flush trigger")
+	cmdRPCConsumer.Flags().Duration(metrics.UsageOTelExportTimeoutFlagName, 10*time.Second, "OTLP per-batch export timeout")
+	cmdRPCConsumer.Flags().String(metrics.UsageOTelServiceNameFlagName, "lava-rpcconsumer", "OTel service.name resource attribute")
+	cmdRPCConsumer.Flags().String(metrics.UsageOTelInstanceIDFlagName, "", "OTel service.instance.id resource attribute (default: hostname-pid; useful when running multiple consumer processes per host)")
 	cmdRPCConsumer.Flags().Bool(DebugRelaysFlagName, false, "adding debug information to relays")
 	cmdRPCConsumer.Flags().Bool(common.EnableSelectionStatsHeaderFlag, false, "enable selection stats header for debugging provider selection")
 	// CORS related flags
@@ -889,7 +900,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	// relays health check related flags
 	cmdRPCConsumer.Flags().Bool(common.RelaysHealthEnableFlag, RelaysHealthEnableFlagDefault, "enables relays health check")
 	cmdRPCConsumer.Flags().Duration(common.RelayHealthIntervalFlag, RelayHealthIntervalFlagDefault, "interval between relay health checks")
-	cmdRPCConsumer.Flags().String(reportsSendBEAddress, "", "address to send reports to")
 	cmdRPCConsumer.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
 	cmdRPCConsumer.Flags().DurationVar(&updaters.TimeOutForFetchingLavaBlocks, common.TimeOutForFetchingLavaBlocksFlag, time.Second*5, "setting the timeout for fetching lava blocks")
 	cmdRPCConsumer.Flags().StringArray(common.UseStaticSpecFlag, nil, "load specs from file, directory, or remote URL (GitHub/GitLab). Can be specified multiple times; later sources override earlier ones for same chain ID")
@@ -901,11 +911,11 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	if err := viper.BindPFlag(common.ProbeUpdateWeightFlagName, cmdRPCConsumer.Flags().Lookup(common.ProbeUpdateWeightFlagName)); err != nil {
 		utils.LavaFormatFatal("failed binding probe update weight flag", err)
 	}
-	// optimizer qos reports
-	cmdRPCConsumer.Flags().String(common.OptimizerQosServerAddressFlag, "", "address to send optimizer qos reports to")
+	// optimizer qos reports — emission goes through the OTel usage sink
+	// when --usage-otel-enabled is set. The Listen flag is independent
+	// (it just exposes a Prometheus-style endpoint for QoS scraping).
 	cmdRPCConsumer.Flags().Bool(common.OptimizerQosListenFlag, false, "enable listening for optimizer qos reports on metrics endpoint i.e GET -> localhost:7779/provider_optimizer_metrics")
-	cmdRPCConsumer.Flags().DurationVar(&metrics.OptimizerQosServerPushInterval, common.OptimizerQosServerPushIntervalFlag, time.Minute*5, "interval to push optimizer qos reports")
-	cmdRPCConsumer.Flags().DurationVar(&metrics.OptimizerQosServerSamplingInterval, common.OptimizerQosServerSamplingIntervalFlag, time.Second*1, "interval to sample optimizer qos reports")
+	cmdRPCConsumer.Flags().Duration(common.OptimizerQosServerSamplingIntervalFlag, time.Second*1, "interval to sample optimizer qos reports")
 	// metrics
 	cmdRPCConsumer.Flags().BoolVar(&metrics.ShowProviderEndpointInMetrics, common.ShowProviderEndpointInMetricsFlagName, metrics.ShowProviderEndpointInMetrics, "show provider endpoint in consumer metrics")
 	// websocket flags

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -15,6 +16,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/metrics"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/assert"
@@ -177,7 +179,7 @@ func TestExtractDappIDFromWebsocketConnection(t *testing.T) {
 		{
 			name:     "dappId exists in params",
 			route:    "/ws",
-			headers:  map[string][]string{"dapp-id": {"DappID123"}},
+			headers:  map[string][]string{"project-id": {"DappID123"}},
 			expected: "DappID123",
 		},
 		{
@@ -192,7 +194,7 @@ func TestExtractDappIDFromWebsocketConnection(t *testing.T) {
 
 	webSocketCallback := websocket.New(func(websockConn *websocket.Conn) {
 		mt, _, _ := websockConn.ReadMessage()
-		dappID, ok := websockConn.Locals("dapp-id").(string)
+		dappID, ok := websockConn.Locals("project-id").(string)
 		if !ok {
 			t.Fatalf("Unable to extract dappID")
 		}
@@ -242,7 +244,7 @@ func TestExtractDappIDFromFiberContext(t *testing.T) {
 	}{
 		{
 			name:     "dappId exists in headers",
-			headers:  map[string]string{"dapp-id": "DappID123"},
+			headers:  map[string]string{"project-id": "DappID123"},
 			expected: "DappID123",
 		},
 		{
@@ -734,5 +736,73 @@ func TestCompareRequestedBlockInBatch(t *testing.T) {
 			require.Equal(t, test.expectedLatest, latest, "latest")
 			require.Equal(t, test.expectedEarliest, earliest, "earliest")
 		})
+	}
+}
+
+// TestConstructFiberCallback_StashesOriginInLocals exercises the end-to-end
+// flow that AddMetricForWebSocket relies on: the HTTP-upgrade handler
+// extracts Origin from the fasthttp request headers, clones it, and stashes
+// it in fiber Locals under metrics.OriginHeaderKey so the websocket handler
+// can read it after the upgrade. Catches regressions where the Locals
+// storage is moved out of the metric-enabled branch or the key is changed.
+func TestConstructFiberCallback_StashesOriginInLocals(t *testing.T) {
+	app := fiber.New()
+	captured := make(chan string, 1)
+
+	webSocketCallback := websocket.New(func(c *websocket.Conn) {
+		origin, _ := c.Locals(metrics.OriginHeaderKey).(string)
+		captured <- origin
+		c.Close()
+	})
+
+	app.Get("/ws", constructFiberCallbackWithHeaderAndParameterExtraction(webSocketCallback, true))
+
+	go func() { _ = app.Listen("127.0.0.1:3010") }()
+	defer func() { _ = app.Shutdown() }()
+	time.Sleep(50 * time.Millisecond)
+
+	dialer := &websocket2.Dialer{}
+	conn, _, err := dialer.Dial("ws://127.0.0.1:3010/ws", http.Header{"Origin": {"https://test.example"}})
+	require.NoError(t, err)
+	defer conn.Close()
+
+	select {
+	case got := <-captured:
+		require.Equal(t, "https://test.example", got)
+	case <-time.After(2 * time.Second):
+		t.Fatal("Origin never reached websocket handler via Locals")
+	}
+}
+
+// TestConstructFiberCallback_NoOriginWhenMetricsDisabled covers the negative
+// branch: when isMetricEnabled=false the Origin Locals is intentionally
+// absent, so AddMetricForWebSocket reads back an empty string. Ensures the
+// flag still gates the extraction work.
+func TestConstructFiberCallback_NoOriginWhenMetricsDisabled(t *testing.T) {
+	app := fiber.New()
+	captured := make(chan string, 1)
+
+	webSocketCallback := websocket.New(func(c *websocket.Conn) {
+		origin, _ := c.Locals(metrics.OriginHeaderKey).(string)
+		captured <- origin
+		c.Close()
+	})
+
+	app.Get("/ws", constructFiberCallbackWithHeaderAndParameterExtraction(webSocketCallback, false))
+
+	go func() { _ = app.Listen("127.0.0.1:3011") }()
+	defer func() { _ = app.Shutdown() }()
+	time.Sleep(50 * time.Millisecond)
+
+	dialer := &websocket2.Dialer{}
+	conn, _, err := dialer.Dial("ws://127.0.0.1:3011/ws", http.Header{"Origin": {"https://test.example"}})
+	require.NoError(t, err)
+	defer conn.Close()
+
+	select {
+	case got := <-captured:
+		require.Empty(t, got)
+	case <-time.After(2 * time.Second):
+		t.Fatal("websocket handler never ran")
 	}
 }

@@ -115,11 +115,16 @@ Choose provider selection strategy with `--strategy`:
 # Prometheus metrics
 --metrics-listen-address ":7779"
 
-# Kafka analytics
---relay-kafka-addr "localhost:9092"
+# Usage telemetry — emit relay_usage and optimizer_qos events as OTel logs
+# to a host-local collector. Off by default; see protocol/metrics/usage_sink.go
+# and the awss3 / Kafka / ClickHouse exporter wiring on the collector side.
+--usage-otel-enabled
+--usage-otel-endpoint "127.0.0.1:4318"
+--usage-otel-service-name "lava-rpcconsumer"
 
-# Optimizer QoS reports
---optimizer-qos-server-address "http://qos-server:8080"
+# Optimizer QoS scrape endpoint (Prometheus-style; independent of OTel)
+--optimizer-qos-listen
+--optimizer-qos-sampling-interval 1m
 
 # Debug options
 --debug-relays

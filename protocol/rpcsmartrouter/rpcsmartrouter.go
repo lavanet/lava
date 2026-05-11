@@ -74,7 +74,6 @@ const (
 	DefaultRPCSmartRouterFileName = "rpcsmartrouter.yml"
 	DebugRelaysFlagName           = "debug-relays"
 	DebugProbesFlagName           = "debug-probes"
-	reportsSendBEAddress          = "reports-be-address"
 )
 
 var (
@@ -147,18 +146,17 @@ func (s *strategyValue) Type() string {
 }
 
 type AnalyticsServerAddresses struct {
-	MetricsListenAddress  string
-	RelayServerAddress    string
-	RelayKafkaAddress     string
-	RelayKafkaTopic       string
-	RelayKafkaUsername    string
-	RelayKafkaPassword    string
-	RelayKafkaMechanism   string
-	RelayKafkaTLSEnabled  bool
-	RelayKafkaTLSInsecure bool
-	ReportsAddressFlag    string
-	OptimizerQoSAddress   string
-	OptimizerQoSListen    bool
+	MetricsListenAddress   string
+	UsageOTelEnabled       bool
+	UsageOTelEndpoint      string
+	UsageOTelInsecure      bool
+	UsageOTelQueueSize     int
+	UsageOTelBatchSize     int
+	UsageOTelFlushInterval time.Duration
+	UsageOTelExportTimeout time.Duration
+	UsageOTelServiceName   string
+	UsageOTelInstanceID    string
+	OptimizerQoSListen     bool
 }
 type RPCSmartRouter struct {
 	// Smart router doesn't need blockchain state tracking
@@ -228,18 +226,32 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 	)
 
 	metrics.InitErrorMetrics()
-	smartRouterReportsManager := metrics.NewConsumerReportsClient(options.analyticsServerAddresses.ReportsAddressFlag)
 
 	// Smart router doesn't need consumer address from blockchain
 	// Using a static identifier for metrics and logging
 	smartRouterIdentifier := "smart-router-" + strconv.FormatUint(rand.Uint64(), 10)
 
-	smartRouterUsageServeManager := metrics.NewConsumerRelayServerClient(options.analyticsServerAddresses.RelayServerAddress)                                                                                                                                                                                                                                                                                                                     // start up relay server reporting
-	smartRouterKafkaClient := metrics.NewConsumerKafkaClient(options.analyticsServerAddresses.RelayKafkaAddress, options.analyticsServerAddresses.RelayKafkaTopic, options.analyticsServerAddresses.RelayKafkaUsername, options.analyticsServerAddresses.RelayKafkaPassword, options.analyticsServerAddresses.RelayKafkaMechanism, options.analyticsServerAddresses.RelayKafkaTLSEnabled, options.analyticsServerAddresses.RelayKafkaTLSInsecure) // start up kafka client
+	var usageSink metrics.UsageEventSink = metrics.NoopUsageSink{}
+	if options.analyticsServerAddresses.UsageOTelEnabled {
+		if otelSink := metrics.NewOTelUsageSink(metrics.OTelUsageSinkConfig{
+			Endpoint:          options.analyticsServerAddresses.UsageOTelEndpoint,
+			Insecure:          options.analyticsServerAddresses.UsageOTelInsecure,
+			QueueSize:         options.analyticsServerAddresses.UsageOTelQueueSize,
+			BatchSize:         options.analyticsServerAddresses.UsageOTelBatchSize,
+			FlushInterval:     options.analyticsServerAddresses.UsageOTelFlushInterval,
+			ExportTimeout:     options.analyticsServerAddresses.UsageOTelExportTimeout,
+			ServiceName:       options.analyticsServerAddresses.UsageOTelServiceName,
+			ServiceInstanceID: options.analyticsServerAddresses.UsageOTelInstanceID,
+		}); otelSink != nil {
+			usageSink = otelSink
+		}
+	}
+	defer usageSink.Close()
+	optimizerQoSSamplingInterval := viper.GetDuration(common.OptimizerQosServerSamplingIntervalFlag)
 	var smartRouterOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient
-	if options.analyticsServerAddresses.OptimizerQoSAddress != "" || options.analyticsServerAddresses.OptimizerQoSListen {
-		smartRouterOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(smartRouterIdentifier, options.analyticsServerAddresses.OptimizerQoSAddress, options.geoLocation, metrics.OptimizerQosServerPushInterval) // start up optimizer qos client
-		smartRouterOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, metrics.OptimizerQosServerSamplingInterval)
+	if options.analyticsServerAddresses.OptimizerQoSListen || options.analyticsServerAddresses.UsageOTelEnabled {
+		smartRouterOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(smartRouterIdentifier, usageSink, options.geoLocation)
+		smartRouterOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, optimizerQoSSamplingInterval)
 	}
 	// SmartRouterMetricsManager is the single metrics owner for the smart router.
 	// It serves its own HTTP endpoint and implements ConsumerMetricsManagerInf so it
@@ -251,13 +263,13 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 		OptimizerQoSClient: smartRouterOptimizerQoSClient,
 	})
 
-	rpcSmartRouterMetrics, err := metrics.NewRPCConsumerLogs(smartRouterMetricsManager, smartRouterUsageServeManager, smartRouterKafkaClient, smartRouterOptimizerQoSClient)
+	rpcSmartRouterMetrics, err := metrics.NewRPCConsumerLogs(smartRouterMetricsManager, usageSink, smartRouterOptimizerQoSClient)
 	if err != nil {
 		utils.LavaFormatFatal("failed creating RPCSmartRouter logs", err)
 	}
 
 	smartRouterMetricsManager.SetVersion(upgrade.GetCurrentVersion().ConsumerVersion)
-	smartRouterMetricsManager.StartSelectionStatsUpdater(ctx, metrics.OptimizerQosServerSamplingInterval)
+	smartRouterMetricsManager.StartSelectionStatsUpdater(ctx, optimizerQoSSamplingInterval)
 
 	// we want one provider optimizer per chain so we will store them for reuse across rpcEndpoints
 	chainMutexes := map[string]*sync.Mutex{}
@@ -283,7 +295,7 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 			defer wg.Done()
 			err := rpsr.CreateSmartRouterEndpoint(ctx, rpcEndpoint, errCh,
 				optimizers, smartRouterConsistencies, chainMutexes,
-				options, smartRouterIdentifier, rpcSmartRouterMetrics, smartRouterReportsManager, smartRouterOptimizerQoSClient,
+				options, smartRouterIdentifier, rpcSmartRouterMetrics, smartRouterOptimizerQoSClient,
 				smartRouterMetricsManager, relaysMonitorAggregator)
 			return err
 		}(rpcEndpoint)
@@ -455,7 +467,6 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	options *rpcSmartRouterStartOptions,
 	smartRouterIdentifier string,
 	rpcSmartRouterMetrics *metrics.RPCConsumerLogs,
-	smartRouterReportsManager *metrics.ConsumerReportsClient,
 	smartRouterOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient,
 	smartRouterMetricsManager *metrics.SmartRouterMetricsManager,
 	relaysMonitorAggregator *metrics.RelaysMonitorAggregator,
@@ -616,7 +627,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 
 	// Create active subscription provider storage for each unique chain
 	activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
-	sessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, smartRouterMetricsManager, smartRouterReportsManager, smartRouterIdentifier, activeSubscriptionProvidersStorage)
+	sessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, smartRouterMetricsManager, smartRouterIdentifier, activeSubscriptionProvidersStorage)
 
 	// Set callback to get Lava blockchain block height for RelaySession.Epoch
 	// Smart router doesn't connect to blockchain, so calculate approximate block height from epoch
@@ -1511,18 +1522,17 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			}
 
 			analyticsServerAddresses := AnalyticsServerAddresses{
-				MetricsListenAddress:  viper.GetString(metrics.MetricsListenFlagName),
-				RelayServerAddress:    viper.GetString(metrics.RelayServerFlagName),
-				RelayKafkaAddress:     viper.GetString(metrics.RelayKafkaFlagName),
-				RelayKafkaTopic:       viper.GetString(metrics.RelayKafkaTopicFlagName),
-				RelayKafkaUsername:    viper.GetString(metrics.RelayKafkaUsernameFlagName),
-				RelayKafkaPassword:    viper.GetString(metrics.RelayKafkaPasswordFlagName),
-				RelayKafkaMechanism:   viper.GetString(metrics.RelayKafkaMechanismFlagName),
-				RelayKafkaTLSEnabled:  viper.GetBool(metrics.RelayKafkaTLSEnabledFlagName),
-				RelayKafkaTLSInsecure: viper.GetBool(metrics.RelayKafkaTLSInsecureFlagName),
-				ReportsAddressFlag:    viper.GetString(reportsSendBEAddress),
-				OptimizerQoSAddress:   viper.GetString(common.OptimizerQosServerAddressFlag),
-				OptimizerQoSListen:    viper.GetBool(common.OptimizerQosListenFlag),
+				MetricsListenAddress:   viper.GetString(metrics.MetricsListenFlagName),
+				UsageOTelEnabled:       viper.GetBool(metrics.UsageOTelEnabledFlagName),
+				UsageOTelEndpoint:      viper.GetString(metrics.UsageOTelEndpointFlagName),
+				UsageOTelInsecure:      viper.GetBool(metrics.UsageOTelInsecureFlagName),
+				UsageOTelQueueSize:     viper.GetInt(metrics.UsageOTelQueueSizeFlagName),
+				UsageOTelBatchSize:     viper.GetInt(metrics.UsageOTelBatchSizeFlagName),
+				UsageOTelFlushInterval: viper.GetDuration(metrics.UsageOTelFlushIntervalFlagName),
+				UsageOTelExportTimeout: viper.GetDuration(metrics.UsageOTelExportTimeoutFlagName),
+				UsageOTelServiceName:   viper.GetString(metrics.UsageOTelServiceNameFlagName),
+				UsageOTelInstanceID:    viper.GetString(metrics.UsageOTelInstanceIDFlagName),
+				OptimizerQoSListen:     viper.GetBool(common.OptimizerQosListenFlag),
 			}
 
 			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)
@@ -1644,14 +1654,15 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 		utils.LavaFormatFatal("failed binding min selection chance flag", err)
 	}
 	cmdRPCSmartRouter.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
-	cmdRPCSmartRouter.Flags().String(metrics.RelayServerFlagName, metrics.DisabledFlagOption, "the http address of the relay usage server api endpoint (example http://127.0.0.1:8080)")
-	cmdRPCSmartRouter.Flags().String(metrics.RelayKafkaFlagName, metrics.DisabledFlagOption, "the kafka address for sending relay metrics (example localhost:9092)")
-	cmdRPCSmartRouter.Flags().String(metrics.RelayKafkaTopicFlagName, "lava-relay-metrics", "the kafka topic for sending relay metrics")
-	cmdRPCSmartRouter.Flags().String(metrics.RelayKafkaUsernameFlagName, "", "kafka username for SASL authentication")
-	cmdRPCSmartRouter.Flags().String(metrics.RelayKafkaPasswordFlagName, "", "kafka password for SASL authentication")
-	cmdRPCSmartRouter.Flags().String(metrics.RelayKafkaMechanismFlagName, "SCRAM-SHA-512", "kafka SASL mechanism (PLAIN, SCRAM-SHA-256, SCRAM-SHA-512)")
-	cmdRPCSmartRouter.Flags().Bool(metrics.RelayKafkaTLSEnabledFlagName, false, "enable TLS for kafka connections")
-	cmdRPCSmartRouter.Flags().Bool(metrics.RelayKafkaTLSInsecureFlagName, false, "skip TLS certificate verification for kafka connections")
+	cmdRPCSmartRouter.Flags().Bool(metrics.UsageOTelEnabledFlagName, false, "emit per-relay usage events as OTLP logs to a collector (off by default; relay path pays nothing when off)")
+	cmdRPCSmartRouter.Flags().String(metrics.UsageOTelEndpointFlagName, "", "OTLP/HTTP endpoint for the local OTel collector (default: localhost:4318 / OTEL_EXPORTER_OTLP_ENDPOINT)")
+	cmdRPCSmartRouter.Flags().Bool(metrics.UsageOTelInsecureFlagName, true, "skip TLS for OTLP exporter (default true; expected target is a sidecar collector)")
+	cmdRPCSmartRouter.Flags().Int(metrics.UsageOTelQueueSizeFlagName, 50000, "in-memory queue capacity for usage events; full queue drops events")
+	cmdRPCSmartRouter.Flags().Int(metrics.UsageOTelBatchSizeFlagName, 1000, "usage event batch size flush trigger")
+	cmdRPCSmartRouter.Flags().Duration(metrics.UsageOTelFlushIntervalFlagName, 500*time.Millisecond, "usage event time-based flush trigger")
+	cmdRPCSmartRouter.Flags().Duration(metrics.UsageOTelExportTimeoutFlagName, 10*time.Second, "OTLP per-batch export timeout")
+	cmdRPCSmartRouter.Flags().String(metrics.UsageOTelServiceNameFlagName, "lava-rpcsmartrouter", "OTel service.name resource attribute")
+	cmdRPCSmartRouter.Flags().String(metrics.UsageOTelInstanceIDFlagName, "", "OTel service.instance.id resource attribute (default: hostname-pid; useful when running multiple smart-router processes per host)")
 	cmdRPCSmartRouter.Flags().Bool(DebugRelaysFlagName, false, "adding debug information to relays")
 	cmdRPCSmartRouter.Flags().Bool(common.EnableSelectionStatsHeaderFlag, false, "enable selection stats header for debugging provider selection")
 	// CORS related flags
@@ -1664,7 +1675,6 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	// relays health check related flags
 	cmdRPCSmartRouter.Flags().Bool(common.RelaysHealthEnableFlag, RelaysHealthEnableFlagDefault, "enables relays health check")
 	cmdRPCSmartRouter.Flags().Duration(common.RelayHealthIntervalFlag, RelayHealthIntervalFlagDefault, "interval between relay health checks")
-	cmdRPCSmartRouter.Flags().String(reportsSendBEAddress, "", "address to send reports to")
 	cmdRPCSmartRouter.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
 	cmdRPCSmartRouter.Flags().StringArray(common.UseStaticSpecFlag, nil, "load specs from file, directory, or remote URL (GitHub/GitLab). Can be specified multiple times; later sources override earlier ones for same chain ID")
 	cmdRPCSmartRouter.Flags().String(common.GitHubTokenFlag, "", "GitHub personal access token for accessing private repositories and higher API rate limits (5,000 requests/hour vs 60 for unauthenticated)")
@@ -1672,11 +1682,11 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 	cmdRPCSmartRouter.Flags().Duration(common.EpochDurationFlag, 0, "duration of each epoch for time-based epoch system (e.g., 30m, 1h). If not set, epochs are disabled")
 	cmdRPCSmartRouter.Flags().IntVar(&relaycore.RelayRetryLimit, common.SetRelayRetryLimitFlag, 2, "max total relay retry attempts across all error types (node and protocol errors combined; 0 disables retries)")
 	cmdRPCSmartRouter.Flags().BoolVar(&rpcInterfaceMessages.BatchNodeErrorOnAny, common.BatchNodeErrorOnAnyFlag, false, "if true, batch requests are treated as node errors if ANY sub-request fails; if false (default), only if ALL fail")
-	// optimizer qos reports
-	cmdRPCSmartRouter.Flags().String(common.OptimizerQosServerAddressFlag, "", "address to send optimizer qos reports to")
+	// optimizer qos reports — emission goes through the OTel usage sink
+	// when --usage-otel-enabled is set. The Listen flag is independent
+	// (it just exposes a Prometheus-style endpoint for QoS scraping).
 	cmdRPCSmartRouter.Flags().Bool(common.OptimizerQosListenFlag, false, "enable listening for optimizer qos reports on metrics endpoint i.e GET -> localhost:7779/provider_optimizer_metrics")
-	cmdRPCSmartRouter.Flags().DurationVar(&metrics.OptimizerQosServerPushInterval, common.OptimizerQosServerPushIntervalFlag, time.Minute*5, "interval to push optimizer qos reports")
-	cmdRPCSmartRouter.Flags().DurationVar(&metrics.OptimizerQosServerSamplingInterval, common.OptimizerQosServerSamplingIntervalFlag, time.Second*1, "interval to sample optimizer qos reports")
+	cmdRPCSmartRouter.Flags().Duration(common.OptimizerQosServerSamplingIntervalFlag, time.Second*1, "interval to sample optimizer qos reports")
 	// metrics
 	cmdRPCSmartRouter.Flags().BoolVar(&metrics.ShowProviderEndpointInMetrics, common.ShowProviderEndpointInMetricsFlagName, metrics.ShowProviderEndpointInMetrics, "show provider endpoint in consumer metrics")
 	// websocket flags
