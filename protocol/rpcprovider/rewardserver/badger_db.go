@@ -48,19 +48,15 @@ func (mdb *BadgerDB) BatchSave(dbEntries []*DBEntry) error {
 }
 
 func (mdb *BadgerDB) saveAll() error {
-	err := mdb.db.Update(func(txn *badger.Txn) error {
-		for key, data := range mdb.rewards {
-			e := badger.NewEntry([]byte(key), data.data).WithTTL(data.remainingTtl())
-			err := txn.SetEntry(e)
-			if err != nil {
-				return err
-			}
+	wb := mdb.db.NewWriteBatch()
+	for key, data := range mdb.rewards {
+		e := badger.NewEntry([]byte(key), data.data).WithTTL(data.remainingTtl())
+		if err := wb.SetEntry(e); err != nil {
+			wb.Cancel()
+			return err
 		}
-
-		return nil
-	})
-
-	return err
+	}
+	return wb.Flush()
 }
 
 func (mdb *BadgerDB) FindOne(key string) (one []byte, err error) {

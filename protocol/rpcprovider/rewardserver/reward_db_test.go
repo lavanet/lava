@@ -184,6 +184,43 @@ func TestDeleteEpochRewards(t *testing.T) {
 	require.Equal(t, 0, len(rewards))
 }
 
+func TestSaveBatchLargePayload(t *testing.T) {
+	// This test verifies that BatchSave handles a large number of entries with
+	// large content hashes that would exceed BadgerDB's single transaction size limit.
+	// Before the fix, this would fail with: "Txn is too big to fit into one request"
+	db := rewardserver.NewMemoryDB("specId")
+	rs := rewardserver.NewRewardDB()
+	err := rs.AddDB(db)
+	require.NoError(t, err)
+
+	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+
+	const numEntries = 2000
+	// Use a large content hash to make each entry ~10KB, pushing the total
+	// batch well over BadgerDB's ~9.6MB transaction limit.
+	largeContentHash := make([]byte, 10*1024)
+
+	cpes := make([]*rewardserver.RewardEntity, numEntries)
+	for i := range numEntries {
+		proof := common.BuildRelayRequestWithSession(ctx, "providerAddr", largeContentHash, uint64(i+1), uint64(0), "specId", nil)
+		cpes[i] = &rewardserver.RewardEntity{
+			Epoch:        uint64(proof.Epoch),
+			ConsumerAddr: fmt.Sprintf("consumerAddr%d", i),
+			ConsumerKey:  fmt.Sprintf("consumerKey%d", i),
+			SessionId:    proof.SessionId,
+			Proof:        proof,
+		}
+	}
+
+	err = rs.BatchSave(cpes)
+	require.NoError(t, err)
+
+	rewards, err := rs.FindAll()
+	require.NoError(t, err)
+	// All entries share the same epoch, so there should be 1 epoch with all sessions
+	require.Equal(t, 1, len(rewards))
+}
+
 func TestRewardsWithTTL(t *testing.T) {
 	db := rewardserver.NewMemoryDB("spec")
 	// really really short TTL to make sure the rewards are not queryable
