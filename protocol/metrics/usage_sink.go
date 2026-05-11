@@ -21,12 +21,12 @@ type UsageEventSink interface {
 	Close()
 }
 
-// SinkStats is a snapshot of producer-side counters. Each value is monotonic
-// across the sink's lifetime.
+// SinkStats is a snapshot of producer-side counters. Sent is monotonic
+// across the sink's lifetime and counts records handed to the underlying
+// SDK; whether they actually reach the collector is the SDK's concern and
+// surfaces through its own diagnostics, not this struct.
 type SinkStats struct {
-	Sent    uint64
-	Failed  uint64
-	Dropped uint64
+	Sent uint64
 }
 
 // NoopUsageSink is the zero-cost default. When usage emission is disabled

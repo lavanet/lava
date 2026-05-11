@@ -113,12 +113,29 @@ func (c *UpstreamGRPCStreamConnection) connect(ctx context.Context, timeout time
 	connectCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	grpcConn.Connect()
-	if !grpcConn.WaitForStateChange(connectCtx, connectivity.Idle) {
-		_ = grpcConn.Close()
-		err := connectCtx.Err()
-		c.healthy.Store(false)
-		c.lastError.Store(err)
-		return fmt.Errorf("failed to dial gRPC %s: %w", c.sanitizedURL, err)
+	// WaitForStateChange returns on ANY state transition (including
+	// Connecting → TransientFailure), so a single call would accept a
+	// channel that's failing. Loop until we either reach Ready or the
+	// timeout fires — matching WithBlock semantics.
+	for {
+		state := grpcConn.GetState()
+		if state == connectivity.Ready {
+			break
+		}
+		if state == connectivity.Shutdown {
+			_ = grpcConn.Close()
+			err := fmt.Errorf("gRPC channel entered Shutdown before Ready")
+			c.healthy.Store(false)
+			c.lastError.Store(err)
+			return fmt.Errorf("failed to dial gRPC %s: %w", c.sanitizedURL, err)
+		}
+		if !grpcConn.WaitForStateChange(connectCtx, state) {
+			_ = grpcConn.Close()
+			err := connectCtx.Err()
+			c.healthy.Store(false)
+			c.lastError.Store(err)
+			return fmt.Errorf("failed to dial gRPC %s: %w", c.sanitizedURL, err)
+		}
 	}
 
 	c.conn = grpcConn
