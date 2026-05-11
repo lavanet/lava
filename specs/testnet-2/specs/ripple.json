@@ -147,7 +147,17 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0
+                                "extra_compute_units": 0,
+                                "parsers": [
+                                    {
+                                        "parse_path": ".params.[0].ledger_index_min",
+                                        "parse_type": "BLOCK_EARLIEST"
+                                    },
+                                    {
+                                        "parse_path": ".params.[0].ledger_index_max",
+                                        "parse_type": "BLOCK_LATEST"
+                                    }
+                                ]
                             },
                             {
                                 "name": "submit",
@@ -356,6 +366,432 @@
                                 "extra_compute_units": 0
                             },
                             {
+                                "name": "account_nfts",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "ledger_index"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value": "validated"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "account_objects",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "ledger_index"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value": "validated"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "account_offers",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "ledger_index"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value": "validated"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "noripple_check",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "ledger_index"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value": "validated"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "ledger_data",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "ledger_index"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value": "validated"
+                                },
+                                "compute_units": 60,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "ledger_entry",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "ledger_index"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value": "validated"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "transaction_entry",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "ledger_index"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value": "validated"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "amm_info",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "ledger_index"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value": "validated"
+                                },
+                                "compute_units": 60,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "deposit_authorized",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "ledger_index"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value": "validated"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "nft_buy_offers",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "ledger_index"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value": "validated"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "nft_sell_offers",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "ledger_index"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value": "validated"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "path_find",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 60,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "channel_verify",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "feature",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "server_definitions",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "manifest",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "nft_info",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "ledger_index"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value": "validated"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "nft_history",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "ledger_index"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value": "validated"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "nfts_by_issuer",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "ledger_index"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value": "validated"
+                                },
+                                "compute_units": 60,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "ping",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "random",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "vault_info",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "ledger_index"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value": "validated"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
                                 "name": "subscribe",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -435,13 +871,11 @@
                                 "function_template": "{\"method\":\"ledger\",\"params\":[{\"ledger_index\":32570,\"transactions\":false,\"expand\":false,\"owner_funds\":false}]}",
                                 "result_parsing": {
                                     "parser_arg": [
-                                        "closed",
-                                        "ledger",
-                                        "ledger_index",
+                                        "0",
                                         "ledger",
                                         "ledger_index"
                                     ],
-                                    "parser_func": "PARSE_DICTIONARY"
+                                    "parser_func": "PARSE_CANONICAL"
                                 },
                                 "api_name": "ledger"
                             }
@@ -490,7 +924,7 @@
                 "block_distance_for_finalized_data": 4,
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 4000,
-                "allowed_block_lag_for_qos_sync": 2,
+                "allowed_block_lag_for_qos_sync": 3,
                 "imports": [
                     "XRP"
                 ],
