@@ -36,9 +36,9 @@ import (
 func TestWSPushEventForwardingHasNoTracing(t *testing.T) {
 	const file = "consumer_ws_subscription_manager.go"
 	pushEventFunctions := map[string]bool{
-		"listenForSubscriptionMessages":        true,
+		"listenForSubscriptionMessages":         true,
 		"handleIncomingSubscriptionNodeMessage": true,
-		"verifySubscriptionMessage":            true,
+		"verifySubscriptionMessage":             true,
 	}
 
 	fset := token.NewFileSet()
