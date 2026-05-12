@@ -17,6 +17,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	common "github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/metrics"
+	"github.com/lavanet/lava/v5/protocol/tracing"
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
@@ -462,6 +463,7 @@ func createAndSetupBaseAppListener(cmdFlags common.ConsumerCmdFlags, healthCheck
 		JSONDecoder: json.Unmarshal,
 	})
 	app.Use(favicon.New())
+	app.Use(tracing.FiberMiddleware())
 	applyResponseCompression(app, cmdFlags.ResponseCompression)
 	app.Use(func(c *fiber.Ctx) error {
 		// we set up wild card by default.

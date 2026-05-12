@@ -29,6 +29,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/performance"
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
 	rewardserver "github.com/lavanet/lava/v5/protocol/rpcprovider/rewardserver"
+	"github.com/lavanet/lava/v5/protocol/tracing"
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/lavaslices"
@@ -270,6 +271,21 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	if txId := lavaprotocol.GetTxId(request.RelayData); txId != "" {
 		ctx = utils.AppendTxId(ctx, txId)
 	}
+	guid, _ := utils.GetUniqueIdentifier(ctx)
+	if guid == 0 {
+		guid = utils.GenerateUniqueIdentifier()
+		ctx = utils.WithUniqueIdentifier(ctx, guid)
+	}
+	ctx, span := tracing.StartProviderHandleRelay(ctx, guid, rpcps.rpcProviderEndpoint.ChainID, rpcps.rpcProviderEndpoint.ApiInterface)
+	defer span.End()
+	if tracing.IsTraceBodyEnabled() && request.RelayData != nil {
+		tracing.RecordBody(span, tracing.AttrRelayRequestBody, request.RelayData.Data)
+	}
+	defer func() {
+		if err != nil {
+			tracing.RecordError(span, err)
+		}
+	}()
 	startTime := time.Now()
 
 	utils.LavaFormatInfo("Got relay request from consumer",
@@ -470,6 +486,9 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 }
 
 func (rpcps *RPCProviderServer) finalizeSession(isRelayError bool, ctx context.Context, consumerAddress sdk.AccAddress, reply *pairingtypes.RelayReply, chainMessage chainlib.ChainMessage, relaySession *lavasession.SingleProviderSession, request *pairingtypes.RelayRequest, replyWrapper *chainlib.RelayReplyWrapper, err error) error {
+	ctx, span := tracing.StartProviderFinalizeSession(ctx)
+	defer span.End()
+
 	if isRelayError {
 		// failed to send relay. we need to adjust session state. cuSum and relayNumber.
 		relayFailureError := rpcps.providerSessionManager.OnSessionFailure(relaySession, request.RelaySession.RelayNum)
@@ -538,6 +557,13 @@ func (rpcps *RPCProviderServer) finalizeSession(isRelayError bool, ctx context.C
 }
 
 func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingtypes.RelayRequest) (relaySession *lavasession.SingleProviderSession, consumerAddress sdk.AccAddress, chainMessage chainlib.ChainMessage, err error) {
+	ctx, span := tracing.StartProviderInitRelay(ctx)
+	defer span.End()
+	defer func() {
+		if err != nil {
+			tracing.RecordError(span, err)
+		}
+	}()
 	relaySession, consumerAddress, err = rpcps.verifyRelaySession(ctx, request)
 	if err != nil {
 		return nil, nil, nil, err
@@ -585,6 +611,8 @@ func (rpcps *RPCProviderServer) ValidateAddonsExtensions(addon string, extension
 }
 
 func (rpcps *RPCProviderServer) ValidateRequest(chainMessage chainlib.ChainMessage, request *pairingtypes.RelayRequest, ctx context.Context) error {
+	ctx, span := tracing.StartProviderValidateRequest(ctx)
+	defer span.End()
 	if request.RelayData.RequestBlock == spectypes.NOT_APPLICABLE {
 		return nil
 	}
@@ -637,7 +665,13 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 		return common.LogCodedError("invalid relay subscribe request, internal fields are nil", nil, common.LavaErrorInvalidRelayRequest, rpcps.rpcProviderEndpoint.ChainID, 0, "")
 	}
 
-	ctx := utils.AppendUniqueIdentifier(context.Background(), lavaprotocol.GetSalt(request.RelayData))
+	// WithoutCancel keeps the OTel trace context flowing from otelgrpc's
+	// auto-created SERVER span, but breaks the cancellation chain — when the
+	// subscription client disconnects srv.Context() cancels, and any deferred
+	// RemoveConsumer / unsubscribeNodeSubscription path needs an un-canceled
+	// ctx for its WithTimeout cleanup to actually wait. Trace values still
+	// propagate; only cancellation is gated.
+	ctx := utils.AppendUniqueIdentifier(context.WithoutCancel(srv.Context()), lavaprotocol.GetSalt(request.RelayData))
 	utils.LavaFormatDebug("Provider got relay subscribe request",
 		utils.LogAttr("request.SessionId", request.RelaySession.SessionId),
 		utils.LogAttr("request.relayNumber", request.RelaySession.RelayNum),
@@ -949,7 +983,15 @@ func (rpcps *RPCProviderServer) handleRelayErrorStatus(err error) error {
 	return err
 }
 
-func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request *pairingtypes.RelayRequest, consumerAddr sdk.AccAddress, chainMsg chainlib.ChainMessage) (*pairingtypes.RelayReply, *chainlib.RelayReplyWrapper, error) {
+func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request *pairingtypes.RelayRequest, consumerAddr sdk.AccAddress, chainMsg chainlib.ChainMessage) (reply *pairingtypes.RelayReply, replyWrapper *chainlib.RelayReplyWrapper, err error) {
+	ctx, span := tracing.StartProviderTryRelay(ctx)
+	defer span.End()
+	defer func() {
+		if err != nil {
+			tracing.RecordError(span, err)
+		}
+	}()
+
 	errV := rpcps.ValidateRequest(chainMsg, request, ctx)
 	if errV != nil {
 		return nil, nil, errV
@@ -965,7 +1007,6 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 	relayTimeout := chainlib.GetRelayTimeout(chainMsg, averageBlockTime)
 
 	// Handle consistency: wait for chain tracker to catch up with consumer's seenBlock if needed (if enabled via CLI flag)
-	var err error
 	var latestBlock int64
 	if rpcps.enableConsistency {
 		latestBlock, _, err = rpcps.handleConsistency(
@@ -992,9 +1033,7 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 	requestedBlockHash, finalized = rpcps.GetParametersForCache(ctx, request, latestBlock, blockDistanceToFinalization)
 
 	// currently used when cache hits.
-	var reply *pairingtypes.RelayReply
 	var ignoredMetadata []pairingtypes.Metadata
-	var replyWrapper *chainlib.RelayReplyWrapper
 
 	if requestedBlockHash != nil || finalized { // try get reply from cache
 		utils.LavaFormatDebug("cache: attempting lookup",
@@ -1057,7 +1096,19 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 	return reply, replyWrapper, nil
 }
 
-func (rpcps *RPCProviderServer) tryGetRelayReplyFromCache(ctx context.Context, request *pairingtypes.RelayRequest, requestedBlockHash []byte, finalized bool) (*pairingtypes.RelayReply, []pairingtypes.Metadata, error) {
+func (rpcps *RPCProviderServer) tryGetRelayReplyFromCache(ctx context.Context, request *pairingtypes.RelayRequest, requestedBlockHash []byte, finalized bool) (reply *pairingtypes.RelayReply, ignoredMetadata []pairingtypes.Metadata, err error) {
+	ctx, span := tracing.StartProviderCacheLookup(ctx)
+	defer span.End()
+	cacheStart := time.Now()
+	hit := false
+	defer func() {
+		// Cache misses (including "backend not running") are not span errors —
+		// they just mean "no cache result, fall back to upstream". The cache.hit
+		// attribute and latency carry the operator signal. Matches the
+		// consumer-side pattern in sendRelayToProvider.
+		tracing.RecordCacheLookup(ctx, span, "provider", hit, float64(time.Since(cacheStart).Milliseconds()))
+	}()
+
 	cache := rpcps.cache
 	hashKey, outPutFormatter, hashErr := chainlib.HashCacheRequest(request.RelayData, rpcps.rpcProviderEndpoint.ChainID)
 	if hashErr != nil {
@@ -1080,8 +1131,9 @@ func (rpcps *RPCProviderServer) tryGetRelayReplyFromCache(ctx context.Context, r
 		return nil, nil, err
 	}
 
-	reply := cacheReply.GetReply()
+	reply = cacheReply.GetReply()
 	if reply != nil {
+		hit = true
 		reply.Data = outPutFormatter(reply.Data) // setting request id back to reply.
 		utils.LavaFormatDebug("cache hit",
 			utils.LogAttr("chainID", rpcps.rpcProviderEndpoint.ChainID),
@@ -1100,12 +1152,15 @@ func (rpcps *RPCProviderServer) tryGetRelayReplyFromCache(ctx context.Context, r
 		)
 	}
 
-	ignoredMetadata := cacheReply.GetOptionalMetadata()
+	ignoredMetadata = cacheReply.GetOptionalMetadata()
 
 	return reply, ignoredMetadata, err
 }
 
 func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, request *pairingtypes.RelayRequest, chainMsg chainlib.ChainMessage, replyWrapper *chainlib.RelayReplyWrapper, latestBlock int64, averageBlockTime time.Duration, requestedBlockHash []byte, finalized bool, ignoredMetadata []pairingtypes.Metadata) {
+	ctx, span := tracing.StartProviderCacheStore(ctx)
+	defer span.End()
+
 	cache := rpcps.cache
 	reply := replyWrapper.RelayReply
 
@@ -1207,6 +1262,19 @@ func (rpcps *RPCProviderServer) GetParametersForCache(ctx context.Context, reque
 // handleConsistency waits for the chain tracker to catch up with the consumer's seen block if needed
 // This ensures the provider doesn't return stale data when the consumer has already seen a newer block
 func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, baseRelayTimeout time.Duration, seenBlock int64, requestBlock int64, averageBlockTime time.Duration, blockLagForQosSync int64, blockDistanceToFinalization uint32, blocksInFinalizationData uint32) (latestBlock int64, timeSlept time.Duration, err error) {
+	target := requestBlock
+	if seenBlock > requestBlock {
+		target = seenBlock
+	}
+	ctx, span := tracing.StartProviderHandleConsistency(ctx, target)
+	defer span.End()
+	bailed := false
+	defer func() {
+		tracing.RecordHandleConsistencyResult(span, timeSlept.Milliseconds(), bailed)
+		if err != nil {
+			tracing.RecordError(span, err)
+		}
+	}()
 	latestBlock, changeTime := rpcps.chainTracker.GetLatestBlockNum()
 	if requestBlock == spectypes.LATEST_BLOCK && seenBlock > latestBlock {
 		// we can't just replace requested block here with what we have, it must be with at least seen block
@@ -1248,6 +1316,7 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, baseRelay
 	}
 	// we only bail if there is no chance for the provider to get to the requested block and the consumer has already got a response from a different provider with that block
 	if (blockGap > blockLagForQosSync*2 || (blockGap > 1 && probabilityBlockError > 0.4)) && (seenBlock >= latestBlock) {
+		bailed = true
 		return latestBlock, 0, utils.LavaFormatWarning("Requested a block that is too new", protocolerrors.ConsistencyError, utils.Attribute{Key: "blockGap", Value: blockGap}, utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "seenBlock", Value: seenBlock}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
 	}
 
@@ -1269,6 +1338,7 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, baseRelay
 	latestBlock, _ = rpcps.chainTracker.GetLatestBlockNum()
 	if requestBlock > latestBlock && seenBlock > latestBlock {
 		// meaning we can't guarantee it will work since chainTracker didn't see this requested block yet
+		bailed = true
 		return 0, sleptTime, utils.LavaFormatWarning("requested block is too new", nil, utils.Attribute{Key: "sleptTime", Value: sleptTime}, utils.Attribute{Key: "requested", Value: requestBlock}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "seenBlock", Value: seenBlock})
 	}
 	if debugConsistency {
@@ -1324,7 +1394,15 @@ func (rpcps *RPCProviderServer) GetLatestBlockData(ctx context.Context, blockDis
 	return latestBlock, requestedHashes, changeTime, err
 }
 
-func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, request *pairingtypes.RelayRequest, chainMsg chainlib.ChainMessage, consumerAddr sdk.AccAddress) (*chainlib.RelayReplyWrapper, error) {
+func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, request *pairingtypes.RelayRequest, chainMsg chainlib.ChainMessage, consumerAddr sdk.AccAddress) (replyWrapper *chainlib.RelayReplyWrapper, err error) {
+	ctx, span := tracing.StartProviderSendUpstream(ctx)
+	defer span.End()
+	defer func() {
+		if err != nil {
+			tracing.RecordError(span, err)
+		}
+	}()
+
 	if debugLatency {
 		utils.LavaFormatDebug("sending relay to node", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
 	}
@@ -1340,11 +1418,12 @@ func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, requ
 	}
 
 	// use the provider state machine to send the messages
-	relayReplayWrapper, latency, err := rpcps.providerStateMachine.SendNodeMessage(ctx, chainMsg, request)
+	var latency time.Duration
+	replyWrapper, latency, err = rpcps.providerStateMachine.SendNodeMessage(ctx, chainMsg, request)
 	if latency.Milliseconds() != 0 { // if node error empty time is returned
 		go rpcps.metrics.AddFunctionLatency(chainMsg.GetApi().Name, latency)
 	}
-	return relayReplayWrapper, err
+	return replyWrapper, err
 }
 
 func (rpcps *RPCProviderServer) TryRelayUnsubscribe(ctx context.Context, request *pairingtypes.RelayRequest, consumerAddress sdk.AccAddress, chainMessage chainlib.ChainMessage) (*pairingtypes.RelayReply, error) {

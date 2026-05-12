@@ -59,14 +59,17 @@ import (
 //	  (each has a TRACES_-prefixed per-signal variant)
 const TraceBodyFlag = "otel-trace-body"
 
-// defaultServiceName is used when OTEL_SERVICE_NAME is not set.
-const defaultServiceName = "lava-smartrouter"
-
 const shutdownTimeout = 5 * time.Second
 
 // TraceConfig holds Lava-specific tracing configuration.
 // Standard OTel knobs are read from environment variables — see TraceBodyFlag doc.
 type TraceConfig struct {
+	// DefaultServiceName is the in-code default for the OTel `service.name`
+	// resource attribute. Each binary supplies its own (e.g. "lava-consumer",
+	// "lava-provider", "lava-smartrouter"). The OTel `OTEL_SERVICE_NAME` env
+	// var still wins via resource.WithFromEnv() if set. Required.
+	DefaultServiceName string
+
 	// TraceBody enables recording of request/response bodies as span attributes.
 	// Body size truncation is delegated to the SDK via SpanLimits, which
 	// reads OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT (default: unlimited).
@@ -97,6 +100,13 @@ type TraceManager struct {
 // New initialises the OTel SDK based on standard environment variables.
 // See TraceBodyFlag for the full env var contract.
 func New(ctx context.Context, cfg TraceConfig) (*TraceManager, error) {
+	if cfg.DefaultServiceName == "" {
+		return nil, utils.LavaFormatError(
+			"TraceConfig.DefaultServiceName is required",
+			nil,
+		)
+	}
+
 	if isSDKDisabled() {
 		warnIfBodySetButTracingOff(cfg)
 		return newNoop(), nil
@@ -126,7 +136,7 @@ func New(ctx context.Context, cfg TraceConfig) (*TraceManager, error) {
 	bodyAttrLimit = sdktrace.NewSpanLimits().AttributeValueLengthLimit
 
 	res, err := resource.New(ctx,
-		resource.WithAttributes(semconv.ServiceName(defaultServiceName)),
+		resource.WithAttributes(semconv.ServiceName(cfg.DefaultServiceName)),
 		resource.WithFromEnv(), // OTEL_SERVICE_NAME, OTEL_RESOURCE_ATTRIBUTES
 	)
 	if err != nil {

@@ -19,6 +19,7 @@ import (
 	typestx "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/tracing"
 
 	updaters "github.com/lavanet/lava/v5/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v5/utils"
@@ -106,7 +107,7 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx context.Con
 			return utils.LavaFormatError("Failed Simulating transaction", err)
 		}
 		// incase we got an error the tx result is basically the error
-		latestResult, err = ts.SendTxAndVerifyCommit(txfactory, msg)
+		latestResult, err = ts.SendTxAndVerifyCommit(ctx, txfactory, msg)
 		transactionResult := latestResult.RawLog
 		if err == nil { // if we get some other code which isn't 0 then keep retrying
 			success = true
@@ -184,19 +185,31 @@ func (ts *TxSender) simulateTxWithRetry(clientCtx client.Context, txfactory tx.F
 	return txfactory, 0, utils.LavaFormatError("Failed Calculating gas for reward transaction", nil)
 }
 
-func (ts *TxSender) SendTxAndVerifyCommit(txfactory tx.Factory, msg sdk.Msg) (parsedResult common.TxResultData, err error) {
+func (ts *TxSender) SendTxAndVerifyCommit(ctx context.Context, txfactory tx.Factory, msg sdk.Msg) (parsedResult common.TxResultData, err error) {
+	_, span := tracing.StartLavaChainTx(ctx, sdk.MsgTypeURL(msg))
+	defer span.End()
+	defer func() {
+		if err != nil {
+			tracing.RecordError(span, err)
+		}
+	}()
+
+	broadcastStart := time.Now()
 	myWriter := bytes.Buffer{}
 	clientCtx := ts.clientCtx
 	clientCtx.Output = &myWriter
 	clientCtx.OutputFormat = "json"
 	err = tx.GenerateOrBroadcastTxWithFactory(clientCtx, txfactory, msg)
+	broadcastMs := time.Since(broadcastStart).Milliseconds()
 	if err != nil {
 		utils.LavaFormatWarning("Sending CheckProfitabilityAndBroadCastTx failed", err, utils.Attribute{Key: "msg", Value: msg})
+		tracing.RecordLavaChainTxResult(span, broadcastMs, 0, 0, "")
 		return common.TxResultData{}, err
 	}
 	jsonParsedResult := map[string]any{}
 	err = json.Unmarshal(myWriter.Bytes(), &jsonParsedResult)
 	if err != nil {
+		tracing.RecordLavaChainTxResult(span, broadcastMs, 0, 0, "")
 		return common.TxResultData{}, utils.LavaFormatInfo("Failed unmarshaling transaction results", utils.Attribute{Key: "transactionResult", Value: myWriter.String()})
 	}
 	myWriter.Reset()
@@ -206,13 +219,19 @@ func (ts *TxSender) SendTxAndVerifyCommit(txfactory tx.Factory, msg sdk.Msg) (pa
 	resultData, err := common.ParseTransactionResult(jsonParsedResult)
 	utils.LavaFormatInfo("Sent Transaction", utils.LogAttr("Hash", hex.EncodeToString(resultData.Txhash)))
 	if err != nil {
+		tracing.RecordLavaChainTxResult(span, broadcastMs, 0, 0, hex.EncodeToString(resultData.Txhash))
 		return common.TxResultData{}, err
 	}
 	if resultData.Code != 0 {
+		tracing.RecordLavaChainTxResult(span, broadcastMs, 0, 0, hex.EncodeToString(resultData.Txhash))
 		return resultData, utils.LavaFormatInfo("Failed sending transaction, code is not 0", utils.Attribute{Key: "resultData", Value: resultData})
 	}
+
 	// now that our Tx was sent to the mempool successfully, we want to see it's result on chain
+	commitStart := time.Now()
 	resultData, err = ts.waitForTxCommit(resultData)
+	commitMs := time.Since(commitStart).Milliseconds()
+	tracing.RecordLavaChainTxResult(span, broadcastMs, commitMs, 0, hex.EncodeToString(resultData.Txhash))
 	return resultData, err
 }
 

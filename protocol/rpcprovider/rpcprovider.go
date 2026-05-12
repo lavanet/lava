@@ -29,6 +29,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/v5/protocol/statetracker"
 	"github.com/lavanet/lava/v5/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v5/protocol/tracing"
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/lavaslices"
@@ -889,6 +890,19 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			// handle flags, pass necessary fields
 			ctx := context.Background()
 
+			// Initialise OTel tracing. Standard OTel SDK environment variables drive
+			// all configuration (endpoint, sampler, service name, etc.); see the
+			// tracing.TraceBodyFlag doc-comment for the full list.
+			traceCfg := tracing.TraceConfig{
+				DefaultServiceName: "lava-provider",
+				TraceBody:          viper.GetBool(tracing.TraceBodyFlag),
+			}
+			traceManager, err := tracing.New(ctx, traceCfg)
+			if err != nil {
+				return err
+			}
+			defer traceManager.Shutdown()
+
 			networkChainId := viper.GetString(flags.FlagChainID)
 			if networkChainId == app.Name {
 				clientTomlConfig, err := config.ReadFromClientConfig(clientCtx)
@@ -1132,6 +1146,18 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().Int("heavy-queue-size", 5, "Queue size for heavy methods")
 	cmdRPCProvider.Flags().Int64("normal-max-concurrent", 100, "Max concurrent normal method calls")
 	cmdRPCProvider.Flags().Bool("disable-consistency-checks", false, "Disable provider-side consistency checks (consistency checks are enabled by default)")
+
+	// OpenTelemetry tracing.
+	// All standard OTel knobs (endpoint, sampler, service name, TLS, headers, etc.)
+	// come from OTEL_* environment variables per the SDK spec — see the
+	// tracing.TraceBodyFlag doc-comment for the full list.
+	// --otel-trace-body is the only Lava-specific knob, exposed as a CLI flag
+	// because it's a per-invocation debug toggle rather than deployment configuration.
+	cmdRPCProvider.Flags().Bool(tracing.TraceBodyFlag, false, "record request/response bodies on trace spans (size limit delegated to OTel SDK via OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT)")
+	if err := viper.BindPFlag(tracing.TraceBodyFlag, cmdRPCProvider.Flags().Lookup(tracing.TraceBodyFlag)); err != nil {
+		utils.LavaFormatFatal("failed binding --otel-trace-body flag", err)
+	}
+
 	common.AddRollingLogConfig(cmdRPCProvider)
 	return cmdRPCProvider
 }

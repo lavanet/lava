@@ -232,6 +232,16 @@ func (hc *httpConn) doRequest(ctx context.Context, msg interface{}, isJsonRPC bo
 	req.Header = hc.headers.Clone()
 	hc.mu.Unlock()
 
+	// Merge per-request headers (e.g. W3C trace context) without touching the
+	// shared client state — safe under concurrent calls on this client.
+	if reqHeaders := headersFromContext(ctx); reqHeaders != nil {
+		for k, vv := range reqHeaders {
+			for _, v := range vv {
+				req.Header.Set(k, v)
+			}
+		}
+	}
+
 	// do request
 	resp, err := hc.client.Do(req)
 	if resp != nil {

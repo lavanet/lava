@@ -21,6 +21,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/parser"
+	"github.com/lavanet/lava/v5/protocol/tracing"
 
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
@@ -426,7 +427,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 		metricsData.SetProcessingTimestampBeforeRelay(startTime)
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(fiberCtx.UserContext())
 		defer cancel()
 		guid := utils.GenerateUniqueIdentifier()
 		ctx = utils.WithUniqueIdentifier(ctx, guid)
@@ -664,6 +665,13 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 }
 
 func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+	ctx, span := tracing.StartClientSpan(ctx, tracing.SpanChainproxyJSONRPC)
+	defer span.End()
+	defer func() {
+		if err != nil {
+			tracing.RecordError(span, err)
+		}
+	}()
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.JsonrpcMessage)
 	if !ok {
@@ -702,6 +710,19 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 				defer rpc.SetHeader(metadata.Name, "")
 			}
 		}
+	}
+	// Inject W3C trace context as per-request headers via context. Using
+	// rpc.SetHeader for this would race under concurrent relays since the
+	// rpcclient is shared (Connector.GetRpc returns the same instance) — the
+	// (set, send, clear) sequence isn't atomic.
+	otelHeaders := map[string]string{}
+	tracing.InjectGRPC(ctx, otelHeaders)
+	if len(otelHeaders) > 0 {
+		h := make(http.Header, len(otelHeaders))
+		for k, v := range otelHeaders {
+			h.Set(k, v)
+		}
+		ctx = rpcclient.WithHeaders(ctx, h)
 	}
 	var nodeErr error
 	if ch != nil {

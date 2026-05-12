@@ -16,6 +16,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	grpc "google.golang.org/grpc"
@@ -66,6 +67,7 @@ func NewProviderListener(ctx context.Context, networkAddress lavasession.Network
 	opts := []grpc.ServerOption{
 		grpc.MaxRecvMsgSize(1024 * 1024 * 512), // setting receive size to 512mb for large debug responses
 		grpc.MaxSendMsgSize(1024 * 1024 * 512), // setting send size to 512mb for large debug responses
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	}
 	grpcServer := grpc.NewServer(opts...)
 	wrappedServer := grpcweb.WrapServer(grpcServer)

@@ -192,7 +192,7 @@ func TestRelayInnerProviderUniqueIdFlow(t *testing.T) {
 	callRelayInner := func() error {
 		// Reset the trailer before each call to ensure the mock sets it fresh
 		relayResult.ProviderTrailer = nil
-		_, err, _ := rpcConsumerServer.relayInner(context.Background(), singleConsumerSession, relayResult, 1, chainMsg, "", nil)
+		_, err, _ := rpcConsumerServer.relayInner(context.Background(), singleConsumerSession, relayResult, 1, chainMsg, "", nil, 0)
 		return err
 	}
 
