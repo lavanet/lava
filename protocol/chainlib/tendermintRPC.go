@@ -23,6 +23,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/parser"
+	"github.com/lavanet/lava/v5/protocol/tracing"
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
@@ -447,7 +448,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 		metricsData.SetProcessingTimestampBeforeRelay(startTime)
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(fiberCtx.UserContext())
 		guid := utils.GenerateUniqueIdentifier()
 		ctx = utils.WithUniqueIdentifier(ctx, guid)
 		defer cancel() // incase there's a problem make sure to cancel the connection
@@ -525,7 +526,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		query := "?" + string(fiberCtx.Request().URI().QueryString())
 		path := fiberCtx.Params("*")
 		dappID := extractDappIDFromFiberContext(fiberCtx)
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(fiberCtx.UserContext())
 		guid := utils.GenerateUniqueIdentifier()
 		ctx = utils.WithUniqueIdentifier(ctx, guid)
 		defer cancel() // incase there's a problem make sure to cancel the connection
@@ -628,6 +629,13 @@ func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEnd
 }
 
 func (cp *tendermintRpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+	ctx, span := tracing.StartClientSpan(ctx, tracing.SpanChainproxyTendermintRPC)
+	defer span.End()
+	defer func() {
+		if err != nil {
+			tracing.RecordError(span, err)
+		}
+	}()
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.TendermintrpcMessage)
 	if !ok {
@@ -697,6 +705,13 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 	cp.NodeUrl.SetAuthHeaders(ctx, req.Header.Set)
 
 	cp.NodeUrl.SetIpForwardingIfNecessary(ctx, req.Header.Set)
+
+	// Inject W3C trace context into outbound upstream-node HTTP headers.
+	otelHeaders := map[string]string{}
+	tracing.InjectGRPC(ctx, otelHeaders)
+	for name, value := range otelHeaders {
+		req.Header.Set(name, value)
+	}
 	// send the http request and get the response
 	res, err := httpClient.Do(req)
 	if res != nil {
@@ -761,6 +776,21 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 			rpc.SetHeader(metadata.Name, metadata.Value)
 			// clear this header upon function completion so it doesn't last in the next usage from the rpc pool
 			defer rpc.SetHeader(metadata.Name, "")
+		}
+	}
+	// Inject W3C trace context as per-request headers via context. Using
+	// rpc.SetHeader for this would race under concurrent relays since the
+	// rpcclient is shared (Connector.GetRpc returns the same instance) — the
+	// (set, send, clear) sequence isn't atomic.
+	{
+		otelHeaders := map[string]string{}
+		tracing.InjectGRPC(ctx, otelHeaders)
+		if len(otelHeaders) > 0 {
+			h := make(http.Header, len(otelHeaders))
+			for k, v := range otelHeaders {
+				h.Set(k, v)
+			}
+			ctx = rpcclient.WithHeaders(ctx, h)
 		}
 	}
 	// If ch is not nil do subscription

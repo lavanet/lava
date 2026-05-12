@@ -6,6 +6,7 @@ import (
 	"time"
 
 	hybrid_client "github.com/lavanet/lava/v5/protocol/statetracker/hybridclient"
+	"github.com/lavanet/lava/v5/protocol/tracing"
 	downtimev1 "github.com/lavanet/lava/v5/x/downtime/v1"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -59,7 +60,12 @@ func NewStateQueryAccessInst(clientCtx client.Context) *StateQueryAccessInst {
 	if !ok {
 		utils.LavaFormatFatal("failed casting tendermint rpc from client context", nil)
 	}
-	sq := &StateQueryAccessInst{ClientConn: clientCtx, tendermintRPC: tenderRpc, TendermintRPC: clientCtx.Client, clientCtx: clientCtx}
+	sq := &StateQueryAccessInst{
+		ClientConn:    tracing.WrapClientConn(clientCtx),
+		tendermintRPC: tenderRpc,
+		TendermintRPC: clientCtx.Client,
+		clientCtx:     clientCtx,
+	}
 	sq.TryConnectingClients()
 	return sq
 }

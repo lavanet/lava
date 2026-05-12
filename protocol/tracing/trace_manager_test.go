@@ -43,7 +43,7 @@ func TestNew_Disabled(t *testing.T) {
 				t.Setenv(k, v)
 			}
 
-			tm, err := New(context.Background(), TraceConfig{TraceBody: true})
+			tm, err := New(context.Background(), TraceConfig{DefaultServiceName: "lava-test-binary", TraceBody: true})
 			require.NoError(t, err)
 			require.NotNil(t, tm)
 
@@ -227,6 +227,25 @@ func clearTracingEnv(t *testing.T) {
 		t.Setenv(k, "") // register cleanup
 		os.Unsetenv(k)  // then actually unset for the test body
 	}
+}
+
+func TestNew_DefaultServiceName(t *testing.T) {
+	clearTracingEnv(t)
+	t.Setenv("OTEL_TRACES_EXPORTER", "none")
+
+	tm, err := New(context.Background(), TraceConfig{DefaultServiceName: "lava-test-binary"})
+	require.NoError(t, err)
+	require.NotNil(t, tm)
+	tm.Shutdown()
+}
+
+func TestNew_DefaultServiceNameRequired(t *testing.T) {
+	clearTracingEnv(t)
+	t.Setenv("OTEL_TRACES_EXPORTER", "none")
+
+	_, err := New(context.Background(), TraceConfig{})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "DefaultServiceName")
 }
 
 func TestBuildPropagatorFromEnv(t *testing.T) {

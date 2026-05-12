@@ -1583,7 +1583,8 @@ rpcsmartrouter smartrouter_examples/full_smartrouter_example.yml --cache-be "127
 			// endpoint is configured the SDK falls back to the spec default
 			// (localhost:4317 for gRPC, localhost:4318 for HTTP).
 			traceCfg := tracing.TraceConfig{
-				TraceBody: viper.GetBool(tracing.TraceBodyFlag),
+				DefaultServiceName: "lava-smartrouter",
+				TraceBody:          viper.GetBool(tracing.TraceBodyFlag),
 			}
 			traceManager, err := tracing.New(ctx, traceCfg)
 			if err != nil {

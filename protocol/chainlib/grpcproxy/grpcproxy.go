@@ -9,6 +9,7 @@ import (
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/utils"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
@@ -37,7 +38,13 @@ func NewGRPCProxy(cb ProxyCallBack, healthCheckPath string, cmdFlags common.Cons
 // This enables tools like grpcurl to work with the smart router.
 func NewGRPCProxyWithReflection(cb ProxyCallBack, healthCheckPath string, cmdFlags common.ConsumerCmdFlags, healthReporter HealthReporter, reflectionCallback ReflectionProxyCallback) (*grpc.Server, *http.Server, error) {
 	serverReceiveMaxMessageSize := grpc.MaxRecvMsgSize(MaxCallRecvMsgSize) // setting receive size to 32mb instead of 4mb default
-	s := grpc.NewServer(grpc.UnknownServiceHandler(makeProxyFunc(cb)), grpc.ForceServerCodec(RawBytesCodec{}), serverReceiveMaxMessageSize)
+	serverOpts := []grpc.ServerOption{
+		grpc.UnknownServiceHandler(makeProxyFunc(cb)),
+		grpc.ForceServerCodec(RawBytesCodec{}),
+		serverReceiveMaxMessageSize,
+	}
+	serverOpts = append(serverOpts, grpc.StatsHandler(otelgrpc.NewServerHandler()))
+	s := grpc.NewServer(serverOpts...)
 	grpc_health_v1.RegisterHealthServer(s, health.NewServer())
 
 	wrappedServer := grpcweb.WrapServer(s)

@@ -6,6 +6,7 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
+	"google.golang.org/grpc/metadata"
 
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
@@ -54,6 +55,28 @@ func InjectGRPC(ctx context.Context, headers map[string]string) {
 	for k, v := range carrier {
 		headers[k] = v
 	}
+}
+
+// ExtractGRPC reads W3C trace context from gRPC incoming-context metadata into ctx,
+// returning a new context that carries the remote span as parent. Returns ctx
+// unchanged when no metadata is present.
+//
+// For multi-valued metadata keys, only the first value is used. This is
+// sufficient for W3C trace context (traceparent/tracestate/baggage are
+// single-valued per spec); non-conforming senders that repeat these headers
+// will have additional values silently dropped.
+func ExtractGRPC(ctx context.Context) context.Context {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return ctx
+	}
+	headers := make(map[string]string, md.Len())
+	for k, vs := range md {
+		if len(vs) > 0 {
+			headers[strings.ToLower(k)] = vs[0]
+		}
+	}
+	return otel.GetTextMapPropagator().Extract(ctx, propagation.MapCarrier(headers))
 }
 
 // ExtractHTTP reads W3C trace context from a Metadata slice into ctx,

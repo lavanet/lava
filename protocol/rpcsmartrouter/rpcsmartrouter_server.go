@@ -456,17 +456,13 @@ func (rpcss *RPCSmartRouterServer) SendRelay(
 		ctx = grpcmetadata.NewIncomingContext(ctx, md)
 	}
 
-	// Extract W3C TraceContext (traceparent/tracestate) from incoming request headers
-	// so that the relay span becomes a child of the caller's trace when present.
-	ctx = tracing.ExtractHTTP(ctx, metadata)
-
-	// Start the inbound SERVER span. It covers the full relay lifecycle
-	// including parsing — all downstream helpers create child spans from
-	// the resulting context. We also pin the span on the context via
-	// WithRelaySpan so deeply nested helpers (e.g. cache lookup) can decorate
-	// it directly without plumbing the span through every signature.
-	ctx, span := tracing.StartServerSpan(ctx, tracing.SpanSendRelay)
+	// chainlib FiberMiddleware has already created the SERVER root span and
+	// extracted trace context. SR adds an app-level child span carrying
+	// relay-specific attributes.
+	ctx, span := tracing.StartInternalSpan(ctx, tracing.SpanSendRelay)
 	defer span.End()
+	// Pin the child span so deeply nested helpers (e.g. cache lookup) can
+	// decorate it directly without plumbing the span through every signature.
 	ctx = tracing.WithRelaySpan(ctx, span)
 
 	chainId, apiInterface := rpcss.GetChainIdAndApiInterface()

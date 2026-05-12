@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc/metadata"
 
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 )
@@ -373,6 +374,31 @@ func TestRoundTrip_GRPC(t *testing.T) {
 	sc := trace.SpanContextFromContext(extracted)
 	require.True(t, sc.IsValid())
 	require.Equal(t, span.SpanContext().TraceID(), sc.TraceID())
+}
+
+func TestExtractGRPC_PullsTraceParent(t *testing.T) {
+	_ = setupTestTracing(t) // installs TraceContext propagator + registers cleanup
+
+	md := metadata.New(map[string]string{
+		"traceparent": "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01",
+	})
+	ctx := metadata.NewIncomingContext(context.Background(), md)
+
+	extracted := ExtractGRPC(ctx)
+	sc := trace.SpanContextFromContext(extracted)
+	require.True(t, sc.IsValid())
+	require.True(t, sc.IsRemote())
+	require.Equal(t, "0af7651916cd43dd8448eb211c80319c", sc.TraceID().String())
+	require.Equal(t, "b7ad6b7169203331", sc.SpanID().String())
+}
+
+func TestExtractGRPC_NoMetadata(t *testing.T) {
+	_ = setupTestTracing(t)
+
+	ctx := context.Background()
+	extracted := ExtractGRPC(ctx)
+	sc := trace.SpanContextFromContext(extracted)
+	require.False(t, sc.IsValid())
 }
 
 // findMetadata returns the value of the first metadata entry matching the given name.
