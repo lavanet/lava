@@ -53,6 +53,7 @@ require (
 	github.com/tidwall/gjson v1.16.0
 	github.com/tidwall/sjson v1.2.5
 	go.opentelemetry.io/contrib/exporters/autoexport v0.46.1
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.46.1
 	go.opentelemetry.io/otel v1.21.0
 	go.opentelemetry.io/otel/sdk v1.21.0
 	go.opentelemetry.io/otel/trace v1.21.0
@@ -150,7 +151,6 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/zondax/ledger-go v0.14.3 // indirect
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.46.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.46.1 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.44.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v0.44.0 // indirect

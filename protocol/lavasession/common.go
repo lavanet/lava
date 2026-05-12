@@ -20,6 +20,7 @@ import (
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/x/pairing/keeper/scores"
 	planstypes "github.com/lavanet/lava/v5/x/plans/types"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -98,6 +99,8 @@ func ConnectGRPCClient(ctx context.Context, address string, allowInsecure bool, 
 			grpc.UseCompressor(gzip.Name), // Use gzip compression for provider consumer communication
 		))
 	}
+
+	opts = append(opts, grpc.WithStatsHandler(otelgrpc.NewClientHandler()))
 
 	conn, err := grpc.DialContext(ctx, address, opts...)
 	return conn, err

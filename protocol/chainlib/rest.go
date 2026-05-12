@@ -17,6 +17,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/parser"
+	"github.com/lavanet/lava/v5/protocol/tracing"
 	"github.com/lavanet/lava/v5/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -275,7 +276,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		// Cache headers once at the start to avoid repeated lookups
 		metadataValues := fiberCtx.GetReqHeaders()
 		restHeaders := convertToMetadataMap(metadataValues)
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(fiberCtx.UserContext())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		ctx = utils.ExtractWantedHeadersFromCachedMap(metadataValues, ctx)
 		defer cancel() // incase there's a problem make sure to cancel the connection
@@ -351,7 +352,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		// Cache headers once at the start to avoid repeated lookups
 		metadataValues := fiberCtx.GetReqHeaders()
 		restHeaders := convertToMetadataMap(metadataValues)
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(fiberCtx.UserContext())
 		ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 		ctx = utils.ExtractWantedHeadersFromCachedMap(metadataValues, ctx)
 		guid, found := utils.GetUniqueIdentifier(ctx)
@@ -451,6 +452,13 @@ func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 }
 
 func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+	ctx, span := tracing.StartClientSpan(ctx, tracing.SpanChainproxyREST)
+	defer span.End()
+	defer func() {
+		if err != nil {
+			tracing.RecordError(span, err)
+		}
+	}()
 	if ch != nil {
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on rest", nil)
 	}
@@ -508,6 +516,12 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		utils.LogAttr("apiInterface", "rest"),
 	)
 
+	// Inject W3C trace context into outbound upstream-node HTTP headers.
+	otelHeaders := map[string]string{}
+	tracing.InjectGRPC(ctx, otelHeaders)
+	for name, value := range otelHeaders {
+		req.Header.Set(name, value)
+	}
 	res, err := httpClient.Do(req)
 	if res != nil {
 		// resp can be non nil on error

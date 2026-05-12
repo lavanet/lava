@@ -235,3 +235,46 @@ See the `config/consumer_examples/` directory for complete configuration example
 - [Consumer Configuration Guide](../../config/consumer_examples/)
 - [RPC Smart Router](../rpcsmartrouter) - Centralized alternative
 - [Protocol Overview](../README.md)
+
+## Observability / Tracing
+
+Both `rpcconsumer` and `rpcprovider` emit OpenTelemetry traces by default
+when an OTLP endpoint is configured. Disable with `OTEL_SDK_DISABLED=true`
+or `OTEL_TRACES_EXPORTER=none`.
+
+### Quick start
+
+```bash
+OTEL_SERVICE_NAME=my-consumer-eu \
+OTEL_TRACES_EXPORTER=otlp \
+OTEL_EXPORTER_OTLP_ENDPOINT=https://otel.example.com:4317 \
+./lavap rpcconsumer ...
+```
+
+### Recording request/response bodies
+
+Add `--otel-trace-body` to record relay request and response bodies on
+spans. Body size is bounded by `OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT`
+(default: unlimited; set to e.g. `4096` for 4 KiB cap).
+
+### Same-machine deployments
+
+If consumer and provider run on the same host, **do not** set
+`OTEL_SERVICE_NAME` in a shared environment file. Each binary's
+in-code default (`lava-consumer`, `lava-provider`) gives them
+distinct service identities.
+
+For per-deployment labelling without overriding service.name:
+
+```bash
+OTEL_RESOURCE_ATTRIBUTES=region=eu-west-1,deployment=prod-1
+```
+
+### Sampling
+
+Defaults to `parentbased_always_on`. For high-volume deployments tune via:
+
+```bash
+OTEL_TRACES_SAMPLER=parentbased_traceidratio
+OTEL_TRACES_SAMPLER_ARG=0.1   # 10% of root spans
+```

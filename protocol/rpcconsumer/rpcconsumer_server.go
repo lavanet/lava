@@ -33,6 +33,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/performance"
 	"github.com/lavanet/lava/v5/protocol/relaycore"
 	"github.com/lavanet/lava/v5/protocol/relaypolicy"
+	"github.com/lavanet/lava/v5/protocol/tracing"
 
 	"github.com/lavanet/lava/v5/protocol/upgrade"
 	"github.com/lavanet/lava/v5/utils"
@@ -418,6 +419,17 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	analytics *metrics.RelayMetrics,
 	metadata []pairingtypes.Metadata,
 ) (relayResult *common.RelayResult, errRet error) {
+	guid, _ := utils.GetUniqueIdentifier(ctx)
+	ctx, span := tracing.StartConsumerSendRelay(ctx, guid, rpccs.listenEndpoint.ChainID, rpccs.listenEndpoint.ApiInterface)
+	defer span.End()
+	if tracing.IsTraceBodyEnabled() {
+		tracing.RecordBody(span, tracing.AttrRelayRequestBody, []byte(req))
+	}
+	defer func() {
+		if errRet != nil {
+			tracing.RecordError(span, errRet)
+		}
+	}()
 	protocolMessage, err := rpccs.ParseRelay(ctx, url, req, connectionType, dappID, consumerIp, metadata)
 	if err != nil {
 		return nil, err
@@ -435,6 +447,8 @@ func (rpccs *RPCConsumerServer) ParseRelay(
 	consumerIp string,
 	metadata []pairingtypes.Metadata,
 ) (protocolMessage chainlib.ProtocolMessage, err error) {
+	ctx, span := tracing.StartConsumerParseRelay(ctx)
+	defer span.End()
 	// gets the relay request data from the ChainListener
 	// parses the request into an APIMessage, and validating it corresponds to the spec currently in use
 	// construct the common data for a relay message, common data is identical across multiple sends and data reliability
@@ -474,6 +488,13 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 	// compares the result with other providers if defined so
 	// compares the response with other consumer wallets if defined so
 	// asynchronously sends data reliability if necessary
+	ctx, span := tracing.StartConsumerSendParsedRelay(ctx)
+	defer span.End()
+	defer func() {
+		if errRet != nil {
+			tracing.RecordError(span, errRet)
+		}
+	}()
 
 	relaySentTime := time.Now()
 	relayProcessor, err := rpccs.ProcessRelaySend(ctx, protocolMessage, analytics)
@@ -485,7 +506,15 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 		return nil, err
 	}
 
+	// Leaf span: ProcessingResult() doesn't take ctx and creates no further
+	// instrumented work, so the new ctx returned by StartConsumerProcessingResult
+	// is intentionally discarded.
+	_, spanResult := tracing.StartConsumerProcessingResult(ctx)
 	returnedResult, err := relayProcessor.ProcessingResult()
+	if err != nil {
+		tracing.RecordError(spanResult, err)
+	}
+	spanResult.End()
 	consistencyEnforced := protocolMessage.RelayPrivateData().SeenBlock > 0
 	rpccs.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, protocolMessage, protocolMessage.GetApi().GetName(), analytics, err == nil, consistencyEnforced)
 	if err != nil {
@@ -517,10 +546,15 @@ func (rpccs *RPCConsumerServer) GetChainIdAndApiInterface() (string, string) {
 }
 
 func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMessage chainlib.ProtocolMessage, analytics *metrics.RelayMetrics) (*relaycore.RelayProcessor, error) {
+	ctx, span := tracing.StartConsumerProcessRelaySend(ctx)
+	defer span.End()
 	// make sure all of the child contexts are cancelled when we exit
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	usedProviders := lavasession.NewUsedProviders(protocolMessage)
+	defer func() {
+		tracing.RecordRetryCount(span, usedProviders.BatchNumber()-1)
+	}()
 	usedProviders.SetChainID(rpccs.listenEndpoint.ChainID)
 	usedProviders.SetEligibilityFunc(relaypolicy.DecideEligibility)
 
@@ -899,6 +933,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						utils.LogAttr("lookupFinalized", lookupFinalized),
 					)
 
+					cacheCtx, spanCache := tracing.StartConsumerCacheLookup(cacheCtx)
 					cacheStart := time.Now()
 					cacheReply, cacheError = rpccs.cache.GetEntry(cacheCtx, &pairingtypes.RelayCacheGet{
 						RequestHash:           hashKey,
@@ -912,6 +947,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					}) // caching in the consumer doesn't care about hashes, and we don't have data on finalization yet
 					cancel()
 					cacheLatencyMs := float64(time.Since(cacheStart).Milliseconds())
+					cacheHit := cacheError == nil && cacheReply != nil && cacheReply.GetReply() != nil
+					tracing.RecordCacheLookup(cacheCtx, spanCache, "consumer", cacheHit, cacheLatencyMs)
+					spanCache.End()
 
 					// Generate the actual cache key that will be used for lookup
 					actualLookupCacheKey := make([]byte, len(hashKey))
@@ -1020,7 +1058,10 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		utils.LavaFormatTrace("found stickiness header", utils.LogAttr("id", stickiness), utils.LogAttr("GUID", ctx))
 	}
 
-	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, numOfProviders, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness, "")
+	ctxSess, spanSess := tracing.StartConsumerGetSessions(ctx, numOfProviders)
+	sessions, err := rpccs.consumerSessionManager.GetSessions(ctxSess, numOfProviders, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(protocolMessage), virtualEpoch, stickiness, "")
+	tracing.RecordSessionStats(spanSess, numOfProviders, len(sessions))
+	spanSess.End()
 	if err != nil {
 		if lavasession.PairingListEmptyError.Is(err) {
 			if addon != "" {
@@ -1105,11 +1146,12 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				ConflictHandler: sessionInfo.Session.Parent,
 			}
 			var errResponse error
-			goroutineCtx, goroutineCtxCancel := context.WithCancel(context.Background())
-			guid, found := utils.GetUniqueIdentifier(ctx)
-			if found {
-				goroutineCtx = utils.WithUniqueIdentifier(goroutineCtx, guid)
-			}
+			// WithoutCancel carries the OTel trace context (set by chainlib.FiberMiddleware
+			// and consumer.SendRelay) into the goroutine, but breaks the cancellation
+			// chain — a client hangup must NOT abort an in-flight relay attempt because
+			// the deferred OnSessionDone/OnSessionFailure path needs to run cleanly to
+			// release the session. WithCancel on top preserves the explicit goroutineCtxCancel.
+			goroutineCtx, goroutineCtxCancel := context.WithCancel(context.WithoutCancel(ctx))
 
 			// Track if session was properly handled (OnSessionDone/OnSessionFailure called)
 			// to prevent session leaks on early returns
@@ -1223,7 +1265,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				}
 			}
 			// send relay
-			relayLatency, errResponse, _ := rpccs.relayInner(goroutineCtx, singleConsumerSession, localRelayResult, processingTimeout, protocolMessage, consumerToken, analytics)
+			relayLatency, errResponse, _ := rpccs.relayInner(goroutineCtx, singleConsumerSession, localRelayResult, processingTimeout, protocolMessage, consumerToken, analytics, relayProcessor.GetUsedProviders().BatchNumber())
 			if errResponse != nil {
 				// CRITICAL: Release session IMMEDIATELY to prevent session exhaustion
 				sessionHandled.Store(true) // Mark session as handled before OnSessionFailure
@@ -1444,11 +1486,18 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	return nil
 }
 
-func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSession *lavasession.SingleConsumerSession, relayResult *common.RelayResult, relayTimeout time.Duration, chainMessage chainlib.ChainMessage, consumerToken string, analytics *metrics.RelayMetrics) (relayLatency time.Duration, err error, needsBackoff bool) {
+func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSession *lavasession.SingleConsumerSession, relayResult *common.RelayResult, relayTimeout time.Duration, chainMessage chainlib.ChainMessage, consumerToken string, analytics *metrics.RelayMetrics, attempt int) (relayLatency time.Duration, err error, needsBackoff bool) {
 	existingSessionLatestBlock := singleConsumerSession.LatestBlock // we read it now because singleConsumerSession is locked, and later it's not
 	endpointClient := singleConsumerSession.EndpointConnection.Client
 	providerPublicAddress := relayResult.ProviderInfo.ProviderAddress
 	relayRequest := relayResult.Request
+	ctx, span := tracing.StartConsumerRelayInner(ctx, providerPublicAddress, attempt)
+	defer span.End()
+	defer func() {
+		if err != nil {
+			tracing.RecordError(span, err)
+		}
+	}()
 	if rpccs.debugRelays {
 		utils.LavaFormatDebug("Sending relay", utils.LogAttr("timeout", relayTimeout), utils.LogAttr("requestedBlock", relayRequest.RelayData.RequestBlock), utils.LogAttr("GUID", ctx), utils.LogAttr("provider", relayRequest.RelaySession.Provider))
 	}
