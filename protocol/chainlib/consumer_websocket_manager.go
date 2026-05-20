@@ -27,6 +27,9 @@ var (
 const (
 	WebSocketRateLimitHeader            = "x-lava-websocket-rate-limit"
 	WebSocketOpenConnectionsLimitHeader = "x-lava-websocket-open-connections-limit"
+
+	SubscriptionDeliveryMethod           = "subscription_delivery"
+	DefaultSubscriptionDeliveryCU uint64 = 10
 )
 
 type ConsumerWebsocketManager struct {
@@ -359,13 +362,15 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 				for subscriptionMsgReply := range subscriptionMsgsChan {
 					idleFor.Store(time.Now().Unix())
 					websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: outputFormatter(subscriptionMsgReply.Data)}
-					// Per-delivery metric emission. Each streamed
-					// subscription message is a relay over the
-					// established subscription and carries the same
-					// project / chain / API / provider / CU as the
-					// original eth_subscribe.
+					// Per-delivery emission. The originating subscribe is
+					// billed at the spec CU under its real method; each
+					// pushed notification is its own operation charged at
+					// the flat delivery default, so downstream billing is
+					// plain SUM(cu) without subscription-specific rules.
 					perMessage := subscriptionFields
 					perMessage.Timestamp = time.Now()
+					perMessage.ApiMethod = SubscriptionDeliveryMethod
+					perMessage.ComputeUnits = DefaultSubscriptionDeliveryCU
 					go logger.AddMetricForWebSocket(&perMessage, nil, websocketConn)
 				}
 
