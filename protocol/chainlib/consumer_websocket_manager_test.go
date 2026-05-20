@@ -7,7 +7,61 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+// TestBuildUnsubscribeSuccessReply verifies that the synthesized reply for a
+// successful eth_unsubscribe / unsubscribe echoes the caller's JSON-RPC id
+// verbatim (per spec §4.2) and returns result:true. The legacy consumer
+// previously sent no frame at all on this path, hanging clients until they
+// timed out.
+func TestBuildUnsubscribeSuccessReply(t *testing.T) {
+	cases := []struct {
+		name string
+		req  string
+		want string
+	}{
+		{
+			name: "string id",
+			req:  `{"jsonrpc":"2.0","id":"sub-1","method":"eth_unsubscribe","params":["0xabc"]}`,
+			want: `{"jsonrpc":"2.0","id":"sub-1","result":true}`,
+		},
+		{
+			name: "numeric id",
+			req:  `{"jsonrpc":"2.0","id":42,"method":"eth_unsubscribe","params":["0xabc"]}`,
+			want: `{"jsonrpc":"2.0","id":42,"result":true}`,
+		},
+		{
+			name: "null id",
+			req:  `{"jsonrpc":"2.0","id":null,"method":"eth_unsubscribe","params":["0xabc"]}`,
+			want: `{"jsonrpc":"2.0","id":null,"result":true}`,
+		},
+		{
+			name: "missing id falls back to null",
+			req:  `{"jsonrpc":"2.0","method":"eth_unsubscribe","params":["0xabc"]}`,
+			want: `{"jsonrpc":"2.0","id":null,"result":true}`,
+		},
+		{
+			name: "string id containing escaped quote round-trips",
+			req:  `{"jsonrpc":"2.0","id":"a\"b","method":"eth_unsubscribe","params":["0xabc"]}`,
+			want: `{"jsonrpc":"2.0","id":"a\"b","result":true}`,
+		},
+		{
+			// JSON-RPC 2.0 §4.2 recommends scalar ids but does not forbid structured
+			// ones. Lock in that we pass an object id through verbatim rather than
+			// silently corrupting it.
+			name: "object id passes through verbatim",
+			req:  `{"jsonrpc":"2.0","id":{"foo":1},"method":"eth_unsubscribe","params":["0xabc"]}`,
+			want: `{"jsonrpc":"2.0","id":{"foo":1},"result":true}`,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := buildUnsubscribeSuccessReply([]byte(tc.req))
+			require.Equal(t, tc.want, string(got))
+		})
+	}
+}
 
 func TestWebsocketConnectionLimiter(t *testing.T) {
 	tests := []struct {

@@ -274,7 +274,20 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 							websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: formatterMsg}
 						}
 					}
-				} else if responseData != nil {
+				} else {
+					if responseData == nil {
+						// Legacy provider-relay path: Unsubscribe returns (nil, nil) on success
+						// because the provider's relay stream has no synchronous ack frame to
+						// forward. Synthesize a §4.2-compliant reply so clients don't hang on
+						// recv() until they time out. The JSON-RPC envelope is safe here:
+						// ConsumerWebsocketManager is only constructed by jsonRPC.go and
+						// tendermintRPC.go, both JSON-RPC-shaped.
+						responseData = buildUnsubscribeSuccessReply(msg)
+						utils.LavaFormatTrace("synthesized unsubscribe ack",
+							utils.LogAttr("GUID", webSocketCtx),
+							utils.LogAttr("dappID", dappID),
+						)
+					}
 					// Forward the node's response directly to the end user - no transformation or wrapping.
 					websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: responseData}
 				}
@@ -372,4 +385,21 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 			logger.LogRequestAndResponse("jsonrpc ws msg", false, "ws", websocketConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
 		}
 	}
+}
+
+// buildUnsubscribeSuccessReply synthesizes a JSON-RPC 2.0 success response for an
+// eth_unsubscribe / unsubscribe that the consumer satisfied locally — provider
+// relays do not surface an unsubscribe acknowledgement frame, so we fabricate
+// one here rather than letting clients hang. id is substituted as raw JSON to
+// preserve the caller's exact type (§4.2).
+//
+// result is hard-coded to `true`, matching EVM upstream conventions. Tendermint
+// upstreams typically return `{}` here; we optimize for "client unblocks"
+// rather than exact upstream parity.
+func buildUnsubscribeSuccessReply(requestBytes []byte) []byte {
+	idRaw := "null"
+	if r := gjson.GetBytes(requestBytes, "id"); r.Exists() {
+		idRaw = r.Raw
+	}
+	return []byte(`{"jsonrpc":"2.0","id":` + idRaw + `,"result":true}`)
 }
