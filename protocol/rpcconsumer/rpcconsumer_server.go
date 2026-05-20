@@ -432,6 +432,10 @@ func (rpccs *RPCConsumerServer) SendRelay(
 		return nil, err
 	}
 
+	if api := protocolMessage.GetApi(); api != nil {
+		tracing.RecordRelayMethod(span, api.Name)
+	}
+
 	return rpccs.SendParsedRelay(ctx, analytics, protocolMessage)
 }
 
