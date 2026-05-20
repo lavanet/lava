@@ -17,12 +17,12 @@ func TestSanitizeFloat(t *testing.T) {
 }
 
 // fakeOptimizer returns a pre-canned list of QoS reports on every call,
-// regardless of the addresses / cu / requestedBlock the sampler passes in.
+// regardless of the addresses the sampler passes in.
 type fakeOptimizer struct {
 	reports []*OptimizerQoSReport
 }
 
-func (f *fakeOptimizer) CalculateQoSScoresForMetrics(_ []string, _ map[string]struct{}, _ uint64, _ int64) []*OptimizerQoSReport {
+func (f *fakeOptimizer) CalculateQoSScoresForMetrics(_ []string, _ map[string]struct{}) []*OptimizerQoSReport {
 	return f.reports
 }
 

@@ -332,7 +332,7 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 }
 
 // CalculateQoSScoresForMetrics calculates QoS scores for all providers for metrics reporting
-func (po *ProviderOptimizer) CalculateQoSScoresForMetrics(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) []*metrics.OptimizerQoSReport {
+func (po *ProviderOptimizer) CalculateQoSScoresForMetrics(allAddresses []string, ignoredProviders map[string]struct{}) []*metrics.OptimizerQoSReport {
 	// Get provider data for weighted selection
 	providerDataGetter := func(addr string) (*pairingtypes.QualityOfServiceReport, time.Time, bool) {
 		qos, lastUpdate := po.GetReputationReportForProvider(addr)

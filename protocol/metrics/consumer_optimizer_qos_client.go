@@ -11,7 +11,6 @@ import (
 
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
-	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"golang.org/x/exp/maps"
 )
 
@@ -113,7 +112,7 @@ type OptimizerQoSReportToSend struct {
 }
 
 type OptimizerInf interface {
-	CalculateQoSScoresForMetrics(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) []*OptimizerQoSReport
+	CalculateQoSScoresForMetrics(allAddresses []string, ignoredProviders map[string]struct{}) []*OptimizerQoSReport
 }
 
 // NewConsumerOptimizerQoSClient constructs a sampler that emits optimizer
@@ -215,8 +214,6 @@ func (coqc *ConsumerOptimizerQoSClient) sampleAndEmit() {
 	coqc.lock.RUnlock()
 
 	ignoredProviders := map[string]struct{}{}
-	cu := uint64(10)
-	requestedBlock := spectypes.LATEST_BLOCK
 	currentEpoch := coqc.currentEpoch.Load()
 	now := time.Now()
 
@@ -227,7 +224,7 @@ func (coqc *ConsumerOptimizerQoSClient) sampleAndEmit() {
 			continue
 		}
 		addresses := maps.Keys(stakes)
-		reports := optimizer.CalculateQoSScoresForMetrics(addresses, ignoredProviders, cu, requestedBlock)
+		reports := optimizer.CalculateQoSScoresForMetrics(addresses, ignoredProviders)
 		for _, report := range reports {
 			if report == nil {
 				continue
