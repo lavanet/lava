@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"net/url"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -311,13 +312,14 @@ func (geh *genericErrorHandler) HandleJSONFormatError(replyData []byte) error {
 }
 
 func (geh *genericErrorHandler) ValidateRequestAndResponseIds(nodeMessageID json.RawMessage, replyMsgID json.RawMessage) error {
-	reqId, idErr := rpcInterfaceMessages.IdFromRawMessage(nodeMessageID)
-	if idErr != nil {
-		return fmt.Errorf("failed parsing ID %s", idErr.Error())
-	}
-
 	// Allow empty/missing response ID for non-standard JSON-RPC implementations (e.g., XRPL/Ripple)
-	// Some chains don't follow JSON-RPC 2.0 spec strictly and omit the ID field in responses
+	// Some chains don't follow JSON-RPC 2.0 spec strictly and omit the ID field in responses.
+	// A spec-compliant node also replies id:null when it rejects an invalid request, so this
+	// also covers the case where a client sent a malformed (non-scalar) request id.
+	//
+	// This check MUST run before parsing the request id below: a client may send a non-scalar
+	// (object/array) id, and parsing the request id first would surface that as a spurious
+	// "failed parsing ID" — masking the node's actual response and turning it into a relay failure.
 	//
 	// TODO: In the future, add a spec-level parameter (e.g., in api_collection or as an add-on flag)
 	// to explicitly declare when a chain allows non-standard JSON-RPC responses. This validation
@@ -329,14 +331,37 @@ func (geh *genericErrorHandler) ValidateRequestAndResponseIds(nodeMessageID json
 		return nil // Skip ID validation when response has no ID
 	}
 
-	respId, idErr := rpcInterfaceMessages.IdFromRawMessage(replyMsgID)
-	if idErr != nil {
-		return fmt.Errorf("failed parsing ID %s", idErr.Error())
+	reqId, reqErr := rpcInterfaceMessages.IdFromRawMessage(nodeMessageID)
+	respId, respErr := rpcInterfaceMessages.IdFromRawMessage(replyMsgID)
+
+	// IdFromRawMessage only accepts scalar ids (string/number/null). A non-scalar id (object/
+	// array) is invalid per JSON-RPC 2.0, but a client may still send one and a lenient node
+	// may echo it back verbatim (observed on NEAR, which returns a valid result with the object
+	// id echoed). When either id is non-scalar, compare the ids semantically instead of
+	// erroring: equal ids mean the node answered this request, so the (valid) response must not
+	// be discarded; unequal ids are a genuine mismatch.
+	if reqErr != nil || respErr != nil {
+		if rawJSONEqual(nodeMessageID, replyMsgID) {
+			return nil
+		}
+		return fmt.Errorf("ID mismatch error")
 	}
+
 	if reqId != respId {
 		return fmt.Errorf("ID mismatch error")
 	}
 	return nil
+}
+
+// rawJSONEqual reports whether two raw JSON-RPC ids are semantically equal, tolerant of
+// insignificant whitespace and object key ordering. Used as a fallback when an id is a
+// non-scalar (object/array) that IdFromRawMessage cannot reduce to a comparable scalar.
+func rawJSONEqual(a, b json.RawMessage) bool {
+	var av, bv interface{}
+	if json.Unmarshal(a, &av) != nil || json.Unmarshal(b, &bv) != nil {
+		return false
+	}
+	return reflect.DeepEqual(av, bv)
 }
 
 func TryRecoverNodeErrorFromClientError(nodeErr error) *rpcclient.JsonrpcMessage {

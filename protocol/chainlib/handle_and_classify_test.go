@@ -124,6 +124,38 @@ func TestExtractNodeErrorDetails_HTTPStatusFallback(t *testing.T) {
 	assert.Equal(t, 503, code, "HTTP status must be used when no JSON-RPC body is recoverable")
 }
 
+// TestValidateRequestAndResponseIds_NonScalarId is a regression test for the JSON-RPC
+// id-validation failure reported on Polygon (reproducible on every chain): a client sends a
+// non-scalar (object/array) request id — invalid per JSON-RPC 2.0. Captured against live
+// nodes: Polygon rejects it and replies id:null, while NEAR accepts it, returns a valid
+// result, and echoes the object id back. Previously lavap parsed the request id first and
+// hard-failed both ("failed parsing ID"), turning a clean node rejection / a valid response
+// into a relay failure + cross-provider retry storm.
+func TestValidateRequestAndResponseIds_NonScalarId(t *testing.T) {
+	geh := &genericErrorHandler{}
+	obj := []byte(`{"x":1}`)
+	// verbatim .NET CancellationToken id from the live Polygon log
+	cancellationToken := []byte(`{"IsCancellationRequested":false,"CanBeCanceled":false,"WaitHandle":{"Handle":{"value":6404},"SafeWaitHandle":{"IsInvalid":false,"IsClosed":false}}}`)
+
+	// Polygon: node rejects the object id -> response id null. Skip validation so the node's
+	// own "invalid request" passes through instead of a spurious ID mismatch + retry storm.
+	require.NoError(t, geh.ValidateRequestAndResponseIds(cancellationToken, []byte(`null`)))
+	require.NoError(t, geh.ValidateRequestAndResponseIds(obj, []byte(`null`)))
+
+	// NEAR: node accepts the object id and echoes it -> response id == request id. Must be OK
+	// so the valid result is not discarded.
+	require.NoError(t, geh.ValidateRequestAndResponseIds(obj, []byte(`{"x":1}`)))
+	// tolerant of insignificant whitespace / key formatting in the echoed id
+	require.NoError(t, geh.ValidateRequestAndResponseIds(obj, []byte(`{ "x": 1 }`)))
+
+	// A genuinely different object id is still a mismatch.
+	require.Error(t, geh.ValidateRequestAndResponseIds(obj, []byte(`{"x":2}`)))
+
+	// Scalar behavior unchanged: matching scalars OK, mismatched scalars error.
+	require.NoError(t, geh.ValidateRequestAndResponseIds([]byte(`1`), []byte(`1`)))
+	require.Error(t, geh.ValidateRequestAndResponseIds([]byte(`1`), []byte(`2`)))
+}
+
 func TestUnwrapLavaError_FromWrapped(t *testing.T) {
 	err := common.NewLavaError(common.LavaErrorChainNonceTooLow, "test")
 	le := unwrapLavaError(err)
