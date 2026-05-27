@@ -1108,6 +1108,17 @@ func (m *SmartRouterMetricsManager) SetProbeOutlierBlock(string, string, string,
 }
 func (m *SmartRouterMetricsManager) SetMajorityBaselineConsensusFailure(string, string, int) {}
 
+// seenBlock/latestSyncData unification observability stubs. The smart-router doesn't
+// surface these via its own metrics endpoint today; methods exist so the smart-router
+// metrics manager satisfies ConsumerMetricsManagerInf.
+func (m *SmartRouterMetricsManager) SetAlignLatestBlockOutcome(string, string, string) {}
+func (m *SmartRouterMetricsManager) SetLatestBlockOutlierRejected(string)              {}
+func (m *SmartRouterMetricsManager) SetChainStateLatestBlock(string, int64)            {}
+func (m *SmartRouterMetricsManager) SetMajorityBaselineGauge(string, string, int64)    {}
+func (m *SmartRouterMetricsManager) SetAlignLatestBlockGap(string, string, int64)      {}
+func (m *SmartRouterMetricsManager) SetSyncScoringOutlierSkipped(string, string, string) {}
+func (m *SmartRouterMetricsManager) SetSharedStatePropagation(string)                    {}
+
 func (m *SmartRouterMetricsManager) SetQOSMetrics(chainId string, apiInterface string, _ string, _ string, _ *pairingtypes.QualityOfServiceReport, _ *pairingtypes.QualityOfServiceReport, _ int64, _ uint64, _ time.Duration, _ bool) {
 }
 

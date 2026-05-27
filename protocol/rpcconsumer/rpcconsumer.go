@@ -236,7 +236,6 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	}
 
 	optimizers := &common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer]{}
-	consumerConsistencies := &common.SafeSyncMap[string, relaycore.Consistency]{}
 	chainStates := &common.SafeSyncMap[string, *chainstate.ChainState]{}
 
 	var wg sync.WaitGroup
@@ -262,7 +261,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
 			defer wg.Done()
 			_, err := rpcc.CreateConsumerEndpoint(ctx, rpcEndpoint, errCh, consumerAddr, consumerStateTracker,
-				policyUpdaters, optimizers, consumerConsistencies, chainStates, chainMutexes,
+				policyUpdaters, optimizers, chainStates, chainMutexes,
 				options, privKey, lavaChainID, rpcConsumerMetrics, consumerOptimizerQoSClient,
 				consumerMetricsManager, relaysMonitorAggregator)
 			return err
@@ -442,7 +441,6 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	consumerStateTracker *statetracker.ConsumerStateTracker,
 	policyUpdaters *common.SafeSyncMap[string, *updaters.PolicyUpdater],
 	optimizers *common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer],
-	consumerConsistencies *common.SafeSyncMap[string, relaycore.Consistency],
 	chainStates *common.SafeSyncMap[string, *chainstate.ChainState],
 	chainMutexes map[string]*sync.Mutex,
 	options *rpcConsumerStartOptions,
@@ -484,7 +482,6 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	var optimizer *provideroptimizer.ProviderOptimizer
-	var consumerConsistency relaycore.Consistency
 	var cState *chainstate.ChainState
 	getOrCreateChainAssets := func() error {
 		// this is locked so we don't race optimizers creation
@@ -494,14 +491,16 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 		var err error
 
 		// Create / Use existing ChainState first — optimizer and consistency
-		// hold a reference to it for the relay-path outlier guards.
-		cState, _, err = chainStates.LoadOrStore(chainID, &chainstate.ChainState{})
+		// hold a reference to it for the relay-path outlier guards. chainID + metrics
+		// manager wire the unification observability metrics (see unification-demo-env-setup.md §7).
+		cState, _, err = chainStates.LoadOrStore(chainID, chainstate.NewChainState(0, chainID, consumerMetricsManager))
 		if err != nil {
 			return utils.LavaFormatError("failed loading chain state", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
 		}
 
-		// Create / Use existing optimizer
-		newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, options.maxConcurrentProviders, consumerOptimizerQoSClient, chainID, cState)
+		// Create / Use existing optimizer. Metrics manager is shared with ChainState for the
+		// unification observability metrics (M6: sync-scoring outlier-skip per provider).
+		newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, options.maxConcurrentProviders, consumerOptimizerQoSClient, chainID, cState, consumerMetricsManager)
 		newOptimizer.ConfigureWeightedSelector(options.weightedSelectorConfig)
 		optimizer, loaded, err = optimizers.LoadOrStore(chainID, newOptimizer)
 		if err != nil {
@@ -513,13 +512,6 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 			consumerOptimizerQoSClient.RegisterOptimizer(optimizer, chainID)
 		}
 
-		// Create / Use existing Consistency
-		newConsumerConsistency := relaycore.NewConsistency(chainID, cState)
-		consumerConsistency, _, err = consumerConsistencies.LoadOrStore(chainID, newConsumerConsistency)
-		if err != nil {
-			return utils.LavaFormatError("failed loading consumer consistency", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
-		}
-
 		return nil
 	}
 	err = getOrCreateChainAssets()
@@ -528,7 +520,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 		return nil, err
 	}
 
-	if optimizer == nil || consumerConsistency == nil || cState == nil {
+	if optimizer == nil || cState == nil {
 		err = utils.LavaFormatError("failed getting assets, found a nil", nil, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
 		errCh <- err
 		return nil, err
@@ -565,7 +557,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, specMethodType, chainParser, activeSubscriptionProvidersStorage, consumerMetricsManager)
 
 	utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
-	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, cState, relaysMonitor, options.cmdFlags, options.stateShare, consumerWsSubscriptionManager)
+	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, cState, relaysMonitor, options.cmdFlags, options.stateShare, consumerWsSubscriptionManager)
 	if err != nil {
 		err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 		errCh <- err

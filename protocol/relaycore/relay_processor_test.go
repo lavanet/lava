@@ -11,6 +11,7 @@ import (
 
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v5/protocol/chainstate"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
@@ -107,9 +108,9 @@ func TestRelayProcessorHappyFlow(t *testing.T) {
 		dappId := "dapp"
 		consumerIp := "123.11"
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
-		consistency := NewConsistency(specId, nil)
+		cs := &chainstate.ChainState{}
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, nil, consistency, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
+		relayProcessor := NewRelayProcessor(ctx, nil, cs, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -133,18 +134,10 @@ func TestRelayProcessorHappyFlow(t *testing.T) {
 		returnedResult, err := relayProcessor.ProcessingResult()
 		require.NoError(t, err)
 		require.Equal(t, string(returnedResult.Reply.Data), "ok")
-		var seenBlock int64
-		var found bool
-		// wait for cache to be added asynchronously
-		for i := 0; i < 10; i++ {
-			seenBlock, found = consistency.GetSeenBlock(protocolMessage.GetUserData())
-			if found {
-				break
-			}
-			time.Sleep(10 * time.Millisecond)
-		}
+		// Verify the chain-wide latestBlock tracker was advanced by the successful relay reply.
+		latestBlock, found := cs.GetLatestBlock()
 		require.True(t, found)
-		require.Equal(t, seenBlock, int64(1))
+		require.Equal(t, int64(1), latestBlock)
 	})
 }
 
@@ -165,7 +158,7 @@ func TestRelayProcessorTimeout(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, nil, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
+		relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -218,7 +211,7 @@ func TestRelayProcessorRetry(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, nil, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
+		relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -263,7 +256,7 @@ func TestRelayProcessorRetryNodeError(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, nil, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
+		relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -311,7 +304,7 @@ func TestRelayProcessorStatefulApi(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, nil, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
+		relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -366,7 +359,7 @@ func TestRelayProcessorStatefulApiErr(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, nil, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
+		relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -414,7 +407,7 @@ func TestRelayProcessorLatest(t *testing.T) {
 		require.NoError(t, err)
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 		usedProviders := lavasession.NewUsedProviders(nil)
-		relayProcessor := NewRelayProcessor(ctx, nil, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
+		relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -559,7 +552,6 @@ func TestHasRequiredNodeResultsCrossValidationScenarios(t *testing.T) {
 				ctx,
 				tt.crossValidationParams,
 				nil,
-				nil,
 				RelayProcessorMetrics,
 				RelayProcessorMetrics,
 				RelayRetriesManagerInstance,
@@ -648,7 +640,6 @@ func TestStatelessReturnsFirstNodeError(t *testing.T) {
 			ctx,
 			nil, // nil for Stateless mode
 			nil,
-			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
@@ -712,7 +703,6 @@ func TestNodeErrorCrossValidationNotMet(t *testing.T) {
 			ctx,
 			&common.CrossValidationParams{AgreementThreshold: 2, MaxParticipants: 5},
 			nil,
-			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
@@ -773,7 +763,6 @@ func TestStatelessReturnsNodeErrorOverProtocolError(t *testing.T) {
 		relayProcessor := NewRelayProcessor(
 			ctx,
 			nil, // nil for Stateless mode
-			nil,
 			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
@@ -838,7 +827,6 @@ func TestNodeErrorPrioritizedOverProtocolErrors(t *testing.T) {
 		// CrossValidation disabled (Stateful selection)
 		relayProcessor := NewRelayProcessor(
 			ctx,
-			nil,
 			nil,
 			nil,
 			RelayProcessorMetrics,
@@ -906,7 +894,6 @@ func TestNodeErrorPrioritizedOverProtocolErrors(t *testing.T) {
 		// Stateless selection but cross-validation feature disabled (DefaultCrossValidationParams)
 		relayProcessor := NewRelayProcessor(
 			ctx,
-			nil,
 			nil,
 			nil,
 			RelayProcessorMetrics,
@@ -984,7 +971,6 @@ func TestSuccessCrossValidationTakesPriorityOverNodeError(t *testing.T) {
 			ctx,
 			&common.CrossValidationParams{AgreementThreshold: 3, MaxParticipants: 6},
 			nil,
-			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
@@ -1057,7 +1043,6 @@ func TestNodeErrorCrossValidationWhenSuccessInsufficient(t *testing.T) {
 			ctx,
 			&common.CrossValidationParams{AgreementThreshold: 3, MaxParticipants: 5},
 			nil,
-			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
 			RelayRetriesManagerInstance,
@@ -1125,7 +1110,6 @@ func TestSuccessCrossValidationIgnoresNodeErrors(t *testing.T) {
 		relayProcessor := NewRelayProcessor(
 			ctx,
 			&common.CrossValidationParams{AgreementThreshold: 3, MaxParticipants: 8},
-			nil,
 			nil,
 			RelayProcessorMetrics,
 			RelayProcessorMetrics,
@@ -1203,7 +1187,6 @@ func TestSuccessCrossValidationFailsWhenCrossValidationDisabled(t *testing.T) {
 		// CrossValidation feature DISABLED (Stateful selection) - uses default params, needs just 1 successful result
 		relayProcessor := NewRelayProcessor(
 			ctx,
-			nil,
 			nil,
 			nil,
 			RelayProcessorMetrics,
@@ -1425,7 +1408,6 @@ func (m *MockMetricsTracker) GetChainIdAndApiInterface() (string, string) {
 	return "TEST_CHAIN", "rest"
 }
 
-
 // TestGetAgreementThreshold tests the getAgreementThreshold function behavior
 func TestGetAgreementThreshold(t *testing.T) {
 	tests := []struct {
@@ -1560,7 +1542,7 @@ func TestGetResultsSummary_NonRetryableFlag(t *testing.T) {
 
 			usedProviders := lavasession.NewUsedProviders(nil)
 			mockMetrics := NewMockMetricsTracker()
-			relayProcessor := NewRelayProcessor(ctx, nil, nil, nil, mockMetrics, mockMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
+			relayProcessor := NewRelayProcessor(ctx, nil, nil, mockMetrics, mockMetrics, RelayRetriesManagerInstance, newMockRelayStateMachine(protocolMessage, usedProviders))
 
 			lockCtx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 			defer cancel()
@@ -1639,7 +1621,6 @@ func TestCrossValidationEmptyArrayResponse(t *testing.T) {
 		ctx,
 		cvParams,
 		nil,
-		nil,
 		RelayProcessorMetrics,
 		RelayProcessorMetrics,
 		RelayRetriesManagerInstance,
@@ -1699,7 +1680,6 @@ func TestCrossValidationEmptyObjectResponse(t *testing.T) {
 	relayProcessor := NewRelayProcessor(
 		ctx,
 		cvParams,
-		nil,
 		nil,
 		RelayProcessorMetrics,
 		RelayProcessorMetrics,
@@ -1778,7 +1758,6 @@ func TestCrossValidationUniformBehaviorDeterministicAndNonDeterministic(t *testi
 				ctx,
 				cvParams,
 				nil,
-				nil,
 				RelayProcessorMetrics,
 				RelayProcessorMetrics,
 				RelayRetriesManagerInstance,
@@ -1842,7 +1821,6 @@ func TestCrossValidationUniformBehaviorDeterministicAndNonDeterministic(t *testi
 			relayProcessor := NewRelayProcessor(
 				ctx,
 				cvParams,
-				nil,
 				nil,
 				RelayProcessorMetrics,
 				RelayProcessorMetrics,
@@ -1912,7 +1890,6 @@ func TestCrossValidationMaxParticipantsLimit(t *testing.T) {
 		ctx,
 		cvParams,
 		nil,
-		nil,
 		RelayProcessorMetrics,
 		RelayProcessorMetrics,
 		RelayRetriesManagerInstance,
@@ -1943,7 +1920,6 @@ func TestCrossValidationRequiresNonNilParams(t *testing.T) {
 	// Stateless mode with nil params should work
 	statelessProcessor := NewRelayProcessor(
 		ctx,
-		nil,
 		nil,
 		nil,
 		RelayProcessorMetrics,
@@ -2010,7 +1986,7 @@ func TestHasRequiredNodeResults_RelayRetryLimit(t *testing.T) {
 			require.NoError(t, err)
 			protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 			usedProviders := lavasession.NewUsedProviders(nil)
-			relayProcessor := NewRelayProcessor(ctx, nil, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless))
+			relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless))
 
 			// Send node errors one at a time, each in its own batch
 			for i := 0; i < tc.nodeErrorsToSend; i++ {
@@ -2092,7 +2068,7 @@ func TestHasRequiredNodeResults_RelayRetryLimitProtocolError(t *testing.T) {
 			require.NoError(t, err)
 			protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 			usedProviders := lavasession.NewUsedProviders(nil)
-			relayProcessor := NewRelayProcessor(ctx, nil, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless))
+			relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless))
 
 			// Send protocol errors one at a time, each in its own batch
 			for i := 0; i < tc.protocolErrorsToSend; i++ {
@@ -2178,7 +2154,7 @@ func TestHasRequiredNodeResults_RelayRetryLimitMixed(t *testing.T) {
 			require.NoError(t, err)
 			protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
 			usedProviders := lavasession.NewUsedProviders(nil)
-			relayProcessor := NewRelayProcessor(ctx, nil, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless))
+			relayProcessor := NewRelayProcessor(ctx, nil, nil, RelayProcessorMetrics, RelayProcessorMetrics, RelayRetriesManagerInstance, newMockRelayStateMachineWithSelection(protocolMessage, usedProviders, Stateless))
 
 			totalErrors := tc.nodeErrorsToSend + tc.protocolErrorsToSend
 			// Send node errors first, then protocol errors

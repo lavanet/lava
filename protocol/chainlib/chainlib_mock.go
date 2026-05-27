@@ -794,15 +794,15 @@ func (mr *MockRelaySenderMockRecorder) SendRelay(ctx, url, req, connectionType, 
 }
 
 // SetConsistencySeenBlock mocks base method.
-func (m *MockRelaySender) SetConsistencySeenBlock(blockSeen int64, key string) {
+func (m *MockRelaySender) SetConsistencySeenBlock(blockSeen int64) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetConsistencySeenBlock", blockSeen, key)
+	m.ctrl.Call(m, "SetConsistencySeenBlock", blockSeen)
 }
 
 // SetConsistencySeenBlock indicates an expected call of SetConsistencySeenBlock.
-func (mr *MockRelaySenderMockRecorder) SetConsistencySeenBlock(blockSeen, key interface{}) *gomock.Call {
+func (mr *MockRelaySenderMockRecorder) SetConsistencySeenBlock(blockSeen interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetConsistencySeenBlock", reflect.TypeOf((*MockRelaySender)(nil).SetConsistencySeenBlock), blockSeen, key)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetConsistencySeenBlock", reflect.TypeOf((*MockRelaySender)(nil).SetConsistencySeenBlock), blockSeen)
 }
 
 // MockChainListener is a mock of ChainListener interface.

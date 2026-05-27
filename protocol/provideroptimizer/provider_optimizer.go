@@ -52,7 +52,6 @@ type ProviderOptimizer struct {
 	providerRelayStats              *ristretto.Cache[string, any] // used to decide on the half time of the decay
 	averageBlockTime                time.Duration
 	wantedNumProvidersInConcurrency uint
-	latestSyncData                  ConcurrentBlockStore
 	stakeCache                      ProviderStakeCache // provider stake amounts used in weighted selection
 	consumerOptimizerQoSClient      consumerOptimizerQoSClientInf
 	chainId                         string
@@ -61,7 +60,8 @@ type ProviderOptimizer struct {
 	globalSyncCalculator            *score.AdaptiveMaxCalculator // Global T-Digest for all providers' sync samples
 	adaptiveLock                    sync.RWMutex                 // Lock for accessing adaptive calculators
 	NowFunc                         func() time.Time             // NowFunc overrides the clock used for score updates nil = use real time.Now()
-	chainState                      *chainstate.ChainState       // shared per-chain state for majorityBaseline outlier detection
+	chainState                      *chainstate.ChainState       // shared per-chain state — single source of truth for majorityBaseline + latestBlock
+	metricsManager                  metrics.ConsumerMetricsManagerInf // unification observability (M6: sync-scoring outlier-skip per provider)
 }
 
 func (po *ProviderOptimizer) GetAverageBlockTime() time.Duration {
@@ -72,7 +72,6 @@ type ProviderData struct {
 	Availability score.ScoreStorer // will be used to calculate the probability of error
 	Latency      score.ScoreStorer // will be used to calculate the latency score
 	Sync         score.ScoreStorer // will be used to calculate the sync score for spectypes.LATEST_BLOCK/spectypes.NOT_APPLICABLE requests
-	SyncBlock    uint64            // will be used to calculate the probability of block error
 }
 
 // Strategy defines the pairing strategy. Using different
@@ -226,13 +225,9 @@ func (po *ProviderOptimizer) ResetState() {
 	// Future-dated relay times would produce negative or wildly inflated durations.
 	po.providerRelayStats.Clear()
 
-	// Reset the latest-sync block record.  Its Time field was set during the shifted
-	// period; a stale future timestamp here causes negative sync-lag when real time
-	// reverts to the pre-warp value.
-	po.latestSyncData.Lock.Lock()
-	po.latestSyncData.Block = 0
-	po.latestSyncData.Time = time.Time{}
-	po.latestSyncData.Lock.Unlock()
+	// Step 4 removed the per-optimizer latestSyncData store; chainState now owns the
+	// unified latestBlock tracker and is shared across optimizers, so per-optimizer
+	// reset is no longer applicable here.
 
 	// Reset both global adaptive calculators under their shared write lock.
 	// T-Digest samples recorded at shifted timestamps distort the P10/P90 bounds
@@ -260,7 +255,6 @@ func (po *ProviderOptimizer) AppendRelayData(provider string, latency time.Durat
 
 // appendRelayData gets three new QoS metrics samples and updates the provider's metrics using a decaying weighted average
 func (po *ProviderOptimizer) appendRelayData(provider string, latency time.Duration, success bool, cu, syncBlock uint64, sampleTime time.Time) {
-	latestSync, timeSync := po.updateLatestSyncData(syncBlock, sampleTime)
 	providerData, _ := po.getProviderData(provider)
 	halfTime := po.calculateHalfTime(provider, sampleTime)
 	weight := score.RelayUpdateWeight
@@ -275,11 +269,34 @@ func (po *ProviderOptimizer) appendRelayData(provider string, latency time.Durat
 		if updateErr != nil {
 			return
 		}
-		if syncBlock > providerData.SyncBlock {
-			// do not allow providers to go back
-			providerData.SyncBlock = syncBlock
+		// Sync scoring: outlier samples drop ALL scoring contributions (avail + latency
+		// updates earlier in this branch are not persisted because Set is below the
+		// fall-through point). Per-sample syncBlock feeds calculateSyncLag directly;
+		// the Sync EWMA's half-life provides smoothing.
+		//
+		// Sanity guard: a uint64 with the high bit set wraps to a negative int64 and
+		// would silently bypass IsOutlier. Realistic block heights never approach 2^63.
+		if syncBlock > uint64(math.MaxInt64) {
+			return
 		}
-		syncLag := po.calculateSyncLag(latestSync, timeSync, providerData.SyncBlock, sampleTime)
+		if po.chainState.IsOutlier(int64(syncBlock)) {
+			// M6: per-provider visibility into sync-scoring outlier-skip (Option B drop-all-scoring).
+			po.metricsManager.SetSyncScoringOutlierSkipped(po.chainId, provider, "relay")
+			return
+		}
+		block, ts, advanced := po.chainState.SetLatestBlock(int64(syncBlock))
+		latestSync, timeSync := uint64(block), ts
+		// Race-window detection: a concurrent SetMajorityBaseline between IsOutlier (read
+		// lock) and SetLatestBlock (write lock) can raise the bar such that syncBlock is
+		// now an outlier; SetLatestBlock's internal guard then rejects it, returning
+		// advanced=false with the existing snapshot. `!advanced && syncBlock > latestSync`
+		// uniquely identifies that path (monotonic-rejected has syncBlock <= latestSync;
+		// advance has advanced=true). Drop all scoring, same as the front-door guard.
+		if !advanced && syncBlock > latestSync {
+			po.metricsManager.SetSyncScoringOutlierSkipped(po.chainId, provider, "relay")
+			return
+		}
+		syncLag := po.calculateSyncLag(latestSync, timeSync, syncBlock, sampleTime)
 		providerData, updateErr = po.updateDecayingWeightedAverage(providerData, score.SyncScoreType, syncLag.Seconds(), weight, halfTime, cu, sampleTime)
 		if updateErr != nil {
 			return
@@ -297,7 +314,6 @@ func (po *ProviderOptimizer) appendRelayData(provider string, latency time.Durat
 
 	utils.LavaFormatTrace("[Optimizer] relay update",
 		utils.LogAttr("providerData", providerData),
-		utils.LogAttr("syncBlock", syncBlock),
 		utils.LogAttr("cu", cu),
 		utils.LogAttr("providerAddress", provider),
 		utils.LogAttr("latency", latency),
@@ -321,14 +337,24 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 		if updateErr != nil {
 			return
 		}
-		// Sync scoring: mirror the sync path from appendRelayData().
-		// Skip when syncBlock=0 (static providers, failed probes).
+		// Sync scoring: mirror appendRelayData. Skip when syncBlock=0 (static providers
+		// or failed probes that didn't return a block height). See appendRelayData for
+		// the full rationale on the sanity guard, outlier guard, and race-window detection.
 		if syncBlock > 0 {
-			latestSync, timeSync := po.updateLatestSyncData(syncBlock, sampleTime)
-			if syncBlock > providerData.SyncBlock {
-				providerData.SyncBlock = syncBlock
+			if syncBlock > uint64(math.MaxInt64) {
+				return
 			}
-			syncLag := po.calculateSyncLag(latestSync, timeSync, providerData.SyncBlock, sampleTime)
+			if po.chainState.IsOutlier(int64(syncBlock)) {
+				po.metricsManager.SetSyncScoringOutlierSkipped(po.chainId, providerAddress, "probe")
+				return
+			}
+			block, ts, advanced := po.chainState.SetLatestBlock(int64(syncBlock))
+			latestSync, timeSync := uint64(block), ts
+			if !advanced && syncBlock > latestSync {
+				po.metricsManager.SetSyncScoringOutlierSkipped(po.chainId, providerAddress, "probe")
+				return
+			}
+			syncLag := po.calculateSyncLag(latestSync, timeSync, syncBlock, sampleTime)
 			providerData, updateErr = po.updateDecayingWeightedAverage(providerData, score.SyncScoreType, syncLag.Seconds(), weight, halfTime, 0, sampleTime)
 			if updateErr != nil {
 				return
@@ -346,7 +372,6 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 		utils.LogAttr("providerAddress", providerAddress),
 		utils.LogAttr("latency", latency),
 		utils.LogAttr("success", success),
-		utils.LogAttr("syncBlock", syncBlock),
 	)
 }
 
@@ -505,119 +530,6 @@ func (po *ProviderOptimizer) ChooseBestProviderWithStats(ctx context.Context, al
 	return []string{selectedProvider}, selectionStats
 }
 
-// calculateBlockAvailability calculates the probability that a provider has synced
-// to the requested block height using a Poisson distribution model.
-//
-// Returns:
-//   - 1.0 if requestedBlock <= 0 (latest/pending queries, no block-specific requirement)
-//   - 1.0 if provider's syncBlock >= requestedBlock (provider is already synced)
-//   - Poisson probability (0.0-1.0) otherwise, based on time since last update
-//
-// The Poisson model assumes blocks arrive at a constant average rate (po.averageBlockTime).
-// Lambda represents the expected number of new blocks since the last sync observation.
-func (po *ProviderOptimizer) calculateBlockAvailability(
-	providerAddress string,
-	requestedBlock int64,
-) float64 {
-	// No block-specific requirement (latest/pending/safe/finalized queries)
-	if requestedBlock <= 0 {
-		return 1.0
-	}
-
-	// Get provider data to access SyncBlock and last update time
-	providerData, found := po.getProviderData(providerAddress)
-	if !found {
-		// Provider has no data yet - assume neutral (don't penalize for lack of data)
-		utils.LavaFormatTrace("[Optimizer] no provider data for block availability, returning neutral",
-			utils.LogAttr("provider", providerAddress),
-			utils.LogAttr("requestedBlock", requestedBlock),
-		)
-		return 1.0 // Neutral: don't penalize unknown providers
-	}
-
-	// Provider already at or past the requested block
-	if providerData.SyncBlock >= uint64(requestedBlock) {
-		return 1.0
-	}
-
-	// Calculate how many blocks the provider needs to catch up
-	distanceRequired := uint64(requestedBlock) - providerData.SyncBlock
-	if distanceRequired == 0 {
-		return 1.0
-	}
-
-	// Get time since we last observed this provider's sync block
-	lastUpdateTime := providerData.Sync.GetLastUpdateTime()
-	if lastUpdateTime.IsZero() {
-		// No sync data available - assume neutral (don't penalize for lack of data)
-		// This happens when providers only have probe data but no relay data yet
-		utils.LavaFormatTrace("[Optimizer] no sync update time for block availability, returning neutral",
-			utils.LogAttr("provider", providerAddress),
-			utils.LogAttr("requestedBlock", requestedBlock),
-		)
-		return 1.0
-	}
-
-	timeSinceLastSync := time.Since(lastUpdateTime)
-	if timeSinceLastSync < 0 {
-		// Clock skew or invalid data
-		utils.LavaFormatWarning("[Optimizer] negative time since last sync",
-			nil,
-			utils.LogAttr("provider", providerAddress),
-			utils.LogAttr("timeSinceLastSync", timeSinceLastSync),
-		)
-		return 0.5 // Neutral probability
-	}
-
-	// Calculate lambda: expected number of blocks produced since last observation
-	// lambda = timeSinceLastSync / averageBlockTime
-	avgBlockTimeSeconds := po.averageBlockTime.Seconds()
-	if avgBlockTimeSeconds <= 0 {
-		utils.LavaFormatWarning("[Optimizer] invalid average block time",
-			nil,
-			utils.LogAttr("averageBlockTime", po.averageBlockTime),
-		)
-		return 0.5
-	}
-
-	lambda := timeSinceLastSync.Seconds() / avgBlockTimeSeconds
-
-	// Poisson probability that provider has produced AT LEAST distanceRequired blocks.
-	//
-	// Let X ~ Poisson(lambda), where lambda is the expected number of new blocks since last observation.
-	// We want:
-	//   blockAvail = P(X >= distanceRequired)
-	//
-	// Note: CumulativeProbabilityFunctionForPoissonDist(k, lambda) returns P(X <= k).
-	// Therefore:
-	//   P(X >= d) = 1 - P(X <= d-1)
-	if distanceRequired > 0 {
-		// Probability provider has NOT caught up yet (insufficient blocks): P(X <= d-1)
-		insufficient := CumulativeProbabilityFunctionForPoissonDist(distanceRequired-1, lambda)
-		blockAvail := 1 - insufficient
-		if blockAvail < 0 {
-			blockAvail = 0
-		} else if blockAvail > 1 {
-			blockAvail = 1
-		}
-
-		utils.LavaFormatTrace("[Optimizer] calculated block availability",
-			utils.LogAttr("provider", providerAddress),
-			utils.LogAttr("requestedBlock", requestedBlock),
-			utils.LogAttr("syncBlock", providerData.SyncBlock),
-			utils.LogAttr("distanceRequired", distanceRequired),
-			utils.LogAttr("lambda", lambda),
-			utils.LogAttr("timeSinceLastSync", timeSinceLastSync),
-			utils.LogAttr("insufficientProbability", insufficient),
-			utils.LogAttr("blockAvailability", blockAvail),
-		)
-
-		return blockAvail
-	}
-
-	return 1.0
-}
-
 // calculate the probability a random variable with a poisson distribution
 // poisson distribution calculates the probability of K events, in this case the probability enough blocks pass and the request will be accessible in the block
 
@@ -651,49 +563,6 @@ func (po *ProviderOptimizer) calculateSyncLag(latestSync uint64, timeSync time.T
 	return timeLag
 }
 
-func (po *ProviderOptimizer) updateLatestSyncData(providerLatestBlock uint64, sampleTime time.Time) (uint64, time.Time) {
-	po.latestSyncData.Lock.Lock()
-	defer po.latestSyncData.Lock.Unlock()
-
-	// Guard: reject outlier block heights to prevent latestSyncData poisoning
-	if po.chainState != nil && po.chainState.IsOutlier(int64(providerLatestBlock)) {
-		utils.LavaFormatWarning("latestSyncData update rejected: outlier block height", nil,
-			utils.LogAttr("providerLatestBlock", providerLatestBlock),
-			utils.LogAttr("currentLatestBlock", po.latestSyncData.Block),
-			utils.LogAttr("majorityBaseline", po.chainState.GetMajorityBaseline()),
-			utils.LogAttr("chainId", po.chainId),
-		)
-		return po.latestSyncData.Block, po.latestSyncData.Time
-	}
-
-	latestBlock := po.latestSyncData.Block
-	if latestBlock < providerLatestBlock {
-		// saved latest block is older, so update
-		po.latestSyncData.Block = providerLatestBlock
-		po.latestSyncData.Time = sampleTime
-	}
-	return po.latestSyncData.Block, po.latestSyncData.Time
-}
-
-// ResetLatestSyncDataIfOutlier checks whether latestSyncData.Block has been poisoned
-// (e.g., during a consensus gap when majorityBaseline was 0 and a contaminated relay
-// set it to an arbitrarily high value). If latestSyncData.Block exceeds floor + threshold,
-// it is reset to floor so that sync scoring can recover.
-func (po *ProviderOptimizer) ResetLatestSyncDataIfOutlier(floor int64, threshold int64) {
-	po.latestSyncData.Lock.Lock()
-	defer po.latestSyncData.Lock.Unlock()
-
-	if po.latestSyncData.Block > uint64(floor+threshold) {
-		utils.LavaFormatWarning("latestSyncData reset: value was outlier relative to consensus", nil,
-			utils.LogAttr("previousBlock", po.latestSyncData.Block),
-			utils.LogAttr("consensusFloor", floor),
-			utils.LogAttr("outlierThreshold", threshold),
-			utils.LogAttr("chainId", po.chainId),
-		)
-		po.latestSyncData.Block = uint64(floor)
-		po.latestSyncData.Time = time.Now()
-	}
-}
 
 // getProviderData gets a specific proivder's QoS data. If it doesn't exist, it returns a default provider data struct
 func (po *ProviderOptimizer) getProviderData(providerAddress string) (providerData ProviderData, found bool) {
@@ -710,7 +579,6 @@ func (po *ProviderOptimizer) getProviderData(providerAddress string) (providerDa
 			Availability: score.NewScoreStore(score.AvailabilityScoreType), // default score of 100%
 			Latency:      score.NewScoreStore(score.LatencyScoreType),      // default score of 10ms
 			Sync:         score.NewScoreStore(score.SyncScoreType),         // default score of 100ms
-			SyncBlock:    0,
 		}
 	}
 
@@ -850,7 +718,16 @@ func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.T
 	return nil
 }
 
-func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerQoSClient consumerOptimizerQoSClientInf, chainId string, cState *chainstate.ChainState) *ProviderOptimizer {
+func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerQoSClient consumerOptimizerQoSClientInf, chainId string, cState *chainstate.ChainState, metricsManager metrics.ConsumerMetricsManagerInf) *ProviderOptimizer {
+	// ChainState is mandatory: ProviderOptimizer reads/writes it on every relay and every
+	// probe. A nil cState would silently zero the sync path; refusing it at construction
+	// keeps the failure mode loud.
+	if cState == nil {
+		utils.LavaFormatFatal("ProviderOptimizer requires a non-nil ChainState", nil)
+	}
+	// metricsManager is wrapped in SafeMetrics so a nil parameter from test scaffolding
+	// becomes a no-op without nil-checking on every emit (hot path).
+	metricsManager = metrics.SafeMetrics(metricsManager)
 	cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
@@ -901,6 +778,7 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wan
 		globalLatencyCalculator:         globalLatencyCalculator,
 		globalSyncCalculator:            globalSyncCalculator,
 		chainState:                      cState,
+		metricsManager:                  metricsManager,
 	}
 }
 

@@ -2,8 +2,10 @@ package cache
 
 import (
 	"bytes"
+	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/lavanet/lava/v5/protocol/common"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
@@ -355,4 +357,90 @@ func mustCompress(t *testing.T, data []byte) []byte {
 	compressed, _, err := common.CompressData(data, 0) // 0 threshold to force compression
 	require.NoError(t, err)
 	return compressed
+}
+
+// newTestCacheServer constructs a RelayerCacheServer with the standard production
+// expiration settings. Used by the shared-state seenBlock tests below.
+func newTestCacheServer() *RelayerCacheServer {
+	cs := CacheServer{CacheMaxCost: 2 * 1024 * 1024 * 1024}
+	cs.InitCache(
+		context.Background(),
+		DefaultExpirationTimeFinalized,
+		DefaultExpirationForNonFinalized,
+		DefaultExpirationNodeErrors,
+		DefaultExpirationBlocksHashesToHeights,
+		DisabledFlagOption,
+		DefaultExpirationTimeFinalizedMultiplier,
+		DefaultExpirationTimeNonFinalizedMultiplier,
+	)
+	return &RelayerCacheServer{CacheServer: &cs}
+}
+
+// --- shared-state fallback tests ---
+
+// TestGetSeenBlockForSharedStateMode_EmptyIdFallsBackToChainWide pins the chain-wide
+// fallback: when sharedStateId is empty (new consumers), the cache server falls back to
+// the chain-wide key (latestBlockKey(chainId, "")) which is maintained by every successful
+// SetRelay.
+func TestGetSeenBlockForSharedStateMode_EmptyIdFallsBackToChainWide(t *testing.T) {
+	server := newTestCacheServer()
+
+	const (
+		chainId   = "TESTCHAIN"
+		seedBlock = int64(12345)
+	)
+
+	// Seed the chain-wide latestBlock — same key SetRelay would write.
+	server.setLatestBlock(latestBlockKey(chainId, ""), seedBlock)
+
+	// `setLatestBlock` writes are async via ristretto; poll until visible.
+	require.Eventually(t, func() bool {
+		return server.getSeenBlockForSharedStateMode(chainId, "") == seedBlock
+	}, 50*time.Millisecond, time.Millisecond, "empty sharedStateId must fall back to chain-wide value")
+}
+
+// TestGetSeenBlockForSharedStateMode_EmptyIdReturnsZeroWhenUnseeded pins the cold-start
+// case: when sharedStateId is empty AND no chain-wide value has been written yet (no
+// SetRelay has fired), the fallback returns 0 — never negative, never some unrelated
+// key's value. Consumer-side this maps to "no cross-consumer seenBlock yet."
+func TestGetSeenBlockForSharedStateMode_EmptyIdReturnsZeroWhenUnseeded(t *testing.T) {
+	server := newTestCacheServer()
+
+	// No setLatestBlock call — chain-wide key is unset.
+	got := server.getSeenBlockForSharedStateMode("TESTCHAIN", "")
+	require.Equal(t, int64(0), got, "empty sharedStateId with no seed must return 0")
+}
+
+// TestGetSeenBlockForSharedStateMode_OldPerUserKeyStillWorks pins the backwards-compat
+// path: a new cache server (with the chain-wide fallback) must still serve old consumers
+// that send dappId__consumerIp as sharedStateId. The per-user keying path on the reader
+// side is preserved verbatim.
+func TestGetSeenBlockForSharedStateMode_OldPerUserKeyStillWorks(t *testing.T) {
+	server := newTestCacheServer()
+
+	const (
+		chainId       = "TESTCHAIN"
+		oldStyleId    = "dapp42__1.2.3.4"
+		seenBlock     = int64(98765)
+		ristrettoWait = 50 * time.Millisecond // ristretto SetWithTTL is async
+	)
+
+	// Simulate an old consumer's write — same path setSeenBlockOnSharedStateMode
+	// would take on receiving a SetEntry call with non-empty SharedStateId.
+	server.setSeenBlockOnSharedStateMode(chainId, oldStyleId, seenBlock)
+
+	// Allow ristretto's write buffer to flush before reading. The retry goroutine
+	// inside performInt64WriteWithValidationAndRetry runs concurrently; this sleep
+	// is long enough for the synchronous SetWithTTL to be visible.
+	require.Eventually(t, func() bool {
+		return server.getSeenBlockForSharedStateMode(chainId, oldStyleId) == seenBlock
+	}, ristrettoWait, time.Millisecond, "old per-user key must round-trip through the cache")
+
+	// And confirm a different sharedStateId on the same chain isn't accidentally
+	// returning the same value — keys remain partitioned per (chainId, sharedStateId).
+	require.Equal(t,
+		int64(0),
+		server.getSeenBlockForSharedStateMode(chainId, "different_user__9.9.9.9"),
+		"per-user keying must not bleed across distinct sharedStateIds",
+	)
 }

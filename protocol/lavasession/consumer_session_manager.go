@@ -566,8 +566,8 @@ func (csm *ConsumerSessionManager) probeProviders(ctx context.Context, pairingLi
 		floor := chainstate.ComputeMajorityBaseline(blocks, bucketWidth)
 		if floor > 0 {
 			threshold := chainstate.ComputeOutlierThreshold(PeriodicProbeProvidersInterval, avgBlockTime)
-			csm.chainState.SetMajorityBaseline(floor, threshold)
-			csm.providerOptimizer.ResetLatestSyncDataIfOutlier(floor, threshold)
+			csm.chainState.SetMajorityBaseline(floor, threshold, csm.rpcEndpoint.ApiInterface)
+			csm.chainState.AlignLatestBlockWithConsensus(floor, threshold, csm.rpcEndpoint.ApiInterface)
 			if DebugProbes {
 				utils.LavaFormatDebug("majorityBaseline updated",
 					utils.Attribute{Key: "endpoint", Value: csm.rpcEndpoint},
@@ -583,7 +583,7 @@ func (csm *ConsumerSessionManager) probeProviders(ctx context.Context, pairingLi
 		} else {
 			// Consensus failed — reset majorityBaseline to disable outlier detection.
 			// A stale baseline is worse than no baseline: it could block legitimate updates.
-			csm.chainState.SetMajorityBaseline(0, 0)
+			csm.chainState.SetMajorityBaseline(0, 0, csm.rpcEndpoint.ApiInterface)
 			csm.consumerMetricsManager.SetMajorityBaselineConsensusFailure(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, len(blocks))
 
 			// Log per-provider block heights so operators can diagnose why consensus failed.
@@ -617,7 +617,7 @@ func (csm *ConsumerSessionManager) probeProviders(ctx context.Context, pairingLi
 // unblock them immediately if their initial probe succeeds (because reportProvider=false means
 // they are not in reportedProviders). This creates a brief window (~5s, until the next periodic
 // probe re-detects and re-blocks) where a still-contaminated provider could receive relay traffic.
-// The IsOutlier guards on seenBlock and latestSyncData protect consumer state during this window.
+// The IsOutlier guard inside chainState.SetLatestBlock protects consumer state during this window.
 func (csm *ConsumerSessionManager) blockOutlierProviders(ctx context.Context, results []ProbeResult, floor int64, threshold int64, epoch uint64) {
 	if floor <= 0 {
 		return // no consensus — nothing to compare against

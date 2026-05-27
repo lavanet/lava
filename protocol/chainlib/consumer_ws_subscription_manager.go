@@ -607,6 +607,17 @@ func (cwsm *ConsumerWSSubscriptionManager) handleIncomingSubscriptionNodeMessage
 		)
 	}
 
+	// Advance the chain-wide latestBlock tracker once per verified subscription event.
+	// Lifted out of the dispatch loop — the value is identical for every user subscribed
+	// to this stream, so N-1 in-loop calls were no-ops. The dispatch `continue` branches
+	// below skip user-facing dispatch only; this update fires regardless of whether any
+	// user is currently connected. Skip when LatestBlock is 0 (upstream node didn't
+	// include a block height) — SetLatestBlock would reject internally, but skipping
+	// avoids debug-trace noise.
+	if subscriptionRelayReplyMsg.LatestBlock > 0 {
+		cwsm.relaySender.SetConsistencySeenBlock(subscriptionRelayReplyMsg.LatestBlock)
+	}
+
 	// message is valid, we can now distribute the message to all active listening users.
 	for connectedDappKey := range activeSubscription.connectedDappKeys {
 		if _, ok := cwsm.connectedDapps[connectedDappKey]; !ok {
@@ -628,8 +639,6 @@ func (cwsm *ConsumerWSSubscriptionManager) handleIncomingSubscriptionNodeMessage
 			)
 			continue
 		}
-		// set consistency seen block
-		cwsm.relaySender.SetConsistencySeenBlock(subscriptionRelayReplyMsg.LatestBlock, connectedDappKey)
 		// send the reply to the user
 		cwsm.connectedDapps[connectedDappKey][hashedParams].Send(subscriptionRelayReplyMsg)
 	}

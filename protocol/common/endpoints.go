@@ -72,6 +72,12 @@ type UserData struct {
 	DappId     string
 }
 
+// DappKey returns the per-user routing key (`dappId__consumerIp`) used by the
+// WS subscription manager to route per-user notification fanout.
+func (u UserData) DappKey() string {
+	return u.DappId + "__" + u.ConsumerIp
+}
+
 type NodeUrl struct {
 	Url               string        `yaml:"url,omitempty" json:"url,omitempty" mapstructure:"url"`
 	InternalPath      string        `yaml:"internal-path,omitempty" json:"internal-path,omitempty" mapstructure:"internal-path"`

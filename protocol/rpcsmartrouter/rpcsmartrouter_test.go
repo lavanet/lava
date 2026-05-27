@@ -7,6 +7,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/v5/protocol/chainstate"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
@@ -59,7 +60,7 @@ func createTestSessionManager(chainID, apiInterface string) (*lavasession.Consum
 		ApiInterface:   apiInterface,
 		NetworkAddress: "127.0.0.1:3333",
 	}
-	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, time.Second, uint(1), nil, chainID, nil)
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, time.Second, uint(1), nil, chainID, chainstate.NewChainState(0, chainID, nil), nil)
 	sm := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, "test-router", lavasession.NewActiveSubscriptionProvidersStorage(), nil)
 	return sm, rpcEndpoint
 }
@@ -104,7 +105,7 @@ func TestUpdateEpoch_FreshSessions(t *testing.T) {
 		ApiInterface:   "tendermintrpc",
 		NetworkAddress: "127.0.0.1:3333",
 	}
-	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, time.Second, uint(1), nil, "LAV1", nil)
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, time.Second, uint(1), nil, "LAV1", chainstate.NewChainState(0, "LAV1", nil), nil)
 
 	chainKey := rpcEndpoint.Key()
 	sessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, "test-router", lavasession.NewActiveSubscriptionProvidersStorage(), nil)
@@ -167,7 +168,7 @@ func TestUpdateEpoch_ResetsDisabledEndpoints(t *testing.T) {
 		ApiInterface:   "tendermintrpc",
 		NetworkAddress: "127.0.0.1:3334",
 	}
-	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, time.Second, uint(1), nil, "LAV1", nil)
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, time.Second, uint(1), nil, "LAV1", chainstate.NewChainState(0, "LAV1", nil), nil)
 	chainKey := rpcEndpoint.Key()
 	sessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, "test-router", lavasession.NewActiveSubscriptionProvidersStorage(), nil)
 	rpsr.sessionManagers[chainKey] = sessionManager
@@ -247,7 +248,7 @@ func TestUpdateEpoch_ResetsHealthMetric(t *testing.T) {
 		ApiInterface:   testApiInterface,
 		NetworkAddress: "127.0.0.1:3335",
 	}
-	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, time.Second, uint(1), nil, testChainID, nil)
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, time.Second, uint(1), nil, testChainID, chainstate.NewChainState(0, testChainID, nil), nil)
 	chainKey := rpcEndpoint.Key()
 	rpsr.sessionManagers[chainKey] = lavasession.NewConsumerSessionManager(
 		rpcEndpoint, optimizer, nil, "test-router", lavasession.NewActiveSubscriptionProvidersStorage(), nil,
@@ -337,7 +338,7 @@ func TestUpdateEpoch_NilListenEndpointDoesNotPanic(t *testing.T) {
 		ApiInterface:   "tendermintrpc",
 		NetworkAddress: "127.0.0.1:3336",
 	}
-	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, time.Second, uint(1), nil, rpcEndpoint.ChainID, nil)
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, time.Second, uint(1), nil, rpcEndpoint.ChainID, chainstate.NewChainState(0, rpcEndpoint.ChainID, nil), nil)
 	chainKey := rpcEndpoint.Key()
 
 	rpsr := &RPCSmartRouter{

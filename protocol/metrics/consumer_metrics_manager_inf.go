@@ -32,6 +32,13 @@ func (NoOpConsumerMetrics) SetProviderSelected(string, string, string, []Provide
 func (NoOpConsumerMetrics) SetBlockedProvider(string, string, string, string, bool)  {}
 func (NoOpConsumerMetrics) SetProbeOutlierBlock(string, string, string, int64, int64, int64) {}
 func (NoOpConsumerMetrics) SetMajorityBaselineConsensusFailure(string, string, int)           {}
+func (NoOpConsumerMetrics) SetAlignLatestBlockOutcome(string, string, string)                 {}
+func (NoOpConsumerMetrics) SetLatestBlockOutlierRejected(string)                              {}
+func (NoOpConsumerMetrics) SetChainStateLatestBlock(string, int64)                            {}
+func (NoOpConsumerMetrics) SetMajorityBaselineGauge(string, string, int64)                    {}
+func (NoOpConsumerMetrics) SetAlignLatestBlockGap(string, string, int64)                      {}
+func (NoOpConsumerMetrics) SetSyncScoringOutlierSkipped(string, string, string)               {}
+func (NoOpConsumerMetrics) SetSharedStatePropagation(string)                                  {}
 func (NoOpConsumerMetrics) SetQOSMetrics(string, string, string, string, *pairingtypes.QualityOfServiceReport, *pairingtypes.QualityOfServiceReport, int64, uint64, time.Duration, bool) {
 }
 func (NoOpConsumerMetrics) ResetSessionRelatedMetrics()                                    {}
@@ -89,6 +96,14 @@ type ConsumerMetricsManagerInf interface {
 	SetBlockedProvider(chainId, apiInterface, providerAddress, providerEndpoint string, isBlocked bool)
 	SetProbeOutlierBlock(chainId, apiInterface, providerAddress string, reportedBlock, floor, threshold int64)
 	SetMajorityBaselineConsensusFailure(chainId, apiInterface string, validProbeCount int)
+	// seenBlock/latestSyncData unification observability — see unification-demo-env-setup.md §7
+	SetAlignLatestBlockOutcome(chainId, apiInterface, outcome string)
+	SetLatestBlockOutlierRejected(chainId string)
+	SetChainStateLatestBlock(chainId string, block int64)
+	SetMajorityBaselineGauge(chainId, apiInterface string, value int64)
+	SetAlignLatestBlockGap(chainId, apiInterface string, gap int64)
+	SetSyncScoringOutlierSkipped(chainId, providerAddress, source string)
+	SetSharedStatePropagation(chainId string)
 	SetQOSMetrics(chainId string, apiInterface string, providerAddress string, providerEndpoint string, qos *pairingtypes.QualityOfServiceReport, reputation *pairingtypes.QualityOfServiceReport, latestBlock int64, relays uint64, relayLatency time.Duration, sessionSuccessful bool)
 
 	// --- Session (ConsumerSessionManager) ---

@@ -173,7 +173,7 @@ type RelaySender interface {
 	) (relayResult *common.RelayResult, errRet error)
 	CreateDappKey(userData common.UserData) string
 	CancelSubscriptionContext(subscriptionKey string)
-	SetConsistencySeenBlock(blockSeen int64, key string)
+	SetConsistencySeenBlock(blockSeen int64)
 }
 
 type ChainListener interface {

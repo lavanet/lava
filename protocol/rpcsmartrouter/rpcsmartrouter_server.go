@@ -55,7 +55,6 @@ type RPCSmartRouterServer struct {
 	listenEndpoint         *lavasession.RPCEndpoint
 	rpcSmartRouterLogs     *metrics.RPCConsumerLogs
 	cache                  *performance.Cache
-	smartRouterConsistency relaycore.Consistency
 	chainState             *chainstate.ChainState
 	consistencyConfig      *relaycore.ConsistencyValidationConfig // Configuration for consistency validation
 	sharedState            bool                                   // using the cache backend to sync the latest seen block
@@ -86,7 +85,6 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 	sessionManager *lavasession.ConsumerSessionManager,
 	cache *performance.Cache,
 	rpcSmartRouterLogs *metrics.RPCConsumerLogs,
-	smartRouterConsistency relaycore.Consistency,
 	cState *chainstate.ChainState,
 	relaysMonitor *metrics.RelaysMonitor,
 	cmdFlags common.ConsumerCmdFlags,
@@ -100,7 +98,6 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 	rpcss.chainTracker = chainTracker
 	rpcss.rpcSmartRouterLogs = rpcSmartRouterLogs
 	rpcss.chainParser = chainParser
-	rpcss.smartRouterConsistency = smartRouterConsistency
 	rpcss.chainState = cState
 	rpcss.sharedState = sharedState
 	rpcss.debugRelays = cmdFlags.DebugRelays
@@ -181,8 +178,13 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 	return nil
 }
 
-func (rpcss *RPCSmartRouterServer) SetConsistencySeenBlock(blockSeen int64, key string) {
-	rpcss.smartRouterConsistency.SetSeenBlockFromKey(blockSeen, key)
+// SetConsistencySeenBlock advances the chain-wide latestBlock tracker on a verified
+// subscription event. Implements the RelaySender interface.
+func (rpcss *RPCSmartRouterServer) SetConsistencySeenBlock(blockSeen int64) {
+	if rpcss.chainState == nil {
+		return
+	}
+	rpcss.chainState.SetLatestBlock(blockSeen)
 }
 
 func (rpcss *RPCSmartRouterServer) GetListeningAddress() string {
@@ -321,7 +323,6 @@ func (rpcss *RPCSmartRouterServer) sendRelayWithRetries(ctx context.Context, ret
 	relayProcessor := relaycore.NewRelayProcessor(
 		ctx,
 		crossValidationParams,
-		rpcss.smartRouterConsistency,
 		rpcss.chainState,
 		rpcss.rpcSmartRouterLogs,
 		rpcss,
@@ -522,7 +523,7 @@ func (rpcss *RPCSmartRouterServer) ParseRelay(
 
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of endpoints
 	reqBlock, _ := chainMessage.RequestedBlock()
-	seenBlock, _ := rpcss.smartRouterConsistency.GetSeenBlock(common.UserData{DappId: dappID, ConsumerIp: consumerIp})
+	seenBlock, _ := rpcss.chainState.GetLatestBlock()
 	if seenBlock < 0 {
 		seenBlock = 0
 	}
@@ -643,7 +644,6 @@ func (rpcss *RPCSmartRouterServer) ProcessRelaySend(ctx context.Context, protoco
 	relayProcessor := relaycore.NewRelayProcessor(
 		ctx,
 		crossValidationParams,
-		rpcss.smartRouterConsistency,
 		rpcss.chainState,
 		rpcss.rpcSmartRouterLogs,
 		rpcss,
@@ -702,7 +702,7 @@ func (rpcss *RPCSmartRouterServer) ProcessRelaySend(ctx context.Context, protoco
 }
 
 func (rpcss *RPCSmartRouterServer) CreateDappKey(userData common.UserData) string {
-	return rpcss.smartRouterConsistency.Key(userData)
+	return userData.DappKey()
 }
 
 func (rpcss *RPCSmartRouterServer) CancelSubscriptionContext(subscriptionKey string) {
@@ -1090,8 +1090,8 @@ func (rpcss *RPCSmartRouterServer) filterEndpointsByConsistency(
 		span.End()
 	}()
 
-	// Skip if consistency config is not set
-	if rpcss.consistencyConfig == nil || rpcss.smartRouterConsistency == nil {
+	// Skip if consistency config or chain-state tracker is not set
+	if rpcss.consistencyConfig == nil || rpcss.chainState == nil {
 		return sessions, nil, nil
 	}
 
@@ -1101,11 +1101,10 @@ func (rpcss *RPCSmartRouterServer) filterEndpointsByConsistency(
 		return sessions, nil, nil
 	}
 
-	// Get user's seen block
-	userData := protocolMessage.GetUserData()
-	seenBlock, found := rpcss.smartRouterConsistency.GetSeenBlock(userData)
+	// Get the chain-wide latest block; cold start short-circuits validation (all endpoints pass).
+	seenBlock, found := rpcss.chainState.GetLatestBlock()
 	if !found || seenBlock <= 0 {
-		// No prior seen block - skip validation
+		// Cold start — skip validation, all endpoints pass.
 		return sessions, nil, nil
 	}
 
@@ -1419,11 +1418,11 @@ func (rpcss *RPCSmartRouterServer) tryCacheWrite(
 	// Get seen block
 	seenBlock := relayData.SeenBlock
 
-	// Get shared state ID if enabled
+	// sharedStateId is always "" — shared-state seenBlock propagation uses a chain-wide
+	// key. This also fixes a pre-existing asymmetry where the write path used
+	// listenEndpoint.Key() (chainID+apiInterface) while the read path used the per-user
+	// key (dappId__ip) — the two never collided. Both now collide on the chain-wide key.
 	sharedStateId := ""
-	if rpcss.sharedState {
-		sharedStateId = rpcss.listenEndpoint.Key()
-	}
 
 	// Deep copy reply to avoid race conditions (cache write is async)
 	copyReply := &pairingtypes.RelayReply{}
@@ -1495,10 +1494,11 @@ func (rpcss *RPCSmartRouterServer) sendRelayToEndpoint(
 	}
 
 	userData := protocolMessage.GetUserData()
-	var sharedStateId string // defaults to "", if shared state is disabled then no shared state will be used.
-	if rpcss.sharedState {
-		sharedStateId = rpcss.smartRouterConsistency.Key(userData) // use same key as we use for consistency, (for better consistency :-D)
-	}
+	// sharedStateId is always "" — shared-state seenBlock propagation uses a chain-wide
+	// key. The cache server reads from latestBlockKey(chainId, "") when sharedStateId is
+	// empty; old per-user keying (dappId__consumerIp) is preserved on the cache-server
+	// side for backwards-compat with old consumers.
+	var sharedStateId string
 
 	chainId, apiInterface := rpcss.GetChainIdAndApiInterface()
 
@@ -1565,12 +1565,12 @@ func (rpcss *RPCSmartRouterServer) sendRelayToEndpoint(
 					// The cache server doesn't accept negative blocks
 					requestedBlockForCache := reqBlock
 					if reqBlock == spectypes.LATEST_BLOCK {
-						// For LATEST_BLOCK queries, use the latest known block from smartRouterConsistency
-						// This ensures methods like eth_blockNumber use the actual current block for caching,
-						// not the potentially stale seenBlock from when this request started.
-						// The consistency cache is updated immediately after each successful response,
-						// so it reflects the most recent block across all requests for this user.
-						latestKnownBlock, found := rpcss.smartRouterConsistency.GetSeenBlock(userData)
+						// For LATEST_BLOCK queries, use the chain-wide head from ChainState.
+						// This ensures methods like eth_blockNumber use the actual current block for
+						// caching, not the potentially stale seenBlock from when this request started.
+						// ChainState is updated immediately after each successful response, so it
+						// reflects the most recent block across all requests for this chain.
+						latestKnownBlock, found := rpcss.chainState.GetLatestBlock()
 						if found && latestKnownBlock > 0 {
 							requestedBlockForCache = latestKnownBlock
 						} else if localRelayData.SeenBlock != 0 {
@@ -1640,8 +1640,10 @@ func (rpcss *RPCSmartRouterServer) sendRelayToEndpoint(
 					if rpcss.sharedState && cacheSeenBlock > localRelayData.SeenBlock {
 						utils.LavaFormatDebug("shared state seen block is newer", utils.LogAttr("cache_seen_block", cacheSeenBlock), utils.LogAttr("local_seen_block", localRelayData.SeenBlock), utils.LogAttr("GUID", ctx))
 						localRelayData.SeenBlock = cacheSeenBlock
-						// setting the fetched seen block from the cache server to our local cache as well.
-						rpcss.smartRouterConsistency.SetSeenBlock(cacheSeenBlock, userData)
+						// Propagate the cross-consumer-fresh value into the chain-wide tracker.
+						// SetLatestBlockFromSharedState also emits M7 (lava_consumer_shared_state_propagations_total)
+						// — see the consumer-side mirror in rpcconsumer_server.go for the rationale.
+						rpcss.chainState.SetLatestBlockFromSharedState(cacheSeenBlock)
 					}
 
 					// handle cache reply

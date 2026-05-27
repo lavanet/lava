@@ -2,13 +2,14 @@ package provideroptimizer
 
 import (
 	"context"
-	stdmath "math"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
 	"cosmossdk.io/math"
 	"github.com/lavanet/lava/v5/protocol/chainstate"
+	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/lavaslices"
 	"github.com/lavanet/lava/v5/utils/rand"
@@ -16,6 +17,24 @@ import (
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
+
+// recordingOptimizerMetrics captures M6 emits for assertion in unification observability tests.
+// Embeds NoOpConsumerMetrics so future interface methods don't break this mock.
+type recordingOptimizerMetrics struct {
+	metrics.NoOpConsumerMetrics
+	mu    sync.Mutex
+	calls []syncScoringOutlierCall
+}
+
+type syncScoringOutlierCall struct {
+	chainID, providerAddress, source string
+}
+
+func (r *recordingOptimizerMetrics) SetSyncScoringOutlierSkipped(chainID, providerAddress, source string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.calls = append(r.calls, syncScoringOutlierCall{chainID, providerAddress, source})
+}
 
 func init() {
 	rand.InitRandomSeed()
@@ -28,7 +47,7 @@ const (
 
 func setupProviderOptimizer(maxProvidersCount uint) *ProviderOptimizer {
 	averageBlockTIme := TEST_AVERAGE_BLOCK_TIME
-	return NewProviderOptimizer(StrategyBalanced, averageBlockTIme, maxProvidersCount, nil, "test", nil)
+	return NewProviderOptimizer(StrategyBalanced, averageBlockTIme, maxProvidersCount, nil, "test", &chainstate.ChainState{}, nil)
 }
 
 type providersGenerator struct {
@@ -41,29 +60,6 @@ func (pg *providersGenerator) setupProvidersForTest(count int) *providersGenerat
 		pg.providersAddresses[i] = "lava@test_" + strconv.Itoa(i)
 	}
 	return pg
-}
-
-// TestProviderOptimizerProviderDataSetGet tests that the providerData
-// Get and Set methods work as expected
-func TestProviderOptimizerProviderDataSetGet(t *testing.T) {
-	providerOptimizer := setupProviderOptimizer(1)
-	providersGen := (&providersGenerator{}).setupProvidersForTest(1)
-	providerAddress := providersGen.providersAddresses[0]
-	for i := 0; i < 100; i++ {
-		providerData := ProviderData{SyncBlock: uint64(i)}
-		address := providerAddress + strconv.Itoa(i)
-		set := providerOptimizer.providersStorage.Set(address, providerData, 1)
-		if set == false {
-			utils.LavaFormatWarning("set in cache dropped", nil)
-		}
-	}
-	time.Sleep(4 * time.Millisecond)
-	for i := 0; i < 100; i++ {
-		address := providerAddress + strconv.Itoa(i)
-		providerData, found := providerOptimizer.getProviderData(address)
-		require.Equal(t, uint64(i), providerData.SyncBlock, "failed getting entry %s", address)
-		require.True(t, found)
-	}
 }
 
 // TestProviderOptimizerBasicProbeData tests the basic provider optimizer operation
@@ -907,108 +903,6 @@ func TestProviderOptimizerLatencySyncScore(t *testing.T) {
 	require.InDelta(t, res[providersGen.providersAddresses[0]], res[providersGen.providersAddresses[1]], float64(iterations)*0.1)
 }
 
-// TestCalculateBlockAvailability tests the block availability calculation logic
-func TestCalculateBlockAvailability(t *testing.T) {
-	rand.SetSpecificSeed(1234567)
-
-	// Setup optimizer with 10 second average block time
-	providerOptimizer := setupProviderOptimizer(1)
-
-	poissonSurvival := func(distanceRequired uint64, lambda float64) float64 {
-		// P(X >= distanceRequired) for X~Poisson(lambda)
-		// = 1 - e^-λ * sum_{i=0}^{distanceRequired-1} λ^i / i!
-		if distanceRequired == 0 {
-			return 1.0
-		}
-		sum := 0.0
-		pow := 1.0
-		fact := 1.0
-		for i := uint64(0); i < distanceRequired; i++ {
-			if i > 0 {
-				pow *= lambda
-				fact *= float64(i)
-			}
-			sum += pow / fact
-		}
-		return 1.0 - stdmath.Exp(-lambda)*sum
-	}
-
-	tests := []struct {
-		name           string
-		requestedBlock int64
-		syncBlock      uint64
-		timeSinceSync  time.Duration
-		expected       float64
-	}{
-		{
-			name:           "latest block request (requestedBlock <= 0)",
-			requestedBlock: -1,
-			syncBlock:      1000,
-			timeSinceSync:  0,
-			expected:       1.0,
-		},
-		{
-			name:           "requested block already synced",
-			requestedBlock: 900, // Provider is at 1000
-			syncBlock:      1000,
-			timeSinceSync:  0,
-			expected:       1.0,
-		},
-		{
-			name:           "requested block equals current sync",
-			requestedBlock: 1000,
-			syncBlock:      1000,
-			timeSinceSync:  0,
-			expected:       1.0,
-		},
-		{
-			name:           "requested block 1 ahead, lambda=1",
-			requestedBlock: 1001,
-			syncBlock:      1000,
-			timeSinceSync:  TEST_AVERAGE_BLOCK_TIME, // lambda = 1
-			expected:       poissonSurvival(1, 1.0),
-		},
-		{
-			name:           "requested block 2 ahead, lambda=1",
-			requestedBlock: 1002,
-			syncBlock:      1000,
-			timeSinceSync:  TEST_AVERAGE_BLOCK_TIME, // lambda = 1
-			expected:       poissonSurvival(2, 1.0),
-		},
-		{
-			name:           "requested block 3 ahead, lambda=1",
-			requestedBlock: 1003,
-			syncBlock:      1000,
-			timeSinceSync:  TEST_AVERAGE_BLOCK_TIME, // lambda = 1
-			expected:       poissonSurvival(3, 1.0),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			providerAddress := "test_provider_" + tt.name
-
-			// Seed provider data with a controlled sync update time (avoid time.Sleep flakiness)
-			now := time.Now()
-			syncStore, err := score.NewCustomScoreStore(score.SyncScoreType, score.DefaultSyncNum, 1, now.Add(-tt.timeSinceSync))
-			require.NoError(t, err)
-			providerData := ProviderData{
-				Availability: score.NewScoreStore(score.AvailabilityScoreType),
-				Latency:      score.NewScoreStore(score.LatencyScoreType),
-				Sync:         syncStore,
-				SyncBlock:    tt.syncBlock,
-			}
-			set := providerOptimizer.providersStorage.Set(providerAddress, providerData, 1)
-			require.True(t, set, "provider data entry was dropped by cache")
-			// ristretto writes are asynchronous; allow the cache to process the Set
-			time.Sleep(4 * time.Millisecond)
-
-			blockAvail := providerOptimizer.calculateBlockAvailability(providerAddress, tt.requestedBlock)
-			require.InDelta(t, tt.expected, blockAvail, 0.03, "unexpected block availability")
-		})
-	}
-}
-
 // TestHistoricalQuerySelectionDistribution tests that historical queries
 // preferentially select providers that have synced to the requested block
 func TestHistoricalQuerySelectionDistribution(t *testing.T) {
@@ -1243,11 +1137,8 @@ func TestProviderOptimizer_ResetState_AllowsRealTimeSamplesAfterClockReset(t *te
 	require.False(t, foundAfterReset,
 		"after ResetState, stale provider data should be gone from the cache")
 
-	// latestSyncData must be zeroed.
-	po.latestSyncData.Lock.Lock()
-	require.Zero(t, po.latestSyncData.Block, "latestSyncData.Block should be reset to 0")
-	require.True(t, po.latestSyncData.Time.IsZero(), "latestSyncData.Time should be reset to zero")
-	po.latestSyncData.Lock.Unlock()
+	// Step 4 removed the per-optimizer latestSyncData store (chainState owns the
+	// unified latestBlock tracker now), so there is nothing to assert about it here.
 
 	// ── Step 5: verify real-time writes are now accepted ─────────────────────────
 	po.appendRelayData(addr, TEST_BASE_WORLD_LATENCY, true, cu, syncBlock, time.Now())
@@ -1266,126 +1157,33 @@ func TestProviderOptimizer_ResetState_AllowsRealTimeSamplesAfterClockReset(t *te
 
 func TestGetAverageBlockTime(t *testing.T) {
 	expectedBlockTime := 6 * time.Second
-	optimizer := NewProviderOptimizer(StrategyBalanced, expectedBlockTime, 1, nil, "test-chain", nil)
+	optimizer := NewProviderOptimizer(StrategyBalanced, expectedBlockTime, 1, nil, "test-chain", chainstate.NewChainState(0, "test-chain", nil), nil)
 	require.Equal(t, expectedBlockTime, optimizer.GetAverageBlockTime())
 
 	// Zero block time
-	optimizer2 := NewProviderOptimizer(StrategyBalanced, 0, 1, nil, "test-chain-2", nil)
+	optimizer2 := NewProviderOptimizer(StrategyBalanced, 0, 1, nil, "test-chain-2", chainstate.NewChainState(0, "test-chain-2", nil), nil)
 	require.Equal(t, time.Duration(0), optimizer2.GetAverageBlockTime())
-}
-
-// --- updateLatestSyncData outlier guard tests (Task 8.2) ---
-
-func TestUpdateLatestSyncData_NormalUpdateAccepted(t *testing.T) {
-	cs := &chainstate.ChainState{}
-	cs.SetMajorityBaseline(1000, 200) // outlier if > 1200
-	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", cs)
-
-	now := time.Now()
-	block, _ := optimizer.updateLatestSyncData(1100, now) // within threshold
-	require.Equal(t, uint64(1100), block)
-}
-
-func TestUpdateLatestSyncData_OutlierRejected(t *testing.T) {
-	cs := &chainstate.ChainState{}
-	cs.SetMajorityBaseline(1000, 200) // outlier if > 1200
-	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", cs)
-
-	now := time.Now()
-	// First set a normal block
-	block, _ := optimizer.updateLatestSyncData(1100, now)
-	require.Equal(t, uint64(1100), block)
-
-	// Outlier — should be rejected, block stays at 1100
-	block, _ = optimizer.updateLatestSyncData(1201, now)
-	require.Equal(t, uint64(1100), block)
-
-	// Extreme outlier (Feb 17 scenario) — also rejected
-	block, _ = optimizer.updateLatestSyncData(20000, now)
-	require.Equal(t, uint64(1100), block)
-}
-
-func TestUpdateLatestSyncData_ColdStartAllowsAll(t *testing.T) {
-	cs := &chainstate.ChainState{} // majorityBaseline=0
-	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", cs)
-
-	now := time.Now()
-	// Even extreme values allowed when majorityBaseline=0
-	block, _ := optimizer.updateLatestSyncData(999999, now)
-	require.Equal(t, uint64(999999), block)
-}
-
-func TestUpdateLatestSyncData_NilChainStateAllowsAll(t *testing.T) {
-	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", nil)
-
-	now := time.Now()
-	block, _ := optimizer.updateLatestSyncData(999999, now)
-	require.Equal(t, uint64(999999), block)
-}
-
-// --- ResetLatestSyncDataIfOutlier tests ---
-
-func TestResetLatestSyncDataIfOutlier_PoisonedReset(t *testing.T) {
-	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", nil)
-
-	// Simulate poisoning: latestSyncData.Block set to 20M
-	optimizer.latestSyncData.Block = 20_000_000
-
-	optimizer.ResetLatestSyncDataIfOutlier(1_000_000, 100) // floor + threshold = 1,000,100
-
-	require.Equal(t, uint64(1_000_000), optimizer.latestSyncData.Block, "poisoned value should be reset to floor")
-}
-
-func TestResetLatestSyncDataIfOutlier_HealthyUnchanged(t *testing.T) {
-	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", nil)
-
-	optimizer.latestSyncData.Block = 1_000_005
-
-	optimizer.ResetLatestSyncDataIfOutlier(1_000_000, 100) // floor + threshold = 1,000,100
-
-	require.Equal(t, uint64(1_000_005), optimizer.latestSyncData.Block, "healthy value should not be touched")
-}
-
-func TestResetLatestSyncDataIfOutlier_ExactlyAtThreshold(t *testing.T) {
-	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", nil)
-
-	optimizer.latestSyncData.Block = 1_000_100 // exactly floor + threshold
-
-	optimizer.ResetLatestSyncDataIfOutlier(1_000_000, 100)
-
-	require.Equal(t, uint64(1_000_100), optimizer.latestSyncData.Block, "value exactly at threshold should NOT be reset")
-}
-
-func TestResetLatestSyncDataIfOutlier_ZeroBlockUnchanged(t *testing.T) {
-	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", nil)
-
-	// Cold start: latestSyncData.Block = 0 (default)
-	require.Equal(t, uint64(0), optimizer.latestSyncData.Block)
-
-	optimizer.ResetLatestSyncDataIfOutlier(1_000_000, 100)
-
-	require.Equal(t, uint64(0), optimizer.latestSyncData.Block, "zero block should not be touched")
 }
 
 // --- AppendProbeRelayData sync scoring tests (Step 3, Task 2.1) ---
 
 func TestAppendProbeRelayData_SyncBlockUpdatesGlobalChainHead(t *testing.T) {
-	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", nil)
+	cs := &chainstate.ChainState{}
+	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", cs, nil)
 	providerAddress := "provider1"
 
 	// Probe with syncBlock=1000 should update the global chain head
 	optimizer.AppendProbeRelayData(providerAddress, TEST_BASE_WORLD_LATENCY, true, 1000)
 	time.Sleep(4 * time.Millisecond)
 
-	// Verify global chain head was updated
-	optimizer.latestSyncData.Lock.Lock()
-	block := optimizer.latestSyncData.Block
-	optimizer.latestSyncData.Lock.Unlock()
-	require.Equal(t, uint64(1000), block)
+	// Verify global chain head was updated via ChainState
+	block, found := cs.GetLatestBlock()
+	require.True(t, found)
+	require.Equal(t, int64(1000), block)
 }
 
 func TestAppendProbeRelayData_ProviderBehindGetsHigherSyncLag(t *testing.T) {
-	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", nil)
+	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", &chainstate.ChainState{}, nil)
 	syncedProvider := "synced"
 	behindProvider := "behind"
 
@@ -1409,26 +1207,21 @@ func TestAppendProbeRelayData_ProviderBehindGetsHigherSyncLag(t *testing.T) {
 }
 
 func TestAppendProbeRelayData_SyncBlockZeroSkipsSyncScoring(t *testing.T) {
-	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", nil)
+	cs := &chainstate.ChainState{}
+	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", cs, nil)
 	providerAddress := "provider1"
 
 	// Probe with syncBlock=0 (static provider / failed probe)
 	optimizer.AppendProbeRelayData(providerAddress, TEST_BASE_WORLD_LATENCY, true, 0)
 	time.Sleep(4 * time.Millisecond)
 
-	// Global chain head should NOT be updated
-	optimizer.latestSyncData.Lock.Lock()
-	block := optimizer.latestSyncData.Block
-	optimizer.latestSyncData.Lock.Unlock()
-	require.Equal(t, uint64(0), block, "syncBlock=0 should not update global chain head")
-
-	// Provider's SyncBlock should remain at default (0)
-	providerData, _ := optimizer.getProviderData(providerAddress)
-	require.Equal(t, uint64(0), providerData.SyncBlock, "syncBlock=0 should not update provider SyncBlock")
+	// Global chain head should NOT be updated (syncBlock=0 short-circuits the sync branch).
+	_, found := cs.GetLatestBlock()
+	require.False(t, found, "syncBlock=0 should not update global chain head")
 }
 
 func TestAppendProbeRelayData_RelayWeightDominatesProbeWeight(t *testing.T) {
-	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", nil)
+	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", &chainstate.ChainState{}, nil)
 	behindProvider := "behind"
 	syncedProvider := "synced"
 
@@ -1438,20 +1231,129 @@ func TestAppendProbeRelayData_RelayWeightDominatesProbeWeight(t *testing.T) {
 	optimizer.AppendProbeRelayData(behindProvider, TEST_BASE_WORLD_LATENCY, true, 990)
 	time.Sleep(4 * time.Millisecond)
 
-	// Behind provider has sync lag from probe (weight 0.25)
+	// Behind provider has accumulated some sync lag from the probe sample (weight 0.25 at 10s lag).
 	probeData, _ := optimizer.getProviderData(behindProvider)
 	probeSyncLag, _ := probeData.Sync.Resolve()
 	require.Greater(t, probeSyncLag, 0.0, "behind provider should have non-zero sync lag from probe")
 
-	// Now relay confirms behind provider is still at 990 (weight 1.0)
-	// Relay should reinforce the lag with 4x the weight
+	// Now feed a relay sample at the same 990 (lag=10s, weight=1.0). Both samples are at
+	// the same target value — adding the heavier relay sample grows the EWMA's cumulative
+	// weight at lag=10s and pulls the score further toward the target.
 	optimizer.AppendRelayData(behindProvider, TEST_BASE_WORLD_LATENCY, 10, 990)
 	time.Sleep(4 * time.Millisecond)
 
 	relayData, _ := optimizer.getProviderData(behindProvider)
 	relaySyncLag, _ := relayData.Sync.Resolve()
 
-	// After relay with higher weight, the sync lag should be higher (more confident)
-	// because relay weight (1.0) reinforces the lag signal stronger than probe (0.25)
-	require.Greater(t, relaySyncLag, probeSyncLag, "relay data should reinforce sync lag with higher weight")
+	// Per-sample convergence: the EWMA converges toward the target lag (10s) as cumulative
+	// weight grows. Probe contributed 0.25 weight; relay contributed 1.0 weight, both at the
+	// same target. Relay's larger weight pulls the score further along the convergence curve
+	// toward 10s — not "weight dominance," additive convergence.
+	require.Greater(t, relaySyncLag, probeSyncLag, "relay sample should pull EWMA further toward target lag")
+}
+
+// TestAppendProbeRelayData_OutlierSyncBlockSkipsSyncScoring pins the outlier-guard behavior
+// on the probe path. A probe reporting a syncBlock above majorityBaseline+threshold is
+// rejected at the IsOutlier check at the top of the sync section; the early-return also
+// exits before providersStorage.Set, so avail + latency updates from earlier in this branch
+// are not persisted. Net effect: zero scoring contribution from this sample, both globally
+// (chainState) and per-provider (no entry persisted).
+func TestAppendProbeRelayData_OutlierSyncBlockSkipsSyncScoring(t *testing.T) {
+	cs := chainstate.NewChainState(0, "test", nil)
+	cs.SetMajorityBaseline(1000, 100, "tendermintrpc") // outliers: blocks > 1000 + 100 = 1100
+	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", cs, nil)
+	providerAddress := "outlier_provider"
+
+	// Probe with an outlier syncBlock (1101 = floor + threshold + 1, just-barely-outlier).
+	optimizer.AppendProbeRelayData(providerAddress, TEST_BASE_WORLD_LATENCY, true, 1101)
+	time.Sleep(4 * time.Millisecond)
+
+	// (a) chainState.GetLatestBlock must not have advanced — outlier rejected by
+	// SetLatestBlock's outlier guard. Since nothing else has set the global head, the
+	// value remains unset.
+	_, found := cs.GetLatestBlock()
+	require.False(t, found, "outlier syncBlock must not advance global chain head")
+
+	// (b) The early-return in AppendProbeRelayData's sync branch exits before providersStorage.Set,
+	// so no avail / latency / sync EWMA updates are committed. getProviderData returning
+	// found=false is direct evidence that no entry was persisted for this provider.
+	_, found = optimizer.getProviderData(providerAddress)
+	require.False(t, found, "outlier sample must not persist any scoring (avail + latency + sync all dropped)")
+}
+
+// TestAppendProbeRelayData_OutlierSyncBlockEmitsMetric pins the M6 wire-up: the
+// outlier guard at the top of the probe sync section must increment
+// lava_consumer_sync_scoring_outlier_skipped_total{source="probe"} so operators can
+// see per-provider outlier activity. Companion to the scoring-skip test above.
+func TestAppendProbeRelayData_OutlierSyncBlockEmitsMetric(t *testing.T) {
+	cs := chainstate.NewChainState(0, "ETH1", nil)
+	cs.SetMajorityBaseline(1000, 100, "jsonrpc")
+	rec := &recordingOptimizerMetrics{}
+	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "ETH1", cs, rec)
+	providerAddress := "outlier_provider"
+
+	optimizer.AppendProbeRelayData(providerAddress, TEST_BASE_WORLD_LATENCY, true, 1101)
+	time.Sleep(4 * time.Millisecond)
+
+	require.Equal(t, []syncScoringOutlierCall{{"ETH1", providerAddress, "probe"}}, rec.calls,
+		"M6 must increment for the outlier-rejected probe sample with source=probe and the provider's address")
+}
+
+// TestAppendProbeRelayData_PathologicalSyncBlockSkipsSyncScoring pins the sanity guard
+// for uint64 values that don't fit in int64. A syncBlock with the high bit set wraps to
+// a negative int64, which would silently bypass IsOutlier (negative is never above any
+// positive threshold) and let calculateSyncLag's "ahead = 0 lag" early return give the
+// pathological value the best possible sync score. The guard at the top of the sync
+// section drops the sample before it can do any damage — same drop-all-scoring behavior
+// as the IsOutlier path.
+func TestAppendProbeRelayData_PathologicalSyncBlockSkipsSyncScoring(t *testing.T) {
+	cs := chainstate.NewChainState(0, "test", nil)
+	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", cs, nil)
+	providerAddress := "pathological_provider"
+
+	// Probe with a uint64 value that has the high bit set — would wrap to negative on int64 cast.
+	optimizer.AppendProbeRelayData(providerAddress, TEST_BASE_WORLD_LATENCY, true, ^uint64(0))
+	time.Sleep(4 * time.Millisecond)
+
+	// chainState must not have advanced — the sanity guard fires before SetLatestBlock.
+	_, found := cs.GetLatestBlock()
+	require.False(t, found, "pathological syncBlock must not advance global chain head")
+
+	// No entry persisted — the early return exits before providersStorage.Set.
+	_, found = optimizer.getProviderData(providerAddress)
+	require.False(t, found, "pathological sample must not persist any scoring")
+}
+
+// TestAppendRelayData_RegressionDetected pins the regression-detection property of
+// sample-fresh sync scoring. A provider that first reports block 1000 (synced at chain
+// head) and then reports block 950 on a subsequent relay is genuinely 50 blocks behind.
+// Sample-fresh scoring feeds the per-sample syncBlock to calculateSyncLag directly, so
+// the Sync EWMA sees the real lag and the score moves toward the bad value — making real
+// regressions visible to the optimizer.
+func TestAppendRelayData_RegressionDetected(t *testing.T) {
+	cs := chainstate.NewChainState(0, "test", nil)
+	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", cs, nil)
+	providerAddress := "regressing_provider"
+
+	// Seed: probe reports the provider at block 1000 (chain head). Sync lag = 0.
+	optimizer.AppendProbeRelayData(providerAddress, TEST_BASE_WORLD_LATENCY, true, 1000)
+	time.Sleep(4 * time.Millisecond)
+
+	probeData, _ := optimizer.getProviderData(providerAddress)
+	syncLagAfterSeed, _ := probeData.Sync.Resolve()
+
+	// Regression: a subsequent relay reports block 950. The chain head is still at 1000
+	// (SetLatestBlock(950) is monotonic-rejected), but the per-sample value (950) feeds
+	// calculateSyncLag — producing a non-zero lag (~50 blocks × averageBlockTime) that
+	// the Sync EWMA picks up via the relay-weight (1.0) sample.
+	optimizer.AppendRelayData(providerAddress, TEST_BASE_WORLD_LATENCY, 10, 950)
+	time.Sleep(4 * time.Millisecond)
+
+	regressData, _ := optimizer.getProviderData(providerAddress)
+	syncLagAfterRegression, _ := regressData.Sync.Resolve()
+
+	// The Sync EWMA must move strictly upward — the regression is now visible to scoring.
+	require.Greater(t, syncLagAfterRegression, syncLagAfterSeed,
+		"sample-fresh sync scoring must detect a real regression: provider reporting "+
+			"block 950 after previously being at 1000 should move the Sync EWMA upward")
 }

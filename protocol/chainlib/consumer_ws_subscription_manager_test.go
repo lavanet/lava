@@ -12,6 +12,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v5/protocol/chainstate"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
@@ -83,7 +84,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptionsOnSameDappIdIp(t *tes
 				AnyTimes()
 			relaySender.
 				EXPECT().
-				SetConsistencySeenBlock(gomock.Any(), gomock.Any()).
+				SetConsistencySeenBlock(gomock.Any()).
 				AnyTimes()
 
 			relaySender.
@@ -239,7 +240,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptions(t *testing.T) {
 				AnyTimes()
 			relaySender.
 				EXPECT().
-				SetConsistencySeenBlock(gomock.Any(), gomock.Any()).
+				SetConsistencySeenBlock(gomock.Any()).
 				AnyTimes()
 
 			relaySender.
@@ -474,7 +475,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			relaySender.
 				EXPECT().
-				SetConsistencySeenBlock(gomock.Any(), gomock.Any()).
+				SetConsistencySeenBlock(gomock.Any()).
 				AnyTimes()
 
 			relaySender.
@@ -722,7 +723,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 func CreateConsumerSessionManager(chainID, apiInterface, consumerPublicAddress string) *lavasession.ConsumerSessionManager {
 	rand.InitRandomSeed()
-	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, 0, 1, nil, "dontcare", nil)
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, 0, 1, nil, "dontcare", chainstate.NewChainState(0, "dontcare", nil), nil)
 	optimizer.SetDeterministicSeed(1234567)
 	return lavasession.NewConsumerSessionManager(
 		&lavasession.RPCEndpoint{NetworkAddress: "stub", ChainID: chainID, ApiInterface: apiInterface, TLSEnabled: false, HealthCheckPath: "/", Geolocation: 0},

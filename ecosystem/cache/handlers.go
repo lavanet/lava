@@ -84,6 +84,8 @@ func (cv *LastestCacheStore) Cost() int64 {
 
 func (s *RelayerCacheServer) getSeenBlockForSharedStateMode(chainId string, sharedStateId string) int64 {
 	if sharedStateId != "" {
+		// Backwards-compat path: old consumers send `dappId__consumerIp` as sharedStateId.
+		// Read from the per-user finalizedCache entry written by setSeenBlockOnSharedStateMode.
 		id := latestBlockKey(chainId, sharedStateId)
 		value, found := getNonExpiredFromCache(s.CacheServer.finalizedCache, id)
 		if !found {
@@ -95,6 +97,14 @@ func (s *RelayerCacheServer) getSeenBlockForSharedStateMode(chainId string, shar
 			return cacheValue
 		}
 		utils.LavaFormatFatal("Failed converting cache result to int64", nil, utils.LogAttr("value", value))
+	}
+	// New consumers send sharedStateId="" and expect the chain-wide head. The chain-wide
+	// key is already maintained on every successful SetRelay, so this read piggybacks on
+	// a value the cache server already keeps current. getLatestBlock returns NOT_APPLICABLE
+	// (-1) for missing/expired entries; normalize to 0 to preserve this method's "no value"
+	// contract.
+	if value := s.getLatestBlock(latestBlockKey(chainId, "")); value > 0 {
+		return value
 	}
 	return 0
 }

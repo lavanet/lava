@@ -134,7 +134,6 @@ type ProviderOptimizer interface {
 	ChooseBestProviderWithStats(ctx context.Context, allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, stats *provideroptimizer.SelectionStats)
 	GetReputationReportForProvider(string) (*pairingtypes.QualityOfServiceReport, time.Time)
 	GetAverageBlockTime() time.Duration
-	ResetLatestSyncDataIfOutlier(floor int64, threshold int64)
 	Strategy() provideroptimizer.Strategy
 	UpdateWeights(map[string]int64, uint64)
 }

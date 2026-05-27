@@ -12,6 +12,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v5/protocol/chainstate"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/relaycore"
@@ -1651,37 +1652,6 @@ func TestEndpointChainTrackerManager_RemoveTrackerCallsCancel(t *testing.T) {
 }
 
 // ============================================================================
-// Mock Consistency for filterEndpointsByConsistency tests
-// ============================================================================
-
-type mockConsistency struct {
-	seenBlocks map[string]int64
-}
-
-func newMockConsistency() *mockConsistency {
-	return &mockConsistency{seenBlocks: make(map[string]int64)}
-}
-
-func (mc *mockConsistency) SetSeenBlock(blockSeen int64, userData common.UserData) {
-	key := mc.Key(userData)
-	mc.seenBlocks[key] = blockSeen
-}
-
-func (mc *mockConsistency) GetSeenBlock(userData common.UserData) (int64, bool) {
-	key := mc.Key(userData)
-	block, found := mc.seenBlocks[key]
-	return block, found
-}
-
-func (mc *mockConsistency) SetSeenBlockFromKey(blockSeen int64, key string) {
-	mc.seenBlocks[key] = blockSeen
-}
-
-func (mc *mockConsistency) Key(userData common.UserData) string {
-	return userData.DappId + "|" + userData.ConsumerIp
-}
-
-// ============================================================================
 // Tests for Phase 3.1: Consistency Pre-Validation Retry with Different Providers
 // ============================================================================
 
@@ -1691,9 +1661,9 @@ func TestFilterEndpointsByConsistency_ReturnsFailedSessions(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("all sessions valid - no failed sessions", func(t *testing.T) {
-		consistency := newMockConsistency()
+		cs := &chainstate.ChainState{}
 		userData := common.UserData{DappId: "test", ConsumerIp: "1.2.3.4"}
-		consistency.SetSeenBlock(100, userData)
+		cs.SetLatestBlock(100)
 
 		config := relaycore.DefaultConsistencyValidationConfig()
 
@@ -1712,8 +1682,8 @@ func TestFilterEndpointsByConsistency_ReturnsFailedSessions(t *testing.T) {
 		}
 
 		rpcss := &RPCSmartRouterServer{
-			consistencyConfig:      config,
-			smartRouterConsistency: consistency,
+			consistencyConfig: config,
+			chainState:        cs,
 		}
 
 		protocolMsg := &MockProtocolMessage{
@@ -1729,9 +1699,9 @@ func TestFilterEndpointsByConsistency_ReturnsFailedSessions(t *testing.T) {
 	})
 
 	t.Run("some sessions fail - split into valid and failed", func(t *testing.T) {
-		consistency := newMockConsistency()
+		cs := &chainstate.ChainState{}
 		userData := common.UserData{DappId: "test", ConsumerIp: "1.2.3.4"}
-		consistency.SetSeenBlock(200, userData)
+		cs.SetLatestBlock(200)
 
 		// EndpointLagThreshold defaults to 10
 		config := relaycore.DefaultConsistencyValidationConfig()
@@ -1762,8 +1732,8 @@ func TestFilterEndpointsByConsistency_ReturnsFailedSessions(t *testing.T) {
 		}
 
 		rpcss := &RPCSmartRouterServer{
-			consistencyConfig:      config,
-			smartRouterConsistency: consistency,
+			consistencyConfig: config,
+			chainState:        cs,
 		}
 
 		protocolMsg := &MockProtocolMessage{
@@ -1781,9 +1751,9 @@ func TestFilterEndpointsByConsistency_ReturnsFailedSessions(t *testing.T) {
 	})
 
 	t.Run("all sessions fail - returns error and all failed", func(t *testing.T) {
-		consistency := newMockConsistency()
+		cs := &chainstate.ChainState{}
 		userData := common.UserData{DappId: "test", ConsumerIp: "1.2.3.4"}
-		consistency.SetSeenBlock(200, userData)
+		cs.SetLatestBlock(200)
 
 		config := relaycore.DefaultConsistencyValidationConfig()
 
@@ -1812,8 +1782,8 @@ func TestFilterEndpointsByConsistency_ReturnsFailedSessions(t *testing.T) {
 		}
 
 		rpcss := &RPCSmartRouterServer{
-			consistencyConfig:      config,
-			smartRouterConsistency: consistency,
+			consistencyConfig: config,
+			chainState:        cs,
 		}
 
 		protocolMsg := &MockProtocolMessage{
@@ -1830,8 +1800,8 @@ func TestFilterEndpointsByConsistency_ReturnsFailedSessions(t *testing.T) {
 	})
 
 	t.Run("no seen block - skip validation, return all as valid", func(t *testing.T) {
-		consistency := newMockConsistency()
-		// No seenBlock set for this user
+		cs := &chainstate.ChainState{}
+		// No latestBlock seeded — exercises the cold-start short-circuit.
 
 		config := relaycore.DefaultConsistencyValidationConfig()
 
@@ -1849,8 +1819,8 @@ func TestFilterEndpointsByConsistency_ReturnsFailedSessions(t *testing.T) {
 		}
 
 		rpcss := &RPCSmartRouterServer{
-			consistencyConfig:      config,
-			smartRouterConsistency: consistency,
+			consistencyConfig: config,
+			chainState:        cs,
 		}
 
 		protocolMsg := &MockProtocolMessage{
@@ -1873,8 +1843,8 @@ func TestFilterEndpointsByConsistency_ReturnsFailedSessions(t *testing.T) {
 		}
 
 		rpcss := &RPCSmartRouterServer{
-			consistencyConfig:      nil,
-			smartRouterConsistency: nil,
+			consistencyConfig: nil,
+			chainState:        nil,
 		}
 
 		protocolMsg := &MockProtocolMessage{
@@ -1889,9 +1859,9 @@ func TestFilterEndpointsByConsistency_ReturnsFailedSessions(t *testing.T) {
 	})
 
 	t.Run("endpoint with no block data - allowed through (first relay)", func(t *testing.T) {
-		consistency := newMockConsistency()
+		cs := &chainstate.ChainState{}
 		userData := common.UserData{DappId: "test", ConsumerIp: "1.2.3.4"}
-		consistency.SetSeenBlock(200, userData)
+		cs.SetLatestBlock(200)
 
 		config := relaycore.DefaultConsistencyValidationConfig()
 
@@ -1909,8 +1879,8 @@ func TestFilterEndpointsByConsistency_ReturnsFailedSessions(t *testing.T) {
 		}
 
 		rpcss := &RPCSmartRouterServer{
-			consistencyConfig:      config,
-			smartRouterConsistency: consistency,
+			consistencyConfig: config,
+			chainState:        cs,
 		}
 
 		protocolMsg := &MockProtocolMessage{
@@ -1927,9 +1897,9 @@ func TestFilterEndpointsByConsistency_ReturnsFailedSessions(t *testing.T) {
 	})
 
 	t.Run("historical block request - skip validation", func(t *testing.T) {
-		consistency := newMockConsistency()
+		cs := &chainstate.ChainState{}
 		userData := common.UserData{DappId: "test", ConsumerIp: "1.2.3.4"}
-		consistency.SetSeenBlock(200, userData)
+		cs.SetLatestBlock(200)
 
 		config := relaycore.DefaultConsistencyValidationConfig()
 
@@ -1947,8 +1917,8 @@ func TestFilterEndpointsByConsistency_ReturnsFailedSessions(t *testing.T) {
 		}
 
 		rpcss := &RPCSmartRouterServer{
-			consistencyConfig:      config,
-			smartRouterConsistency: consistency,
+			consistencyConfig: config,
+			chainState:        cs,
 		}
 
 		// Historical block request (block 42) - should skip validation

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/v5/protocol/chainstate"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
 	"github.com/lavanet/lava/v5/utils"
@@ -164,7 +165,7 @@ func TestEndpointSortingFlow(t *testing.T) {
 
 func CreateConsumerSessionManager() *ConsumerSessionManager {
 	rand.InitRandomSeed()
-	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, 0, 1, nil, "dontcare", nil)
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, 0, 1, nil, "dontcare", chainstate.NewChainState(0, "dontcare", nil), nil)
 	optimizer.SetDeterministicSeed(1234567)
 	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", false, "/", 0}, optimizer, nil, "lava@test", NewActiveSubscriptionProvidersStorage(), nil)
 }

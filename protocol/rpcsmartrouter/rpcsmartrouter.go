@@ -279,7 +279,6 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 	}
 
 	optimizers := &common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer]{}
-	smartRouterConsistencies := &common.SafeSyncMap[string, relaycore.Consistency]{}
 	chainStates := &common.SafeSyncMap[string, *chainstate.ChainState]{}
 
 	var wg sync.WaitGroup
@@ -296,7 +295,7 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
 			defer wg.Done()
 			err := rpsr.CreateSmartRouterEndpoint(ctx, rpcEndpoint, errCh,
-				optimizers, smartRouterConsistencies, chainStates, chainMutexes,
+				optimizers, chainStates, chainMutexes,
 				options, smartRouterIdentifier, rpcSmartRouterMetrics, smartRouterOptimizerQoSClient,
 				smartRouterMetricsManager, relaysMonitorAggregator)
 			return err
@@ -464,7 +463,6 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	rpcEndpoint *lavasession.RPCEndpoint,
 	errCh chan error,
 	optimizers *common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer],
-	smartRouterConsistencies *common.SafeSyncMap[string, relaycore.Consistency],
 	chainStates *common.SafeSyncMap[string, *chainstate.ChainState],
 	chainMutexes map[string]*sync.Mutex,
 	options *rpcSmartRouterStartOptions,
@@ -600,22 +598,24 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	var optimizer *provideroptimizer.ProviderOptimizer
-	var smartRouterConsistency relaycore.Consistency
 	var cState *chainstate.ChainState
 
 	// Create chain assets with mutex protection
 	chainMutexes[chainID].Lock()
 	defer chainMutexes[chainID].Unlock()
 
-	// Create / Use existing ChainState (majorityBaseline protection) — must come before optimizer so it can be passed to constructor
-	cState, _, err = chainStates.LoadOrStore(chainID, &chainstate.ChainState{})
+	// Create / Use existing ChainState (majorityBaseline protection) — must come before optimizer so it can be passed to constructor.
+	// chainID + smartRouterMetricsManager wire unification observability (see unification-demo-env-setup.md §7); the smart-router
+	// manager satisfies ConsumerMetricsManagerInf with no-op stubs for the new methods, so smart-router runs without exposing them.
+	cState, _, err = chainStates.LoadOrStore(chainID, chainstate.NewChainState(0, chainID, smartRouterMetricsManager))
 	if err != nil {
 		errCh <- err
 		return utils.LavaFormatError("failed loading chain state", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
 	}
 
-	// Create / Use existing optimizer
-	newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, options.maxConcurrentProviders, smartRouterOptimizerQoSClient, chainID, cState)
+	// Create / Use existing optimizer. Metrics manager satisfies ConsumerMetricsManagerInf
+	// via SmartRouterMetricsManager's no-op stubs for the unification metrics (M6).
+	newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, options.maxConcurrentProviders, smartRouterOptimizerQoSClient, chainID, cState, smartRouterMetricsManager)
 	newOptimizer.ConfigureWeightedSelector(options.weightedSelectorConfig)
 	optimizer, loaded, err := optimizers.LoadOrStore(chainID, newOptimizer)
 	if err != nil {
@@ -626,14 +626,6 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	if !loaded && smartRouterOptimizerQoSClient != nil {
 		// if this is a new optimizer, register it in the smartRouterOptimizerQoSClient
 		smartRouterOptimizerQoSClient.RegisterOptimizer(optimizer, chainID)
-	}
-
-	// Create / Use existing Consistency
-	newSmartRouterConsistency := relaycore.NewConsistency(chainID, cState)
-	smartRouterConsistency, _, err = smartRouterConsistencies.LoadOrStore(chainID, newSmartRouterConsistency)
-	if err != nil {
-		errCh <- err
-		return utils.LavaFormatError("failed loading consumer consistency", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
 	}
 
 	// Create active subscription provider storage for each unique chain
@@ -1267,7 +1259,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 
 	utils.LavaFormatInfo("RPCSmartRouter Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
 	// Convert smartRouterIdentifier string to empty sdk.AccAddress for smart router
-	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, chainTracker, sessionManager, options.cache, rpcSmartRouterMetrics, smartRouterConsistency, cState, relaysMonitor, options.cmdFlags, options.stateShare, wsSubscriptionManager, smartRouterMetricsManager)
+	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, chainTracker, sessionManager, options.cache, rpcSmartRouterMetrics, cState, relaysMonitor, options.cmdFlags, options.stateShare, wsSubscriptionManager, smartRouterMetricsManager)
 	if err != nil {
 		err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 		errCh <- err

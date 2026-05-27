@@ -25,12 +25,12 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
+	"github.com/lavanet/lava/v5/protocol/chainstate"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/performance"
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
-	"github.com/lavanet/lava/v5/protocol/relaycore"
 	"github.com/lavanet/lava/v5/protocol/rpcconsumer"
 	"github.com/lavanet/lava/v5/protocol/rpcprovider"
 	"github.com/lavanet/lava/v5/protocol/rpcprovider/rewardserver"
@@ -228,7 +228,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 	}
 	consumerStateTracker := &mockConsumerStateTracker{}
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
-	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, averageBlockTime, 2, nil, "dontcare", nil)
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, averageBlockTime, 2, nil, "dontcare", chainstate.NewChainState(0, "dontcare", nil), nil)
 	optimizer.SetDeterministicSeed(seed)
 	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage(), nil)
 	consumerSessionManager.UpdateAllProviders(rpcConsumerOptions.epoch, rpcConsumerOptions.pairingList, nil)
@@ -271,11 +271,10 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 		}
 	}
 
-	consumerConsistency := relaycore.NewConsistency(rpcConsumerOptions.specId, nil)
 	consumerCmdFlags := common.ConsumerCmdFlags{}
 	rpcconsumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil, nil)
 	require.NoError(t, err)
-	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, consumerSessionManager, rpcConsumerOptions.requiredResponses, rpcConsumerOptions.account.SK, rpcConsumerOptions.lavaChainID, cache, rpcconsumerLogs, rpcConsumerOptions.account.Addr, consumerConsistency, nil, nil, consumerCmdFlags, false, nil)
+	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, consumerSessionManager, rpcConsumerOptions.requiredResponses, rpcConsumerOptions.account.SK, rpcConsumerOptions.lavaChainID, cache, rpcconsumerLogs, rpcConsumerOptions.account.Addr, &chainstate.ChainState{}, nil, consumerCmdFlags, false, nil)
 	require.NoError(t, err)
 
 	// wait for consumer to finish initialization

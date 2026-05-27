@@ -80,6 +80,15 @@ type ConsumerMetricsManager struct {
 	qosMetric                              *MappedLabelsGaugeVec
 	probeOutlierBlockedMetric              *prometheus.CounterVec
 	majorityBaselineConsensusFailureMetric *prometheus.CounterVec
+	// Step 4 — seenBlock/latestSyncData unification observability. See
+	// protocol/rpcconsumer/docs/consumer-latestblock-managment/testing-process/unification-demo-env-setup.md §7
+	alignLatestBlockOutcomeMetric    *prometheus.CounterVec // lava_consumer_align_latest_block_calls_total                {spec, apiInterface, outcome}
+	latestBlockOutlierRejectedMetric *prometheus.CounterVec // lava_consumer_set_latest_block_outlier_rejected_total       {spec}
+	chainStateLatestBlockMetric      *prometheus.GaugeVec   // lava_consumer_chain_state_latest_block                      {spec}
+	majorityBaselineGaugeMetric      *prometheus.GaugeVec   // lava_consumer_majority_baseline_value                       {spec, apiInterface}
+	alignLatestBlockGapMetric        *prometheus.GaugeVec   // lava_consumer_align_latest_block_last_gap_blocks            {spec, apiInterface}
+	syncScoringOutlierSkippedMetric  *prometheus.CounterVec // lava_consumer_sync_scoring_outlier_skipped_total            {spec, provider_address, source}
+	sharedStatePropagationsMetric    *prometheus.CounterVec // lava_consumer_shared_state_propagations_total               {spec}
 	// Legacy metrics retained for external consumers (Grafana dashboard + investigator skill).
 	// New code should prefer the request/incident group metrics above.
 	totalRelaysRequestedMetric                     *prometheus.CounterVec // lava_consumer_total_relays_serviced                          {spec, apiInterface} — investigator skill
@@ -167,6 +176,48 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Name: "lava_consumer_majority_baseline_consensus_failure",
 		Help: "Count of probe cycles where majorityBaseline consensus was not reached",
 	}, []string{"spec", "apiInterface"}))
+
+	// Step 4 — seenBlock/latestSyncData unification observability metrics. See unification-demo-env-setup.md §7.
+	// outcome label values: "healthy_no_change" | "revert" | "poisoning_reset"
+	alignLatestBlockOutcomeMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_align_latest_block_calls_total",
+		Help: "Count of AlignLatestBlockWithConsensus invocations broken down by outcome (healthy_no_change/revert/poisoning_reset)",
+	}, []string{"spec", "apiInterface", "outcome"}))
+
+	latestBlockOutlierRejectedMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_set_latest_block_outlier_rejected_total",
+		Help: "Count of SetLatestBlock writes rejected by the IsOutlier guard (block > majorityBaseline + outlierThreshold)",
+	}, []string{"spec"}))
+
+	chainStateLatestBlockMetric := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_consumer_chain_state_latest_block",
+		Help: "Current value of the unified chain-wide latestBlock tracker held in ChainState",
+	}, []string{"spec"}))
+
+	majorityBaselineGaugeMetric := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_consumer_majority_baseline_value",
+		Help: "Current value of the consensus-derived majorityBaseline floor used by the IsOutlier guard",
+	}, []string{"spec", "apiInterface"}))
+
+	alignLatestBlockGapMetric := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_consumer_align_latest_block_last_gap_blocks",
+		Help: "Block-height gap (previousLatestBlock - consensusFloor) observed at the most recent AlignLatestBlockWithConsensus realignment; not updated on healthy_no_change",
+	}, []string{"spec", "apiInterface"}))
+
+	// M6: Sync-scoring outlier skip — fires from ProviderOptimizer's IsOutlier guard
+	// (Option B drop-all-scoring per §11.11). source label distinguishes relay vs probe.
+	syncScoringOutlierSkippedMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_sync_scoring_outlier_skipped_total",
+		Help: "Count of sync-scoring samples dropped (Option B) because syncBlock exceeded majorityBaseline+outlierThreshold; per-provider granularity for outlier-provider detection at the relay path",
+	}, []string{"spec", "provider_address", "source"}))
+
+	// M7: Shared-state cache propagation — fires when shared-state cache returned a
+	// higher seenBlock than the local tracker (rpcconsumer_server.go:924). In a healthy
+	// multi-consumer deployment with --shared-state, the rate should be > 0.
+	sharedStatePropagationsMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_shared_state_propagations_total",
+		Help: "Count of relay paths where the shared-state cache delivered a higher seenBlock than the local ChainState; signals cross-consumer state coherence in sharded deployments",
+	}, []string{"spec"}))
 
 	qosMetricLabels := []string{"spec", "apiInterface", "provider_address", "qos_metric"}
 	if ShowProviderEndpointInMetrics {
@@ -482,6 +533,13 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		qosMetric:                                       qosMetric,
 		probeOutlierBlockedMetric:                       probeOutlierBlockedMetric,
 		majorityBaselineConsensusFailureMetric:          majorityBaselineConsensusFailureMetric,
+		alignLatestBlockOutcomeMetric:                   alignLatestBlockOutcomeMetric,
+		latestBlockOutlierRejectedMetric:                latestBlockOutlierRejectedMetric,
+		chainStateLatestBlockMetric:                     chainStateLatestBlockMetric,
+		majorityBaselineGaugeMetric:                     majorityBaselineGaugeMetric,
+		alignLatestBlockGapMetric:                       alignLatestBlockGapMetric,
+		syncScoringOutlierSkippedMetric:                 syncScoringOutlierSkippedMetric,
+		sharedStatePropagationsMetric:                   sharedStatePropagationsMetric,
 		totalRelaysRequestedMetric:                      totalRelaysRequestedMetric,
 		totalErroredMetric:                              totalErroredMetric,
 		totalNodeErroredMetric:                          totalNodeErroredMetric,
@@ -994,6 +1052,73 @@ func (pme *ConsumerMetricsManager) SetMajorityBaselineConsensusFailure(chainId, 
 		return
 	}
 	pme.majorityBaselineConsensusFailureMetric.WithLabelValues(chainId, apiInterface).Inc()
+}
+
+// SetAlignLatestBlockOutcome increments the counter for AlignLatestBlockWithConsensus invocations
+// per outcome. Call once per AlignLatestBlockWithConsensus call (including the silent
+// healthy_no_change path). Outcomes: "healthy_no_change" | "revert" | "poisoning_reset".
+func (pme *ConsumerMetricsManager) SetAlignLatestBlockOutcome(chainId, apiInterface, outcome string) {
+	if pme == nil {
+		return
+	}
+	pme.alignLatestBlockOutcomeMetric.WithLabelValues(chainId, apiInterface, outcome).Inc()
+}
+
+// SetLatestBlockOutlierRejected increments the counter for SetLatestBlock writes rejected
+// by the IsOutlier guard. Hot path (per relay/probe); the receiver's pme==nil guard makes it cheap.
+func (pme *ConsumerMetricsManager) SetLatestBlockOutlierRejected(chainId string) {
+	if pme == nil {
+		return
+	}
+	pme.latestBlockOutlierRejectedMetric.WithLabelValues(chainId).Inc()
+}
+
+// SetChainStateLatestBlock sets the gauge for the unified chain-wide latestBlock tracker.
+// Called from SetLatestBlock advance + AlignLatestBlockWithConsensus realignment.
+func (pme *ConsumerMetricsManager) SetChainStateLatestBlock(chainId string, block int64) {
+	if pme == nil {
+		return
+	}
+	pme.chainStateLatestBlockMetric.WithLabelValues(chainId).Set(float64(block))
+}
+
+// SetMajorityBaselineGauge sets the gauge tracking the consensus-derived majorityBaseline floor.
+// Distinct from the existing SetMajorityBaselineConsensusFailure counter which only tracks
+// failures; this gauge gives operators the actual current floor value.
+func (pme *ConsumerMetricsManager) SetMajorityBaselineGauge(chainId, apiInterface string, value int64) {
+	if pme == nil {
+		return
+	}
+	pme.majorityBaselineGaugeMetric.WithLabelValues(chainId, apiInterface).Set(float64(value))
+}
+
+// SetAlignLatestBlockGap sets the gauge for the most recent AlignLatestBlockWithConsensus
+// realignment gap (previousLatestBlock - consensusFloor). Pairs with SetAlignLatestBlockOutcome
+// to distinguish small reverts from large poisoning resets.
+func (pme *ConsumerMetricsManager) SetAlignLatestBlockGap(chainId, apiInterface string, gap int64) {
+	if pme == nil {
+		return
+	}
+	pme.alignLatestBlockGapMetric.WithLabelValues(chainId, apiInterface).Set(float64(gap))
+}
+
+// SetSyncScoringOutlierSkipped increments the counter for sync-scoring samples dropped
+// (Option B drop-all-scoring) because the provider's syncBlock exceeded the IsOutlier
+// threshold. source: "relay" or "probe". Hot path; nil-receiver guarded.
+func (pme *ConsumerMetricsManager) SetSyncScoringOutlierSkipped(chainId, providerAddress, source string) {
+	if pme == nil {
+		return
+	}
+	pme.syncScoringOutlierSkippedMetric.WithLabelValues(chainId, providerAddress, source).Inc()
+}
+
+// SetSharedStatePropagation increments the counter for relay paths where the shared-state
+// cache returned a higher seenBlock than the local ChainState. Hot path; nil-receiver guarded.
+func (pme *ConsumerMetricsManager) SetSharedStatePropagation(chainId string) {
+	if pme == nil {
+		return
+	}
+	pme.sharedStatePropagationsMetric.WithLabelValues(chainId).Inc()
 }
 
 // UpdateSelectionStatsFromOptimizerReports updates the selection stats metrics from the optimizer reports

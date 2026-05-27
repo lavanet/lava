@@ -88,7 +88,6 @@ type RPCConsumerServer struct {
 	latestBlockEstimator           *relaycore.LatestBlockEstimator
 	lavaChainID                    string
 	ConsumerAddress                sdk.AccAddress
-	consumerConsistency            relaycore.Consistency
 	chainState                     *chainstate.ChainState
 	sharedState                    bool // using the cache backend to sync the latest seen block with other consumers
 	relaysMonitor                  *metrics.RelaysMonitor
@@ -116,7 +115,6 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	cache *performance.Cache, // optional
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	consumerAddress sdk.AccAddress,
-	consumerConsistency relaycore.Consistency,
 	cState *chainstate.ChainState,
 	relaysMonitor *metrics.RelaysMonitor,
 	cmdFlags common.ConsumerCmdFlags,
@@ -133,7 +131,6 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.privKey = privKey
 	rpccs.chainParser = chainParser
 	rpccs.ConsumerAddress = consumerAddress
-	rpccs.consumerConsistency = consumerConsistency
 	rpccs.chainState = cState
 	rpccs.sharedState = sharedState
 	rpccs.debugRelays = cmdFlags.DebugRelays
@@ -171,8 +168,13 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	return nil
 }
 
-func (rpccs *RPCConsumerServer) SetConsistencySeenBlock(blockSeen int64, key string) {
-	rpccs.consumerConsistency.SetSeenBlockFromKey(blockSeen, key)
+// SetConsistencySeenBlock advances the chain-wide latestBlock tracker on a verified
+// subscription event. Implements the RelaySender interface.
+func (rpccs *RPCConsumerServer) SetConsistencySeenBlock(blockSeen int64) {
+	if rpccs.chainState == nil {
+		return
+	}
+	rpccs.chainState.SetLatestBlock(blockSeen)
 }
 
 func (rpccs *RPCConsumerServer) GetListeningAddress() string {
@@ -298,7 +300,6 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 	relayProcessor := relaycore.NewRelayProcessor(
 		ctx,
 		crossValidationParams,
-		rpccs.consumerConsistency,
 		rpccs.chainState,
 		rpccs.rpcConsumerLogs,
 		rpccs,
@@ -475,7 +476,7 @@ func (rpccs *RPCConsumerServer) ParseRelay(
 
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
 	reqBlock, _ := chainMessage.RequestedBlock()
-	seenBlock, _ := rpccs.consumerConsistency.GetSeenBlock(common.UserData{DappId: dappID, ConsumerIp: consumerIp})
+	seenBlock, _ := rpccs.chainState.GetLatestBlock()
 	if seenBlock < 0 {
 		seenBlock = 0
 	}
@@ -580,7 +581,6 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 	relayProcessor := relaycore.NewRelayProcessor(
 		ctx,
 		crossValidationParams,
-		rpccs.consumerConsistency,
 		rpccs.chainState,
 		rpccs.rpcConsumerLogs,
 		rpccs,
@@ -606,7 +606,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 }
 
 func (rpccs *RPCConsumerServer) CreateDappKey(userData common.UserData) string {
-	return rpccs.consumerConsistency.Key(userData)
+	return userData.DappKey()
 }
 
 func (rpccs *RPCConsumerServer) CancelSubscriptionContext(subscriptionKey string) {
@@ -853,10 +853,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	}
 
 	userData := protocolMessage.GetUserData()
-	var sharedStateId string // defaults to "", if shared state is disabled then no shared state will be used.
-	if rpccs.sharedState {
-		sharedStateId = rpccs.consumerConsistency.Key(userData) // use same key as we use for consistency, (for better consistency :-D)
-	}
+	// sharedStateId is always "" — shared-state seenBlock propagation uses a chain-wide
+	// key. The cache server reads from latestBlockKey(chainId, "") when sharedStateId is
+	// empty; old per-user keying (dappId__consumerIp) is preserved on the cache-server
+	// side for backwards-compat with old consumers.
+	var sharedStateId string
 
 	privKey := rpccs.privKey
 	chainId, apiInterface := rpccs.GetChainIdAndApiInterface()
@@ -910,12 +911,12 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					// The cache server doesn't accept negative blocks
 					requestedBlockForCache := reqBlock
 					if reqBlock == spectypes.LATEST_BLOCK {
-						// For LATEST_BLOCK queries, use the latest known block from consumerConsistency
-						// This ensures methods like eth_blockNumber use the actual current block for caching,
-						// not the potentially stale seenBlock from when this request started.
-						// The consistency cache is updated immediately after each successful response,
-						// so it reflects the most recent block across all requests for this user.
-						latestKnownBlock, found := rpccs.consumerConsistency.GetSeenBlock(userData)
+						// For LATEST_BLOCK queries, use the chain-wide head from ChainState.
+						// This ensures methods like eth_blockNumber use the actual current block for
+						// caching, not the potentially stale seenBlock from when this request started.
+						// ChainState is updated immediately after each successful response, so it
+						// reflects the most recent block across all requests for this chain.
+						latestKnownBlock, found := rpccs.chainState.GetLatestBlock()
 						if found && latestKnownBlock > 0 {
 							requestedBlockForCache = latestKnownBlock
 						} else if protocolMessage.RelayPrivateData().SeenBlock != 0 {
@@ -982,8 +983,10 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					if rpccs.sharedState && cacheSeenBlock > localRelayData.SeenBlock {
 						utils.LavaFormatDebug("shared state seen block is newer", utils.LogAttr("cache_seen_block", cacheSeenBlock), utils.LogAttr("local_seen_block", localRelayData.SeenBlock), utils.LogAttr("GUID", ctx))
 						localRelayData.SeenBlock = cacheSeenBlock
-						// setting the fetched seen block from the cache server to our local cache as well.
-						rpccs.consumerConsistency.SetSeenBlock(cacheSeenBlock, userData)
+						// Propagate the cross-consumer-fresh value into the chain-wide tracker.
+						// SetLatestBlockFromSharedState also emits M7 (lava_consumer_shared_state_propagations_total)
+						// so operators can confirm shared-state propagation is firing under sharded deployments.
+						rpccs.chainState.SetLatestBlockFromSharedState(cacheSeenBlock)
 					}
 
 					// handle cache reply

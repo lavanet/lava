@@ -25,7 +25,6 @@ type RelayProcessor struct {
 	lock                         sync.RWMutex
 	guid                         uint64
 	selection                    Selection
-	consistency                  Consistency
 	chainState                   *chainstate.ChainState
 	debugRelay                   bool
 	allowSessionDegradation      uint32 // used in the scenario where extension was previously used.
@@ -43,7 +42,6 @@ type RelayProcessor struct {
 func NewRelayProcessor(
 	ctx context.Context,
 	crossValidationParams *common.CrossValidationParams, // nil for Stateless/Stateful
-	consistency Consistency,
 	cState *chainstate.ChainState,
 	metricsInf MetricsInterface,
 	chainIdAndApiInterfaceGetter ChainIdAndApiInterfaceGetter,
@@ -81,7 +79,6 @@ func NewRelayProcessor(
 		responses:                    make(chan *RelayResponse, MaxCallsPerRelay), // buffered to prevent blocking
 		ResultsManager:               NewResultsManager(guid, chainID),
 		guid:                         guid,
-		consistency:                  consistency,
 		chainState:                   cState,
 		debugRelay:                   relayStateMachine.GetDebugState(),
 		metricsInf:                   metricsInf,
@@ -399,21 +396,20 @@ func (rp *RelayProcessor) handleResponse(response *RelayResponse) {
 		}
 	}
 
-	// Update consistency cache only for successful responses (not stale/error responses)
+	// Advance the chain-wide latestBlock tracker on successful responses (not stale/error).
 	if response != nil && response.Err == nil && response.RelayResult.Reply != nil {
-		if rp.consistency != nil && response.RelayResult.Reply.LatestBlock > 0 {
-			// set consistency when possible
+		if rp.chainState != nil && response.RelayResult.Reply.LatestBlock > 0 {
 			blockSeen := response.RelayResult.Reply.LatestBlock
 			userData := rp.RelayStateMachine.GetProtocolMessage().GetUserData()
-			utils.LavaFormatDebug("updating consistency seenBlock",
+			utils.LavaFormatDebug("updating chain latestBlock from relay response",
 				utils.LogAttr("blockSeen", blockSeen),
 				utils.LogAttr("dappID", userData.DappId),
 				utils.LogAttr("consumerIP", userData.ConsumerIp),
 			)
-			rp.consistency.SetSeenBlock(blockSeen, userData)
+			rp.chainState.SetLatestBlock(blockSeen)
 		} else {
-			utils.LavaFormatTrace("consistency update skipped",
-				utils.LogAttr("consistency_nil", rp.consistency == nil),
+			utils.LavaFormatTrace("chain latestBlock update skipped",
+				utils.LogAttr("chainState_nil", rp.chainState == nil),
 				utils.LogAttr("latestBlock", response.RelayResult.Reply.LatestBlock),
 			)
 		}
