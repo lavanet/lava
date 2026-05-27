@@ -3,6 +3,7 @@ package rewardserver
 import (
 	"context"
 	"fmt"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -293,6 +294,18 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 			}
 			go func(rewards []*pairingtypes.RelaySession, payment *PaymentConfiguration) { // send rewards asynchronously
 				defer paymentWaitGroup.Done()
+				// Backstop: this reward claim runs asynchronously, so an unrecovered panic here
+				// (e.g. the nil-GasInfo dereference inside CalculateGas during gas estimation)
+				// would crash the entire lavap process. Recover, log, and mark the claim for
+				// retry instead of taking the provider down.
+				defer func() {
+					if r := recover(); r != nil {
+						utils.LavaFormatError("recovered from panic in reward claim goroutine", nil,
+							utils.LogAttr("recovered", r),
+							utils.LogAttr("stack", string(debug.Stack())))
+						rws.updatePaymentRequestAttempt(rewards, false)
+					}
+				}()
 				specs := map[string]struct{}{}
 				if payment.shouldAddExpectedPayment {
 					for _, relay := range rewards {

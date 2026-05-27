@@ -165,10 +165,28 @@ func (ts *TxSender) parseTxErrorsAndTryGettingANewFactory(txResultString string,
 	return txfactory, fmt.Errorf("%s", txResultString)
 }
 
+// calculateGasWithRecover wraps cosmos-sdk's tx.CalculateGas and converts a panic into an
+// error. CalculateGas dereferences the Simulate response's GasInfo without a nil check
+// (cosmos-sdk client/tx/tx.go), so a node that returns a successful Simulate response with
+// no GasInfo triggers a nil-pointer panic. Left unrecovered, that panic crashes the whole
+// lavap process (observed from the async reward-claim goroutine). Recovering here turns it
+// into a normal error that the retry/fail handling below can deal with.
+func calculateGasWithRecover(clientCtx client.Context, txf tx.Factory, msg sdk.Msg) (gasUsed uint64, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			gasUsed = 0
+			err = utils.LavaFormatError("recovered from panic during gas estimation", nil,
+				utils.LogAttr("recovered", r))
+		}
+	}()
+	_, gasUsed, err = tx.CalculateGas(clientCtx, txf, msg)
+	return gasUsed, err
+}
+
 func (ts *TxSender) simulateTxWithRetry(clientCtx client.Context, txfactory tx.Factory, msg sdk.Msg) (tx.Factory, uint64, error) {
 	for retrySimulation := 0; retrySimulation < RETRY_INCORRECT_SEQUENCE; retrySimulation++ {
 		utils.LavaFormatDebug("Running Simulation", utils.LogAttr("idx", retrySimulation))
-		_, gasUsed, err := tx.CalculateGas(clientCtx, txfactory, msg)
+		gasUsed, err := calculateGasWithRecover(clientCtx, txfactory, msg)
 		if err != nil {
 			utils.LavaFormatInfo("Simulation failed", utils.LogAttr("reason:", err))
 			errString := err.Error()

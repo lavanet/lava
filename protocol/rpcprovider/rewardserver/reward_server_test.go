@@ -453,6 +453,36 @@ func TestFailedPaymentRequestAttemptsHappyFlow(t *testing.T) {
 	require.Equal(t, MaxPaymentRequestsRetiresForSession, rewardTxSent)
 }
 
+// TestSendRewardsClaim_RecoversFromTxPanic is a regression test for the provider crash where a
+// nil-pointer panic during reward-claim gas estimation (cosmos-sdk CalculateGas dereferencing a
+// nil GasInfo) took down the whole lavap process. The claim runs in a goroutine, so an
+// unrecovered panic there crashes the program. The goroutine must recover, log, and mark the
+// claim for retry. Reaching the assertions at all proves recovery worked — without it the test
+// binary would crash.
+func TestSendRewardsClaim_RecoversFromTxPanic(t *testing.T) {
+	rand.InitRandomSeed()
+	const providerAddr = "providerAddr"
+	spec := "spec1"
+
+	rewardDB, err := createInMemoryRewardDb([]string{spec})
+	require.NoError(t, err)
+
+	stubRewardsTxSender := rewardsTxSenderMock{
+		txRelayPaymentCallback: func(ctx context.Context, rs []*pairingtypes.RelaySession, s string, lbr []*pairingtypes.LatestBlockReport) error {
+			panic("runtime error: invalid memory address or nil pointer dereference")
+		},
+	}
+
+	ctx := sdk.WrapSDKContext(sdk.NewContext(nil, tmproto.Header{}, false, nil))
+	rws := NewRewardServer(&stubRewardsTxSender, nil, rewardDB, "badger_test", 1, 1, nil)
+
+	session := common.BuildRelayRequestWithSession(ctx, providerAddr, []byte{}, uint64(1), uint64(42), spec, nil)
+	rws.SendNewProof(ctx, session, 1, "consumerAddress", "apiInterface")
+
+	rws.sendRewardsClaim(ctx, 1)
+	require.Equal(t, 1, len(rws.failedRewardsPaymentRequests), "panicked claim must be recovered and marked for retry")
+}
+
 func TestFailedPaymentRequestAttemptsHappyMultipleSessions(t *testing.T) {
 	rand.InitRandomSeed()
 	const providerAddr = "providerAddr"
