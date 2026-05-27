@@ -306,14 +306,13 @@ func (po *ProviderOptimizer) appendRelayData(provider string, latency time.Durat
 }
 
 // AppendProbeRelayData updates a provider's QoS metrics for a probe relay message
-func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latency time.Duration, success bool) {
+func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latency time.Duration, success bool, syncBlock uint64) {
 	providerData, _ := po.getProviderData(providerAddress)
 	sampleTime := po.now()
 	halfTime := po.calculateHalfTime(providerAddress, sampleTime)
 	weight := score.ProbeUpdateWeight
 	var updateErr error
 	if success {
-		// update latency only on success
 		providerData, updateErr = po.updateDecayingWeightedAverage(providerData, score.AvailabilityScoreType, 1, weight, halfTime, 0, sampleTime)
 		if updateErr != nil {
 			return
@@ -321,6 +320,19 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 		providerData, updateErr = po.updateDecayingWeightedAverage(providerData, score.LatencyScoreType, latency.Seconds(), weight, halfTime, 0, sampleTime)
 		if updateErr != nil {
 			return
+		}
+		// Sync scoring: mirror the sync path from appendRelayData().
+		// Skip when syncBlock=0 (static providers, failed probes).
+		if syncBlock > 0 {
+			latestSync, timeSync := po.updateLatestSyncData(syncBlock, sampleTime)
+			if syncBlock > providerData.SyncBlock {
+				providerData.SyncBlock = syncBlock
+			}
+			syncLag := po.calculateSyncLag(latestSync, timeSync, providerData.SyncBlock, sampleTime)
+			providerData, updateErr = po.updateDecayingWeightedAverage(providerData, score.SyncScoreType, syncLag.Seconds(), weight, halfTime, 0, sampleTime)
+			if updateErr != nil {
+				return
+			}
 		}
 	} else {
 		providerData, updateErr = po.updateDecayingWeightedAverage(providerData, score.AvailabilityScoreType, 0, weight, halfTime, 0, sampleTime)
@@ -334,6 +346,7 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 		utils.LogAttr("providerAddress", providerAddress),
 		utils.LogAttr("latency", latency),
 		utils.LogAttr("success", success),
+		utils.LogAttr("syncBlock", syncBlock),
 	)
 }
 

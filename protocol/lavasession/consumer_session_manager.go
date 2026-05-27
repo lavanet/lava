@@ -547,7 +547,7 @@ func (csm *ConsumerSessionManager) probeProviders(ctx context.Context, pairingLi
 	// PHASE 2a — feed metrics + optimizer with per-provider results.
 	for _, r := range results {
 		csm.consumerMetricsManager.SetProviderLiveness(csm.rpcEndpoint.ChainID, r.ProviderAddress, r.NetworkAddress, r.Success)
-		csm.providerOptimizer.AppendProbeRelayData(r.ProviderAddress, r.Latency, r.Success)
+		csm.providerOptimizer.AppendProbeRelayData(r.ProviderAddress, r.Latency, r.Success, uint64(r.LatestBlock))
 	}
 
 	// PHASE 2b — compute majorityBaseline consensus from collected block heights.

@@ -84,17 +84,17 @@ func TestProviderOptimizerBasicProbeData(t *testing.T) {
 	// damage providers 5-7 scores with bad latency probes relays
 	// they should be selected less often due to lower weighted scores
 	badLatency := TEST_BASE_WORLD_LATENCY * 3
-	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[5], badLatency, true)
-	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[6], badLatency, true)
-	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[7], badLatency, true)
+	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[5], badLatency, true, 0)
+	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[6], badLatency, true, 0)
+	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[7], badLatency, true, 0)
 	time.Sleep(4 * time.Millisecond)
 
 	// improve providers 0-2 scores with good latency probes relays
 	// they should be selected by the optimizer more often
 	goodLatency := TEST_BASE_WORLD_LATENCY / 2
-	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[0], goodLatency, true)
-	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[1], goodLatency, true)
-	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[2], goodLatency, true)
+	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[0], goodLatency, true, 0)
+	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[1], goodLatency, true, 0)
+	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[2], goodLatency, true, 0)
 	time.Sleep(4 * time.Millisecond)
 	results := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, 1000, cu, requestBlock)
 
@@ -313,7 +313,7 @@ func TestProviderOptimizerUpdatingLatency(t *testing.T) {
 	syncBlock := uint64(requestBlock)
 
 	// add an average latency probe relay to determine average score
-	providerOptimizer.AppendProbeRelayData(providerAddress, TEST_BASE_WORLD_LATENCY, true)
+	providerOptimizer.AppendProbeRelayData(providerAddress, TEST_BASE_WORLD_LATENCY, true, 0)
 	time.Sleep(4 * time.Millisecond)
 
 	// add good latency probe relays, score should improve
@@ -325,7 +325,7 @@ func TestProviderOptimizerUpdatingLatency(t *testing.T) {
 		require.NoError(t, err)
 
 		// add good latency probe
-		providerOptimizer.AppendProbeRelayData(providerAddress, TEST_BASE_WORLD_LATENCY/10, true)
+		providerOptimizer.AppendProbeRelayData(providerAddress, TEST_BASE_WORLD_LATENCY/10, true, 0)
 		time.Sleep(4 * time.Millisecond)
 
 		// check score again and compare to the last score
@@ -1365,4 +1365,93 @@ func TestResetLatestSyncDataIfOutlier_ZeroBlockUnchanged(t *testing.T) {
 	optimizer.ResetLatestSyncDataIfOutlier(1_000_000, 100)
 
 	require.Equal(t, uint64(0), optimizer.latestSyncData.Block, "zero block should not be touched")
+}
+
+// --- AppendProbeRelayData sync scoring tests (Step 3, Task 2.1) ---
+
+func TestAppendProbeRelayData_SyncBlockUpdatesGlobalChainHead(t *testing.T) {
+	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", nil)
+	providerAddress := "provider1"
+
+	// Probe with syncBlock=1000 should update the global chain head
+	optimizer.AppendProbeRelayData(providerAddress, TEST_BASE_WORLD_LATENCY, true, 1000)
+	time.Sleep(4 * time.Millisecond)
+
+	// Verify global chain head was updated
+	optimizer.latestSyncData.Lock.Lock()
+	block := optimizer.latestSyncData.Block
+	optimizer.latestSyncData.Lock.Unlock()
+	require.Equal(t, uint64(1000), block)
+}
+
+func TestAppendProbeRelayData_ProviderBehindGetsHigherSyncLag(t *testing.T) {
+	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", nil)
+	syncedProvider := "synced"
+	behindProvider := "behind"
+
+	// Provider A is fully synced at block 1000
+	optimizer.AppendProbeRelayData(syncedProvider, TEST_BASE_WORLD_LATENCY, true, 1000)
+	time.Sleep(4 * time.Millisecond)
+
+	// Provider B is behind at block 990 (10 blocks behind)
+	optimizer.AppendProbeRelayData(behindProvider, TEST_BASE_WORLD_LATENCY, true, 990)
+	time.Sleep(4 * time.Millisecond)
+
+	// Provider A should have better (lower) sync score than Provider B
+	syncedData, _ := optimizer.getProviderData(syncedProvider)
+	behindData, _ := optimizer.getProviderData(behindProvider)
+
+	// Sync score stores lag in seconds via EWMA — lower is better
+	// Synced provider: lag=0 (at chain head). Behind provider: lag = 10 blocks × avgBlockTime
+	syncedLag, _ := syncedData.Sync.Resolve()
+	behindLag, _ := behindData.Sync.Resolve()
+	require.Less(t, syncedLag, behindLag, "synced provider should have lower sync lag than behind provider")
+}
+
+func TestAppendProbeRelayData_SyncBlockZeroSkipsSyncScoring(t *testing.T) {
+	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", nil)
+	providerAddress := "provider1"
+
+	// Probe with syncBlock=0 (static provider / failed probe)
+	optimizer.AppendProbeRelayData(providerAddress, TEST_BASE_WORLD_LATENCY, true, 0)
+	time.Sleep(4 * time.Millisecond)
+
+	// Global chain head should NOT be updated
+	optimizer.latestSyncData.Lock.Lock()
+	block := optimizer.latestSyncData.Block
+	optimizer.latestSyncData.Lock.Unlock()
+	require.Equal(t, uint64(0), block, "syncBlock=0 should not update global chain head")
+
+	// Provider's SyncBlock should remain at default (0)
+	providerData, _ := optimizer.getProviderData(providerAddress)
+	require.Equal(t, uint64(0), providerData.SyncBlock, "syncBlock=0 should not update provider SyncBlock")
+}
+
+func TestAppendProbeRelayData_RelayWeightDominatesProbeWeight(t *testing.T) {
+	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", nil)
+	behindProvider := "behind"
+	syncedProvider := "synced"
+
+	// Probe seeds: behind provider at block 990, synced provider at block 1000
+	// This sets global chain head to 1000
+	optimizer.AppendProbeRelayData(syncedProvider, TEST_BASE_WORLD_LATENCY, true, 1000)
+	optimizer.AppendProbeRelayData(behindProvider, TEST_BASE_WORLD_LATENCY, true, 990)
+	time.Sleep(4 * time.Millisecond)
+
+	// Behind provider has sync lag from probe (weight 0.25)
+	probeData, _ := optimizer.getProviderData(behindProvider)
+	probeSyncLag, _ := probeData.Sync.Resolve()
+	require.Greater(t, probeSyncLag, 0.0, "behind provider should have non-zero sync lag from probe")
+
+	// Now relay confirms behind provider is still at 990 (weight 1.0)
+	// Relay should reinforce the lag with 4x the weight
+	optimizer.AppendRelayData(behindProvider, TEST_BASE_WORLD_LATENCY, 10, 990)
+	time.Sleep(4 * time.Millisecond)
+
+	relayData, _ := optimizer.getProviderData(behindProvider)
+	relaySyncLag, _ := relayData.Sync.Resolve()
+
+	// After relay with higher weight, the sync lag should be higher (more confident)
+	// because relay weight (1.0) reinforces the lag signal stronger than probe (0.25)
+	require.Greater(t, relaySyncLag, probeSyncLag, "relay data should reinforce sync lag with higher weight")
 }

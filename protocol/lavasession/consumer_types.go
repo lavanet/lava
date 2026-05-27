@@ -125,7 +125,7 @@ type SessionInfo struct {
 type ConsumerSessionsMap map[string]*SessionInfo
 
 type ProviderOptimizer interface {
-	AppendProbeRelayData(providerAddress string, latency time.Duration, success bool)
+	AppendProbeRelayData(providerAddress string, latency time.Duration, success bool, syncBlock uint64)
 	AppendRelayFailure(providerAddress string)
 	AppendRelayData(providerAddress string, latency time.Duration, cu, syncBlock uint64)
 	ChooseProvider(ctx context.Context, allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string)
