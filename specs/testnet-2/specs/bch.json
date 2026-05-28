@@ -45,7 +45,7 @@
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 1
+                                    "stateful": 0
                                 },
                                 "extra_compute_units": 0
                             },
@@ -63,7 +63,7 @@
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 2
+                                    "stateful": 0
                                 },
                                 "extra_compute_units": 0
                             },
@@ -81,7 +81,7 @@
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 1
+                                    "stateful": 0
                                 },
                                 "extra_compute_units": 0
                             },
@@ -96,10 +96,10 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1
                                 },
                                 "extra_compute_units": 0,
                                 "parsers": [
@@ -138,10 +138,10 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1
                                 },
                                 "extra_compute_units": 0,
                                 "parsers": [
@@ -162,10 +162,10 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1
                                 },
                                 "extra_compute_units": 0,
                                 "parsers": [
@@ -212,24 +212,6 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "getmempoolentry",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 1
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
                                 "name": "getblocktemplate",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -243,7 +225,7 @@
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 2
+                                    "stateful": 0
                                 },
                                 "extra_compute_units": 0
                             },
@@ -261,7 +243,7 @@
                                     "deterministic": true,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 2
+                                    "stateful": 0
                                 },
                                 "extra_compute_units": 0
                             },
@@ -336,6 +318,24 @@
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
+                            },
+                            {
+                                "name": "getblockfilter",
+                                "enabled": false,
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 10,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             }
                         ],
                         "headers": [],
@@ -360,6 +360,204 @@
                                 }
                             }
                         ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": "blockdaemon"
+                        },
+                        "apis": [
+                            {
+                                "name": "bd_getbalanceatheight",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                    "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "bd_getbalances",
+                                "enabled": false,
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 10,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "bd_getbalance",
+                                "enabled": false,
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 10,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "bd_estimatefee",
+                                "enabled": false,
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 10,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "bd_listtransactions",
+                                "enabled": false,
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 10,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "bd_getspendingtx",
+                                "enabled": false,
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 10,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "bd_listunspent",
+                                "enabled": false,
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 10,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "bd_marketquote",
+                                "enabled": false,
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 10,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "bd_getblockheaderbydate",
+                                "enabled": false,
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 10,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            }
+                        ],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "enabled",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"bd_getbalanceatheight\",\"params\":[\"bitcoincash:qpm2qsznhks23z7629mms6s4cwef74vcwvy22gdx6a\"],\"id\":1}",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "amount"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "bd_getbalanceatheight"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "*"
+                                    }
+                                ]
+                            }
+                        ],
+                        "extensions": []
                     }
                 ]
             },
