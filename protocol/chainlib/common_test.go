@@ -1,9 +1,12 @@
 package chainlib
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -733,6 +736,117 @@ func TestCompareRequestedBlockInBatch(t *testing.T) {
 			latest, earliest := CompareRequestedBlockInBatch(test.latest, test.earliest, test.parsed)
 			require.Equal(t, test.expectedLatest, latest, "latest")
 			require.Equal(t, test.expectedEarliest, earliest, "earliest")
+		})
+	}
+}
+
+// alwaysHealthyReporter is a HealthReporter that always reports healthy.
+// Used by the buffer-size tests below to satisfy createAndSetupBaseAppListener's signature.
+type alwaysHealthyReporter struct{}
+
+func (alwaysHealthyReporter) IsHealthy() bool { return true }
+
+// TestCreateAndSetupBaseAppListener_HandlesLargeHeaders pins fasthttp's request-buffer
+// ceiling. Fiber's default ReadBufferSize is 4 KiB, which caps the combined size of the
+// HTTP request line + all headers; above that fasthttp returns 431 before any handler
+// runs. mTLS deployments forward the client cert via X-Forwarded-Client-Cert (XFCC), and
+// a PEM-encoded cert plus chain routinely exceeds 4 KiB, so the default broke every
+// mTLS-forwarded relay.
+//
+// Test goes over a real TCP socket — Fiber's in-process `app.Test` bypasses the network
+// path and won't exercise ReadBufferSize.
+func TestCreateAndSetupBaseAppListener_HandlesLargeHeaders(t *testing.T) {
+	cmdFlags := common.ConsumerCmdFlags{
+		HeadersFlag:      "*",
+		CredentialsFlag:  "true",
+		OriginFlag:       "*",
+		MethodsFlag:      "GET,POST,OPTIONS",
+		CDNCacheDuration: "86400",
+	}
+
+	app := createAndSetupBaseAppListener(cmdFlags, "/health", alwaysHealthyReporter{})
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("ok")
+	})
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer ln.Close()
+
+	serverErrCh := make(chan error, 1)
+	go func() { serverErrCh <- app.Listener(ln) }()
+	defer func() {
+		_ = app.Shutdown()
+		<-serverErrCh
+	}()
+
+	// Poll until the listener actually accepts connections — app.Listener is async.
+	addr := ln.Addr().String()
+	require.Eventually(t, func() bool {
+		c, err := net.DialTimeout("tcp", addr, 200*time.Millisecond)
+		if err != nil {
+			return false
+		}
+		_ = c.Close()
+		return true
+	}, 2*time.Second, 20*time.Millisecond, "fiber listener never came up")
+
+	// Build a realistic XFCC header. Real mTLS proxies emit a few fixed fields plus
+	// `Cert="<URL-encoded PEM>"`; here we just need the total header bytes to clear the
+	// 4 KiB default — 8 KiB of base64-ish padding is plenty without being slow to write.
+	const padLen = 8 * 1024
+	xfccPayload := "By=spiffe://cluster.local/ns/smart-router-system/sa/default" +
+		";Hash=" + strings.Repeat("a", 64) +
+		";Subject=\"CN=fake\"" +
+		";URI=spiffe://cluster.local/ns/test/sa/test" +
+		";Cert=\"-----BEGIN CERTIFICATE-----%0A" + strings.Repeat("A", padLen) + "%0A-----END CERTIFICATE-----\""
+
+	tests := []struct {
+		name       string
+		xfcc       string
+		wantStatus int
+	}{
+		{
+			name:       "small_headers_succeed",
+			xfcc:       "",
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:       "large_xfcc_header_succeeds_after_buffer_bump",
+			xfcc:       xfccPayload,
+			wantStatus: http.StatusOK,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			conn, err := net.DialTimeout("tcp", addr, 1*time.Second)
+			require.NoError(t, err)
+			defer conn.Close()
+
+			require.NoError(t, conn.SetDeadline(time.Now().Add(2*time.Second)))
+
+			var req strings.Builder
+			req.WriteString("GET / HTTP/1.1\r\n")
+			req.WriteString("Host: " + addr + "\r\n")
+			if tc.xfcc != "" {
+				req.WriteString("X-Forwarded-Client-Cert: " + tc.xfcc + "\r\n")
+				// Sanity-check the request actually exceeds Fiber's old 4 KiB default,
+				// otherwise the test is silently a tautology.
+				require.Greater(t, len(tc.xfcc), 4096, "test header must exceed the old 4 KiB default")
+			}
+			req.WriteString("Connection: close\r\n\r\n")
+
+			_, err = conn.Write([]byte(req.String()))
+			require.NoError(t, err)
+
+			resp, err := http.ReadResponse(bufio.NewReader(conn), nil)
+			require.NoError(t, err)
+			defer resp.Body.Close()
+
+			require.Equal(t, tc.wantStatus, resp.StatusCode,
+				"expected %d, got %d (header size = %d B). 431 means fasthttp's ReadBufferSize is back at the 4 KiB default.",
+				tc.wantStatus, resp.StatusCode, len(tc.xfcc))
 		})
 	}
 }

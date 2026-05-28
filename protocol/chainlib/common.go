@@ -460,6 +460,11 @@ func createAndSetupBaseAppListener(cmdFlags common.ConsumerCmdFlags, healthCheck
 	app := fiber.New(fiber.Config{
 		JSONEncoder: json.Marshal,
 		JSONDecoder: json.Unmarshal,
+		// Fiber's default is 4 KiB, which mTLS X-Forwarded-Client-Cert headers (PEM-encoded
+		// certs, often with a chain) routinely exceed — fasthttp then 431s before any handler
+		// runs. 128 KiB matches the corresponding Envoy Gateway ClientTrafficPolicy ceiling.
+		ReadBufferSize:  128 * 1024,
+		WriteBufferSize: 128 * 1024,
 	})
 	app.Use(favicon.New())
 	applyResponseCompression(app, cmdFlags.ResponseCompression)
