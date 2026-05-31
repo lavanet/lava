@@ -135,10 +135,7 @@ func New(ctx context.Context, cfg TraceConfig) (*TraceManager, error) {
 	// limit on the same spans, so we cannot disagree with the SDK.
 	bodyAttrLimit = sdktrace.NewSpanLimits().AttributeValueLengthLimit
 
-	res, err := resource.New(ctx,
-		resource.WithAttributes(semconv.ServiceName(cfg.DefaultServiceName)),
-		resource.WithFromEnv(), // OTEL_SERVICE_NAME, OTEL_RESOURCE_ATTRIBUTES
-	)
+	res, err := newResource(ctx, cfg)
 	if err != nil {
 		return nil, utils.LavaFormatError("failed to create OTel resource", err)
 	}
@@ -178,6 +175,21 @@ func New(ctx context.Context, cfg TraceConfig) (*TraceManager, error) {
 		provider: tp,
 		shutdown: tp.Shutdown,
 	}, nil
+}
+
+// newResource builds the OTel resource describing this service. WithHost() adds
+// the standard `host.name` attribute (the OS hostname) so traces can be mapped
+// to the host's region. WithFromEnv() is applied LAST so operator-supplied env
+// config wins on conflicts: OTEL_SERVICE_NAME overrides DefaultServiceName, and
+// OTEL_RESOURCE_ATTRIBUTES (e.g. host.name=eu-west-1) overrides the detected
+// hostname. resource.New merges detectors in order, with later ones taking
+// precedence on key collisions.
+func newResource(ctx context.Context, cfg TraceConfig) (*resource.Resource, error) {
+	return resource.New(ctx,
+		resource.WithAttributes(semconv.ServiceName(cfg.DefaultServiceName)),
+		resource.WithHost(),    // host.name from os.Hostname()
+		resource.WithFromEnv(), // OTEL_SERVICE_NAME, OTEL_RESOURCE_ATTRIBUTES (override)
+	)
 }
 
 // newNoop installs a noop TracerProvider as the global and returns a TraceManager

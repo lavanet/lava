@@ -217,6 +217,7 @@ func clearTracingEnv(t *testing.T) {
 		"OTEL_EXPORTER_OTLP_ENDPOINT",
 		"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
 		"OTEL_SERVICE_NAME",
+		"OTEL_RESOURCE_ATTRIBUTES",
 		"OTEL_TRACES_SAMPLER",
 		"OTEL_TRACES_SAMPLER_ARG",
 		"OTEL_TRACES_EXPORTER",
@@ -246,6 +247,44 @@ func TestNew_DefaultServiceNameRequired(t *testing.T) {
 	_, err := New(context.Background(), TraceConfig{})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "DefaultServiceName")
+}
+
+func TestNewResource_HostName(t *testing.T) {
+	hostname, err := os.Hostname()
+	require.NoError(t, err)
+
+	clearTracingEnv(t)
+
+	res, err := newResource(context.Background(), TraceConfig{DefaultServiceName: "lava-test-binary"})
+	require.NoError(t, err)
+
+	var gotHost string
+	var hasHost bool
+	for _, attr := range res.Attributes() {
+		if string(attr.Key) == "host.name" {
+			hasHost = true
+			gotHost = attr.Value.AsString()
+		}
+	}
+	require.True(t, hasHost, "resource should always carry host.name")
+	require.Equal(t, hostname, gotHost)
+}
+
+func TestNewResource_HostNameOverridableViaEnv(t *testing.T) {
+	clearTracingEnv(t)
+	t.Setenv("OTEL_RESOURCE_ATTRIBUTES", "host.name=eu-west-1-consumer")
+
+	res, err := newResource(context.Background(), TraceConfig{DefaultServiceName: "lava-test-binary"})
+	require.NoError(t, err)
+
+	var gotHost string
+	for _, attr := range res.Attributes() {
+		if string(attr.Key) == "host.name" {
+			gotHost = attr.Value.AsString()
+		}
+	}
+	require.Equal(t, "eu-west-1-consumer", gotHost,
+		"OTEL_RESOURCE_ATTRIBUTES should override the detected hostname")
 }
 
 func TestBuildPropagatorFromEnv(t *testing.T) {
