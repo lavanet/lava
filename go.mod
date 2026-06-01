@@ -61,7 +61,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.38.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/mock v0.3.0
-	golang.org/x/time v0.5.0
 	gonum.org/v1/gonum v0.16.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20250825161204-c5933d9347a5
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
@@ -172,6 +171,7 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
+	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/api v0.169.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250825161204-c5933d9347a5 // indirect
 	pgregory.net/rapid v1.1.0 // indirect

@@ -58,8 +58,7 @@ func StartConsumerGetSessions(ctx context.Context, requested int) (context.Conte
 // dial) will be nested under this span.
 //
 // The caller passes the current batch number (1-indexed), typically derived
-// from `relayProcessor.GetUsedProviders().BatchNumber()` — same pattern SR
-// uses in rpcsmartrouter_server.go:838.
+// from `relayProcessor.GetUsedProviders().BatchNumber()`.
 func StartConsumerRelayInner(ctx context.Context, providerAddr string, attempt int) (context.Context, trace.Span) {
 	ctx, span := otel.Tracer(tracerName).Start(ctx, SpanConsumerRelayInner,
 		trace.WithSpanKind(trace.SpanKindInternal),

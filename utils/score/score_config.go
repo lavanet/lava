@@ -35,7 +35,7 @@ const (
 
 	// DefaultProbeUpdateWeight controls the relative impact of probe samples (liveness/latency)
 	// compared to relay samples in the provider optimizer.
-	// It can be overridden at process start via CLI flag (see rpcconsumer/rpcsmartrouter).
+	// It can be overridden at process start via CLI flag (see rpcconsumer).
 	DefaultProbeUpdateWeight float64 = 0.25
 
 	// TODO: find actual numbers from info of latencies of high/mid/low CU from "stats.lavanet.xyz".

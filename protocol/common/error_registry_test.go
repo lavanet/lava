@@ -593,8 +593,8 @@ func TestClassifyNodeErrorForRetry_DerivesAllFlagsFromSingleLookup(t *testing.T)
 
 // TestApiInterfaceToTransport maps the spec API interface strings to the
 // TransportType consumed by the error registry. tendermintrpc and unknown
-// inputs fall back to JSON-RPC — the consumer and smart router rely on this
-// default to avoid threading a null transport through hot paths.
+// inputs fall back to JSON-RPC — the consumer relies on this default to
+// avoid threading a null transport through hot paths.
 func TestApiInterfaceToTransport(t *testing.T) {
 	cases := []struct {
 		apiInterface string
@@ -617,7 +617,7 @@ func TestApiInterfaceToTransport(t *testing.T) {
 // TestIsNonRetryableNodeErrorWithContext_JSONRPCBodyCode documents that the
 // JSON-RPC Tier-1 code matchers only fire when callers pass the body error
 // code (e.g. -32700) rather than the HTTP status that wraps it. This is the
-// invariant the consumer and smart-router JSON-RPC paths rely on when they
+// invariant the consumer JSON-RPC paths rely on when they
 // call ExtractJSONRPCErrorCode before classification.
 func TestIsNonRetryableNodeErrorWithContext_JSONRPCBodyCode(t *testing.T) {
 	// Using HTTP 200 (the wrapper status for JSON-RPC node errors) the

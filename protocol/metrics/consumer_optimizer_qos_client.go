@@ -47,9 +47,8 @@ type ConsumerOptimizerQoSClient struct {
 	lock                   sync.RWMutex
 
 	// latest is the most recent sample's records. Replaced wholesale on
-	// each tick; not aggregated. Used by SmartRouterMetricsManager to
-	// surface current scores via the optional Prometheus-style scrape
-	// endpoint enabled by --optimizer-qos-listen.
+	// each tick; not aggregated. Surfaces current scores via the optional
+	// Prometheus-style scrape endpoint enabled by --optimizer-qos-listen.
 	latest []OptimizerQoSReportToSend
 }
 

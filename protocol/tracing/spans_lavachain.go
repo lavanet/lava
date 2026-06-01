@@ -14,8 +14,7 @@ import (
 )
 
 // tracerName is the OTel tracer name (instrumentation library identifier)
-// used by all helpers in this package. Distinct from the smartrouter scope
-// to make span source readily identifiable in the trace UI.
+// used by all helpers in this package.
 const tracerName = "github.com/lavanet/lava/v5/protocol/tracing"
 
 // WrapClientConn wraps a gogoproto-style ClientConn so every Invoke and

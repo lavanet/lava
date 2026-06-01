@@ -128,9 +128,9 @@ func TestAnalyzeWebSocketErrorAndWriteMessage(t *testing.T) {
 
 // TestAddMetricForHttp_OTelEventPopulated asserts that the HTTP path
 // sets Success and Origin on the RelayMetrics BEFORE emitting, so the
-// OTel event carries both. Passing nil for the metrics manager mirrors
-// the smart-router path where SetRelayMetrics is a no-op — Success has
-// to be populated by AddMetricFor* itself.
+// OTel event carries both. Passing nil for the metrics manager exercises
+// the no-op SetRelayMetrics path — Success has to be populated by
+// AddMetricFor* itself.
 func TestAddMetricForHttp_OTelEventPopulated(t *testing.T) {
 	sink := &captureSink{}
 	logs, err := NewRPCConsumerLogs(nil, sink, nil)

@@ -26,11 +26,11 @@ const (
 )
 
 // DefaultTimeout is the configurable default timeout for relay processing.
-// It can be overridden via the --default-processing-timeout flag on consumer and smart router commands.
+// It can be overridden via the --default-processing-timeout flag on the consumer command.
 var DefaultTimeout = time.Duration(DefaultTimeoutSeconds) * time.Second
 
 // MinimumTimePerRelayDelay is the minimum relay timeout floor used by GetTimePerCu.
-// It can be overridden via the --min-relay-timeout flag on consumer and smart router commands.
+// It can be overridden via the --min-relay-timeout flag on the consumer command.
 var MinimumTimePerRelayDelay = time.Second
 
 // ValidateAndCapMinRelayTimeout ensures both DefaultTimeout and MinimumTimePerRelayDelay

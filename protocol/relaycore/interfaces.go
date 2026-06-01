@@ -55,8 +55,7 @@ func (rssi *RelayStateSendInstructions) IsDone() bool {
 	return rssi.Done || rssi.Err != nil
 }
 
-// RelaySenderInf is the unified interface for relay senders (Consumer and SmartRouter).
-// Both ConsumerRelaySender and SmartRouterRelaySender have identical signatures.
+// RelaySenderInf is the interface for relay senders, implemented by the consumer.
 type RelaySenderInf interface {
 	RelayParserInf
 	GetProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration)
@@ -136,13 +135,13 @@ type RelayPolicyInf interface {
 	GetConsecutiveBatchErrors() int
 }
 
-// StateMachineConfig configures behavior differences between Consumer and SmartRouter state machines
+// StateMachineConfig configures optional relay state machine behaviors.
 type StateMachineConfig struct {
-	// EnableCircuitBreaker enables the PairingListEmptyError circuit breaker (SmartRouter only)
+	// EnableCircuitBreaker enables the PairingListEmptyError circuit breaker (disabled by the consumer)
 	EnableCircuitBreaker bool
 	// CircuitBreakerThreshold is the number of consecutive pairing errors before tripping (default: 2)
 	CircuitBreakerThreshold int
-	// EnableTimeoutPriority enables priority timeout checks before each select case (SmartRouter only)
+	// EnableTimeoutPriority enables priority timeout checks before each select case (disabled by the consumer)
 	EnableTimeoutPriority bool
 	// MaxRetries is the maximum number of ticker relay retries
 	MaxRetries int
