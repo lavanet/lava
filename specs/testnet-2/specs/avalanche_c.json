@@ -5,7 +5,7 @@
         "specs": [
             {
                 "index": "AVALANCHEC",
-                "name": "avalanche c chain mainnet",
+                "name": "Avalanche C Chain mainnet",
                 "enabled": true,
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
@@ -660,7 +660,7 @@
             },
             {
                 "index": "AVALANCHECT",
-                "name": "avalanche c chain testnet",
+                "name": "Avalanche C Chain testnet",
                 "enabled": true,
                 "imports": [
                     "AVALANCHEC"
