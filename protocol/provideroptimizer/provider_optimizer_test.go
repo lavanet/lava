@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+	"github.com/lavanet/lava/v5/protocol/chainstate"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/lavaslices"
 	"github.com/lavanet/lava/v5/utils/rand"
@@ -27,7 +28,7 @@ const (
 
 func setupProviderOptimizer(maxProvidersCount uint) *ProviderOptimizer {
 	averageBlockTIme := TEST_AVERAGE_BLOCK_TIME
-	return NewProviderOptimizer(StrategyBalanced, averageBlockTIme, maxProvidersCount, nil, "test")
+	return NewProviderOptimizer(StrategyBalanced, averageBlockTIme, maxProvidersCount, nil, "test", nil)
 }
 
 type providersGenerator struct {
@@ -1261,4 +1262,107 @@ func TestProviderOptimizer_ResetState_AllowsRealTimeSamplesAfterClockReset(t *te
 		"new write should carry a real-time timestamp; got %v", newTimestamp)
 	require.False(t, newTimestamp.After(realNow.Add(time.Hour)),
 		"new write should NOT carry the old future timestamp; got %v", newTimestamp)
+}
+
+func TestGetAverageBlockTime(t *testing.T) {
+	expectedBlockTime := 6 * time.Second
+	optimizer := NewProviderOptimizer(StrategyBalanced, expectedBlockTime, 1, nil, "test-chain", nil)
+	require.Equal(t, expectedBlockTime, optimizer.GetAverageBlockTime())
+
+	// Zero block time
+	optimizer2 := NewProviderOptimizer(StrategyBalanced, 0, 1, nil, "test-chain-2", nil)
+	require.Equal(t, time.Duration(0), optimizer2.GetAverageBlockTime())
+}
+
+// --- updateLatestSyncData outlier guard tests (Task 8.2) ---
+
+func TestUpdateLatestSyncData_NormalUpdateAccepted(t *testing.T) {
+	cs := &chainstate.ChainState{}
+	cs.SetMajorityBaseline(1000, 200) // outlier if > 1200
+	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", cs)
+
+	now := time.Now()
+	block, _ := optimizer.updateLatestSyncData(1100, now) // within threshold
+	require.Equal(t, uint64(1100), block)
+}
+
+func TestUpdateLatestSyncData_OutlierRejected(t *testing.T) {
+	cs := &chainstate.ChainState{}
+	cs.SetMajorityBaseline(1000, 200) // outlier if > 1200
+	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", cs)
+
+	now := time.Now()
+	// First set a normal block
+	block, _ := optimizer.updateLatestSyncData(1100, now)
+	require.Equal(t, uint64(1100), block)
+
+	// Outlier — should be rejected, block stays at 1100
+	block, _ = optimizer.updateLatestSyncData(1201, now)
+	require.Equal(t, uint64(1100), block)
+
+	// Extreme outlier (Feb 17 scenario) — also rejected
+	block, _ = optimizer.updateLatestSyncData(20000, now)
+	require.Equal(t, uint64(1100), block)
+}
+
+func TestUpdateLatestSyncData_ColdStartAllowsAll(t *testing.T) {
+	cs := &chainstate.ChainState{} // majorityBaseline=0
+	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", cs)
+
+	now := time.Now()
+	// Even extreme values allowed when majorityBaseline=0
+	block, _ := optimizer.updateLatestSyncData(999999, now)
+	require.Equal(t, uint64(999999), block)
+}
+
+func TestUpdateLatestSyncData_NilChainStateAllowsAll(t *testing.T) {
+	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", nil)
+
+	now := time.Now()
+	block, _ := optimizer.updateLatestSyncData(999999, now)
+	require.Equal(t, uint64(999999), block)
+}
+
+// --- ResetLatestSyncDataIfOutlier tests ---
+
+func TestResetLatestSyncDataIfOutlier_PoisonedReset(t *testing.T) {
+	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", nil)
+
+	// Simulate poisoning: latestSyncData.Block set to 20M
+	optimizer.latestSyncData.Block = 20_000_000
+
+	optimizer.ResetLatestSyncDataIfOutlier(1_000_000, 100) // floor + threshold = 1,000,100
+
+	require.Equal(t, uint64(1_000_000), optimizer.latestSyncData.Block, "poisoned value should be reset to floor")
+}
+
+func TestResetLatestSyncDataIfOutlier_HealthyUnchanged(t *testing.T) {
+	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", nil)
+
+	optimizer.latestSyncData.Block = 1_000_005
+
+	optimizer.ResetLatestSyncDataIfOutlier(1_000_000, 100) // floor + threshold = 1,000,100
+
+	require.Equal(t, uint64(1_000_005), optimizer.latestSyncData.Block, "healthy value should not be touched")
+}
+
+func TestResetLatestSyncDataIfOutlier_ExactlyAtThreshold(t *testing.T) {
+	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", nil)
+
+	optimizer.latestSyncData.Block = 1_000_100 // exactly floor + threshold
+
+	optimizer.ResetLatestSyncDataIfOutlier(1_000_000, 100)
+
+	require.Equal(t, uint64(1_000_100), optimizer.latestSyncData.Block, "value exactly at threshold should NOT be reset")
+}
+
+func TestResetLatestSyncDataIfOutlier_ZeroBlockUnchanged(t *testing.T) {
+	optimizer := NewProviderOptimizer(StrategyBalanced, TEST_AVERAGE_BLOCK_TIME, 1, nil, "test", nil)
+
+	// Cold start: latestSyncData.Block = 0 (default)
+	require.Equal(t, uint64(0), optimizer.latestSyncData.Block)
+
+	optimizer.ResetLatestSyncDataIfOutlier(1_000_000, 100)
+
+	require.Equal(t, uint64(0), optimizer.latestSyncData.Block, "zero block should not be touched")
 }

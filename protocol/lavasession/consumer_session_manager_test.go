@@ -164,9 +164,9 @@ func TestEndpointSortingFlow(t *testing.T) {
 
 func CreateConsumerSessionManager() *ConsumerSessionManager {
 	rand.InitRandomSeed()
-	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, 0, 1, nil, "dontcare")
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, 0, 1, nil, "dontcare", nil)
 	optimizer.SetDeterministicSeed(1234567)
-	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", false, "/", 0}, optimizer, nil, "lava@test", NewActiveSubscriptionProvidersStorage())
+	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", false, "/", 0}, optimizer, nil, "lava@test", NewActiveSubscriptionProvidersStorage(), nil)
 }
 
 func TestMain(m *testing.M) {
@@ -2168,7 +2168,157 @@ func TestProbeDirectRPCEndpoints_RespectsDisabledEndpoint(t *testing.T) {
 	}
 
 	csm := CreateConsumerSessionManager()
-	_, _, probeErr := csm.probeDirectRPCEndpoints(ctx, cswp, cswp.PublicLavaAddress)
+	_, _, _, probeErr := csm.probeDirectRPCEndpoints(ctx, cswp, cswp.PublicLavaAddress)
 	require.Error(t, probeErr,
 		"a disabled endpoint must cause the direct RPC probe to fail, even though HTTPDirectRPCConnection.IsHealthy starts optimistically true")
+}
+
+// --- blockOutlierProviders tests ---
+
+// createCSMForOutlierTests builds a minimal CSM with the given provider addresses
+// in validAddresses and pairing. Epoch is set to firstEpochHeight.
+func createCSMForOutlierTests(providerAddresses []string) *ConsumerSessionManager {
+	csm := CreateConsumerSessionManager()
+	csm.atomicWriteCurrentEpoch(firstEpochHeight)
+	csm.pairing = make(map[string]*ConsumerSessionsWithProvider)
+	csm.validAddresses = make([]string, 0, len(providerAddresses))
+	csm.currentlyBlockedProviderAddresses = make([]string, 0)
+	for _, addr := range providerAddresses {
+		csm.pairing[addr] = &ConsumerSessionsWithProvider{
+			PublicLavaAddress: addr,
+			Endpoints:         []*Endpoint{{NetworkAddress: "127.0.0.1:0"}},
+			Sessions:          map[int64]*SingleConsumerSession{},
+			MaxComputeUnits:   200,
+			PairingEpoch:      firstEpochHeight,
+		}
+		csm.validAddresses = append(csm.validAddresses, addr)
+	}
+	return csm
+}
+
+func TestBlockOutlierProviders_NoOutliers(t *testing.T) {
+	providers := []string{"providerA", "providerB", "providerC"}
+	csm := createCSMForOutlierTests(providers)
+
+	results := []ProbeResult{
+		{ProviderAddress: "providerA", LatestBlock: 1000},
+		{ProviderAddress: "providerB", LatestBlock: 1002},
+		{ProviderAddress: "providerC", LatestBlock: 1005},
+	}
+
+	floor := int64(1000)
+	threshold := int64(100) // cutoff = 1100, all are below
+
+	csm.blockOutlierProviders(context.Background(), results, floor, threshold, firstEpochHeight)
+
+	require.ElementsMatch(t, providers, csm.validAddresses, "no providers should be blocked")
+	require.Empty(t, csm.currentlyBlockedProviderAddresses, "blocked list should be empty")
+}
+
+func TestBlockOutlierProviders_SingleOutlier(t *testing.T) {
+	providers := []string{"providerA", "providerB", "providerC"}
+	csm := createCSMForOutlierTests(providers)
+
+	results := []ProbeResult{
+		{ProviderAddress: "providerA", LatestBlock: 1000},
+		{ProviderAddress: "providerB", LatestBlock: 1002},
+		{ProviderAddress: "providerC", LatestBlock: 20000000}, // cross-chain contamination
+	}
+
+	floor := int64(1000)
+	threshold := int64(100) // cutoff = 1100
+
+	csm.blockOutlierProviders(context.Background(), results, floor, threshold, firstEpochHeight)
+
+	require.ElementsMatch(t, []string{"providerA", "providerB"}, csm.validAddresses, "outlier provider should be removed")
+	require.Contains(t, csm.currentlyBlockedProviderAddresses, "providerC", "outlier should be in blocked list")
+	require.Len(t, csm.currentlyBlockedProviderAddresses, 1)
+}
+
+func TestBlockOutlierProviders_ZeroBlockNotBlocked(t *testing.T) {
+	providers := []string{"providerA", "providerB", "providerC"}
+	csm := createCSMForOutlierTests(providers)
+
+	results := []ProbeResult{
+		{ProviderAddress: "providerA", LatestBlock: 1000},
+		{ProviderAddress: "providerB", LatestBlock: 0}, // failed probe / static provider
+		{ProviderAddress: "providerC", LatestBlock: 1002},
+	}
+
+	floor := int64(1000)
+	threshold := int64(100)
+
+	csm.blockOutlierProviders(context.Background(), results, floor, threshold, firstEpochHeight)
+
+	require.ElementsMatch(t, providers, csm.validAddresses, "zero-block provider should not be blocked")
+	require.Empty(t, csm.currentlyBlockedProviderAddresses, "blocked list should be empty")
+}
+
+func TestBlockOutlierProviders_FloorZeroNoBlocking(t *testing.T) {
+	providers := []string{"providerA", "providerB", "providerC"}
+	csm := createCSMForOutlierTests(providers)
+
+	results := []ProbeResult{
+		{ProviderAddress: "providerA", LatestBlock: 1000},
+		{ProviderAddress: "providerB", LatestBlock: 1002},
+		{ProviderAddress: "providerC", LatestBlock: 20000000}, // would be outlier if floor > 0
+	}
+
+	floor := int64(0) // no consensus
+	threshold := int64(100)
+
+	csm.blockOutlierProviders(context.Background(), results, floor, threshold, firstEpochHeight)
+
+	require.ElementsMatch(t, providers, csm.validAddresses, "no blocking when floor=0")
+	require.Empty(t, csm.currentlyBlockedProviderAddresses, "blocked list should be empty when floor=0")
+}
+
+func TestBlockOutlierProviders_MultipleOutliers(t *testing.T) {
+	providers := []string{"providerA", "providerB", "providerC", "providerD", "providerE"}
+	csm := createCSMForOutlierTests(providers)
+
+	results := []ProbeResult{
+		{ProviderAddress: "providerA", LatestBlock: 1000},
+		{ProviderAddress: "providerB", LatestBlock: 1002},
+		{ProviderAddress: "providerC", LatestBlock: 1001},
+		{ProviderAddress: "providerD", LatestBlock: 20000000}, // outlier
+		{ProviderAddress: "providerE", LatestBlock: 15000000}, // outlier
+	}
+
+	floor := int64(1000)
+	threshold := int64(100)
+
+	csm.blockOutlierProviders(context.Background(), results, floor, threshold, firstEpochHeight)
+
+	require.ElementsMatch(t, []string{"providerA", "providerB", "providerC"}, csm.validAddresses, "only honest providers should remain")
+	require.Len(t, csm.currentlyBlockedProviderAddresses, 2)
+	require.Contains(t, csm.currentlyBlockedProviderAddresses, "providerD")
+	require.Contains(t, csm.currentlyBlockedProviderAddresses, "providerE")
+}
+
+func TestBlockOutlierProviders_AlreadyBlocked(t *testing.T) {
+	providers := []string{"providerA", "providerB", "providerC"}
+	csm := createCSMForOutlierTests(providers)
+
+	// Pre-block providerC (simulate it was already blocked earlier this epoch)
+	csm.blockProvider(context.Background(), "providerC", false, firstEpochHeight, 0, 0, false, nil)
+	require.Len(t, csm.currentlyBlockedProviderAddresses, 1)
+	require.ElementsMatch(t, []string{"providerA", "providerB"}, csm.validAddresses)
+
+	// providerC reports outlier again in the next probe cycle
+	results := []ProbeResult{
+		{ProviderAddress: "providerA", LatestBlock: 1000},
+		{ProviderAddress: "providerB", LatestBlock: 1002},
+		{ProviderAddress: "providerC", LatestBlock: 20000000}, // already blocked, still outlier
+	}
+
+	floor := int64(1000)
+	threshold := int64(100)
+
+	// Should not panic or duplicate providerC in blocked list
+	csm.blockOutlierProviders(context.Background(), results, floor, threshold, firstEpochHeight)
+
+	require.ElementsMatch(t, []string{"providerA", "providerB"}, csm.validAddresses, "valid addresses unchanged")
+	require.Len(t, csm.currentlyBlockedProviderAddresses, 1, "no duplicate in blocked list")
+	require.Contains(t, csm.currentlyBlockedProviderAddresses, "providerC")
 }

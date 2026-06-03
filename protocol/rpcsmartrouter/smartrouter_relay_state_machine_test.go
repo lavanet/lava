@@ -124,11 +124,11 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 		dappId := "dapp"
 		consumerIp := "123.11"
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
-		consistency := relaycore.NewConsistency(specId)
+		consistency := relaycore.NewConsistency(specId, nil)
 		usedProviders := lavasession.NewUsedProviders(nil)
 		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil}, protocolMessage, nil, false)
 		require.NoError(t, err)
-		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, nil, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -197,11 +197,11 @@ func TestConsumerStateMachineExhaustRetries(t *testing.T) {
 		dappId := "dapp"
 		consumerIp := "123.11"
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
-		consistency := relaycore.NewConsistency(specId)
+		consistency := relaycore.NewConsistency(specId, nil)
 		usedProviders := lavasession.NewUsedProviders(nil)
 		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false)
 		require.NoError(t, err)
-		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, nil, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -267,7 +267,7 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 
 		relayRequestData := lavaprotocol.NewRelayData(ctx, http.MethodPost, "", jsonData, seenBlock, reqBlock, spectypes.APIInterfaceJsonRPC, chainMsg.GetRPCMessage().GetHeaders(), chainlib.GetAddon(chainMsg), common.GetExtensionNames(chainMsg.GetExtensions()))
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, relayRequestData, dappId, consumerIp)
-		consistency := relaycore.NewConsistency(specId)
+		consistency := relaycore.NewConsistency(specId, nil)
 		usedProviders := lavasession.NewUsedProviders(nil)
 		stateMachine, err := NewSmartRouterRelayStateMachine(
 			ctx,
@@ -282,6 +282,7 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 			ctx,
 			&common.DefaultCrossValidationParams,
 			consistency,
+			nil,
 			relaycoretest.RelayProcessorMetrics,
 			relaycoretest.RelayProcessorMetrics,
 			relaycoretest.RelayRetriesManagerInstance,
@@ -350,11 +351,11 @@ func TestSmartRouterStateMachineCircuitBreakerOnPairingErrors(t *testing.T) {
 		dappId := "dapp"
 		consumerIp := "123.11"
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
-		consistency := relaycore.NewConsistency(specId)
+		consistency := relaycore.NewConsistency(specId, nil)
 		usedProviders := lavasession.NewUsedProviders(nil)
 		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil}, protocolMessage, nil, false)
 		require.NoError(t, err)
-		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, nil, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
 		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
 		require.NoError(t, err)
@@ -400,11 +401,11 @@ func TestSmartRouterStateMachineCircuitBreakerResetsOnSuccess(t *testing.T) {
 		dappId := "dapp"
 		consumerIp := "123.11"
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
-		consistency := relaycore.NewConsistency(specId)
+		consistency := relaycore.NewConsistency(specId, nil)
 		usedProviders := lavasession.NewUsedProviders(nil)
 		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil}, protocolMessage, nil, false)
 		require.NoError(t, err)
-		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, nil, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
@@ -457,11 +458,11 @@ func TestSmartRouterStateMachineCircuitBreakerResetsOnDifferentError(t *testing.
 		dappId := "dapp"
 		consumerIp := "123.11"
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
-		consistency := relaycore.NewConsistency(specId)
+		consistency := relaycore.NewConsistency(specId, nil)
 		usedProviders := lavasession.NewUsedProviders(nil)
 		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil}, protocolMessage, nil, false)
 		require.NoError(t, err)
-		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, nil, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
 		relayTaskChannel, err := relayProcessor.GetRelayTaskChannel()
 		require.NoError(t, err)
@@ -517,7 +518,7 @@ func TestProcessingContextTimeoutEnforcement(t *testing.T) {
 		dappId := "dapp"
 		consumerIp := "123.11"
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
-		consistency := relaycore.NewConsistency(specId)
+		consistency := relaycore.NewConsistency(specId, nil)
 		usedProviders := lavasession.NewUsedProviders(nil)
 
 		// Create mock with SHORT processing timeout (100ms) to test timeout enforcement
@@ -527,7 +528,7 @@ func TestProcessingContextTimeoutEnforcement(t *testing.T) {
 
 		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, mockSender, protocolMessage, nil, false)
 		require.NoError(t, err)
-		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, nil, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5) // Overall test timeout
 		defer cancel()
@@ -614,13 +615,13 @@ func TestProcessingContextStillValidAllowsRetries(t *testing.T) {
 		dappId := "dapp"
 		consumerIp := "123.11"
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
-		consistency := relaycore.NewConsistency(specId)
+		consistency := relaycore.NewConsistency(specId, nil)
 		usedProviders := lavasession.NewUsedProviders(nil)
 
 		// LONG processing timeout (10 seconds) - retries should continue
 		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false)
 		require.NoError(t, err)
-		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, nil, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*2) // Test timeout
 		defer cancel()
@@ -693,7 +694,7 @@ func TestProcessingContextRaceCondition(t *testing.T) {
 		dappId := "dapp"
 		consumerIp := "123.11"
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
-		consistency := relaycore.NewConsistency(specId)
+		consistency := relaycore.NewConsistency(specId, nil)
 		usedProviders := lavasession.NewUsedProviders(nil)
 
 		// Short timeout (200ms) to create the race condition
@@ -703,7 +704,7 @@ func TestProcessingContextRaceCondition(t *testing.T) {
 
 		stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, mockSender, protocolMessage, nil, false)
 		require.NoError(t, err)
-		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
+		relayProcessor := relaycore.NewRelayProcessor(ctx, &common.DefaultCrossValidationParams, consistency, nil, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 		defer cancel()
@@ -797,11 +798,12 @@ func TestSmartRouterStateMachineBatchRequestRetryCondition(t *testing.T) {
 		require.True(t, ok, "expected SmartRouterRelayStateMachine")
 
 		// Create a mock results checker
-		consistency := relaycore.NewConsistency(specId)
+		consistency := relaycore.NewConsistency(specId, nil)
 		relayProcessor := relaycore.NewRelayProcessor(
 			ctx,
 			nil, // Stateless mode - no cross-validation params
 			consistency,
+			nil,
 			relaycoretest.RelayProcessorMetrics,
 			relaycoretest.RelayProcessorMetrics,
 			relaycoretest.RelayRetriesManagerInstance,
@@ -1072,7 +1074,7 @@ func TestSmartRouterStateMachineRetryLimit(t *testing.T) {
 			// Use long ticker to prevent ticker-based retries from interfering
 			stateMachine, err := NewSmartRouterRelayStateMachine(ctx, usedProviders, &SmartRouterRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false)
 			require.NoError(t, err)
-			relayProcessor := relaycore.NewRelayProcessor(ctx, nil, nil, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
+			relayProcessor := relaycore.NewRelayProcessor(ctx, nil, nil, nil, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayProcessorMetrics, relaycoretest.RelayRetriesManagerInstance, stateMachine)
 
 			consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}}
 

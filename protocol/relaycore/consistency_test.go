@@ -5,12 +5,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lavanet/lava/v5/protocol/chainstate"
 	common "github.com/lavanet/lava/v5/protocol/common"
 	"github.com/stretchr/testify/require"
 )
 
 func setupConsistency() Consistency {
-	return NewConsistency("test")
+	return NewConsistency("test", nil)
 }
 
 func TestSetGet(t *testing.T) {
@@ -57,4 +58,84 @@ func TestBasic(t *testing.T) {
 	block, found = consistency.GetSeenBlock(userDataOther)
 	require.True(t, found)
 	require.Equal(t, int64(5), block)
+}
+
+// --- Outlier guard tests ---
+
+func TestSetSeenBlock_OutlierRejected(t *testing.T) {
+	cs := &chainstate.ChainState{}
+	cs.SetMajorityBaseline(1000, 200) // baseline=1000, threshold=200 → outlier if > 1200
+	consistency := NewConsistency("test", cs)
+
+	userData := common.UserData{DappId: "dapp1", ConsumerIp: "1.1.1.1"}
+
+	// Normal block — should be accepted
+	consistency.SetSeenBlock(1100, userData)
+	time.Sleep(4 * time.Millisecond)
+	block, found := consistency.GetSeenBlock(userData)
+	require.True(t, found)
+	require.Equal(t, int64(1100), block)
+
+	// Outlier block — should be rejected
+	consistency.SetSeenBlock(1201, userData)
+	time.Sleep(4 * time.Millisecond)
+	block, found = consistency.GetSeenBlock(userData)
+	require.True(t, found)
+	require.Equal(t, int64(1100), block) // unchanged
+
+	// Extreme outlier (Feb 17 scenario) — should be rejected
+	consistency.SetSeenBlock(20000, userData)
+	time.Sleep(4 * time.Millisecond)
+	block, found = consistency.GetSeenBlock(userData)
+	require.True(t, found)
+	require.Equal(t, int64(1100), block) // still unchanged
+}
+
+func TestSetSeenBlockFromKey_OutlierRejected(t *testing.T) {
+	cs := &chainstate.ChainState{}
+	cs.SetMajorityBaseline(1000, 200)
+	consistency := NewConsistency("test", cs)
+
+	key := "dapp1__1.1.1.1"
+
+	// Normal — accepted
+	consistency.SetSeenBlockFromKey(1100, key)
+	time.Sleep(4 * time.Millisecond)
+	block, found := consistency.(*ConsistencyImpl).GetLatestBlock(key)
+	require.True(t, found)
+	require.Equal(t, int64(1100), block)
+
+	// Outlier — rejected
+	consistency.SetSeenBlockFromKey(1201, key)
+	time.Sleep(4 * time.Millisecond)
+	block, found = consistency.(*ConsistencyImpl).GetLatestBlock(key)
+	require.True(t, found)
+	require.Equal(t, int64(1100), block) // unchanged
+}
+
+func TestSetSeenBlock_ColdStartAllowsAll(t *testing.T) {
+	cs := &chainstate.ChainState{} // majorityBaseline=0 (cold start)
+	consistency := NewConsistency("test", cs)
+
+	userData := common.UserData{DappId: "dapp1", ConsumerIp: "1.1.1.1"}
+
+	// Even extreme values should be allowed when majorityBaseline=0
+	consistency.SetSeenBlock(999999, userData)
+	time.Sleep(4 * time.Millisecond)
+	block, found := consistency.GetSeenBlock(userData)
+	require.True(t, found)
+	require.Equal(t, int64(999999), block)
+}
+
+func TestSetSeenBlock_NilChainStateAllowsAll(t *testing.T) {
+	consistency := NewConsistency("test", nil) // no chainState
+
+	userData := common.UserData{DappId: "dapp1", ConsumerIp: "1.1.1.1"}
+
+	// Any value should be allowed when chainState is nil
+	consistency.SetSeenBlock(999999, userData)
+	time.Sleep(4 * time.Millisecond)
+	block, found := consistency.GetSeenBlock(userData)
+	require.True(t, found)
+	require.Equal(t, int64(999999), block)
 }

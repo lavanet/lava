@@ -23,6 +23,7 @@ import (
 	"github.com/lavanet/lava/v5/app"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v5/protocol/chainstate"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
@@ -236,6 +237,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 
 	optimizers := &common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer]{}
 	consumerConsistencies := &common.SafeSyncMap[string, relaycore.Consistency]{}
+	chainStates := &common.SafeSyncMap[string, *chainstate.ChainState]{}
 
 	var wg sync.WaitGroup
 	parallelJobs := len(options.rpcEndpoints)
@@ -260,7 +262,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
 			defer wg.Done()
 			_, err := rpcc.CreateConsumerEndpoint(ctx, rpcEndpoint, errCh, consumerAddr, consumerStateTracker,
-				policyUpdaters, optimizers, consumerConsistencies, chainMutexes,
+				policyUpdaters, optimizers, consumerConsistencies, chainStates, chainMutexes,
 				options, privKey, lavaChainID, rpcConsumerMetrics, consumerOptimizerQoSClient,
 				consumerMetricsManager, relaysMonitorAggregator)
 			return err
@@ -441,6 +443,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	policyUpdaters *common.SafeSyncMap[string, *updaters.PolicyUpdater],
 	optimizers *common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer],
 	consumerConsistencies *common.SafeSyncMap[string, relaycore.Consistency],
+	chainStates *common.SafeSyncMap[string, *chainstate.ChainState],
 	chainMutexes map[string]*sync.Mutex,
 	options *rpcConsumerStartOptions,
 	privKey *secp256k1.PrivateKey,
@@ -482,6 +485,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	var optimizer *provideroptimizer.ProviderOptimizer
 	var consumerConsistency relaycore.Consistency
+	var cState *chainstate.ChainState
 	getOrCreateChainAssets := func() error {
 		// this is locked so we don't race optimizers creation
 		chainMutexes[chainID].Lock()
@@ -489,8 +493,15 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 		var loaded bool
 		var err error
 
+		// Create / Use existing ChainState first — optimizer and consistency
+		// hold a reference to it for the relay-path outlier guards.
+		cState, _, err = chainStates.LoadOrStore(chainID, &chainstate.ChainState{})
+		if err != nil {
+			return utils.LavaFormatError("failed loading chain state", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
+		}
+
 		// Create / Use existing optimizer
-		newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, options.maxConcurrentProviders, consumerOptimizerQoSClient, chainID)
+		newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, options.maxConcurrentProviders, consumerOptimizerQoSClient, chainID, cState)
 		newOptimizer.ConfigureWeightedSelector(options.weightedSelectorConfig)
 		optimizer, loaded, err = optimizers.LoadOrStore(chainID, newOptimizer)
 		if err != nil {
@@ -503,7 +514,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 		}
 
 		// Create / Use existing Consistency
-		newConsumerConsistency := relaycore.NewConsistency(chainID)
+		newConsumerConsistency := relaycore.NewConsistency(chainID, cState)
 		consumerConsistency, _, err = consumerConsistencies.LoadOrStore(chainID, newConsumerConsistency)
 		if err != nil {
 			return utils.LavaFormatError("failed loading consumer consistency", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
@@ -517,7 +528,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 		return nil, err
 	}
 
-	if optimizer == nil || consumerConsistency == nil {
+	if optimizer == nil || consumerConsistency == nil || cState == nil {
 		err = utils.LavaFormatError("failed getting assets, found a nil", nil, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
 		errCh <- err
 		return nil, err
@@ -525,7 +536,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 
 	// Create active subscription provider storage for each unique chain
 	activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
-	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
+	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerAddr.String(), activeSubscriptionProvidersStorage, cState)
 
 	// Set callback to get Lava blockchain block height for RelaySession.Epoch
 	consumerSessionManager.SetLavaBlockHeightCallback(func() int64 {
@@ -554,7 +565,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, specMethodType, chainParser, activeSubscriptionProvidersStorage, consumerMetricsManager)
 
 	utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
-	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, options.cmdFlags, options.stateShare, consumerWsSubscriptionManager)
+	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, cState, relaysMonitor, options.cmdFlags, options.stateShare, consumerWsSubscriptionManager)
 	if err != nil {
 		err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 		errCh <- err
@@ -941,8 +952,10 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().Int64Var(&chainlib.MaxIdleTimeInSeconds, common.LimitWebsocketIdleTimeFlag, chainlib.MaxIdleTimeInSeconds, "limit the idle time in seconds for a websocket connection, default is 20 minutes ( 20 * 60 )")
 	cmdRPCConsumer.Flags().DurationVar(&chainlib.WebSocketBanDuration, common.BanDurationForWebsocketRateLimitExceededFlag, chainlib.WebSocketBanDuration, "once websocket rate limit is reached, user will be banned Xfor a duration, default no ban")
 
-	cmdRPCConsumer.Flags().BoolVar(&lavasession.PeriodicProbeProviders, common.PeriodicProbeProvidersFlagName, lavasession.PeriodicProbeProviders, "enable periodic probing of providers")
-	cmdRPCConsumer.Flags().DurationVar(&lavasession.PeriodicProbeProvidersInterval, common.PeriodicProbeProvidersIntervalFlagName, lavasession.PeriodicProbeProvidersInterval, "interval for periodic probing of providers")
+	cmdRPCConsumer.Flags().BoolVar(&lavasession.PeriodicProbeProviders, common.PeriodicProbeProvidersFlagName, lavasession.PeriodicProbeProviders, "enable periodic probing of providers (feeds availability/latency scoring and computes majorityBaseline consensus)")
+	cmdRPCConsumer.Flags().DurationVar(&lavasession.PeriodicProbeProvidersInterval, common.PeriodicProbeProvidersIntervalFlagName, lavasession.PeriodicProbeProvidersInterval, "interval for periodic probing of providers (drives scoring and majorityBaseline refresh)")
+	cmdRPCConsumer.Flags().Float64Var(&lavasession.ProbeStalenessMultiplier, common.ProbeStalenessMultiplierFlagName, lavasession.ProbeStalenessMultiplier, "multiplier for average block time to determine node staleness threshold in probes (0 disables)")
+	cmdRPCConsumer.Flags().DurationVar(&lavasession.MajorityBaselineBucketTimeWindow, common.MajorityBaselineBucketTimeWindowFlagName, lavasession.MajorityBaselineBucketTimeWindow, "time window for grouping provider block heights into consensus buckets (e.g., 2m)")
 
 	cmdRPCConsumer.Flags().DurationVar(&common.DefaultTimeout, common.DefaultProcessingTimeoutFlagName, common.DefaultTimeout, "default timeout for relay processing (e.g., 30s, 1m)")
 	cmdRPCConsumer.Flags().DurationVar(&common.MinimumTimePerRelayDelay, common.MinRelayTimeoutFlagName, common.MinimumTimePerRelayDelay, "minimum relay timeout floor applied to all methods when CU-based timeout is lower (e.g., 1s, 5s)")

@@ -750,3 +750,29 @@ func TestChainTrackerMultipleInstancesNoLeaks(t *testing.T) {
 	// All instances should have cleaned up their resources (tickers, timers, goroutines)
 	// If there were leaks, this test would accumulate resources with each iteration
 }
+
+func TestChainTrackerFetchLatency(t *testing.T) {
+	fetchDelay := 1 * time.Millisecond
+	mockChainFetcher := NewMockChainFetcher(1000, 20, func() {
+		time.Sleep(fetchDelay)
+	})
+	mockChainFetcher.AdvanceBlock()
+
+	chainTrackerConfig := chaintracker.ChainTrackerConfig{
+		BlocksToSave:          10,
+		AverageBlockTime:      TimeForPollingMock,
+		ServerBlockMemory:     20,
+		ParseDirectiveEnabled: true,
+	}
+	ct, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
+	require.NoError(t, err)
+	ct.StartAndServe(context.Background())
+
+	// Wait for at least one polling cycle to complete
+	require.Eventually(t, func() bool {
+		return ct.GetLatestFetchLatency() > 0
+	}, 5*time.Second, time.Millisecond, "expected GetLatestFetchLatency to be > 0 after polling")
+
+	latency := ct.GetLatestFetchLatency()
+	require.GreaterOrEqual(t, latency, fetchDelay, "fetch latency should be at least the mock delay")
+}

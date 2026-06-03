@@ -1510,20 +1510,30 @@ func (rpcps *RPCProviderServer) GetBlockDataForOptimisticFetch(ctx context.Conte
 }
 
 func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtypes.ProbeRequest) (*pairingtypes.ProbeReply, error) {
-	latestB, _ := rpcps.chainTracker.GetLatestBlockNum()
+	latestB, latestChangeTime := rpcps.chainTracker.GetLatestBlockNum()
 	verificationsStatus := []*pairingtypes.Verification{}
 	if probeReq.WithVerifications {
 		if rpcps.verificationsStatusGetter != nil {
 			verificationsStatus = rpcps.verificationsStatusGetter.GetVerificationsStatus()
 		}
 	}
+
+	var blockChangeAgeMs uint64
+	if !latestChangeTime.IsZero() {
+		blockChangeAgeMs = uint64(time.Since(latestChangeTime).Milliseconds())
+	}
+
+	fetchLatencyMs := uint64(rpcps.chainTracker.GetLatestFetchLatency().Milliseconds())
+
 	probeReply := &pairingtypes.ProbeReply{
-		Guid:                  probeReq.GetGuid(),
-		LatestBlock:           latestB,
-		FinalizedBlocksHashes: []byte{},
-		LavaEpoch:             rpcps.providerSessionManager.GetCurrentEpochAtomic(),
-		LavaLatestBlock:       uint64(rpcps.stateTracker.LatestBlock()),
-		Verifications:         verificationsStatus,
+		Guid:                       probeReq.GetGuid(),
+		LatestBlock:                latestB,
+		FinalizedBlocksHashes:      []byte{},
+		LavaEpoch:                  rpcps.providerSessionManager.GetCurrentEpochAtomic(),
+		LavaLatestBlock:            uint64(rpcps.stateTracker.LatestBlock()),
+		Verifications:              verificationsStatus,
+		LatestBlockFetchLatencyMs:  fetchLatencyMs,
+		LatestBlockChangeAgeMs:     blockChangeAgeMs,
 	}
 	trailer := metadata.Pairs(common.VersionMetadataKey, upgrade.GetCurrentVersion().ProviderVersion)
 	trailer.Append(chainlib.RpcProviderUniqueIdHeader, rpcps.providerUniqueId)

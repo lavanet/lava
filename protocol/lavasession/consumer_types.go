@@ -21,8 +21,9 @@ import (
 )
 
 type EndpointInfo struct {
-	Latency  time.Duration
-	Endpoint *Endpoint
+	Latency     time.Duration
+	Endpoint    *Endpoint
+	LatestBlock int64
 }
 
 // Slice to hold EndpointInfo
@@ -132,6 +133,8 @@ type ProviderOptimizer interface {
 	ChooseBestProvider(ctx context.Context, allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string)
 	ChooseBestProviderWithStats(ctx context.Context, allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, stats *provideroptimizer.SelectionStats)
 	GetReputationReportForProvider(string) (*pairingtypes.QualityOfServiceReport, time.Time)
+	GetAverageBlockTime() time.Duration
+	ResetLatestSyncDataIfOutlier(floor int64, threshold int64)
 	Strategy() provideroptimizer.Strategy
 	UpdateWeights(map[string]int64, uint64)
 }

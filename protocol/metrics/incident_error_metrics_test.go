@@ -8,12 +8,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var errorLabels = []string{"spec", "apiInterface", "provider_address", "method"}
+var (
+	errorLabels       = []string{"spec", "apiInterface", "provider_address", "method"}
+	legacyErrorLabels = []string{"spec", "apiInterface"}
+)
 
 func newConsumerForErrorTest() *ConsumerMetricsManager {
 	return &ConsumerMetricsManager{
 		incidentNodeErrorsTotalMetric:     prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_c_node_errors_total"}, errorLabels),
 		incidentProtocolErrorsTotalMetric: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_c_protocol_errors_total"}, errorLabels),
+		// Legacy aggregate counter (Inc'd by SetRelayNodeErrorMetric for the investigator skill).
+		totalNodeErroredMetric: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_c_total_node_errored"}, legacyErrorLabels),
 	}
 }
 

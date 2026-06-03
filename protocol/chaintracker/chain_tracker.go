@@ -45,6 +45,9 @@ type IChainTracker interface {
 	// AddBlockGap adds a new block gap measurement
 	AddBlockGap(newData time.Duration, blocks uint64)
 
+	// GetLatestFetchLatency returns the duration of the last successful FetchLatestBlockNum call
+	GetLatestFetchLatency() time.Duration
+
 	// IsDummy gets the chain tracker weight - a way to differntiate between trackers (dummy tracker with weight 0)
 	IsDummy() bool
 }
@@ -107,6 +110,7 @@ type ChainTracker struct {
 	blockCheckpoint         uint64 // last time checkpoint was met
 	timer                   *time.Timer
 	latestChangeTime        time.Time
+	latestFetchLatency      int64 // atomic, nanoseconds — duration of last successful FetchLatestBlockNum call
 	startupTime             time.Time
 	blockEventsGap          []time.Duration
 	blockTimeUpdatables     map[blockTimeUpdatable]struct{}
@@ -197,6 +201,10 @@ func (cs *ChainTracker) GetLatestBlockNum() (int64, time.Time) {
 
 func (cs *ChainTracker) GetAtomicLatestBlockNum() int64 {
 	return atomic.LoadInt64(&cs.latestBlockNum)
+}
+
+func (cs *ChainTracker) GetLatestFetchLatency() time.Duration {
+	return time.Duration(atomic.LoadInt64(&cs.latestFetchLatency))
 }
 
 func (cs *ChainTracker) GetServerBlockMemory() uint64 {
@@ -339,7 +347,11 @@ func (cs *ChainTracker) gotNewBlock(ctx context.Context, newLatestBlock int64) (
 // this function is periodically called, it checks if there is a new block or a fork and fetches all necessary previous data in order to fill gaps if any.
 // if a new block or fork is not found, check the emergency mode
 func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (err error) {
+	fetchStart := time.Now()
 	newLatestBlock, err := cs.iChainFetcherWrapper.FetchLatestBlockNum(ctx)
+	if err == nil {
+		atomic.StoreInt64(&cs.latestFetchLatency, time.Since(fetchStart).Nanoseconds())
+	}
 	if err != nil {
 		type wrappedError interface {
 			Unwrap() error

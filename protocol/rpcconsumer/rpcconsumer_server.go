@@ -22,6 +22,7 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v5/protocol/chainstate"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/internal/chainqueries"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
@@ -88,6 +89,7 @@ type RPCConsumerServer struct {
 	lavaChainID                    string
 	ConsumerAddress                sdk.AccAddress
 	consumerConsistency            relaycore.Consistency
+	chainState                     *chainstate.ChainState
 	sharedState                    bool // using the cache backend to sync the latest seen block with other consumers
 	relaysMonitor                  *metrics.RelaysMonitor
 	debugRelays                    bool
@@ -115,6 +117,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	consumerAddress sdk.AccAddress,
 	consumerConsistency relaycore.Consistency,
+	cState *chainstate.ChainState,
 	relaysMonitor *metrics.RelaysMonitor,
 	cmdFlags common.ConsumerCmdFlags,
 	sharedState bool,
@@ -131,6 +134,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.chainParser = chainParser
 	rpccs.ConsumerAddress = consumerAddress
 	rpccs.consumerConsistency = consumerConsistency
+	rpccs.chainState = cState
 	rpccs.sharedState = sharedState
 	rpccs.debugRelays = cmdFlags.DebugRelays
 	rpccs.enableSelectionStats = cmdFlags.EnableSelectionStats
@@ -295,6 +299,7 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 		ctx,
 		crossValidationParams,
 		rpccs.consumerConsistency,
+		rpccs.chainState,
 		rpccs.rpcConsumerLogs,
 		rpccs,
 		rpccs.relayRetriesManager,
@@ -576,6 +581,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 		ctx,
 		crossValidationParams,
 		rpccs.consumerConsistency,
+		rpccs.chainState,
 		rpccs.rpcConsumerLogs,
 		rpccs,
 		rpccs.relayRetriesManager,

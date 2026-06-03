@@ -11,6 +11,7 @@ import (
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
+	"github.com/lavanet/lava/v5/protocol/chainstate"
 	"github.com/lavanet/lava/v5/protocol/common"
 	metrics "github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/protocol/provideroptimizer"
@@ -29,11 +30,24 @@ const (
 )
 
 var (
-	retrySecondChanceAfter         = time.Minute * 3
-	DebugProbes                    = false
-	PeriodicProbeProviders         = false
-	PeriodicProbeProvidersInterval = 5 * time.Second
+	retrySecondChanceAfter           = time.Minute * 3
+	DebugProbes                      = false
+	PeriodicProbeProviders           = false
+	PeriodicProbeProvidersInterval   = 5 * time.Second
+	ProbeCycleTimeout                = 2 * time.Second // bounds a single probeProviders cycle so slow providers don't delay QoS updates
+	ProbeStalenessMultiplier         = 5.0             // fail probe if staleness > averageBlockTime * multiplier (0 disables)
+	MajorityBaselineBucketTimeWindow = 2 * time.Minute // time window for grouping provider block heights into consensus buckets
 )
+
+// ProbeResult holds the outcome of a single provider probe, used by probeProviders
+// to collect results before feeding scoring and computing majorityBaseline consensus.
+type ProbeResult struct {
+	ProviderAddress string
+	NetworkAddress  string
+	Latency         time.Duration
+	LatestBlock     int64
+	Success         bool
+}
 
 // created with NewConsumerSessionManager
 type ConsumerSessionManager struct {
@@ -84,6 +98,7 @@ type ConsumerSessionManager struct {
 	activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage
 
 	qosManager *qos.QoSManager
+	chainState *chainstate.ChainState
 
 	// getLavaBlockHeight returns the current Lava blockchain block height
 	// This is NOT used for RelaySession.Epoch (which must be the pairing epoch start block)
@@ -455,48 +470,178 @@ func (csm *ConsumerSessionManager) PeriodicProbeProviders(ctx context.Context, i
 	}
 }
 
+// probeProviders runs a single collect-then-process probe cycle against all providers.
+// Phase 1: fan out a goroutine per provider, each writing a ProbeResult into an exclusive slot.
+// Phase 2a: feed per-provider results into metrics and the optimizer (availability + latency scoring).
+// Phase 2b: compute majorityBaseline consensus from collected block heights and update ChainState.
+// Phase 2c: block providers that reported outlier block heights (via blockOutlierProviders).
+//
+// The cycle is bounded by ProbeCycleTimeout via a done-channel select, so a goroutine stuck on a
+// context-unaware mutex can't hang the probe loop. The derived context propagates into each
+// probeProvider call and its gRPC probe, so late probes cancel promptly.
 func (csm *ConsumerSessionManager) probeProviders(ctx context.Context, pairingList map[uint64]*ConsumerSessionsWithProvider, epoch uint64) error {
 	guid := utils.GenerateUniqueIdentifier()
 	ctx = utils.AppendUniqueIdentifier(ctx, guid)
+
+	probeCtx, cancel := context.WithTimeout(ctx, ProbeCycleTimeout)
+	defer cancel()
+
 	if DebugProbes {
-		utils.LavaFormatInfo("providers probe initiated", utils.Attribute{Key: "endpoint", Value: csm.rpcEndpoint}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "epoch", Value: epoch})
+		utils.LavaFormatInfo("providers probe initiated",
+			utils.Attribute{Key: "endpoint", Value: csm.rpcEndpoint},
+			utils.Attribute{Key: "GUID", Value: guid},
+			utils.Attribute{Key: "epoch", Value: epoch},
+			utils.Attribute{Key: "providers", Value: len(pairingList)},
+		)
 	}
-	// Create a wait group to synchronize the goroutines
+
+	// PHASE 1 — collect probe results concurrently. Each goroutine writes to its own
+	// slot in results, so no lock is needed.
+	results := make([]ProbeResult, len(pairingList))
 	wg := sync.WaitGroup{}
-	wg.Add(len(pairingList)) // increment by this and not by 1 for each go routine because we don;t want a race finishing the go routine before the next invocation
-	for _, consumerSessionWithProvider := range pairingList {
-		// Start a new goroutine for each provider
-		go func(consumerSessionsWithProvider *ConsumerSessionsWithProvider) {
-			// Call the probeProvider function and defer the WaitGroup Done call
+	wg.Add(len(pairingList))
+	i := 0
+	for _, cswp := range pairingList {
+		go func(idx int, consumerSessionsWithProvider *ConsumerSessionsWithProvider) {
 			defer wg.Done()
-			latency, providerAddress, err := csm.probeProvider(ctx, consumerSessionsWithProvider, epoch, false)
-			success := err == nil // if failure then regard it in availability
-			csm.consumerMetricsManager.SetProviderLiveness(csm.rpcEndpoint.ChainID, providerAddress, consumerSessionWithProvider.Endpoints[0].NetworkAddress, success)
-			csm.providerOptimizer.AppendProbeRelayData(providerAddress, latency, success)
-		}(consumerSessionWithProvider)
+			latency, latestBlock, providerAddress, err := csm.probeProvider(probeCtx, consumerSessionsWithProvider, epoch, false)
+			if providerAddress == "" {
+				providerAddress = consumerSessionsWithProvider.PublicLavaAddress
+			}
+			networkAddr := ""
+			if len(consumerSessionsWithProvider.Endpoints) > 0 {
+				networkAddr = consumerSessionsWithProvider.Endpoints[0].NetworkAddress
+			}
+			results[idx] = ProbeResult{
+				ProviderAddress: providerAddress,
+				NetworkAddress:  networkAddr,
+				Latency:         latency,
+				LatestBlock:     latestBlock,
+				Success:         err == nil,
+			}
+		}(i, cswp)
+		i++
 	}
 	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		wg.Wait()
-	}()
+	go func() { defer close(done); wg.Wait() }()
 
 	select {
 	case <-done:
-		// all probes finished in time
-		if DebugProbes {
-			utils.LavaFormatDebug("providers probe done", utils.Attribute{Key: "endpoint", Value: csm.rpcEndpoint}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "epoch", Value: epoch})
+	case <-probeCtx.Done():
+		utils.LavaFormatWarning("providers probe deadline exceeded; goroutines still running", nil,
+			utils.Attribute{Key: "endpoint", Value: csm.rpcEndpoint},
+			utils.Attribute{Key: "GUID", Value: guid},
+			utils.Attribute{Key: "epoch", Value: epoch},
+		)
+		return probeCtx.Err()
+	}
+
+	if DebugProbes {
+		utils.LavaFormatDebug("providers probe collection complete",
+			utils.Attribute{Key: "endpoint", Value: csm.rpcEndpoint},
+			utils.Attribute{Key: "GUID", Value: guid},
+			utils.Attribute{Key: "epoch", Value: epoch},
+		)
+	}
+
+	// PHASE 2a — feed metrics + optimizer with per-provider results.
+	for _, r := range results {
+		csm.consumerMetricsManager.SetProviderLiveness(csm.rpcEndpoint.ChainID, r.ProviderAddress, r.NetworkAddress, r.Success)
+		csm.providerOptimizer.AppendProbeRelayData(r.ProviderAddress, r.Latency, r.Success)
+	}
+
+	// PHASE 2b — compute majorityBaseline consensus from collected block heights.
+	if csm.chainState != nil {
+		avgBlockTime := csm.providerOptimizer.GetAverageBlockTime()
+		bucketWidth := chainstate.ComputeBucketWidth(MajorityBaselineBucketTimeWindow, avgBlockTime)
+
+		// Exclude latestBlock=0 (static providers / failed probes) from consensus input.
+		var blocks []int64
+		for _, r := range results {
+			if r.LatestBlock > 0 {
+				blocks = append(blocks, r.LatestBlock)
+			}
 		}
-		return nil
-	case <-ctx.Done():
-		utils.LavaFormatWarning("providers probe ran out of time", nil, utils.Attribute{Key: "endpoint", Value: csm.rpcEndpoint}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "epoch", Value: epoch})
-		// ran out of time
-		return ctx.Err()
+
+		floor := chainstate.ComputeMajorityBaseline(blocks, bucketWidth)
+		if floor > 0 {
+			threshold := chainstate.ComputeOutlierThreshold(PeriodicProbeProvidersInterval, avgBlockTime)
+			csm.chainState.SetMajorityBaseline(floor, threshold)
+			csm.providerOptimizer.ResetLatestSyncDataIfOutlier(floor, threshold)
+			if DebugProbes {
+				utils.LavaFormatDebug("majorityBaseline updated",
+					utils.Attribute{Key: "endpoint", Value: csm.rpcEndpoint},
+					utils.Attribute{Key: "majorityBaseline", Value: floor},
+					utils.Attribute{Key: "outlierThreshold", Value: threshold},
+					utils.Attribute{Key: "bucketWidth", Value: bucketWidth},
+					utils.Attribute{Key: "probeCount", Value: len(blocks)},
+				)
+			}
+
+			// PHASE 2c — block providers that reported outlier block heights.
+			csm.blockOutlierProviders(ctx, results, floor, threshold, epoch)
+		} else {
+			// Consensus failed — reset majorityBaseline to disable outlier detection.
+			// A stale baseline is worse than no baseline: it could block legitimate updates.
+			csm.chainState.SetMajorityBaseline(0, 0)
+			csm.consumerMetricsManager.SetMajorityBaselineConsensusFailure(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, len(blocks))
+
+			// Log per-provider block heights so operators can diagnose why consensus failed.
+			providerBlocks := make([]string, 0, len(results))
+			for _, r := range results {
+				if r.LatestBlock > 0 {
+					providerBlocks = append(providerBlocks, fmt.Sprintf("%s:%d", r.ProviderAddress, r.LatestBlock))
+				}
+			}
+			utils.LavaFormatWarning("majorityBaseline consensus not reached", nil,
+				utils.Attribute{Key: "endpoint", Value: csm.rpcEndpoint},
+				utils.Attribute{Key: "validProbeCount", Value: len(blocks)},
+				utils.Attribute{Key: "bucketWidth", Value: bucketWidth},
+				utils.Attribute{Key: "providerBlocks", Value: strings.Join(providerBlocks, ", ")},
+			)
+		}
+	}
+
+	return nil
+}
+
+// blockOutlierProviders iterates probe results and blocks any provider whose LatestBlock
+// exceeds floor + threshold. Blocking uses reportProvider=false (no on-chain reporting,
+// no jailing — this is local relay-routing protection only) and allowSecondChance=false.
+//
+// Blocked providers remain in rawPairing and continue to be probed in future cycles,
+// so the system can detect recovery. Within an epoch, blocked providers stay blocked.
+//
+// Epoch-transition note: providers blocked here are persisted via previousEpochBlockedProviders
+// and re-blocked at the next epoch. However, checkAndUnblockHealthyReBlockedProviders will
+// unblock them immediately if their initial probe succeeds (because reportProvider=false means
+// they are not in reportedProviders). This creates a brief window (~5s, until the next periodic
+// probe re-detects and re-blocks) where a still-contaminated provider could receive relay traffic.
+// The IsOutlier guards on seenBlock and latestSyncData protect consumer state during this window.
+func (csm *ConsumerSessionManager) blockOutlierProviders(ctx context.Context, results []ProbeResult, floor int64, threshold int64, epoch uint64) {
+	if floor <= 0 {
+		return // no consensus — nothing to compare against
+	}
+	for _, r := range results {
+		if r.LatestBlock <= 0 {
+			continue
+		}
+		if r.LatestBlock > floor+threshold {
+			utils.LavaFormatWarning("blocking provider: probe reported outlier block height", nil,
+				utils.Attribute{Key: "provider", Value: r.ProviderAddress},
+				utils.Attribute{Key: "reportedBlock", Value: r.LatestBlock},
+				utils.Attribute{Key: "majorityBaseline", Value: floor},
+				utils.Attribute{Key: "outlierThreshold", Value: threshold},
+				utils.Attribute{Key: "endpoint", Value: csm.rpcEndpoint},
+			)
+			csm.consumerMetricsManager.SetProbeOutlierBlock(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, r.ProviderAddress, r.LatestBlock, floor, threshold)
+			csm.blockProvider(ctx, r.ProviderAddress, false, epoch, 0, 0, false, nil)
+		}
 	}
 }
 
 // this code needs to be thread safe
-func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSessionsWithProvider *ConsumerSessionsWithProvider, epoch uint64, tryReconnectToDisabledEndpoints bool) (latency time.Duration, providerAddress string, err error) {
+func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSessionsWithProvider *ConsumerSessionsWithProvider, epoch uint64, tryReconnectToDisabledEndpoints bool) (latency time.Duration, latestBlock int64, providerAddress string, err error) {
 	// Static providers (direct RPC in smart router mode) use HTTP/WebSocket connections,
 	// not gRPC. Skip fetchEndpointConnectionFromConsumerSessionWithProvider entirely —
 	// it returns endpoints with nil chosenEndpointConnection for direct RPC, which causes
@@ -511,7 +656,7 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 		if AllProviderEndpointsDisabledError.Is(err) {
 			csm.blockProvider(ctx, providerAddress, true, epoch, MaxConsecutiveConnectionAttempts, 0, false, csm.GenerateReconnectCallback(consumerSessionsWithProvider)) // reporting and blocking provider this epoch
 		}
-		return 0, providerAddress, err
+		return 0, 0, providerAddress, err
 	}
 
 	var endpointInfos []EndpointInfo
@@ -559,13 +704,42 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 				return utils.LavaFormatWarning("provider returned 0 latest block", nil, utils.Attribute{Key: "provider", Value: providerAddress}, utils.Attribute{Key: "sent guid", Value: guid})
 			}
 
+			// Node staleness detection (backward compatible: skip if field is 0 / old provider)
+			if ProbeStalenessMultiplier > 0 && probeResp.GetLatestBlockChangeAgeMs() > 0 {
+				avgBlockTime := csm.providerOptimizer.GetAverageBlockTime()
+				stalenessThreshold := time.Duration(float64(avgBlockTime) * ProbeStalenessMultiplier)
+				staleness := time.Duration(probeResp.GetLatestBlockChangeAgeMs()) * time.Millisecond
+				if staleness > stalenessThreshold {
+					return utils.LavaFormatWarning("provider node is stale", nil,
+						utils.Attribute{Key: "provider", Value: providerAddress},
+						utils.Attribute{Key: "staleness", Value: staleness},
+						utils.Attribute{Key: "threshold", Value: stalenessThreshold},
+						utils.Attribute{Key: "sent guid", Value: guid},
+					)
+				}
+			}
+
+			// Calculated latency: add provider's node fetch latency to network RTT
+			calculatedLatency := relayLatency
+			if probeResp.GetLatestBlockFetchLatencyMs() > 0 {
+				calculatedLatency += time.Duration(probeResp.GetLatestBlockFetchLatencyMs()) * time.Millisecond
+			}
+
 			endpointInfos = append(endpointInfos, EndpointInfo{
-				Latency:  relayLatency,
-				Endpoint: endpointAndConnection.endpoint,
+				Latency:     calculatedLatency,
+				Endpoint:    endpointAndConnection.endpoint,
+				LatestBlock: probeResp.LatestBlock,
 			})
 			// public lava address is a value that is not changing, so it's thread safe
 			if DebugProbes {
-				utils.LavaFormatDebug("Probed provider successfully", utils.Attribute{Key: "latency", Value: relayLatency}, utils.Attribute{Key: "provider", Value: consumerSessionsWithProvider.PublicLavaAddress}, utils.LogAttr("version", strings.Join(versions, ",")))
+				utils.LavaFormatDebug("Probed provider successfully",
+					utils.Attribute{Key: "networkLatency", Value: relayLatency},
+					utils.Attribute{Key: "calculatedLatency", Value: calculatedLatency},
+					utils.Attribute{Key: "nodeFetchLatencyMs", Value: probeResp.GetLatestBlockFetchLatencyMs()},
+					utils.Attribute{Key: "stalenessMs", Value: probeResp.GetLatestBlockChangeAgeMs()},
+					utils.Attribute{Key: "provider", Value: consumerSessionsWithProvider.PublicLavaAddress},
+					utils.LogAttr("version", strings.Join(versions, ",")),
+				)
 			}
 			return nil
 		}()
@@ -576,11 +750,11 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 
 	if len(endpointInfos) == 0 {
 		// no endpoints.
-		return 0, providerAddress, lastError
+		return 0, 0, providerAddress, lastError
 	}
 	sort.Sort(EndpointInfoList(endpointInfos))
 	consumerSessionsWithProvider.sortEndpointsByLatency(endpointInfos)
-	return endpointInfos[0].Latency, providerAddress, nil
+	return endpointInfos[0].Latency, endpointInfos[0].LatestBlock, providerAddress, nil
 }
 
 // probeDirectRPCEndpoints handles health checking for direct RPC endpoints (smart router mode).
@@ -592,7 +766,7 @@ func (csm *ConsumerSessionManager) probeDirectRPCEndpoints(
 	ctx context.Context,
 	consumerSessionsWithProvider *ConsumerSessionsWithProvider,
 	providerAddress string,
-) (latency time.Duration, address string, err error) {
+) (latency time.Duration, latestBlock int64, address string, err error) {
 	consumerSessionsWithProvider.Lock.RLock()
 	defer consumerSessionsWithProvider.Lock.RUnlock()
 
@@ -657,11 +831,11 @@ func (csm *ConsumerSessionManager) probeDirectRPCEndpoints(
 	}
 
 	if totalEndpoints == 0 {
-		return 0, providerAddress, fmt.Errorf("no direct RPC endpoints found for provider %s", providerAddress)
+		return 0, 0, providerAddress, fmt.Errorf("no direct RPC endpoints found for provider %s", providerAddress)
 	}
 
 	if healthyEndpoints == 0 {
-		return 0, providerAddress, fmt.Errorf("all direct RPC endpoints unhealthy for provider %s", providerAddress)
+		return 0, 0, providerAddress, fmt.Errorf("all direct RPC endpoints unhealthy for provider %s", providerAddress)
 	}
 
 	// Reset latency to a reasonable default if we didn't measure any
@@ -676,7 +850,7 @@ func (csm *ConsumerSessionManager) probeDirectRPCEndpoints(
 		utils.LogAttr("latency", minLatency),
 	)
 
-	return minLatency, providerAddress, nil
+	return minLatency, 0, providerAddress, nil // latestBlock=0: static providers don't make gRPC Probe() calls
 }
 
 // csm needs to be locked here
@@ -1878,7 +2052,7 @@ func (csm *ConsumerSessionManager) OnSessionDoneIncreaseCUOnly(consumerSession *
 func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWithProvider *ConsumerSessionsWithProvider) func() error {
 	return func() error {
 		ctx := utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier()) // unique identifier for retries
-		_, providerAddress, err := csm.probeProvider(ctx, consumerSessionsWithProvider, csm.atomicReadCurrentEpoch(), true)
+		_, _, providerAddress, err := csm.probeProvider(ctx, consumerSessionsWithProvider, csm.atomicReadCurrentEpoch(), true)
 		if err == nil {
 			utils.LavaFormatDebug("Reconnecting provider succeeded returning provider to valid addresses list", utils.LogAttr("provider", providerAddress))
 			// csm.pairing and csm.backupProviders are built from separate inputs by
@@ -1991,7 +2165,13 @@ func (csm *ConsumerSessionManager) checkAndUnblockHealthyReBlockedProviders(ctx 
 			utils.LogAttr("GUID", ctx),
 		)
 
-		_, providerAddress, err := csm.probeProvider(ctx, info.cswp, epoch, true)
+		// Probe with tryReconnect=TRUE - retry disabled endpoints
+		_, _, providerAddress, err := csm.probeProvider(
+			ctx,
+			info.cswp,
+			epoch,
+			true, // tryReconnect=TRUE: Comprehensive probe, retries disabled endpoints
+		)
 
 		if err == nil {
 			utils.LavaFormatInfo("Re-blocked provider's comprehensive probe succeeded, immediately unblocking",
@@ -2026,12 +2206,14 @@ func NewConsumerSessionManager(
 	consumerMetricsManager metrics.ConsumerMetricsManagerInf,
 	consumerPublicAddress string,
 	activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage,
+	cState *chainstate.ChainState,
 ) *ConsumerSessionManager {
 	csm := &ConsumerSessionManager{
 		reportedProviders:      NewReportedProviders(),
 		consumerMetricsManager: metrics.SafeMetrics(consumerMetricsManager),
 		consumerPublicAddress:  consumerPublicAddress,
 		qosManager:             qos.NewQoSManager(),
+		chainState:             cState,
 		getLavaBlockHeight:     func() int64 { return 0 }, // default to 0, should be set by caller
 		blockedBackupProviders: make(map[string]struct{}),
 	}

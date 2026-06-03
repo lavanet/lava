@@ -36,6 +36,10 @@ func (dct *DummyChainTracker) StartAndServe(ctx context.Context) error {
 // AddBlockGap adds a new block gap measurement
 func (dct *DummyChainTracker) AddBlockGap(newData time.Duration, blocks uint64) {}
 
+func (dct *DummyChainTracker) GetLatestFetchLatency() time.Duration {
+	return 0
+}
+
 func (dct *DummyChainTracker) IsDummy() bool {
 	return true
 }

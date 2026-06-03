@@ -49,6 +49,7 @@ import (
 	"github.com/lavanet/lava/v5/app"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v5/protocol/chainstate"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
@@ -279,6 +280,7 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 
 	optimizers := &common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer]{}
 	smartRouterConsistencies := &common.SafeSyncMap[string, relaycore.Consistency]{}
+	chainStates := &common.SafeSyncMap[string, *chainstate.ChainState]{}
 
 	var wg sync.WaitGroup
 	parallelJobs := len(options.rpcEndpoints)
@@ -294,7 +296,7 @@ func (rpsr *RPCSmartRouter) Start(ctx context.Context, options *rpcSmartRouterSt
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
 			defer wg.Done()
 			err := rpsr.CreateSmartRouterEndpoint(ctx, rpcEndpoint, errCh,
-				optimizers, smartRouterConsistencies, chainMutexes,
+				optimizers, smartRouterConsistencies, chainStates, chainMutexes,
 				options, smartRouterIdentifier, rpcSmartRouterMetrics, smartRouterOptimizerQoSClient,
 				smartRouterMetricsManager, relaysMonitorAggregator)
 			return err
@@ -463,6 +465,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	errCh chan error,
 	optimizers *common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer],
 	smartRouterConsistencies *common.SafeSyncMap[string, relaycore.Consistency],
+	chainStates *common.SafeSyncMap[string, *chainstate.ChainState],
 	chainMutexes map[string]*sync.Mutex,
 	options *rpcSmartRouterStartOptions,
 	smartRouterIdentifier string,
@@ -598,13 +601,21 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	var optimizer *provideroptimizer.ProviderOptimizer
 	var smartRouterConsistency relaycore.Consistency
+	var cState *chainstate.ChainState
 
 	// Create chain assets with mutex protection
 	chainMutexes[chainID].Lock()
 	defer chainMutexes[chainID].Unlock()
 
+	// Create / Use existing ChainState (majorityBaseline protection) — must come before optimizer so it can be passed to constructor
+	cState, _, err = chainStates.LoadOrStore(chainID, &chainstate.ChainState{})
+	if err != nil {
+		errCh <- err
+		return utils.LavaFormatError("failed loading chain state", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
+	}
+
 	// Create / Use existing optimizer
-	newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, options.maxConcurrentProviders, smartRouterOptimizerQoSClient, chainID)
+	newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, options.maxConcurrentProviders, smartRouterOptimizerQoSClient, chainID, cState)
 	newOptimizer.ConfigureWeightedSelector(options.weightedSelectorConfig)
 	optimizer, loaded, err := optimizers.LoadOrStore(chainID, newOptimizer)
 	if err != nil {
@@ -618,7 +629,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 	}
 
 	// Create / Use existing Consistency
-	newSmartRouterConsistency := relaycore.NewConsistency(chainID)
+	newSmartRouterConsistency := relaycore.NewConsistency(chainID, cState)
 	smartRouterConsistency, _, err = smartRouterConsistencies.LoadOrStore(chainID, newSmartRouterConsistency)
 	if err != nil {
 		errCh <- err
@@ -627,7 +638,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 
 	// Create active subscription provider storage for each unique chain
 	activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
-	sessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, smartRouterMetricsManager, smartRouterIdentifier, activeSubscriptionProvidersStorage)
+	sessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, smartRouterMetricsManager, smartRouterIdentifier, activeSubscriptionProvidersStorage, cState)
 
 	// Set callback to get Lava blockchain block height for RelaySession.Epoch
 	// Smart router doesn't connect to blockchain, so calculate approximate block height from epoch
@@ -1256,7 +1267,7 @@ func (rpsr *RPCSmartRouter) CreateSmartRouterEndpoint(
 
 	utils.LavaFormatInfo("RPCSmartRouter Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
 	// Convert smartRouterIdentifier string to empty sdk.AccAddress for smart router
-	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, chainTracker, sessionManager, options.cache, rpcSmartRouterMetrics, smartRouterConsistency, relaysMonitor, options.cmdFlags, options.stateShare, wsSubscriptionManager, smartRouterMetricsManager)
+	err = rpcSmartRouterServer.ServeRPCRequests(ctx, rpcEndpoint, chainParser, chainTracker, sessionManager, options.cache, rpcSmartRouterMetrics, smartRouterConsistency, cState, relaysMonitor, options.cmdFlags, options.stateShare, wsSubscriptionManager, smartRouterMetricsManager)
 	if err != nil {
 		err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 		errCh <- err

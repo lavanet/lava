@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 
 	"github.com/lavanet/lava/v5/protocol/chainlib"
+	"github.com/lavanet/lava/v5/protocol/chainstate"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
@@ -25,6 +26,7 @@ type RelayProcessor struct {
 	guid                         uint64
 	selection                    Selection
 	consistency                  Consistency
+	chainState                   *chainstate.ChainState
 	debugRelay                   bool
 	allowSessionDegradation      uint32 // used in the scenario where extension was previously used.
 	metricsInf                   MetricsInterface
@@ -42,6 +44,7 @@ func NewRelayProcessor(
 	ctx context.Context,
 	crossValidationParams *common.CrossValidationParams, // nil for Stateless/Stateful
 	consistency Consistency,
+	cState *chainstate.ChainState,
 	metricsInf MetricsInterface,
 	chainIdAndApiInterfaceGetter ChainIdAndApiInterfaceGetter,
 	relayRetriesManager *lavaprotocol.RelayRetriesManager,
@@ -79,6 +82,7 @@ func NewRelayProcessor(
 		ResultsManager:               NewResultsManager(guid, chainID),
 		guid:                         guid,
 		consistency:                  consistency,
+		chainState:                   cState,
 		debugRelay:                   relayStateMachine.GetDebugState(),
 		metricsInf:                   metricsInf,
 		chainIdAndApiInterfaceGetter: chainIdAndApiInterfaceGetter,

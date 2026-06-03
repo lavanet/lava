@@ -76,6 +76,22 @@ type ConsumerMetricsManager struct {
 	incidentHedgeSuccessMetric        *prometheus.CounterVec   // labels: spec, apiInterface, method
 	incidentHedgeFailedMetric         *prometheus.CounterVec   // labels: spec, apiInterface, method
 	incidentHedgeAttemptsHistogram    *prometheus.HistogramVec // lava_consumer_hedge_attempts {spec, apiInterface, method}
+	// QoS + Step 2 metrics
+	qosMetric                              *MappedLabelsGaugeVec
+	probeOutlierBlockedMetric              *prometheus.CounterVec
+	majorityBaselineConsensusFailureMetric *prometheus.CounterVec
+	// Legacy metrics retained for external consumers (Grafana dashboard + investigator skill).
+	// New code should prefer the request/incident group metrics above.
+	totalRelaysRequestedMetric                     *prometheus.CounterVec // lava_consumer_total_relays_serviced                          {spec, apiInterface} — investigator skill
+	totalErroredMetric                             *prometheus.CounterVec // lava_consumer_total_errored                                  {spec, apiInterface} — investigator skill
+	totalNodeErroredMetric                         *prometheus.CounterVec // lava_consumer_total_node_errors_received_from_providers      {spec, apiInterface} — investigator skill
+	totalProtocolErrorsRecoveredSuccessfullyMetric *prometheus.CounterVec // lava_consumer_total_protocol_errors_recovered_successfully   {spec, apiInterface, attempt} — investigator skill
+	totalRelaysSentToProvidersMetric               *prometheus.CounterVec // lava_consumer_total_relays_sent_to_providers                 {spec, apiInterface} — investigator skill
+	providerAvailabilityScoreGauge                 *prometheus.GaugeVec   // lava_consumer_provider_availability_score                    {spec, provider_address} — Grafana dashboard
+	providerLatencyScoreGauge                      *prometheus.GaugeVec   // lava_consumer_provider_latency_score                         {spec, provider_address} — Grafana dashboard
+	providerSyncScoreGauge                         *prometheus.GaugeVec   // lava_consumer_provider_sync_score                            {spec, provider_address} — Grafana dashboard
+	providerStakeScoreGauge                        *prometheus.GaugeVec   // lava_consumer_provider_stake_score                           {spec, provider_address} — Grafana dashboard
+	providerCompositeScoreGauge                    *prometheus.GaugeVec   // lava_consumer_provider_composite_score                       {spec, provider_address} — Grafana dashboard
 }
 
 type ConsumerMetricsManagerOptions struct {
@@ -139,6 +155,27 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Name:       "lava_consumer_provider_blocked",
 		Help:       "Is provider blocked. 1-blocked, 0-not blocked",
 		Labels:     blockedProviderMetricLabels,
+		Registerer: prometheus.DefaultRegisterer,
+	})
+
+	probeOutlierBlockedMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_probe_outlier_blocked",
+		Help: "Count of providers blocked due to outlier block height during probing",
+	}, []string{"spec", "apiInterface", "provider_address"}))
+
+	majorityBaselineConsensusFailureMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_majority_baseline_consensus_failure",
+		Help: "Count of probe cycles where majorityBaseline consensus was not reached",
+	}, []string{"spec", "apiInterface"}))
+
+	qosMetricLabels := []string{"spec", "apiInterface", "provider_address", "qos_metric"}
+	if ShowProviderEndpointInMetrics {
+		qosMetricLabels = append(qosMetricLabels, "provider_endpoint")
+	}
+	qosMetric := NewMappedLabelsGaugeVec(MappedLabelsMetricOpts{
+		Name:       "lava_consumer_qos_metrics",
+		Help:       "The QOS metrics per provider for current epoch for the session with the most relays.",
+		Labels:     qosMetricLabels,
 		Registerer: prometheus.DefaultRegisterer,
 	})
 
@@ -346,6 +383,50 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Buckets: latencyBuckets,
 	}, cacheLabels))
 
+	// Legacy metrics — retained because external consumers depend on them.
+	// See `scripts/monitoring/README.md` (Grafana dashboard) and
+	// `.claude/skills/investigator/SKILL.md` (BD error-analysis tooling).
+	totalRelaysRequestedMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_total_relays_serviced",
+		Help: "The total number of relays serviced by the consumer over time.",
+	}, []string{"spec", "apiInterface"}))
+	totalErroredMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_total_errored",
+		Help: "The total number of errors encountered by the consumer over time.",
+	}, []string{"spec", "apiInterface"}))
+	totalNodeErroredMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_total_node_errors_received_from_providers",
+		Help: "The total number of relays sent to providers and returned a node error",
+	}, []string{"spec", "apiInterface"}))
+	totalProtocolErrorsRecoveredSuccessfullyMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_total_protocol_errors_recovered_successfully",
+		Help: "The total number of protocol errors that managed to recover using a retry or cross-validation",
+	}, []string{"spec", "apiInterface", "attempt"}))
+	totalRelaysSentToProvidersMetric := registerOrReuse(prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_total_relays_sent_to_providers",
+		Help: "The total number of relays sent to providers",
+	}, []string{"spec", "apiInterface"}))
+	providerAvailabilityScoreGauge := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_consumer_provider_availability_score",
+		Help: "Latest availability score for provider at time of selection (0-1)",
+	}, []string{"spec", "provider_address"}))
+	providerLatencyScoreGauge := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_consumer_provider_latency_score",
+		Help: "Latest latency score for provider at time of selection (0-1)",
+	}, []string{"spec", "provider_address"}))
+	providerSyncScoreGauge := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_consumer_provider_sync_score",
+		Help: "Latest sync score for provider at time of selection (0-1)",
+	}, []string{"spec", "provider_address"}))
+	providerStakeScoreGauge := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_consumer_provider_stake_score",
+		Help: "Latest stake score for provider at time of selection (0-1)",
+	}, []string{"spec", "provider_address"}))
+	providerCompositeScoreGauge := registerOrReuse(prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_consumer_provider_composite_score",
+		Help: "Latest composite QoS score for provider at time of selection (0-1)",
+	}, []string{"spec", "provider_address"}))
+
 	consumerMetricsManager := &ConsumerMetricsManager{
 		totalCURequestedMetric:                          totalCURequestedMetric,
 		totalWsSubscriptionRequestsMetric:               totalWsSubscriptionRequestsMetric,
@@ -398,6 +479,19 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		incidentHedgeSuccessMetric:                      incidentHedgeSuccessMetric,
 		incidentHedgeFailedMetric:                       incidentHedgeFailedMetric,
 		incidentHedgeAttemptsHistogram:                  incidentHedgeAttemptsHistogram,
+		qosMetric:                                       qosMetric,
+		probeOutlierBlockedMetric:                       probeOutlierBlockedMetric,
+		majorityBaselineConsensusFailureMetric:          majorityBaselineConsensusFailureMetric,
+		totalRelaysRequestedMetric:                      totalRelaysRequestedMetric,
+		totalErroredMetric:                              totalErroredMetric,
+		totalNodeErroredMetric:                          totalNodeErroredMetric,
+		totalProtocolErrorsRecoveredSuccessfullyMetric:  totalProtocolErrorsRecoveredSuccessfullyMetric,
+		totalRelaysSentToProvidersMetric:                totalRelaysSentToProvidersMetric,
+		providerAvailabilityScoreGauge:                  providerAvailabilityScoreGauge,
+		providerLatencyScoreGauge:                       providerLatencyScoreGauge,
+		providerSyncScoreGauge:                          providerSyncScoreGauge,
+		providerStakeScoreGauge:                         providerStakeScoreGauge,
+		providerCompositeScoreGauge:                     providerCompositeScoreGauge,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -500,11 +594,33 @@ func (pme *ConsumerMetricsManager) SetWebSocketConnectionActive(chainId string, 
 	}
 }
 
+// SetRelaySentToProviderMetric increments the legacy "lava_consumer_total_relays_sent_to_providers"
+// counter consumed by the investigator skill. Call sites are in consumer_session_manager.go /
+// rpcconsumer_server.go (per-relay-attempt).
+func (pme *ConsumerMetricsManager) SetRelaySentToProviderMetric(chainId string, apiInterface string) {
+	if pme == nil {
+		return
+	}
+	pme.totalRelaysSentToProvidersMetric.WithLabelValues(chainId, apiInterface).Inc()
+}
+
+// SetProtocolErrorRecoveredSuccessfullyMetric increments the legacy
+// "lava_consumer_total_protocol_errors_recovered_successfully" counter consumed by the
+// investigator skill. Call sites are in the retry/cross-validation success paths.
+func (pme *ConsumerMetricsManager) SetProtocolErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string) {
+	if pme == nil {
+		return
+	}
+	pme.totalProtocolErrorsRecoveredSuccessfullyMetric.WithLabelValues(chainId, apiInterface, attempt).Inc()
+}
+
 func (pme *ConsumerMetricsManager) SetRelayNodeErrorMetric(chainId string, apiInterface string, providerAddress string, method string) {
 	if pme == nil {
 		return
 	}
 	pme.incidentNodeErrorsTotalMetric.WithLabelValues(chainId, apiInterface, providerAddress, method).Inc()
+	// Legacy aggregate counter retained for the investigator skill ({spec, apiInterface} only).
+	pme.totalNodeErroredMetric.WithLabelValues(chainId, apiInterface).Inc()
 }
 
 func (pme *ConsumerMetricsManager) RecordCacheResult(chainId, apiInterface, method string, hit bool, latencyMs float64) {
@@ -535,6 +651,11 @@ func (pme *ConsumerMetricsManager) SetRelayMetrics(relayMetric *RelayMetrics, er
 	}
 	relayMetric.Success = err == nil
 	pme.totalCURequestedMetric.WithLabelValues(relayMetric.ChainID, relayMetric.APIType).Add(float64(relayMetric.ComputeUnits))
+	// Legacy aggregate counters retained for the investigator skill ({spec, apiInterface} only).
+	pme.totalRelaysRequestedMetric.WithLabelValues(relayMetric.ChainID, relayMetric.APIType).Inc()
+	if !relayMetric.Success {
+		pme.totalErroredMetric.WithLabelValues(relayMetric.ChainID, relayMetric.APIType).Inc()
+	}
 	// Request group metrics.
 	//
 	// Counting invariants (intentional design):
@@ -763,13 +884,18 @@ func (pme *ConsumerMetricsManager) SetProviderSelected(chainId string, _ string,
 	pme.selectionRNGValueGauge.WithLabelValues(chainId).Set(rngValue)
 
 	// Find the selected provider's composite score for the optimizer
+	// and update the per-provider score gauges (consumed by the Grafana dashboard).
 	var selectedQoSScore float64
 	foundSelectedProvider := false
 	for _, scores := range allProviderScores {
+		pme.providerAvailabilityScoreGauge.WithLabelValues(chainId, scores.ProviderAddress).Set(scores.Availability)
+		pme.providerLatencyScoreGauge.WithLabelValues(chainId, scores.ProviderAddress).Set(scores.Latency)
+		pme.providerSyncScoreGauge.WithLabelValues(chainId, scores.ProviderAddress).Set(scores.Sync)
+		pme.providerStakeScoreGauge.WithLabelValues(chainId, scores.ProviderAddress).Set(scores.Stake)
+		pme.providerCompositeScoreGauge.WithLabelValues(chainId, scores.ProviderAddress).Set(scores.Composite)
 		if scores.ProviderAddress == providerAddress {
 			selectedQoSScore = scores.Composite
 			foundSelectedProvider = true
-			break
 		}
 	}
 
@@ -854,6 +980,20 @@ func (pme *ConsumerMetricsManager) SetBlockedProvider(chainId, apiInterface, pro
 	pme.lock.Lock()
 	defer pme.lock.Unlock()
 	pme.blockedProviderMetric.WithLabelValues(labels).Set(value)
+}
+
+func (pme *ConsumerMetricsManager) SetProbeOutlierBlock(chainId, apiInterface, providerAddress string, reportedBlock, floor, threshold int64) {
+	if pme == nil {
+		return
+	}
+	pme.probeOutlierBlockedMetric.WithLabelValues(chainId, apiInterface, providerAddress).Inc()
+}
+
+func (pme *ConsumerMetricsManager) SetMajorityBaselineConsensusFailure(chainId, apiInterface string, validProbeCount int) {
+	if pme == nil {
+		return
+	}
+	pme.majorityBaselineConsensusFailureMetric.WithLabelValues(chainId, apiInterface).Inc()
 }
 
 // UpdateSelectionStatsFromOptimizerReports updates the selection stats metrics from the optimizer reports

@@ -29,7 +29,9 @@ func (NoOpConsumerMetrics) UpdateHealthcheckStatusBreakdown(string, string, bool
 func (NoOpConsumerMetrics) SetProviderLiveness(string, string, string, bool)      {}
 func (NoOpConsumerMetrics) SetProviderSelected(string, string, string, []ProviderSelectionScores, float64) {
 }
-func (NoOpConsumerMetrics) SetBlockedProvider(string, string, string, string, bool) {}
+func (NoOpConsumerMetrics) SetBlockedProvider(string, string, string, string, bool)  {}
+func (NoOpConsumerMetrics) SetProbeOutlierBlock(string, string, string, int64, int64, int64) {}
+func (NoOpConsumerMetrics) SetMajorityBaselineConsensusFailure(string, string, int)           {}
 func (NoOpConsumerMetrics) SetQOSMetrics(string, string, string, string, *pairingtypes.QualityOfServiceReport, *pairingtypes.QualityOfServiceReport, int64, uint64, time.Duration, bool) {
 }
 func (NoOpConsumerMetrics) ResetSessionRelatedMetrics()                                    {}
@@ -85,6 +87,8 @@ type ConsumerMetricsManagerInf interface {
 	SetProviderLiveness(chainId string, providerAddress string, providerEndpoint string, isAlive bool)
 	SetProviderSelected(chainId string, apiInterface string, providerAddress string, allProviderScores []ProviderSelectionScores, rngValue float64)
 	SetBlockedProvider(chainId, apiInterface, providerAddress, providerEndpoint string, isBlocked bool)
+	SetProbeOutlierBlock(chainId, apiInterface, providerAddress string, reportedBlock, floor, threshold int64)
+	SetMajorityBaselineConsensusFailure(chainId, apiInterface string, validProbeCount int)
 	SetQOSMetrics(chainId string, apiInterface string, providerAddress string, providerEndpoint string, qos *pairingtypes.QualityOfServiceReport, reputation *pairingtypes.QualityOfServiceReport, latestBlock int64, relays uint64, relayLatency time.Duration, sessionSuccessful bool)
 
 	// --- Session (ConsumerSessionManager) ---

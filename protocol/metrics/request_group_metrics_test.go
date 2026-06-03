@@ -14,9 +14,13 @@ import (
 // registry conflicts when running multiple test functions.
 func newConsumerForRequestGroupTest() *ConsumerMetricsManager {
 	reqLabels := []string{"spec", "apiInterface", "provider_address", "method"}
+	legacyLabels := []string{"spec", "apiInterface"}
 	return &ConsumerMetricsManager{
 		// Fields used by SetRelayMetrics before the request-group block
 		totalCURequestedMetric: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_cu"}, []string{"spec", "apiInterface"}),
+		// Legacy aggregate counters (Inc'd by SetRelayMetrics for the investigator skill).
+		totalRelaysRequestedMetric: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_total_relays_serviced"}, legacyLabels),
+		totalErroredMetric:         prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_total_errored"}, legacyLabels),
 		// Request-group counters under test
 		requestsTotalMetric:      prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_req_total"}, reqLabels),
 		requestsSuccessMetric:    prometheus.NewCounterVec(prometheus.CounterOpts{Name: "t_req_success"}, reqLabels),

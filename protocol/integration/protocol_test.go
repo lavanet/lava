@@ -228,9 +228,9 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 	}
 	consumerStateTracker := &mockConsumerStateTracker{}
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
-	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, averageBlockTime, 2, nil, "dontcare")
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.StrategyBalanced, averageBlockTime, 2, nil, "dontcare", nil)
 	optimizer.SetDeterministicSeed(seed)
-	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage())
+	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage(), nil)
 	consumerSessionManager.UpdateAllProviders(rpcConsumerOptions.epoch, rpcConsumerOptions.pairingList, nil)
 
 	// Just setting the providers available extensions and policy so the consumer is aware of them
@@ -271,11 +271,11 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 		}
 	}
 
-	consumerConsistency := relaycore.NewConsistency(rpcConsumerOptions.specId)
+	consumerConsistency := relaycore.NewConsistency(rpcConsumerOptions.specId, nil)
 	consumerCmdFlags := common.ConsumerCmdFlags{}
 	rpcconsumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil, nil)
 	require.NoError(t, err)
-	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, consumerSessionManager, rpcConsumerOptions.requiredResponses, rpcConsumerOptions.account.SK, rpcConsumerOptions.lavaChainID, cache, rpcconsumerLogs, rpcConsumerOptions.account.Addr, consumerConsistency, nil, consumerCmdFlags, false, nil)
+	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, consumerSessionManager, rpcConsumerOptions.requiredResponses, rpcConsumerOptions.account.SK, rpcConsumerOptions.lavaChainID, cache, rpcconsumerLogs, rpcConsumerOptions.account.Addr, consumerConsistency, nil, nil, consumerCmdFlags, false, nil)
 	require.NoError(t, err)
 
 	// wait for consumer to finish initialization

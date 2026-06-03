@@ -1104,6 +1104,9 @@ func (m *SmartRouterMetricsManager) SetProviderSelected(chainId string, apiInter
 }
 
 func (m *SmartRouterMetricsManager) SetBlockedProvider(string, string, string, string, bool) {}
+func (m *SmartRouterMetricsManager) SetProbeOutlierBlock(string, string, string, int64, int64, int64) {
+}
+func (m *SmartRouterMetricsManager) SetMajorityBaselineConsensusFailure(string, string, int) {}
 
 func (m *SmartRouterMetricsManager) SetQOSMetrics(chainId string, apiInterface string, _ string, _ string, _ *pairingtypes.QualityOfServiceReport, _ *pairingtypes.QualityOfServiceReport, _ int64, _ uint64, _ time.Duration, _ bool) {
 }

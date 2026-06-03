@@ -98,9 +98,11 @@ const (
 	RateLimitRequestPerSecondFlag                = "rate-limit-requests-per-second"
 	SkipWebsocketVerificationFlag                = "skip-websocket-verification"
 	// specification default flags
-	PeriodicProbeProvidersFlagName         = "enable-periodic-probe-providers"
-	PeriodicProbeProvidersIntervalFlagName = "periodic-probe-providers-interval"
-	ProbeUpdateWeightFlagName              = "probe-update-weight"
+	PeriodicProbeProvidersFlagName           = "enable-periodic-probe-providers"
+	PeriodicProbeProvidersIntervalFlagName   = "periodic-probe-providers-interval"
+	ProbeStalenessMultiplierFlagName         = "probe-staleness-multiplier"
+	ProbeUpdateWeightFlagName                = "probe-update-weight"
+	MajorityBaselineBucketTimeWindowFlagName = "majority-baseline-bucket-time-window"
 
 	// batch request size limit
 	MaxBatchRequestSizeFlag        = "max-batch-request-size"

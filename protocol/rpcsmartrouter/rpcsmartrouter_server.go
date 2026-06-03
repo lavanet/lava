@@ -13,6 +13,7 @@ import (
 
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v5/protocol/chainstate"
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/internal/chainqueries"
@@ -55,6 +56,7 @@ type RPCSmartRouterServer struct {
 	rpcSmartRouterLogs     *metrics.RPCConsumerLogs
 	cache                  *performance.Cache
 	smartRouterConsistency relaycore.Consistency
+	chainState             *chainstate.ChainState
 	consistencyConfig      *relaycore.ConsistencyValidationConfig // Configuration for consistency validation
 	sharedState            bool                                   // using the cache backend to sync the latest seen block
 	relaysMonitor          *metrics.RelaysMonitor
@@ -85,6 +87,7 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 	cache *performance.Cache,
 	rpcSmartRouterLogs *metrics.RPCConsumerLogs,
 	smartRouterConsistency relaycore.Consistency,
+	cState *chainstate.ChainState,
 	relaysMonitor *metrics.RelaysMonitor,
 	cmdFlags common.ConsumerCmdFlags,
 	sharedState bool,
@@ -98,6 +101,7 @@ func (rpcss *RPCSmartRouterServer) ServeRPCRequests(
 	rpcss.rpcSmartRouterLogs = rpcSmartRouterLogs
 	rpcss.chainParser = chainParser
 	rpcss.smartRouterConsistency = smartRouterConsistency
+	rpcss.chainState = cState
 	rpcss.sharedState = sharedState
 	rpcss.debugRelays = cmdFlags.DebugRelays
 	rpcss.enableSelectionStats = cmdFlags.EnableSelectionStats
@@ -318,6 +322,7 @@ func (rpcss *RPCSmartRouterServer) sendRelayWithRetries(ctx context.Context, ret
 		ctx,
 		crossValidationParams,
 		rpcss.smartRouterConsistency,
+		rpcss.chainState,
 		rpcss.rpcSmartRouterLogs,
 		rpcss,
 		rpcss.relayRetriesManager,
@@ -639,6 +644,7 @@ func (rpcss *RPCSmartRouterServer) ProcessRelaySend(ctx context.Context, protoco
 		ctx,
 		crossValidationParams,
 		rpcss.smartRouterConsistency,
+		rpcss.chainState,
 		rpcss.rpcSmartRouterLogs,
 		rpcss,
 		rpcss.relayRetriesManager,

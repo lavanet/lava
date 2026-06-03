@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/dgraph-io/ristretto/v2"
+	"github.com/lavanet/lava/v5/protocol/chainstate"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/lavaslices"
@@ -60,6 +61,11 @@ type ProviderOptimizer struct {
 	globalSyncCalculator            *score.AdaptiveMaxCalculator // Global T-Digest for all providers' sync samples
 	adaptiveLock                    sync.RWMutex                 // Lock for accessing adaptive calculators
 	NowFunc                         func() time.Time             // NowFunc overrides the clock used for score updates nil = use real time.Now()
+	chainState                      *chainstate.ChainState       // shared per-chain state for majorityBaseline outlier detection
+}
+
+func (po *ProviderOptimizer) GetAverageBlockTime() time.Duration {
+	return po.averageBlockTime
 }
 
 type ProviderData struct {
@@ -635,6 +641,18 @@ func (po *ProviderOptimizer) calculateSyncLag(latestSync uint64, timeSync time.T
 func (po *ProviderOptimizer) updateLatestSyncData(providerLatestBlock uint64, sampleTime time.Time) (uint64, time.Time) {
 	po.latestSyncData.Lock.Lock()
 	defer po.latestSyncData.Lock.Unlock()
+
+	// Guard: reject outlier block heights to prevent latestSyncData poisoning
+	if po.chainState != nil && po.chainState.IsOutlier(int64(providerLatestBlock)) {
+		utils.LavaFormatWarning("latestSyncData update rejected: outlier block height", nil,
+			utils.LogAttr("providerLatestBlock", providerLatestBlock),
+			utils.LogAttr("currentLatestBlock", po.latestSyncData.Block),
+			utils.LogAttr("majorityBaseline", po.chainState.GetMajorityBaseline()),
+			utils.LogAttr("chainId", po.chainId),
+		)
+		return po.latestSyncData.Block, po.latestSyncData.Time
+	}
+
 	latestBlock := po.latestSyncData.Block
 	if latestBlock < providerLatestBlock {
 		// saved latest block is older, so update
@@ -642,6 +660,26 @@ func (po *ProviderOptimizer) updateLatestSyncData(providerLatestBlock uint64, sa
 		po.latestSyncData.Time = sampleTime
 	}
 	return po.latestSyncData.Block, po.latestSyncData.Time
+}
+
+// ResetLatestSyncDataIfOutlier checks whether latestSyncData.Block has been poisoned
+// (e.g., during a consensus gap when majorityBaseline was 0 and a contaminated relay
+// set it to an arbitrarily high value). If latestSyncData.Block exceeds floor + threshold,
+// it is reset to floor so that sync scoring can recover.
+func (po *ProviderOptimizer) ResetLatestSyncDataIfOutlier(floor int64, threshold int64) {
+	po.latestSyncData.Lock.Lock()
+	defer po.latestSyncData.Lock.Unlock()
+
+	if po.latestSyncData.Block > uint64(floor+threshold) {
+		utils.LavaFormatWarning("latestSyncData reset: value was outlier relative to consensus", nil,
+			utils.LogAttr("previousBlock", po.latestSyncData.Block),
+			utils.LogAttr("consensusFloor", floor),
+			utils.LogAttr("outlierThreshold", threshold),
+			utils.LogAttr("chainId", po.chainId),
+		)
+		po.latestSyncData.Block = uint64(floor)
+		po.latestSyncData.Time = time.Now()
+	}
 }
 
 // getProviderData gets a specific proivder's QoS data. If it doesn't exist, it returns a default provider data struct
@@ -799,7 +837,7 @@ func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.T
 	return nil
 }
 
-func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerQoSClient consumerOptimizerQoSClientInf, chainId string) *ProviderOptimizer {
+func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerQoSClient consumerOptimizerQoSClientInf, chainId string, cState *chainstate.ChainState) *ProviderOptimizer {
 	cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
@@ -849,6 +887,7 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme time.Duration, wan
 		weightedSelector:                weightedSelector,
 		globalLatencyCalculator:         globalLatencyCalculator,
 		globalSyncCalculator:            globalSyncCalculator,
+		chainState:                      cState,
 	}
 }
 

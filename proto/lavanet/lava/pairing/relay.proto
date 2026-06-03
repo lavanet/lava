@@ -28,6 +28,8 @@ message ProbeReply {
     uint64 lava_epoch = 4;
     uint64 lava_latest_block = 5;
     repeated Verification verifications = 6;
+    uint64 latest_block_fetch_latency_ms = 7;  // provider->node fetch latency in ms; 0 = unknown
+    uint64 latest_block_change_age_ms = 8;     // ms since LatestBlock last advanced; 0 = unknown
 }
 
 message Verification {

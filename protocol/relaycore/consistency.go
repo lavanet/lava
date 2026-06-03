@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/dgraph-io/ristretto/v2"
+	"github.com/lavanet/lava/v5/protocol/chainstate"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/utils"
 )
@@ -24,8 +25,9 @@ type Consistency interface {
 
 // ConsistencyImpl is the default implementation of Consistency
 type ConsistencyImpl struct {
-	cache  *ristretto.Cache[string, any]
-	specId string
+	cache      *ristretto.Cache[string, any]
+	specId     string
+	chainState *chainstate.ChainState
 }
 
 func (cc *ConsistencyImpl) SetLatestBlock(key string, block int64) {
@@ -58,6 +60,16 @@ func (cc *ConsistencyImpl) SetSeenBlockFromKey(blockSeen int64, key string) {
 	if cc == nil {
 		return
 	}
+	// Guard: reject outlier block heights to prevent seenBlock poisoning
+	if cc.chainState != nil && cc.chainState.IsOutlier(blockSeen) {
+		utils.LavaFormatWarning("seenBlock update rejected: outlier block height", nil,
+			utils.LogAttr("blockSeen", blockSeen),
+			utils.LogAttr("majorityBaseline", cc.chainState.GetMajorityBaseline()),
+			utils.LogAttr("specId", cc.specId),
+			utils.LogAttr("key", key),
+		)
+		return
+	}
 	// seen block is only increasing
 	if block, found := cc.GetLatestBlock(key); found && block >= blockSeen {
 		return
@@ -83,10 +95,10 @@ func (cc *ConsistencyImpl) GetSeenBlock(userData common.UserData) (int64, bool) 
 	return cc.GetLatestBlock(cc.Key(userData))
 }
 
-func NewConsistency(specId string) Consistency {
+func NewConsistency(specId string, cState *chainstate.ChainState) Consistency {
 	cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for consistency", err)
 	}
-	return &ConsistencyImpl{cache: cache, specId: specId}
+	return &ConsistencyImpl{cache: cache, specId: specId, chainState: cState}
 }
