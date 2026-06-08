@@ -1,0 +1,313 @@
+# One-time repository setup required before this workflow works:
+#   1. Secret CLAUDE_CODE_OAUTH_TOKEN - subscription auth (Pro/Max). Generate
+#      locally with `claude setup-token`, then store as a repo secret. The token
+#      expires and must be rotated periodically. (Swap to anthropic_api_key +
+#      ANTHROPIC_API_KEY secret if subscription quotas throttle the full run.)
+#   2. Settings -> Actions -> General -> Workflow permissions ->
+#      enable "Allow GitHub Actions to create and approve pull requests"
+#      (without it, the `gh pr create` step fails: "GitHub Actions is not
+#      permitted to create or approve pull requests"). Equivalent CLI:
+#        gh api -X PUT /repos/<owner>/<repo>/actions/permissions/workflow \
+#          -f default_workflow_permissions=write -F can_approve_pull_request_reviews=true
+#   3. The create-spec skill must be present on `main` (PR #2300 merged).
+#
+# The PR is opened with the automatic GITHUB_TOKEN (author: github-actions[bot]).
+# NOTE: GitHub does not auto-run pull_request CI for a GITHUB_TOKEN-opened PR;
+# push a commit or close/reopen the PR to trigger checks.
+#
+# Manual trigger: Actions tab -> "Create Spec" -> Run workflow.
+name: "Create Spec"
+
+on:
+  workflow_dispatch:
+    inputs:
+      chain_name:
+        description: "Human-readable chain name (e.g. Iota)"
+        required: true
+        type: string
+      chain_mainnet_index:
+        description: "Uppercase mainnet spec index (e.g. IOTA)"
+        required: true
+        type: string
+      chain_testnet_index:
+        description: "Uppercase testnet spec index (e.g. IOTAT)"
+        required: true
+        type: string
+      additional_data:
+        description: "Free text: docs URLs, node URLs, inheritance hints, etc."
+        required: false
+        type: string
+        default: ""
+      show_full_output:
+        description: "Stream ALL Claude messages live (watch phase progress / detect a stall). WARNING: dumps tool results to the PUBLIC run log — may expose URLs/keys."
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# Per-chain: serialize only runs for the SAME chain (they race on the same
+# branch/PR). Different chains run in parallel — each run gets its own VM, so the
+# boot script's hardcoded ports/screens don't collide across runs. (Use a single
+# static group instead only if you move to a self-hosted runner shared by runs.)
+concurrency:
+  group: create-spec-${{ github.event.inputs.chain_name }}
+  cancel-in-progress: false
+
+jobs:
+  create_spec:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Compute branch name
+        id: branch
+        env:
+          CHAIN_NAME: ${{ github.event.inputs.chain_name }}
+          CHAIN_MAINNET_INDEX: ${{ github.event.inputs.chain_mainnet_index }}
+        run: |
+          chain_lower="$(printf '%s' "$CHAIN_NAME" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9-')"
+          if [ -z "$chain_lower" ]; then
+            echo "chain_name '$CHAIN_NAME' sanitizes to an empty branch slug" >&2
+            exit 1
+          fi
+          # create-spec names the file after the mainnet INDEX lowercased
+          # (e.g. ZEC -> zec.json), which can differ from the chain name
+          # (ZCash -> zcash). The spec path must use the index, not the name.
+          index_lower="$(printf '%s' "$CHAIN_MAINNET_INDEX" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9-')"
+          if [ -z "$index_lower" ]; then
+            echo "chain_mainnet_index '$CHAIN_MAINNET_INDEX' sanitizes to empty" >&2
+            exit 1
+          fi
+          base="${chain_lower}-spec"
+          name="$base"
+          if git ls-remote --exit-code --heads origin "$base" >/dev/null 2>&1; then
+            name="${base}-$(date +%d-%m-%Y)"
+          fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "chain_lower=$chain_lower" >> "$GITHUB_OUTPUT"
+          echo "index_lower=$index_lower" >> "$GITHUB_OUTPUT"
+          git checkout -b "$name"
+          git push -u origin "$name"
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23.3"
+
+      # Node 22 guarantees a global `WebSocket` so the agent can probe ws/
+      # subscription chains (eth_subscribe) through the consumer without npm installs.
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # Phase 8 of create-spec builds the binaries itself: its boot script
+      # scripts/pre_setups/init_chain_only_with_node.sh runs `make install-all`
+      # (installs lavad/lavap into $(go env GOPATH)/bin) and drives everything
+      # inside `screen` sessions. Tool audit of the boot + live-probe path:
+      #   needed & preinstalled on ubuntu-latest: jq, curl, make, awk, sed,
+      #     timeout, tee, python3, node (Node 22 pinned above for WebSocket);
+      #   needed & MISSING on a clean runner: screen, killall (psmisc), grpcurl
+      #     (gRPC probes) — installed below;
+      #   NOT needed: protoc, websocat, buf.
+      # jq is installed explicitly so the dependency is robust to runner image
+      # changes. lavad/lavap + grpcurl need GOPATH/bin on PATH.
+      - name: Prepare boot environment (for create-spec Phase 8)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y screen psmisc jq
+          go install github.com/fullstorydev/grpcurl/cmd/grpcurl@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Run create-spec
+        id: run
+        uses: anthropics/claude-code-action@v1
+        with:
+          # Subscription auth (Pro/Max). Generate locally with `claude setup-token`
+          # and store as the CLAUDE_CODE_OAUTH_TOKEN secret. NOTE: a full run is
+          # ~1h30m on opus with ~20 subagents — heavy against subscription quotas;
+          # it may throttle or hit weekly caps. Swap to anthropic_api_key if so.
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Pass GITHUB_TOKEN directly so the action skips the OIDC->Claude-App
+          # token exchange (avoids needing the Claude GitHub App installed and the
+          # id-token: write permission). Maps to OVERRIDE_GITHUB_TOKEN internally.
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Live visibility into phase progress / stalls. Off by default (dumps
+          # tool results to the PUBLIC log); flip the show_full_output dispatch
+          # input on per run when debugging.
+          show_full_output: ${{ inputs.show_full_output }}
+          # display_report renders the full run report into $GITHUB_STEP_SUMMARY,
+          # but a 12-phase / ~20-subagent create-spec run produces ~1.5MB — over
+          # GitHub's hard 1MB summary cap — so the upload always fails with a red
+          # annotation while adding nothing: the curated summary already goes to
+          # the PR body (pr_body.md) and the full transcript to the run artifact.
+          display_report: false
+          claude_args: |
+            --model opus
+            --dangerously-skip-permissions
+            --max-turns 1000
+          prompt: |
+            Run the /create-spec skill end-to-end for a new chain, fully unattended.
+
+            Phase 2 inputs (do NOT ask me for these — use exactly these values):
+            - Chain name: ${{ github.event.inputs.chain_name }}
+            - Mainnet spec index: ${{ github.event.inputs.chain_mainnet_index }}
+            - Testnet spec index: ${{ github.event.inputs.chain_testnet_index }}
+            - Additional data (docs URLs, node URLs, inheritance hints): ${{ github.event.inputs.additional_data }}
+
+            Execution rules for this unattended CI run:
+            - Run the FULL 12-phase pipeline, INCLUDING the Phase 8 local provider boot and the Phase 10b re-probe.
+            - There is NO human available. At EVERY STOP-and-ask gate (archive
+              extension include/omit, block-time disagreement >20%, existing-file
+              prompt, archive NEEDS_HUMAN_DECISION), DO NOT stop — auto-decide with
+              the conservative default and continue.
+            - Track every auto-decision you make and the sources you relied on
+              (docs URLs, RPC node URLs probed, upstream parent spec, other refs).
+            - The Phase 11 final reviewer ends in one of two verdicts: APPROVED
+              (final TALLY CRITICAL=0 MEDIUM=0) or CHANGES REQUESTED (any CRITICAL
+              or MEDIUM remaining). Normally CHANGES REQUESTED halts before Phase
+              12 — but in THIS unattended run, do NOT halt: record the verdict and
+              the TALLY counts and continue so the PR still opens. Report the
+              verdict HONESTLY in pr_body.md — never upgrade CHANGES REQUESTED to
+              APPROVED.
+            - Do NOT perform any git operations. The workflow handles commit/push/PR.
+
+            When the pipeline is complete, write a file `pr_body.md` at the repo
+            root with EXACTLY this structure, filled in:
+
+            ## New chain spec: ${{ github.event.inputs.chain_name }}
+
+            ### 🧪 Review verdict: <APPROVED | CHANGES REQUESTED>
+            <One line. From the Phase 11 final reviewer. If CHANGES REQUESTED,
+            state what blocks it (the unresolved CRITICAL/MEDIUM gaps).>
+
+            | Reviewer | CRITICAL | MEDIUM | MINOR |
+            |----------|---------:|-------:|------:|
+            | Phase 11 final | <X> | <Y> | <Z> |
+            | Phase 9 reviewer 1 | <X> | <Y> | <Z> |
+            | Phase 9 reviewer 2 | <X> | <Y> | <Z> |
+            | Phase 9 reviewer 3 | <X> | <Y> | <Z> |
+
+            | Field | Value |
+            |-------|-------|
+            | Chain name | ${{ github.event.inputs.chain_name }} |
+            | Mainnet index | ${{ github.event.inputs.chain_mainnet_index }} |
+            | Testnet index | ${{ github.event.inputs.chain_testnet_index }} |
+            | Spec file | specs/testnet-2/specs/<chain>.json |
+
+            ### Inputs provided
+            ${{ github.event.inputs.additional_data }}
+
+            ### Sources used
+            - **Docs:** <doc URLs cited>
+            - **RPC nodes:** <mainnet + testnet node URLs probed>
+            - **Upstream parent spec:** <parent spec imported, if any>
+
+            ### Calculations table
+            <the Phase-4 network-params calculations table>
+
+            ### ⚠️ Auto-decisions made (review these)
+            <every STOP gate you auto-resolved and the default you chose>
+
+            ### Supporting evidence (INLINE — do NOT reference file paths)
+            Reviewers cannot open /tmp files or uncommitted docs, so paste the
+            ACTUAL CONTENT here, each inside a collapsible <details> block. Never
+            write "see /tmp/..." or "see specs/docs/..."; inline the content itself.
+
+            <details><summary>Phase-8 method probe report</summary>
+
+            <paste the full body of the METHOD_PROBE_REPORT you generated>
+            </details>
+
+            <details><summary>API method list (&lt;N&gt; methods)</summary>
+
+            <paste the full method list, one per line>
+            </details>
+
+            <details><summary>Parse directives</summary>
+
+            <paste the directives you derived>
+            </details>
+
+      - name: Verify spec produced
+        id: verify
+        run: |
+          # File is named after the mainnet index lowercased (e.g. ZEC -> zec.json),
+          # NOT the chain name.
+          index_lower="${{ steps.branch.outputs.index_lower }}"
+          spec="specs/testnet-2/specs/${index_lower}.json"
+          if [ ! -f "$spec" ]; then
+            echo "Expected spec file $spec was not produced by create-spec" >&2
+            echo "--- specs/testnet-2/specs/ contents (for debugging) ---" >&2
+            ls -1 specs/testnet-2/specs/ >&2 || true
+            exit 1
+          fi
+          echo "spec=$spec" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push spec
+        env:
+          CHAIN_NAME: ${{ github.event.inputs.chain_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add specs/testnet-2/specs/
+          git commit -m "feat(spec): add ${CHAIN_NAME} chain spec"
+          git push origin "${{ steps.branch.outputs.name }}"
+
+      - name: Upload transcript artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: create-spec-transcript
+          path: |
+            ${{ steps.run.outputs.execution_file }}
+            pr_body.md
+          if-no-files-found: warn
+
+      - name: Open pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          CHAIN: ${{ github.event.inputs.chain_name }}
+        run: |
+          branch="${{ steps.branch.outputs.name }}"
+          chain="$CHAIN"
+
+          # Fallback stub if create-spec did not write pr_body.md
+          if [ ! -f pr_body.md ]; then
+            printf '## New chain spec: %s\n\n_pr_body.md was not produced; see run logs._\n' "$chain" > pr_body.md
+          fi
+
+          # Append run/artifact footer
+          {
+            printf '\n\n---\n'
+            printf '🤖 Generated by `create_spec.yml` · [workflow run](%s) · full transcript in run artifacts\n' "$RUN_URL"
+          } >> pr_body.md
+
+          # GitHub PR bodies are capped at 65536 chars. Inlining the probe report
+          # + method list can exceed that, which would make `gh pr create` fail.
+          # Truncate to a safe budget and point to the full transcript artifact;
+          # pr_body.md itself is uploaded whole in the transcript artifact above.
+          MAX=63000
+          if [ "$(wc -c < pr_body.md)" -gt "$MAX" ]; then
+            head -c "$MAX" pr_body.md > pr_body.trunc.md
+            {
+              printf '\n\n> **⚠️ PR body truncated** at %s chars to fit GitHub limits.\n' "$MAX"
+              printf '> Full pr_body.md (with all inlined evidence) is in the run transcript artifact: %s\n' "$RUN_URL"
+            } >> pr_body.trunc.md
+            mv pr_body.trunc.md pr_body.md
+          fi
+
+          gh pr create \
+            --base main \
+            --head "$branch" \
+            --title "feat(spec): add ${chain} chain spec" \
+            --body-file pr_body.md
