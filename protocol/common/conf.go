@@ -13,8 +13,6 @@ type Test_mode_ctx_key struct{}
 const (
 	PlainTextConnection                = "allow-plaintext-connection"
 	EndpointsConfigName                = "endpoints"
-	StaticProvidersConfigName          = "static-providers"
-	BackupProvidersConfigName          = "backup-providers"
 	SaveConfigFlagName                 = "save-conf"
 	GeolocationFlag                    = "geolocation"
 	TestModeFlagName                   = "test-mode"
