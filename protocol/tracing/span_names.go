@@ -1,21 +1,5 @@
 package tracing
 
-// Span names — each matches the function or operation it instruments.
-const (
-	SpanSendRelay                    = "smartrouter.SendRelay"
-	SpanParsedRelay                  = "smartrouter.SendParsedRelay"
-	SpanParseRelay                   = "smartrouter.ParseRelay"
-	SpanProcessRelaySend             = "smartrouter.ProcessRelaySend"
-	SpanProcessingResult             = "smartrouter.ProcessingResult"
-	SpanCacheLookup                  = "smartrouter.CacheLookup"
-	SpanGetSessions                  = "smartrouter.GetSessions"
-	SpanFilterEndpointsByConsistency = "smartrouter.filterEndpointsByConsistency"
-	SpanRelayInnerDirect             = "smartrouter.relayInnerDirect"
-	SpanSendJSONRPCRelay             = "smartrouter.sendJSONRPCRelay"
-	SpanSendRESTRelay                = "smartrouter.sendRESTRelay"
-	SpanSendGRPCRelay                = "smartrouter.sendGRPCRelay"
-)
-
 // Chainlib listener root spans (extract trace context from external clients).
 const (
 	SpanChainlibHTTP = "chainlib.HandleHTTP"
@@ -65,8 +49,8 @@ const (
 
 // Span attribute keys.
 const (
-	// Body recording attributes (gated by --otel-trace-body, set from
-	// rpcsmartrouter via tracing.RecordBody).
+	// Body recording attributes (gated by --otel-trace-body, set via
+	// tracing.RecordBody).
 	AttrRelayRequestBody  = "relay.request_body"
 	AttrRelayResponseBody = "relay.response_body"
 )
@@ -79,14 +63,13 @@ const (
 	attrRelayMethod       = "relay.method"
 
 	// attrRelayRetryCount is the total number of retry batches dispatched by
-	// the state machine for a relay (failover + hedge). Set on
-	// smartrouter.ProcessRelaySend. Cross-validation parallel calls share a
-	// batch and do NOT increment this counter.
+	// the state machine for a relay (failover + hedge). Cross-validation
+	// parallel calls share a batch and do NOT increment this counter.
 	attrRelayRetryCount = "relay.retry_count"
 
 	// attrRelayAttempt is the 1-indexed batch number this provider call
 	// belongs to. All parallel calls in the same batch (cross-validation)
-	// share the same value. Set on smartrouter.relayInnerDirect.
+	// share the same value.
 	attrRelayAttempt = "relay.attempt"
 
 	// Provider attributes.

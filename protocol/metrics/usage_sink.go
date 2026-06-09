@@ -1,7 +1,7 @@
 package metrics
 
 // UsageEventSink is a non-blocking sink for telemetry events emitted by the
-// consumer / smart-router. Two event shapes are currently routed through it:
+// consumer. Two event shapes are currently routed through it:
 //
 //   - RelayUsageEvent: one per relay, fired from the chainlib transports
 //     (rest, jsonRPC, tendermintRPC, grpc, websocket).

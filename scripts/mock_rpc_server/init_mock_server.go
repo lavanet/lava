@@ -1,10 +1,10 @@
-// Mock RPC server for Smart Router Direct RPC testing.
+// Mock RPC server for direct upstream RPC testing.
 // Returns configurable HTTP status and delay so you can test retry, health, and 4xx behavior.
 //
 // Usage: go run ./scripts/mock_rpc_server [flags]
 // Flags: -port  Listen port (default 19999)
 //
-// When testing via Smart Router, use the control API (router does not forward X-Mock-* headers).
+// When testing through a proxy that does not forward X-Mock-* headers, use the control API.
 // If ALL providers point at the same mock, the router sends N parallel requests; use sticky
 // so every request gets the same status until you reset:
 //
@@ -68,7 +68,7 @@ func main() {
 	}
 }
 
-// control sets the next response status or delay. Use when testing via Smart Router
+// control sets the next response status or delay. Use when testing through a proxy
 // (router does not forward X-Mock-* headers). GET /control?status=500 then send
 // request through router; mock will return 500.
 func control(w http.ResponseWriter, r *http.Request) {

@@ -20,7 +20,6 @@ type SingleConsumerSession struct {
 	LatestBlock   int64
 
 	// Connection type - uses composition pattern for type safety
-	// Either ProviderRelayConnection (rpcconsumer) or DirectRPCSessionConnection (rpcsmartrouter)
 	Connection SessionConnection
 
 	// Legacy field - maintained for backward compatibility
@@ -84,8 +83,7 @@ func (scs *SingleConsumerSession) Free(err error) {
 	}
 	scs.routerKey = NewRouterKey(nil)
 
-	// Only decrease connection usage for provider-relay sessions
-	// Direct RPC sessions don't have EndpointConnection
+	// Only decrease connection usage when a provider-relay connection is present
 	if scs.EndpointConnection != nil {
 		scs.EndpointConnection.decreaseSessionUsingConnection()
 	}
@@ -105,8 +103,7 @@ func (session *SingleConsumerSession) TryUseSession() (blocked bool, ok bool) {
 			return true, false
 		}
 
-		// Only increase connection usage for provider-relay sessions
-		// Direct RPC sessions don't have EndpointConnection
+		// Only increase connection usage when a provider-relay connection is present
 		if session.EndpointConnection != nil {
 			session.EndpointConnection.addSessionUsingConnection()
 		}
@@ -146,15 +143,6 @@ func (scs *SingleConsumerSession) GetProviderUniqueId() string {
 	return scs.providerUniqueId
 }
 
-// GetDirectConnection returns the DirectRPCConnection if this is a smart router session
-// Returns (connection, true) if this is a direct RPC session, (nil, false) otherwise
-func (scs *SingleConsumerSession) GetDirectConnection() (DirectRPCConnection, bool) {
-	if drsc, ok := scs.Connection.(*DirectRPCSessionConnection); ok {
-		return drsc.DirectConnection, true
-	}
-	return nil, false
-}
-
 // GetProviderConnection returns the EndpointConnection if this is a consumer session
 // Returns (connection, true) if this is a provider-relay session, (nil, false) otherwise
 func (scs *SingleConsumerSession) GetProviderConnection() (*EndpointConnection, bool) {
@@ -162,12 +150,6 @@ func (scs *SingleConsumerSession) GetProviderConnection() (*EndpointConnection, 
 		return prc.EndpointConnection, true
 	}
 	return nil, false
-}
-
-// IsDirectRPC returns true if this session uses direct RPC (smart router mode)
-func (scs *SingleConsumerSession) IsDirectRPC() bool {
-	_, ok := scs.Connection.(*DirectRPCSessionConnection)
-	return ok
 }
 
 // GetSessionQoSManager returns the QoS manager from the connection

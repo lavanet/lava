@@ -254,8 +254,7 @@ func applyOTelSinkDefaults(cfg *OTelUsageSinkConfig) {
 		cfg.ExportTimeout = defaultOTelExportTimeout
 	}
 	// ServiceName intentionally has no package-level default — the consumer
-	// and smart router each set their own via their respective cobra flag's
-	// defValue ("lava-rpcconsumer" / "lava-rpcsmartrouter"), and the
+	// sets its own via its cobra flag's defValue ("lava-rpcconsumer"), and the
 	// constructor logs the resolved value so an empty one is visible to the
 	// operator at startup.
 	if cfg.ServiceInstanceID == "" {

@@ -699,8 +699,8 @@ func detectConnectionErrorFromString(msg string) *LavaError {
 //
 // Call this at endpoint-health / refusal-counter decision points instead of
 // hand-rolling an errors.Is(err, context.Canceled) check — having one rule in
-// one place avoids drift between the consumer session layer, the smart router
-// health tracker, and the connection-refusal counter.
+// one place avoids drift between the consumer session layer and the
+// connection-refusal counter.
 func IsClientCancellation(err error, ctx context.Context) bool {
 	if err == nil || ctx == nil {
 		return false

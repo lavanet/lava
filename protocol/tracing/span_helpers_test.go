@@ -15,8 +15,6 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
-
-	"github.com/lavanet/lava/v5/protocol/lavasession"
 )
 
 // setupTestTracingWithExporter installs a TracerProvider with an in-memory
@@ -308,9 +306,9 @@ func TestRecordCacheResult(t *testing.T) {
 func TestRecordCacheResult_BubblesToRelaySpan(t *testing.T) {
 	tracer, exporter := setupTestTracingWithExporter(t)
 
-	ctx, relaySpan := tracer.Start(context.Background(), "smartrouter.SendRelay")
+	ctx, relaySpan := tracer.Start(context.Background(), "consumer.SendRelay")
 	ctx = WithRelaySpan(ctx, relaySpan)
-	_, cacheSpan := tracer.Start(ctx, "smartrouter.CacheLookup")
+	_, cacheSpan := tracer.Start(ctx, "consumer.CacheLookup")
 
 	RecordCacheResult(ctx, cacheSpan, true, 1.2)
 
@@ -359,241 +357,6 @@ func TestRecordSessionStats(t *testing.T) {
 	}
 }
 
-// Semconv 1.21 keys we assert against in the HTTP/gRPC tests below.
-const (
-	keyHTTPMethod                = "http.method"
-	keyHTTPURL                   = "http.url"
-	keyHTTPStatusCode            = "http.status_code"
-	keyHTTPResponseContentLength = "http.response_content_length"
-	keyNetPeerName               = "net.peer.name"
-	keyNetPeerPort               = "net.peer.port"
-	keyRPCSystem                 = "rpc.system"
-	keyRPCService                = "rpc.service"
-	keyRPCMethod                 = "rpc.method"
-)
-
-func TestRecordHTTPRequest(t *testing.T) {
-	tests := []struct {
-		name        string
-		method      string
-		url         string
-		expectHost  string
-		expectPort  int64
-		expectNoNet bool
-	}{
-		{
-			name:       "URL with explicit port",
-			method:     "POST",
-			url:        "https://provider.example.com:8443/jsonrpc",
-			expectHost: "provider.example.com",
-			expectPort: 8443,
-		},
-		{
-			name:       "URL without port",
-			method:     "GET",
-			url:        "https://provider.example.com/jsonrpc",
-			expectHost: "provider.example.com",
-		},
-		{
-			name:        "malformed URL is best-effort skipped",
-			method:      "POST",
-			url:         "not-a-url",
-			expectNoNet: true,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			attrs := recordSpanWith(t, func(span trace.Span) {
-				RecordHTTPRequest(span, tc.method, tc.url)
-			})
-
-			require.Equal(t, tc.method, attrs[keyHTTPMethod].AsString())
-			require.Equal(t, tc.url, attrs[keyHTTPURL].AsString())
-
-			if tc.expectNoNet {
-				require.NotContains(t, attrs, keyNetPeerName)
-				require.NotContains(t, attrs, keyNetPeerPort)
-				return
-			}
-			require.Equal(t, tc.expectHost, attrs[keyNetPeerName].AsString())
-			if tc.expectPort != 0 {
-				require.Equal(t, tc.expectPort, attrs[keyNetPeerPort].AsInt64())
-			} else {
-				require.NotContains(t, attrs, keyNetPeerPort)
-			}
-		})
-	}
-}
-
-func TestRecordHTTPResponse(t *testing.T) {
-	tests := []struct {
-		name                string
-		response            *lavasession.HTTPDirectRPCResponse
-		expectResponseAttrs bool
-		expectStatus        int
-		expectSize          int
-	}{
-		{
-			name:                "200 with body",
-			response:            &lavasession.HTTPDirectRPCResponse{StatusCode: 200, Body: []byte(`{"result":1}`)},
-			expectResponseAttrs: true,
-			expectStatus:        200,
-			expectSize:          12,
-		},
-		{
-			name:                "500 with empty body",
-			response:            &lavasession.HTTPDirectRPCResponse{StatusCode: 500, Body: nil},
-			expectResponseAttrs: true,
-			expectStatus:        500,
-			expectSize:          0,
-		},
-		{
-			name:                "nil response (transport error)",
-			response:            nil,
-			expectResponseAttrs: false,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			attrs := recordSpanWith(t, func(span trace.Span) {
-				RecordHTTPResponse(span, tc.response)
-			})
-
-			if tc.expectResponseAttrs {
-				require.Equal(t, int64(tc.expectStatus), attrs[keyHTTPStatusCode].AsInt64())
-				require.Equal(t, int64(tc.expectSize), attrs[keyHTTPResponseContentLength].AsInt64())
-			} else {
-				require.NotContains(t, attrs, keyHTTPStatusCode)
-				require.NotContains(t, attrs, keyHTTPResponseContentLength)
-			}
-		})
-	}
-}
-
-func TestRecordGRPCRequest(t *testing.T) {
-	tests := []struct {
-		name          string
-		methodPath    string
-		url           string
-		expectService string
-		expectMethod  string
-		expectHost    string
-	}{
-		{
-			name:          "fully qualified path",
-			methodPath:    "cosmos.bank.v1beta1.Query/TotalSupply",
-			url:           "grpc://provider.example.com:9090",
-			expectService: "cosmos.bank.v1beta1.Query",
-			expectMethod:  "TotalSupply",
-			expectHost:    "provider.example.com",
-		},
-		{
-			name:          "leading slash is trimmed from service",
-			methodPath:    "/svc.Service/Method",
-			url:           "grpc://provider.example.com",
-			expectService: "svc.Service",
-			expectMethod:  "Method",
-			expectHost:    "provider.example.com",
-		},
-		{
-			name:         "method only (no slash)",
-			methodPath:   "BareMethod",
-			url:          "",
-			expectMethod: "BareMethod",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			attrs := recordSpanWith(t, func(span trace.Span) {
-				RecordGRPCRequest(span, tc.methodPath, tc.url)
-			})
-
-			require.Equal(t, "grpc", attrs[keyRPCSystem].AsString())
-			require.Equal(t, tc.expectMethod, attrs[keyRPCMethod].AsString())
-			if tc.expectService != "" {
-				require.Equal(t, tc.expectService, attrs[keyRPCService].AsString())
-			} else {
-				require.NotContains(t, attrs, keyRPCService)
-			}
-			if tc.expectHost != "" {
-				require.Equal(t, tc.expectHost, attrs[keyNetPeerName].AsString())
-			} else {
-				require.NotContains(t, attrs, keyNetPeerName)
-			}
-		})
-	}
-}
-
-func TestRecordGRPCResponse(t *testing.T) {
-	tests := []struct {
-		name                string
-		response            *lavasession.DirectRPCResponse
-		expectResponseAttrs bool
-		expectStatus        int
-		expectSize          int
-	}{
-		{
-			name:                "200 with data",
-			response:            &lavasession.DirectRPCResponse{StatusCode: 200, Data: []byte("hello world")},
-			expectResponseAttrs: true,
-			expectStatus:        200,
-			expectSize:          11,
-		},
-		{
-			name:                "200 with empty data",
-			response:            &lavasession.DirectRPCResponse{StatusCode: 200, Data: nil},
-			expectResponseAttrs: true,
-			expectStatus:        200,
-			expectSize:          0,
-		},
-		{
-			name:                "nil response",
-			response:            nil,
-			expectResponseAttrs: false,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			attrs := recordSpanWith(t, func(span trace.Span) {
-				RecordGRPCResponse(span, tc.response)
-			})
-
-			if tc.expectResponseAttrs {
-				require.Equal(t, int64(tc.expectStatus), attrs[keyHTTPStatusCode].AsInt64())
-				require.Equal(t, int64(tc.expectSize), attrs[keyHTTPResponseContentLength].AsInt64())
-			} else {
-				require.NotContains(t, attrs, keyHTTPStatusCode)
-				require.NotContains(t, attrs, keyHTTPResponseContentLength)
-			}
-		})
-	}
-}
-
-func TestSplitGRPCMethod(t *testing.T) {
-	tests := []struct {
-		name          string
-		path          string
-		expectService string
-		expectMethod  string
-	}{
-		{name: "fully qualified", path: "package.Service/Method", expectService: "package.Service", expectMethod: "Method"},
-		{name: "leading slash trimmed", path: "/package.Service/Method", expectService: "package.Service", expectMethod: "Method"},
-		{name: "no slash", path: "BareMethod", expectService: "", expectMethod: "BareMethod"},
-		{name: "empty", path: "", expectService: "", expectMethod: ""},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			service, method := splitGRPCMethod(tc.path)
-			require.Equal(t, tc.expectService, service)
-			require.Equal(t, tc.expectMethod, method)
-		})
-	}
-}
-
 func TestStartClientSpan_OrphanGuard(t *testing.T) {
 	tracer, exporter := setupTestTracingWithExporter(t)
 	// Make `tracer()` (used inside StartClientSpan) resolve to our test
@@ -603,7 +366,7 @@ func TestStartClientSpan_OrphanGuard(t *testing.T) {
 
 	t.Run("no parent → returns non-recording span, no orphan span exported", func(t *testing.T) {
 		exporter.Reset()
-		ctx, span := StartClientSpan(context.Background(), "smartrouter.relayInnerDirect")
+		ctx, span := StartClientSpan(context.Background(), "consumer.relayInner")
 		require.False(t, span.IsRecording(), "no parent → must not start a recording span")
 		span.End()
 		_ = ctx
@@ -613,7 +376,7 @@ func TestStartClientSpan_OrphanGuard(t *testing.T) {
 	t.Run("recording parent → starts a real client span", func(t *testing.T) {
 		exporter.Reset()
 		parentCtx, parent := tracer.Start(context.Background(), "parent")
-		ctx, span := StartClientSpan(parentCtx, "smartrouter.relayInnerDirect")
+		ctx, span := StartClientSpan(parentCtx, "consumer.relayInner")
 		require.True(t, span.IsRecording())
 		span.End()
 		parent.End()
@@ -622,7 +385,7 @@ func TestStartClientSpan_OrphanGuard(t *testing.T) {
 		spans := exporter.GetSpans()
 		require.Len(t, spans, 2)
 		// SDK exports children before parents.
-		require.Equal(t, "smartrouter.relayInnerDirect", spans[0].Name)
+		require.Equal(t, "consumer.relayInner", spans[0].Name)
 		require.Equal(t, trace.SpanKindClient, spans[0].SpanKind)
 	})
 }
@@ -632,12 +395,12 @@ func TestStartServerSpan_AlwaysCreatesServerSpan(t *testing.T) {
 	_ = tracer
 	exporter.Reset()
 
-	_, span := StartServerSpan(context.Background(), "smartrouter.SendRelay")
+	_, span := StartServerSpan(context.Background(), "consumer.SendRelay")
 	require.True(t, span.IsRecording())
 	span.End()
 
 	spans := exporter.GetSpans()
 	require.Len(t, spans, 1)
 	require.Equal(t, trace.SpanKindServer, spans[0].SpanKind)
-	require.Equal(t, "smartrouter.SendRelay", spans[0].Name)
+	require.Equal(t, "consumer.SendRelay", spans[0].Name)
 }

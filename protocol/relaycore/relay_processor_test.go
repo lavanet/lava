@@ -1570,7 +1570,7 @@ func TestGetResultsSummary_NonRetryableFlag(t *testing.T) {
 }
 
 // TestIsNonRetryableNodeError_Classification verifies the classifier helper
-// the consumer/smart-router hot paths use to populate RelayResult.IsNonRetryable
+// the consumer hot paths use to populate RelayResult.IsNonRetryable
 // correctly separates retryable transient errors from terminal deterministic
 // ones. "execution reverted" is the canonical case that regressed before this
 // fix (non-retryable in the registry, but the old code ignored Retryable=false

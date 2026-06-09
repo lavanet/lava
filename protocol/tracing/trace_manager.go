@@ -66,8 +66,8 @@ const shutdownTimeout = 5 * time.Second
 type TraceConfig struct {
 	// DefaultServiceName is the in-code default for the OTel `service.name`
 	// resource attribute. Each binary supplies its own (e.g. "lava-consumer",
-	// "lava-provider", "lava-smartrouter"). The OTel `OTEL_SERVICE_NAME` env
-	// var still wins via resource.WithFromEnv() if set. Required.
+	// "lava-provider"). The OTel `OTEL_SERVICE_NAME` env var still wins via
+	// resource.WithFromEnv() if set. Required.
 	DefaultServiceName string
 
 	// TraceBody enables recording of request/response bodies as span attributes.

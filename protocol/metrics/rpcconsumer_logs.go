@@ -235,8 +235,8 @@ func (rpccl *RPCConsumerLogs) RecordProviderLatency(chainId string, apiInterface
 }
 
 func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, headers map[string][]string) {
-	// Set OTel-bound fields before Emit. Success matters on the smart-router
-	// path too, where consumerMetricsManager.SetRelayMetrics is a no-op.
+	// Set OTel-bound fields before Emit so the OTel event carries Success
+	// even when consumerMetricsManager.SetRelayMetrics is a no-op.
 	data.Success = err == nil
 	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
 	refererHeaderValue := strings.Join(headers[RefererHeaderKey], ", ")

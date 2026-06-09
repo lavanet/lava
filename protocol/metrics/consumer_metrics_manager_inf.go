@@ -49,11 +49,9 @@ func SafeMetrics(m ConsumerMetricsManagerInf) ConsumerMetricsManagerInf {
 	return m
 }
 
-// ConsumerMetricsManagerInf is the interface satisfied by both ConsumerMetricsManager
-// (for the real rpcconsumer) and SmartRouterMetricsManager (for the smart router).
+// ConsumerMetricsManagerInf is the interface satisfied by ConsumerMetricsManager.
 // Downstream components (RPCConsumerLogs, ConsumerSessionManager,
-// DirectWSSubscriptionManager) accept this interface so each process can supply
-// its own implementation without leaking metrics from the other.
+// ConsumerWSSubscriptionManager) accept this interface rather than a concrete type.
 type ConsumerMetricsManagerInf interface {
 	// --- Relay tracking (RPCConsumerLogs) ---
 	SetRelayMetrics(relayMetric *RelayMetrics, err error)
@@ -91,12 +89,12 @@ type ConsumerMetricsManagerInf interface {
 	ResetSessionRelatedMetrics()
 	ResetBlockedProvidersMetrics(chainId, apiInterface string, providers map[string]string)
 
-	// --- WebSocket (DirectWSSubscriptionManager) ---
+	// --- WebSocket (ConsumerWSSubscriptionManager) ---
 	SetWsSubscriptionRequestMetric(chainId string, apiInterface string)
 	SetFailedWsSubscriptionRequestMetric(chainId string, apiInterface string)
 	SetWebSocketConnectionActive(chainId string, apiInterface string, add bool)
 
-	// --- Misc (RPCConsumerLogs / rpcsmartrouter.go) ---
+	// --- Misc (RPCConsumerLogs) ---
 	SetVersion(version string)
 	StartSelectionStatsUpdater(ctx context.Context, updateInterval time.Duration)
 }

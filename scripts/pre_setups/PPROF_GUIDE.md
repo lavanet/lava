@@ -4,12 +4,11 @@ This guide explains how to use pprof to monitor memory usage of the Lava provide
 
 ## Available Pprof Endpoints
 
-After running `init_lava_static_and_backup_provider_eth.sh`, the following pprof endpoints are available:
+After starting the providers with pprof enabled, the following pprof endpoints are available:
 
 - **Provider 1**: http://127.0.0.1:6060/debug/pprof/
 - **Provider 2**: http://127.0.0.1:6061/debug/pprof/
 - **Provider 3**: http://127.0.0.1:6062/debug/pprof/
-- **SmartRouter**: http://127.0.0.1:6063/debug/pprof/
 
 ## Common Pprof Commands
 

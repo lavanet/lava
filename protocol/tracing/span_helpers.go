@@ -2,27 +2,22 @@ package tracing
 
 import (
 	"context"
-	"net/url"
 	"strconv"
-	"strings"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
-
-	"github.com/lavanet/lava/v5/protocol/lavasession"
 )
 
-// SmartRouterTracerName is the OTel instrumentation scope name used for all
-// SmartRouter spans. Centralised here so call sites don't drift.
-const SmartRouterTracerName = "smartrouter"
+// TracerName is the OTel instrumentation scope name used for all Lava spans.
+// Centralised here so call sites don't drift.
+const TracerName = "lava"
 
-// tracer returns the smartrouter tracer. otel.Tracer is lazy-resolving so
-// this is safe even before TraceManager.New() installs the global provider.
+// tracer returns the Lava tracer. otel.Tracer is lazy-resolving so this is
+// safe even before TraceManager.New() installs the global provider.
 func tracer() trace.Tracer {
-	return otel.Tracer(SmartRouterTracerName)
+	return otel.Tracer(TracerName)
 }
 
 // StartServerSpan starts a SERVER-kind span. Use this for inbound request
@@ -153,7 +148,7 @@ func RecordConsistencyStats(span trace.Span, total, passed, rejected int) {
 // RecordCacheResult records a cache lookup outcome (hit/miss) and its
 // latency on the cache lookup child span, AND bubbles `cache.hit` up to
 // the inbound relay span (if one is on the context) so TraceQL filters on
-// the top-level trace (`{name="smartrouter.SendRelay" && cache.hit=true}`)
+// the top-level trace (`{name="consumer.SendRelay" && cache.hit=true}`)
 // work as operators expect.
 func RecordCacheResult(ctx context.Context, span trace.Span, hit bool, latencyMs float64) {
 	if span.IsRecording() {
@@ -199,100 +194,4 @@ func RecordRelayAttempt(span trace.Span, attempt int) {
 		return
 	}
 	span.SetAttributes(attribute.Int(attrRelayAttempt, attempt))
-}
-
-// --- Semconv-aligned HTTP/gRPC client span helpers ---
-
-// RecordHTTPRequest sets `http.method`, `http.url`, and (best-effort)
-// `net.peer.name`/`net.peer.port` on a client-kind HTTP span. Call once
-// when the span is started, before the request is dispatched, so the
-// attributes are present even if the request later errors out.
-func RecordHTTPRequest(span trace.Span, method, urlStr string) {
-	if !span.IsRecording() {
-		return
-	}
-	attrs := []attribute.KeyValue{
-		semconv.HTTPMethod(method),
-		semconv.HTTPURL(urlStr),
-	}
-	attrs = appendNetPeer(attrs, urlStr)
-	span.SetAttributes(attrs...)
-}
-
-// RecordHTTPResponse records `http.status_code` and
-// `http.response_content_length` on a client HTTP span. Skipped when
-// response is nil (transport error before a response was received).
-func RecordHTTPResponse(span trace.Span, response *lavasession.HTTPDirectRPCResponse) {
-	if !span.IsRecording() || response == nil {
-		return
-	}
-	span.SetAttributes(
-		semconv.HTTPStatusCode(response.StatusCode),
-		semconv.HTTPResponseContentLength(len(response.Body)),
-	)
-}
-
-// RecordGRPCRequest sets `rpc.system`="grpc", `rpc.service`, `rpc.method`,
-// and (best-effort) `net.peer.name`/`net.peer.port` on a client-kind gRPC
-// span. methodPath is split into service+method by the last "/" if present
-// (e.g. "cosmos.bank.v1beta1.Query/Balance" → service="cosmos.bank.v1beta1.Query",
-// method="Balance"). Paths without a slash are recorded as method only.
-func RecordGRPCRequest(span trace.Span, methodPath, urlStr string) {
-	if !span.IsRecording() {
-		return
-	}
-	service, method := splitGRPCMethod(methodPath)
-	attrs := []attribute.KeyValue{
-		semconv.RPCSystemGRPC,
-		semconv.RPCMethod(method),
-	}
-	if service != "" {
-		attrs = append(attrs, semconv.RPCService(service))
-	}
-	attrs = appendNetPeer(attrs, urlStr)
-	span.SetAttributes(attrs...)
-}
-
-// RecordGRPCResponse records the gRPC response status and payload size on
-// a client gRPC span. Skipped when response is nil. We reuse the
-// http.status_code attribute because the SmartRouter's DirectRPCResponse
-// surfaces a unified status field across protocols.
-func RecordGRPCResponse(span trace.Span, response *lavasession.DirectRPCResponse) {
-	if !span.IsRecording() || response == nil {
-		return
-	}
-	span.SetAttributes(
-		semconv.HTTPStatusCode(response.StatusCode),
-		semconv.HTTPResponseContentLength(len(response.Data)),
-	)
-}
-
-// appendNetPeer parses a URL and appends `net.peer.name`/`net.peer.port`
-// attributes when the URL has a hostname. Best-effort: malformed URLs and
-// missing ports are silently skipped.
-func appendNetPeer(attrs []attribute.KeyValue, urlStr string) []attribute.KeyValue {
-	if urlStr == "" {
-		return attrs
-	}
-	u, err := url.Parse(urlStr)
-	if err != nil || u.Hostname() == "" {
-		return attrs
-	}
-	attrs = append(attrs, semconv.NetPeerName(u.Hostname()))
-	if port := u.Port(); port != "" {
-		if p, perr := strconv.Atoi(port); perr == nil {
-			attrs = append(attrs, semconv.NetPeerPort(p))
-		}
-	}
-	return attrs
-}
-
-// splitGRPCMethod splits a gRPC method path of the form
-// "package.Service/Method" into ("package.Service", "Method"). When the
-// path has no "/", the entire string is treated as the method.
-func splitGRPCMethod(methodPath string) (service, method string) {
-	if i := strings.LastIndex(methodPath, "/"); i >= 0 {
-		return strings.TrimPrefix(methodPath[:i], "/"), methodPath[i+1:]
-	}
-	return "", methodPath
 }

@@ -301,46 +301,6 @@ func (csm *ConsumerSessionManager) Initialized() bool {
 	return len(csm.pairingAddresses) != 0
 }
 
-// EndpointWithDirectConnection holds an endpoint and its direct RPC connection.
-// Used by smart router for pre-warming ChainTrackers.
-type EndpointWithDirectConnection struct {
-	Endpoint         *Endpoint
-	DirectConnection DirectRPCConnection
-	ProviderAddress  string
-}
-
-// GetAllDirectRPCEndpoints returns all endpoints with direct RPC connections from both
-// the primary pairing and the backup provider list. This is used by the smart router for
-// initializing ChainTrackers on startup — excluding backups left their endpoints without a
-// tracker until a relay happened to hit them (rare, because backups are fallback-only),
-// which meant dedicated-URL backups like base.lava.build had no block data on the dashboard.
-// Returns empty slice if no direct RPC endpoints are configured.
-func (csm *ConsumerSessionManager) GetAllDirectRPCEndpoints() []*EndpointWithDirectConnection {
-	csm.lock.RLock()
-	defer csm.lock.RUnlock()
-
-	var results []*EndpointWithDirectConnection
-
-	collect := func(providers map[string]*ConsumerSessionsWithProvider) {
-		for providerAddr, cswp := range providers {
-			for _, endpoint := range cswp.Endpoints {
-				if endpoint.IsDirectRPC() && len(endpoint.DirectConnections) > 0 {
-					results = append(results, &EndpointWithDirectConnection{
-						Endpoint:         endpoint,
-						DirectConnection: endpoint.DirectConnections[0],
-						ProviderAddress:  providerAddr,
-					})
-				}
-			}
-		}
-	}
-
-	collect(csm.pairing)
-	collect(csm.backupProviders)
-
-	return results
-}
-
 func (csm *ConsumerSessionManager) RemoveAddonAddresses(addon string, extensions []string) {
 	if addon == "" && len(extensions) == 0 {
 		// purge all
@@ -497,15 +457,6 @@ func (csm *ConsumerSessionManager) probeProviders(ctx context.Context, pairingLi
 
 // this code needs to be thread safe
 func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSessionsWithProvider *ConsumerSessionsWithProvider, epoch uint64, tryReconnectToDisabledEndpoints bool) (latency time.Duration, providerAddress string, err error) {
-	// Static providers (direct RPC in smart router mode) use HTTP/WebSocket connections,
-	// not gRPC. Skip fetchEndpointConnectionFromConsumerSessionWithProvider entirely —
-	// it returns endpoints with nil chosenEndpointConnection for direct RPC, which causes
-	// the gRPC probe loop below to fail with "returned nil client in endpoint", resulting
-	// in success=false, latency=0s for every probe.
-	if consumerSessionsWithProvider.StaticProvider {
-		return csm.probeDirectRPCEndpoints(ctx, consumerSessionsWithProvider, consumerSessionsWithProvider.PublicLavaAddress)
-	}
-
 	connected, endpoints, providerAddress, err := consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx, tryReconnectToDisabledEndpoints, true, "", nil)
 	if err != nil || !connected {
 		if AllProviderEndpointsDisabledError.Is(err) {
@@ -528,7 +479,6 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 				endpointAndConnection.chosenEndpointConnection == nil ||
 				endpointAndConnection.chosenEndpointConnection.Client == nil {
 				// returned nil client in endpoint - this shouldn't happen for provider-relay endpoints
-				// For direct RPC, we handle this case above
 				consumerSessionsWithProvider.Lock.Lock()
 				defer consumerSessionsWithProvider.Lock.Unlock()
 				return utils.LavaFormatError("returned nil client in endpoint", nil, utils.Attribute{Key: "consumerSessionWithProvider", Value: consumerSessionsWithProvider})
@@ -581,102 +531,6 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 	sort.Sort(EndpointInfoList(endpointInfos))
 	consumerSessionsWithProvider.sortEndpointsByLatency(endpointInfos)
 	return endpointInfos[0].Latency, providerAddress, nil
-}
-
-// probeDirectRPCEndpoints handles health checking for direct RPC endpoints (smart router mode).
-// Unlike provider-relay endpoints which use gRPC Probe() calls, direct RPC endpoints
-// are probed by checking the health status of their DirectRPCConnections.
-// This avoids the "nil client" errors that occur when trying to use provider gRPC clients
-// for endpoints that don't have them.
-func (csm *ConsumerSessionManager) probeDirectRPCEndpoints(
-	ctx context.Context,
-	consumerSessionsWithProvider *ConsumerSessionsWithProvider,
-	providerAddress string,
-) (latency time.Duration, address string, err error) {
-	consumerSessionsWithProvider.Lock.RLock()
-	defer consumerSessionsWithProvider.Lock.RUnlock()
-
-	var healthyEndpoints int
-	var totalEndpoints int
-	minLatency := time.Hour // Start with a large value
-
-	for _, endpoint := range consumerSessionsWithProvider.Endpoints {
-		if !endpoint.IsDirectRPC() {
-			continue
-		}
-
-		totalEndpoints++
-
-		// Belt-and-suspenders with conn.IsHealthy(): the endpoint struct tracks
-		// cumulative relay-path failures via MarkUnhealthy → ConnectionRefusals,
-		// while IsHealthy() tracks the last transport attempt. A disabled endpoint
-		// must never be considered healthy at probe time — otherwise a backup with
-		// 5+ consecutive refusals could be unblocked at epoch transition despite
-		// the relay path having already confirmed it's down.
-		if !endpoint.Enabled {
-			utils.LavaFormatDebug("Direct RPC endpoint is disabled, skipping probe",
-				utils.LogAttr("provider", providerAddress),
-				utils.LogAttr("endpoint", endpoint.NetworkAddress),
-			)
-			continue
-		}
-
-		for _, conn := range endpoint.DirectConnections {
-			if conn == nil {
-				continue
-			}
-
-			// Check connection health - this is a cheap operation
-			// that checks the internal health state without making a network call
-			startTime := time.Now()
-			healthy := conn.IsHealthy()
-			checkLatency := time.Since(startTime)
-
-			if healthy {
-				healthyEndpoints++
-				// Track minimum latency (for consistent API with provider probe)
-				if checkLatency < minLatency {
-					minLatency = checkLatency
-				}
-
-				if DebugProbes {
-					utils.LavaFormatDebug("Direct RPC endpoint probe succeeded",
-						utils.LogAttr("provider", providerAddress),
-						utils.LogAttr("url", conn.GetURL()),
-						utils.LogAttr("protocol", conn.GetProtocol()),
-					)
-				}
-			} else {
-				utils.LavaFormatDebug("Direct RPC endpoint is unhealthy",
-					utils.LogAttr("provider", providerAddress),
-					utils.LogAttr("url", conn.GetURL()),
-					utils.LogAttr("protocol", conn.GetProtocol()),
-				)
-			}
-		}
-	}
-
-	if totalEndpoints == 0 {
-		return 0, providerAddress, fmt.Errorf("no direct RPC endpoints found for provider %s", providerAddress)
-	}
-
-	if healthyEndpoints == 0 {
-		return 0, providerAddress, fmt.Errorf("all direct RPC endpoints unhealthy for provider %s", providerAddress)
-	}
-
-	// Reset latency to a reasonable default if we didn't measure any
-	if minLatency == time.Hour {
-		minLatency = time.Millisecond // Default minimal latency for healthy direct connections
-	}
-
-	utils.LavaFormatTrace("Direct RPC endpoints probe completed",
-		utils.LogAttr("provider", providerAddress),
-		utils.LogAttr("healthyEndpoints", healthyEndpoints),
-		utils.LogAttr("totalEndpoints", totalEndpoints),
-		utils.LogAttr("latency", minLatency),
-	)
-
-	return minLatency, providerAddress, nil
 }
 
 // csm needs to be locked here
@@ -853,7 +707,7 @@ func (csm *ConsumerSessionManager) getSessionWithProviderOrError(ctx context.Con
 
 // GetSessions will return a ConsumerSession, given cu needed for that session.
 // The user can also request specific providers to not be included in the search for a session.
-// selectedProvider allows forcing selection of a specific provider by address (smartrouter only).
+// selectedProvider allows forcing selection of a specific provider by address; currently unused (all callers pass "").
 func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, wantedProviderNumber int, cuNeededForSession uint64, usedProviders UsedProvidersInf, requestedBlock int64, addon string, extensions []*spectypes.Extension, stateful uint32, virtualEpoch uint64, stickiness string, selectedProvider string) (
 	consumerSessionMap ConsumerSessionsMap, errRet error,
 ) {
@@ -1087,7 +941,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 	validAddressesLength := len(validAddresses)
 	totalValidLength := validAddressesLength - ignoredProvidersListLength
 
-	// Handle provider selection via header (smartrouter only)
+	// Handle forced provider selection by address; currently unused (all callers pass "")
 	if selectedProvider != "" {
 		// Validate that the selected provider is in the valid addresses list
 		providerValid := slices.Contains(validAddresses, selectedProvider)

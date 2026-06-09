@@ -14,8 +14,8 @@ import (
 	"github.com/lavanet/lava/v5/utils"
 )
 
-// UnifiedRelayStateMachine is the single state machine implementation used by both
-// Consumer and SmartRouter. Behavior differences are controlled via StateMachineConfig.
+// UnifiedRelayStateMachine is the state machine implementation used by the consumer.
+// Optional behaviors are controlled via StateMachineConfig.
 // Retry decisions are centralized in the policy engine (RelayPolicyInf).
 type UnifiedRelayStateMachine struct {
 	ctx                   context.Context
@@ -289,7 +289,7 @@ func (sm *UnifiedRelayStateMachine) GetRelayTaskChannel() (chan RelayStateSendIn
 
 		// Start the relay state machine
 		for {
-			// SmartRouter: Priority check for processing timeout before select
+			// Optional priority check for processing timeout before select
 			if sm.config.EnableTimeoutPriority {
 				if sm.checkAndHandleTimeout(processingCtx, relayTaskChannel, processingTimeout, "priority_check") {
 					return
