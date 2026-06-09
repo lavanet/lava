@@ -13,19 +13,20 @@ import (
 )
 
 // whitelistAllowingAllExcept builds a loaded whitelist that permits every provider produced by
-// createPairingList for the given chain, except the one excluded address.
-func whitelistAllowingAllExcept(t *testing.T, chainID, excluded string) *ProviderWhitelist {
+// createPairingList for the given chain and region, except the one excluded address.
+func whitelistAllowingAllExcept(t *testing.T, chainID, region, excluded string) *ProviderWhitelist {
 	t.Helper()
-	entries := make([]string, 0, numberOfProviders)
+	addrs := make([]string, 0, numberOfProviders)
 	for p := 0; p < numberOfProviders; p++ {
 		addr := providerStr + strconv.Itoa(p)
 		if addr == excluded {
 			continue
 		}
-		entries = append(entries, fmt.Sprintf(`{"address":%q,"chains":[%q]}`, addr, chainID))
+		addrs = append(addrs, strconv.Quote(addr))
 	}
 	pw := NewProviderWhitelist()
-	require.NoError(t, pw.UpdateFromBytes([]byte(fmt.Sprintf(`{"providers":[%s]}`, strings.Join(entries, ",")))))
+	doc := fmt.Sprintf(`{"chains":{%q:{%q:[%s]}}}`, chainID, region, strings.Join(addrs, ","))
+	require.NoError(t, pw.UpdateFromBytes([]byte(doc)))
 	return pw
 }
 
@@ -33,6 +34,7 @@ func whitelistAllowingAllExcept(t *testing.T, chainID, excluded string) *Provide
 // filter drops only non-whitelisted addresses, and passthrough holds when unset/unloaded.
 func TestProviderWhitelist_FilterHelpers(t *testing.T) {
 	csm := CreateConsumerSessionManager()
+	csm.rpcEndpoint.Geolocation = geoEU
 	all := []string{providerStr + "0", providerStr + "1", providerStr + "2"}
 
 	// No whitelist configured -> passthrough (input unchanged, everything allowed).
@@ -42,10 +44,29 @@ func TestProviderWhitelist_FilterHelpers(t *testing.T) {
 
 	// Whitelist excluding provider0 -> filtered out of the list and individually disallowed.
 	excluded := providerStr + "0"
-	csm.SetProviderWhitelist(whitelistAllowingAllExcept(t, csm.rpcEndpoint.ChainID, excluded))
+	csm.SetProviderWhitelist(whitelistAllowingAllExcept(t, csm.rpcEndpoint.ChainID, "EU", excluded))
 	require.Equal(t, []string{providerStr + "1", providerStr + "2"}, csm.filterAllowedProviders(all))
 	require.False(t, csm.isProviderAllowed(excluded))
 	require.True(t, csm.isProviderAllowed(providerStr+"1"))
+}
+
+// TestProviderWhitelist_FilterByConsumerGeolocation asserts the list filters by the consumer's
+// region: a provider listed only for another region is dropped, exactly as if it weren't listed.
+// This is the core MAG-1987 behavior for a per-region gateway.
+func TestProviderWhitelist_FilterByConsumerGeolocation(t *testing.T) {
+	csm := CreateConsumerSessionManager()
+	csm.rpcEndpoint.Geolocation = geoEU // this gateway is an EU consumer
+	all := []string{providerStr + "0", providerStr + "1"}
+
+	// provider0 whitelisted for EU (the consumer's region), provider1 only for AS.
+	pw := NewProviderWhitelist()
+	require.NoError(t, pw.UpdateFromBytes([]byte(fmt.Sprintf(
+		`{"chains":{%q:{"EU":[%q],"AS":[%q]}}}`, csm.rpcEndpoint.ChainID, providerStr+"0", providerStr+"1"))))
+	csm.SetProviderWhitelist(pw)
+
+	require.Equal(t, []string{providerStr + "0"}, csm.filterAllowedProviders(all))
+	require.True(t, csm.isProviderAllowed(providerStr+"0"))
+	require.False(t, csm.isProviderAllowed(providerStr+"1")) // AS-only -> not for this EU consumer
 }
 
 // TestProviderWhitelist_FilterOptimizerPath asserts the optimizer never returns a non-whitelisted
@@ -53,9 +74,10 @@ func TestProviderWhitelist_FilterHelpers(t *testing.T) {
 func TestProviderWhitelist_FilterOptimizerPath(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
+	csm.rpcEndpoint.Geolocation = geoEU
 	require.NoError(t, csm.UpdateAllProviders(firstEpochHeight, createPairingList("", true), nil))
 	excluded := providerStr + "0"
-	csm.SetProviderWhitelist(whitelistAllowingAllExcept(t, csm.rpcEndpoint.ChainID, excluded))
+	csm.SetProviderWhitelist(whitelistAllowingAllExcept(t, csm.rpcEndpoint.ChainID, "EU", excluded))
 
 	csm.lock.RLock()
 	defer csm.lock.RUnlock()
@@ -72,10 +94,11 @@ func TestProviderWhitelist_FilterOptimizerPath(t *testing.T) {
 func TestProviderWhitelist_FilterHeaderSelect(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
+	csm.rpcEndpoint.Geolocation = geoEU
 	require.NoError(t, csm.UpdateAllProviders(firstEpochHeight, createPairingList("", true), nil))
 	excluded := providerStr + "0"
 	allowed := providerStr + "1"
-	csm.SetProviderWhitelist(whitelistAllowingAllExcept(t, csm.rpcEndpoint.ChainID, excluded))
+	csm.SetProviderWhitelist(whitelistAllowingAllExcept(t, csm.rpcEndpoint.ChainID, "EU", excluded))
 
 	csm.lock.RLock()
 	defer csm.lock.RUnlock()
@@ -93,9 +116,10 @@ func TestProviderWhitelist_FilterHeaderSelect(t *testing.T) {
 func TestProviderWhitelist_FilterStickySession(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
+	csm.rpcEndpoint.Geolocation = geoEU
 	require.NoError(t, csm.UpdateAllProviders(firstEpochHeight, createPairingList("", true), nil))
 	excluded := providerStr + "0"
-	csm.SetProviderWhitelist(whitelistAllowingAllExcept(t, csm.rpcEndpoint.ChainID, excluded))
+	csm.SetProviderWhitelist(whitelistAllowingAllExcept(t, csm.rpcEndpoint.ChainID, "EU", excluded))
 
 	// Pin a sticky session to the excluded provider.
 	csm.stickySessions.Set("sticky-id", &StickySession{Provider: excluded, Epoch: csm.atomicReadCurrentEpoch()})
@@ -113,10 +137,11 @@ func TestProviderWhitelist_FilterStickySession(t *testing.T) {
 func TestProviderWhitelist_FilterBlockedRecovery(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
+	csm.rpcEndpoint.Geolocation = geoEU
 	require.NoError(t, csm.UpdateAllProviders(firstEpochHeight, createPairingList("", true), nil))
 	excluded := providerStr + "0"
 	allowed := providerStr + "5"
-	csm.SetProviderWhitelist(whitelistAllowingAllExcept(t, csm.rpcEndpoint.ChainID, excluded))
+	csm.SetProviderWhitelist(whitelistAllowingAllExcept(t, csm.rpcEndpoint.ChainID, "EU", excluded))
 
 	// Simulate both providers being blocked this epoch (excluded was delisted after being blocked).
 	csm.lock.Lock()
@@ -138,10 +163,11 @@ func TestProviderWhitelist_FilterBlockedRecovery(t *testing.T) {
 func TestProviderWhitelist_GetSessionsRestrictsToWhitelisted(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
+	csm.rpcEndpoint.Geolocation = geoEU
 	require.NoError(t, csm.UpdateAllProviders(firstEpochHeight, createPairingList("", true), nil))
 	allowed := providerStr + "5"
 	pw := NewProviderWhitelist()
-	require.NoError(t, pw.UpdateFromBytes([]byte(fmt.Sprintf(`{"providers":[{"address":%q,"chains":[%q]}]}`, allowed, csm.rpcEndpoint.ChainID))))
+	require.NoError(t, pw.UpdateFromBytes([]byte(fmt.Sprintf(`{"chains":{%q:{"EU":[%q]}}}`, csm.rpcEndpoint.ChainID, allowed))))
 	csm.SetProviderWhitelist(pw)
 
 	for i := 0; i < 10; i++ {
@@ -164,10 +190,11 @@ func TestProviderWhitelist_GetSessionsRestrictsToWhitelisted(t *testing.T) {
 func TestProviderWhitelist_GetSessionsEmptyIntersectionNoResetStorm(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
+	csm.rpcEndpoint.Geolocation = geoEU
 	require.NoError(t, csm.UpdateAllProviders(firstEpochHeight, createPairingList("", true), nil))
 	// Whitelist names only a provider on a different chain -> empty intersection for this chain.
 	pw := NewProviderWhitelist()
-	require.NoError(t, pw.UpdateFromBytes([]byte(`{"providers":[{"address":"someoneElse","chains":["OTHERCHAIN"]}]}`)))
+	require.NoError(t, pw.UpdateFromBytes([]byte(`{"chains":{"OTHERCHAIN":{"EU":["someoneElse"]}}}`)))
 	csm.SetProviderWhitelist(pw)
 
 	resetsBefore := csm.atomicReadNumberOfResets()

@@ -89,9 +89,10 @@ type ConsumerSessionManager struct {
 	// This is NOT used for RelaySession.Epoch (which must be the pairing epoch start block)
 	getLavaBlockHeight func() int64
 
-	// providerWhitelist, when set and loaded, restricts relays to whitelisted (provider, chain)
-	// pairs. nil (not configured) or not-yet-loaded means passthrough (current behavior).
-	// Shared across all per-chain managers; this manager queries it with its own ChainID.
+	// providerWhitelist, when set and loaded, restricts relays to whitelisted (provider, chain,
+	// geolocation) tuples. nil (not configured) or not-yet-loaded means passthrough (current
+	// behavior). Shared across all per-chain managers; this manager queries it with its own ChainID
+	// and the consumer's configured geolocation.
 	providerWhitelist *ProviderWhitelist
 }
 
@@ -112,19 +113,20 @@ func (csm *ConsumerSessionManager) SetProviderWhitelist(whitelist *ProviderWhite
 }
 
 // isProviderAllowed reports whether this manager may relay to providerAddr, per the provider
-// whitelist for this manager's chain. Returns true (allowed) when no whitelist is configured or
-// it has not loaded yet. Used to guard the blocked-provider recovery path, whose candidates are
-// not re-filtered through the central validAddresses filter.
+// whitelist for this manager's chain and the consumer's geolocation. Returns true (allowed) when no
+// whitelist is configured or it has not loaded yet. Used to guard the blocked-provider recovery
+// path, whose candidates are not re-filtered through the central validAddresses filter.
 func (csm *ConsumerSessionManager) isProviderAllowed(providerAddr string) bool {
 	if csm.providerWhitelist == nil {
 		return true
 	}
-	return csm.providerWhitelist.IsAllowed(csm.rpcEndpoint.ChainID, providerAddr)
+	return csm.providerWhitelist.IsAllowed(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.Geolocation, providerAddr)
 }
 
 // filterAllowedProviders returns the subset of addresses permitted by the provider whitelist for
-// this manager's chain. When no whitelist is configured or loaded it returns the input unchanged.
-// The whitelist snapshot is loaded once and reused across all addresses (lock-free hot path).
+// this manager's chain and the consumer's geolocation. When no whitelist is configured or loaded it
+// returns the input unchanged. The whitelist snapshot is loaded once and reused across all addresses
+// (lock-free hot path).
 func (csm *ConsumerSessionManager) filterAllowedProviders(addresses []string) []string {
 	if csm.providerWhitelist == nil {
 		return addresses
@@ -134,9 +136,10 @@ func (csm *ConsumerSessionManager) filterAllowedProviders(addresses []string) []
 		return addresses // not loaded yet -> passthrough (allow all until the first successful load)
 	}
 	chainID := csm.rpcEndpoint.ChainID
+	geo := csm.rpcEndpoint.Geolocation
 	filtered := make([]string, 0, len(addresses))
 	for _, addr := range addresses {
-		if data.isAllowed(chainID, addr) {
+		if data.isAllowed(chainID, geo, addr) {
 			filtered = append(filtered, addr)
 		}
 	}

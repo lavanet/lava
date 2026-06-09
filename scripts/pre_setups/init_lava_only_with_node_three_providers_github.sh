@@ -132,12 +132,15 @@ fi
 
 WHITELIST_PROVIDER_1=$(lavad keys show servicer1 -a)
 WHITELIST_PROVIDER_3=$(lavad keys show servicer3 -a)
+# Schema is chain -> geolocation -> allowed providers. The providers and the consumer below all run
+# with --geolocation 1 (USC), so servicer1/servicer3 are whitelisted under "USC".
 cat > "$PROVIDER_WHITELIST_FILE" <<EOF
 {
-  "providers": [
-    { "address": "$WHITELIST_PROVIDER_1", "chains": ["LAV1"] },
-    { "address": "$WHITELIST_PROVIDER_3", "chains": ["LAV1"] }
-  ]
+  "chains": {
+    "LAV1": {
+      "USC": ["$WHITELIST_PROVIDER_1", "$WHITELIST_PROVIDER_3"]
+    }
+  }
 }
 EOF
 echo "[Provider Whitelist] wrote $PROVIDER_WHITELIST_FILE (allow servicer1=$WHITELIST_PROVIDER_1, servicer3=$WHITELIST_PROVIDER_3; servicer2 excluded)"
