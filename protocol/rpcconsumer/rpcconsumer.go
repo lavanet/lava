@@ -116,6 +116,10 @@ type AnalyticsServerAddresses struct {
 }
 type RPCConsumer struct {
 	consumerStateTracker ConsumerStateTrackerInf
+	// providerWhitelist is the shared, hourly-refreshed allowlist restricting which providers the
+	// consumer relays to. It is built once in Start when configured (nil otherwise) and injected
+	// into every per-chain ConsumerSessionManager in CreateConsumerEndpoint.
+	providerWhitelist *lavasession.ProviderWhitelist
 }
 
 type rpcConsumerStartOptions struct {
@@ -256,6 +260,21 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	consumerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
 	relaysMonitorAggregator := metrics.NewRelaysMonitorAggregator(options.cmdFlags.RelaysHealthIntervalFlag, consumerMetricsManager)
 	policyUpdaters := &common.SafeSyncMap[string, *updaters.PolicyUpdater]{}
+
+	// Provider whitelist: when a source is configured, build the shared whitelist once and start
+	// its background refresher (hourly by default). It is injected into every per-chain session
+	// manager below. When the flag is empty, the whitelist stays nil (passthrough / current
+	// behavior) and no refresh loop is started at all.
+	if whitelistSource := options.cmdFlags.ProvidersWhitelistConfig; whitelistSource != "" {
+		refreshInterval := options.cmdFlags.ProvidersWhitelistRefreshInterval
+		if refreshInterval <= 0 {
+			refreshInterval = common.DefaultProvidersWhitelistRefreshInterval
+		}
+		rpcc.providerWhitelist = lavasession.NewProviderWhitelist()
+		whitelistFetcher := NewProviderWhitelistFetcher(whitelistSource, options.cmdFlags.ProvidersWhitelistToken, options.cmdFlags.GitHubToken, options.cmdFlags.GitLabToken, refreshInterval, rpcc.providerWhitelist)
+		go whitelistFetcher.Start(ctx)
+	}
+
 	for _, rpcEndpoint := range options.rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
 			defer wg.Done()
@@ -526,6 +545,8 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 	// Create active subscription provider storage for each unique chain
 	activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
 	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
+	// Inject the shared provider whitelist (nil when not configured -> passthrough).
+	consumerSessionManager.SetProviderWhitelist(rpcc.providerWhitelist)
 
 	// Set callback to get Lava blockchain block height for RelaySession.Epoch
 	consumerSessionManager.SetLavaBlockHeightCallback(func() int64 {
@@ -815,20 +836,23 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			weightedSelectorConfig.MinSelectionChance = viper.GetFloat64(common.ProviderOptimizerMinSelectionChance)
 			weightedSelectorConfig.Strategy = strategyFlag.Strategy
 			consumerPropagatedFlags := common.ConsumerCmdFlags{
-				HeadersFlag:              viper.GetString(common.CorsHeadersFlag),
-				CredentialsFlag:          viper.GetString(common.CorsCredentialsFlag),
-				OriginFlag:               viper.GetString(common.CorsOriginFlag),
-				MethodsFlag:              viper.GetString(common.CorsMethodsFlag),
-				CDNCacheDuration:         viper.GetString(common.CDNCacheDurationFlag),
-				RelaysHealthEnableFlag:   viper.GetBool(common.RelaysHealthEnableFlag),
-				RelaysHealthIntervalFlag: viper.GetDuration(common.RelayHealthIntervalFlag),
-				DebugRelays:              viper.GetBool(DebugRelaysFlagName),
-				StaticSpecPaths:          viper.GetStringSlice(common.UseStaticSpecFlag),
-				GitHubToken:              viper.GetString(common.GitHubTokenFlag),
-				GitLabToken:              viper.GetString(common.GitLabTokenFlag),
-				EnableSelectionStats:     viper.GetBool(common.EnableSelectionStatsHeaderFlag),
-				DebugAddress:             viper.GetString("debug-address"),
-				ResponseCompression:      viper.GetString(common.ResponseCompressionFlag),
+				HeadersFlag:                       viper.GetString(common.CorsHeadersFlag),
+				CredentialsFlag:                   viper.GetString(common.CorsCredentialsFlag),
+				OriginFlag:                        viper.GetString(common.CorsOriginFlag),
+				MethodsFlag:                       viper.GetString(common.CorsMethodsFlag),
+				CDNCacheDuration:                  viper.GetString(common.CDNCacheDurationFlag),
+				RelaysHealthEnableFlag:            viper.GetBool(common.RelaysHealthEnableFlag),
+				RelaysHealthIntervalFlag:          viper.GetDuration(common.RelayHealthIntervalFlag),
+				DebugRelays:                       viper.GetBool(DebugRelaysFlagName),
+				StaticSpecPaths:                   viper.GetStringSlice(common.UseStaticSpecFlag),
+				GitHubToken:                       viper.GetString(common.GitHubTokenFlag),
+				GitLabToken:                       viper.GetString(common.GitLabTokenFlag),
+				EnableSelectionStats:              viper.GetBool(common.EnableSelectionStatsHeaderFlag),
+				DebugAddress:                      viper.GetString("debug-address"),
+				ResponseCompression:               viper.GetString(common.ResponseCompressionFlag),
+				ProvidersWhitelistConfig:          viper.GetString(common.ProvidersWhitelistConfigFlag),
+				ProvidersWhitelistToken:           viper.GetString(common.ProvidersWhitelistTokenFlag),
+				ProvidersWhitelistRefreshInterval: viper.GetDuration(common.ProvidersWhitelistRefreshIntervalFlag),
 			}
 
 			rpcConsumerSharedState := viper.GetBool(common.SharedStateFlag)
@@ -921,6 +945,9 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().StringArray(common.UseStaticSpecFlag, nil, "load specs from file, directory, or remote URL (GitHub/GitLab). Can be specified multiple times; later sources override earlier ones for same chain ID")
 	cmdRPCConsumer.Flags().String(common.GitHubTokenFlag, "", "GitHub personal access token for accessing private repositories and higher API rate limits (5,000 requests/hour vs 60 for unauthenticated)")
 	cmdRPCConsumer.Flags().String(common.GitLabTokenFlag, "", "GitLab personal access token for accessing private repositories (supports gitlab.com and self-hosted instances)")
+	cmdRPCConsumer.Flags().String(common.ProvidersWhitelistConfigFlag, "", "provider whitelist source: a local JSON file path or a GitHub/GitLab directory URL (fetched the same way as specs). When set, the consumer relays only to whitelisted (provider, chain) pairs; empty keeps the current relay behavior. Addresses are matched exactly and must be the provider's on-chain bech32 address (e.g. lava@1...)")
+	cmdRPCConsumer.Flags().String(common.ProvidersWhitelistTokenFlag, "", "dedicated access token for a remote provider-whitelist source (use when the whitelist repo needs a different credential than the specs); falls back to --github-token / --gitlab-token when empty")
+	cmdRPCConsumer.Flags().Duration(common.ProvidersWhitelistRefreshIntervalFlag, common.DefaultProvidersWhitelistRefreshInterval, "how often to re-fetch the provider whitelist (only used when --providers-whitelist-config is set)")
 	cmdRPCConsumer.Flags().IntVar(&relaycore.RelayRetryLimit, common.SetRelayRetryLimitFlag, 2, "max total relay retry attempts across all error types (node and protocol errors combined; 0 disables retries)")
 	cmdRPCConsumer.Flags().BoolVar(&rpcInterfaceMessages.BatchNodeErrorOnAny, common.BatchNodeErrorOnAnyFlag, false, "if true, batch requests are treated as node errors if ANY sub-request fails; if false (default), only if ALL fail")
 	cmdRPCConsumer.Flags().Float64(common.ProbeUpdateWeightFlagName, scoreutils.DefaultProbeUpdateWeight, "weight multiplier for provider-optimizer probe updates (liveness/latency); must be > 0")

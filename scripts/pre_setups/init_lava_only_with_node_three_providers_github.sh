@@ -1,7 +1,36 @@
-#!/bin/bash 
+#!/bin/bash
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source "$__dir"/../useful_commands.sh
 . "${__dir}"/../vars/variables.sh
+
+# GitHub variant of init_lava_only_with_node_three_providers.sh: instead of pointing the consumer at
+# a local whitelist file, it publishes the per-run whitelist to a remote git repo and has the
+# consumer fetch it with --providers-whitelist-config / --providers-whitelist-token.
+#
+# Nothing repo-specific is hardcoded -- configure it entirely through these environment variables:
+#   PROVIDERS_WHITELIST_TOKEN  read-only token the CONSUMER uses to fetch the whitelist repo
+#   PROVIDERS_WHITELIST_URL    whitelist directory URL, e.g. https://github.com/<owner>/<repo>/tree/main
+#   WHITELIST_REPO_DIR         path to a local clone of that repo (the script writes + git-pushes here)
+#
+# Example:
+#   export PROVIDERS_WHITELIST_TOKEN=<read_only_token>
+#   export PROVIDERS_WHITELIST_URL=https://github.com/<owner>/<repo>/tree/main
+#   export WHITELIST_REPO_DIR=/path/to/<repo>
+#
+# Fail fast if any are missing. In particular, without the token the consumer falls back to the
+# (empty) --github-token, fetches unauthenticated, 404s on a private repo, and silently passes
+# through (allowing ALL relays) -- which looks like success. Abort before the long node spin-up.
+missing=""
+[ -z "${PROVIDERS_WHITELIST_TOKEN}" ] && missing="$missing PROVIDERS_WHITELIST_TOKEN"
+[ -z "${PROVIDERS_WHITELIST_URL}" ] && missing="$missing PROVIDERS_WHITELIST_URL"
+[ -z "${WHITELIST_REPO_DIR}" ] && missing="$missing WHITELIST_REPO_DIR"
+if [ -n "$missing" ]; then
+    echo "ERROR: set these environment variables before running:$missing" >&2
+    echo "  PROVIDERS_WHITELIST_TOKEN  read-only token the consumer uses to fetch the whitelist repo" >&2
+    echo "  PROVIDERS_WHITELIST_URL    whitelist directory URL, e.g. https://github.com/<owner>/<repo>/tree/main" >&2
+    echo "  WHITELIST_REPO_DIR         local clone of that repo (the script writes + pushes the list here)" >&2
+    exit 1
+fi
 
 LOGS_DIR=${__dir}/../../testutil/debugging/logs
 mkdir -p $LOGS_DIR
@@ -11,7 +40,7 @@ killall screen
 screen -wipe
 
 echo "[Test Setup] installing all binaries"
-make install-all 
+make install-all
 
 echo "[Test Setup] setting up a new lava node"
 screen -d -m -S node bash -c "./scripts/start_env_dev.sh"
@@ -88,13 +117,23 @@ wait_next_block
 # Provider whitelist: build the list from the ACTUAL staked provider addresses, since keys are
 # regenerated on every setup (a hardcoded list would exclude all providers next run). We allow
 # servicer1 and servicer3 for LAV1 and intentionally leave servicer2 out, so the consumer is seen
-# relaying only to the two whitelisted providers (servicer2 is filtered). Written to a gitignored
-# path under testutil/debugging.
-PROVIDER_WHITELIST_FILE="${__dir}/../../testutil/debugging/provider_whitelist.json"
+# relaying only to the two whitelisted providers (servicer2 is filtered).
+#
+# The consumer fetches this list from the remote repo (PROVIDERS_WHITELIST_URL). Because addresses
+# change every run, we write THIS run's addresses into the local clone (WHITELIST_REPO_DIR), commit,
+# and push using your own git credentials -- NOT the read-only PROVIDERS_WHITELIST_TOKEN, which only
+# lets the consumer read. Both are supplied via environment (validated at the top of this script).
+PROVIDER_WHITELIST_FILE="${WHITELIST_REPO_DIR}/provider_whitelist.json"
+
+if [ ! -d "${WHITELIST_REPO_DIR}/.git" ]; then
+    echo "ERROR: WHITELIST_REPO_DIR ($WHITELIST_REPO_DIR) is not a git clone. Clone your whitelist repo there (the same repo PROVIDERS_WHITELIST_URL points at)." >&2
+    exit 1
+fi
+
 WHITELIST_PROVIDER_1=$(lavad keys show servicer1 -a)
 WHITELIST_PROVIDER_3=$(lavad keys show servicer3 -a)
-# Schema is chain -> geolocation -> allowed providers. The providers and the consumer all run with
-# --geolocation 1 (USC), so servicer1/servicer3 are whitelisted under "USC".
+# Schema is chain -> geolocation -> allowed providers. The providers and the consumer below all run
+# with --geolocation 1 (USC), so servicer1/servicer3 are whitelisted under "USC".
 cat > "$PROVIDER_WHITELIST_FILE" <<EOF
 {
   "chains": {
@@ -106,13 +145,23 @@ cat > "$PROVIDER_WHITELIST_FILE" <<EOF
 EOF
 echo "[Provider Whitelist] wrote $PROVIDER_WHITELIST_FILE (allow servicer1=$WHITELIST_PROVIDER_1, servicer3=$WHITELIST_PROVIDER_3; servicer2 excluded)"
 
-#screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcconsumer \
-#127.0.0.1:3360 LAV1 rest 127.0.0.1:3361 LAV1 tendermintrpc 127.0.0.1:3362 LAV1 grpc \
-#--providers-whitelist-config '$PROVIDER_WHITELIST_FILE' --providers-whitelist-refresh-interval 30s \
-#$EXTRA_PORTAL_FLAGS --geolocation 1 --log_level trace --from user1 --chain-id lava --cache-be 127.0.0.1:20100 --allow-insecure-provider-dialing --metrics-listen-address ":7779" 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
+# Commit & push so the consumer can fetch it. Push the clone's current branch (must match the branch
+# in PROVIDERS_WHITELIST_URL). Empty-commit guard: if addresses happen to be unchanged, `git commit`
+# errors on "nothing to commit" -- tolerate that and still push.
+WHITELIST_BRANCH=$(git -C "$WHITELIST_REPO_DIR" rev-parse --abbrev-ref HEAD)
+git -C "$WHITELIST_REPO_DIR" add provider_whitelist.json
+git -C "$WHITELIST_REPO_DIR" commit -m "test: provider whitelist for this run (servicer1, servicer3)" || echo "[Provider Whitelist] nothing to commit (addresses unchanged)"
+if ! git -C "$WHITELIST_REPO_DIR" push origin "$WHITELIST_BRANCH"; then
+    echo "ERROR: failed to push provider_whitelist.json to the whitelist repo; consumer would fetch a stale/missing list and pass through. Aborting." >&2
+    exit 1
+fi
+echo "[Provider Whitelist] pushed to $PROVIDERS_WHITELIST_URL"
+# Give GitHub's raw CDN a moment to serve the new commit before the consumer fetches it.
+sleep 3
 
 screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcconsumer \
-127.0.0.1:3360 LAV1 rest I can 127.0.0.1:3361 LAV1 tendermintrpc 127.0.0.1:3362 LAV1 grpc \
+127.0.0.1:3360 LAV1 rest 127.0.0.1:3361 LAV1 tendermintrpc 127.0.0.1:3362 LAV1 grpc \
+--providers-whitelist-config '$PROVIDERS_WHITELIST_URL' --providers-whitelist-token '$PROVIDERS_WHITELIST_TOKEN' --providers-whitelist-refresh-interval 30s \
 $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level trace --from user1 --chain-id lava --cache-be 127.0.0.1:20100 --allow-insecure-provider-dialing --metrics-listen-address ":7779" 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
 
 echo "--- setting up screens done ---"

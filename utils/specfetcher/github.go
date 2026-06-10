@@ -9,15 +9,15 @@ import (
 	"strings"
 
 	"github.com/lavanet/lava/v5/utils"
-	"github.com/lavanet/lava/v5/x/spec/types"
 )
 
-// fetchFromGitHub fetches all specs from a GitHub repository.
-func (f *Fetcher) fetchFromGitHub(ctx context.Context, info *RepoInfo) (map[string]types.Spec, error) {
+// fetchRawFromGitHub fetches all .json files from a GitHub repository directory and returns
+// their raw contents keyed by source URL (no spec/whitelist interpretation).
+func (f *Fetcher) fetchRawFromGitHub(ctx context.Context, info *RepoInfo) (map[string][]byte, error) {
 	// Build the API URL for listing directory contents
 	apiURL := f.buildGitHubAPIURL(info)
 
-	utils.LavaFormatInfo("Fetching spec file list from GitHub",
+	utils.LavaFormatInfo("Fetching file list from GitHub",
 		utils.LogAttr("api_url", apiURL))
 
 	if f.config.Token != "" {
@@ -50,14 +50,14 @@ func (f *Fetcher) fetchFromGitHub(ctx context.Context, info *RepoInfo) (map[stri
 	}
 
 	if len(fileURLs) == 0 {
-		return nil, fmt.Errorf("no .json spec files found in repository")
+		return nil, fmt.Errorf("no .json files found in repository")
 	}
 
-	utils.LavaFormatInfo("Found spec files to fetch",
+	utils.LavaFormatInfo("Found files to fetch",
 		utils.LogAttr("file_count", len(fileURLs)))
 
-	// Fetch all spec files in parallel
-	return f.fetchFilesParallel(ctx, fileURLs, f.setGitHubHeaders)
+	// Fetch all files in parallel
+	return f.fetchRawFilesParallel(ctx, fileURLs, f.setGitHubHeaders)
 }
 
 // buildGitHubAPIURL constructs the GitHub API URL for listing directory contents.

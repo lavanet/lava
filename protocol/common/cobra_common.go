@@ -72,6 +72,24 @@ const (
 	// Example: --gitlab-token glpat-xxxxxxxxxxxx
 	GitLabTokenFlag = "gitlab-token"
 
+	// ProvidersWhitelistConfigFlag points the consumer at a provider whitelist. When set and
+	// successfully loaded, the consumer relays only to whitelisted (provider, chain) pairs; when
+	// empty (the default) the consumer keeps its current relay behavior and no refresh loop runs.
+	// The source is either a local JSON file path, or a GitHub/GitLab directory URL fetched the
+	// exact same way as specs.
+	// Example: --providers-whitelist-config https://github.com/{owner}/{repo}/tree/{branch}/{path}
+	ProvidersWhitelistConfigFlag = "providers-whitelist-config"
+
+	// ProvidersWhitelistTokenFlag is a dedicated access token for the (remote) provider whitelist
+	// source. It is used when the whitelist lives in a different repo than the specs, requiring a
+	// different credential. When empty, the whitelist fetch falls back to --github-token /
+	// --gitlab-token (selected by the source's provider).
+	ProvidersWhitelistTokenFlag = "providers-whitelist-token"
+
+	// ProvidersWhitelistRefreshIntervalFlag is how often the provider whitelist is re-fetched.
+	ProvidersWhitelistRefreshIntervalFlag    = "providers-whitelist-refresh-interval"
+	DefaultProvidersWhitelistRefreshInterval = time.Hour
+
 	EpochDurationFlag              = "epoch-duration"         // duration of each epoch for time-based epoch system (standalone mode)
 	DefaultEpochDuration           = 30 * time.Minute         // default epoch duration for regular mode (if using time-based epochs)
 	StandaloneEpochDuration        = 15 * time.Minute         // default epoch duration for standalone/static provider mode
@@ -153,6 +171,11 @@ type ConsumerCmdFlags struct {
 	EnableSelectionStats     bool          // enables selection stats header for debugging provider selection
 	DebugAddress             string        // address for the debug HTTP server, e.g. ":9999". Empty = disabled.
 	ResponseCompression      string        // "gzip" (default), "brotli", or "off" — controls client-facing response compression
+	// ProvidersWhitelistConfig is the provider whitelist source (local JSON file path or a
+	// GitHub/GitLab directory URL). Empty disables the feature (current relay behavior).
+	ProvidersWhitelistConfig          string
+	ProvidersWhitelistToken           string        // dedicated token for the whitelist source; falls back to GitHub/GitLab token when empty
+	ProvidersWhitelistRefreshInterval time.Duration // how often to re-fetch the provider whitelist
 }
 
 // default rolling logs behavior (if enabled) will store 3 files each 100MB for up to 1 day every time.
