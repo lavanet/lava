@@ -645,7 +645,7 @@ func New(
 	// If evidence needs to be handled for the app, set routes in router here and seal
 	app.EvidenceKeeper = *evidenceKeeper
 
-	govConfig := govtypes.Config{MaxMetadataLen: 4000} // 1640 TODO fix it from spec test proposal
+	govConfig := govtypes.Config{MaxMetadataLen: 100000} // raised to fit the all-specs spec-add test proposal (~5.7KB)
 	govKeeper := govkeeper.NewKeeper(
 		appCodec, keys[govtypes.StoreKey], app.AccountKeeper, app.BankKeeper,
 		app.StakingKeeper, app.MsgServiceRouter(), govConfig,
