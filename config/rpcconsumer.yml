@@ -17,3 +17,4 @@ endpoints:
     - chain-id: ETH1
       api-interface: jsonrpc
       network-address: 127.0.0.1:3333
+      # max-provider-latency: 1.0  # optional, seconds; put aside providers slower than this during random selection (0/omitted = disabled)

@@ -49,6 +49,7 @@ endpoints:
   - chain-id: ETH1
     api-interface: jsonrpc
     network-address: 127.0.0.1:3333
+    max-provider-latency: 1.0
   - chain-id: OSMOSIS
     api-interface: rest
     network-address: 127.0.0.1:3334
@@ -62,6 +63,14 @@ endpoints:
 - `chain-id`: Blockchain identifier (e.g., ETH1, OSMOSIS, LAV1)
 - `api-interface`: API type (jsonrpc, rest, tendermintrpc, grpc)
 - `network-address`: IP:PORT where the consumer will listen for requests
+- `max-provider-latency` (optional): QoS latency cutoff **in seconds** for this
+  endpoint. During the general random provider selection, providers whose
+  measured latency exceeds this value are put aside and not picked. `0`
+  (default, or omitted) disables the cutoff. Configured per endpoint, so a chain
+  exposed over multiple `api-interface`s must set it on each entry. As a safety
+  fallback, the cutoff is ignored when *every* paired provider is above the
+  threshold, so relays keep flowing even when the whole pairing is slow.
+  Static, header-selected, sticky, and stateful selections are unaffected.
 
 ## Usage
 
