@@ -1,0 +1,9 @@
+# Consumer config for the per-chain latency-cutoff E2E setup, cutoff DISABLED.
+# max-provider-latency: 0 turns the feature off (no provider is put aside) - used by the
+# regression-disabled mode to prove default behaviour is unchanged.
+# See eth_latency_cutoff_consumer.yml for the enabled (1.0) variant.
+endpoints:
+  - chain-id: ETH1
+    api-interface: jsonrpc
+    network-address: 127.0.0.1:3333
+    max-provider-latency: 0
