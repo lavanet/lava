@@ -63,10 +63,12 @@ func (s *smartStubOptimizer) ChooseBestProvider(ctx context.Context, allAddresse
 	return firstNotIgnored(allAddresses, ignoredProviders)
 }
 
-func (s *smartStubOptimizer) Strategy() provideroptimizer.Strategy { return provideroptimizer.StrategyBalanced }
-func (s *smartStubOptimizer) UpdateWeights(map[string]int64, uint64) {}
-func (s *smartStubOptimizer) AppendProbeRelayData(string, time.Duration, bool) {}
-func (s *smartStubOptimizer) AppendRelayFailure(string) {}
+func (s *smartStubOptimizer) Strategy() provideroptimizer.Strategy {
+	return provideroptimizer.StrategyBalanced
+}
+func (s *smartStubOptimizer) UpdateWeights(map[string]int64, uint64)                {}
+func (s *smartStubOptimizer) AppendProbeRelayData(string, time.Duration, bool)      {}
+func (s *smartStubOptimizer) AppendRelayFailure(string)                             {}
 func (s *smartStubOptimizer) AppendRelayData(string, time.Duration, uint64, uint64) {}
 
 // setupCSMForSelection builds a fully-wired ConsumerSessionManager with the smart
