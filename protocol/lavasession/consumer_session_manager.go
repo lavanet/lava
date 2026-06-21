@@ -1153,7 +1153,7 @@ func (csm *ConsumerSessionManager) filterHighLatencyProviders(ctx context.Contex
 		// safety fallback: every candidate is over the cutoff - keep the full pool
 		utils.LavaFormatDebug("latency cutoff skipped, all providers above threshold",
 			utils.LogAttr("maxProviderLatency", maxLatency),
-			utils.LogAttr("filteredCount", len(slowProviders)),
+			utils.LogAttr("slowProviders", slowProviders),
 			utils.LogAttr("chainId", csm.rpcEndpoint.ChainID),
 			utils.LogAttr("GUID", ctx),
 		)
@@ -1167,7 +1167,7 @@ func (csm *ConsumerSessionManager) filterHighLatencyProviders(ctx context.Contex
 	if len(slowProviders) > 0 {
 		utils.LavaFormatTrace("latency cutoff applied",
 			utils.LogAttr("maxProviderLatency", maxLatency),
-			utils.LogAttr("filtered", slowProviders),
+			utils.LogAttr("slowProviders", slowProviders),
 			utils.LogAttr("chainId", csm.rpcEndpoint.ChainID),
 			utils.LogAttr("GUID", ctx),
 		)
