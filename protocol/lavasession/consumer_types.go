@@ -252,6 +252,10 @@ type RPCEndpoint struct {
 	TLSEnabled      bool   `yaml:"tls-enabled,omitempty" json:"tls-enabled,omitempty" mapstructure:"tls-enabled"`
 	HealthCheckPath string `yaml:"health-check-path,omitempty" json:"health-check-path,omitempty" mapstructure:"health-check-path"` // health check status code 200 path, default is "/"
 	Geolocation     uint64 `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
+	// MaxProviderLatency is the per-chain QoS latency cutoff (in seconds) used during the general random
+	// provider selection. Providers whose EWMA latency exceeds this value are put aside and not picked.
+	// 0 (default) disables the cutoff. Static, header-selected, sticky and stateful selections are unaffected.
+	MaxProviderLatency float64 `yaml:"max-provider-latency,omitempty" json:"max-provider-latency,omitempty" mapstructure:"max-provider-latency"`
 }
 
 func (endpoint *RPCEndpoint) String() (retStr string) {

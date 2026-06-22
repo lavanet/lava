@@ -1032,6 +1032,9 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 		for k, v := range ignoredProvidersList {
 			ignoredProvidersListCopy[k] = v
 		}
+		// Put aside providers whose QoS latency exceeds the per-chain cutoff (general random selection only).
+		// Rides on the ignored-providers set so the optimizer never picks them.
+		csm.filterHighLatencyProviders(ctx, validAddresses, ignoredProvidersListCopy)
 		for i := 0; i < wantedProviders; i++ {
 			provider, selectionStats := csm.providerOptimizer.ChooseProviderWithStats(ctx, validAddresses, ignoredProvidersListCopy, cu, requestedBlock)
 			if len(provider) == 0 {
@@ -1105,6 +1108,70 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ctx context.Context
 		return []string{providers[0]}, nil
 	}
 	return providers, nil
+}
+
+// filterHighLatencyProviders puts aside providers whose QoS latency exceeds the per-chain cutoff
+// (rpcEndpoint.MaxProviderLatency, in seconds) by adding them to the ignored-providers set, so the
+// optimizer never picks them during the general random selection.
+//
+// Safety fallback: the cutoff is applied only if at least one candidate stays under the threshold.
+// If every candidate is over the threshold (or has no QoS data yet), nothing is filtered and the
+// full pool is kept, so relays keep flowing even when the whole pairing is slow.
+func (csm *ConsumerSessionManager) filterHighLatencyProviders(ctx context.Context, validAddresses []string, ignoredProvidersList map[string]struct{}) {
+	maxLatency := csm.rpcEndpoint.MaxProviderLatency
+	if maxLatency <= 0 {
+		// cutoff disabled
+		return
+	}
+
+	slowProviders := make(map[string]struct{})
+	remaining := 0
+	for _, providerAddress := range validAddresses {
+		if _, ok := ignoredProvidersList[providerAddress]; ok {
+			continue
+		}
+		qos, _ := csm.providerOptimizer.GetReputationReportForProvider(providerAddress)
+		if qos == nil {
+			// no QoS data yet (cold start) - treat as under threshold, do not filter
+			remaining++
+			continue
+		}
+		latency, err := qos.Latency.Float64()
+		if err != nil {
+			// cannot resolve latency - do not filter on a value we can't read
+			remaining++
+			continue
+		}
+		if latency > maxLatency {
+			slowProviders[providerAddress] = struct{}{}
+			continue
+		}
+		remaining++
+	}
+
+	if remaining == 0 {
+		// safety fallback: every candidate is over the cutoff - keep the full pool
+		utils.LavaFormatDebug("latency cutoff skipped, all providers above threshold",
+			utils.LogAttr("maxProviderLatency", maxLatency),
+			utils.LogAttr("slowProviders", slowProviders),
+			utils.LogAttr("chainId", csm.rpcEndpoint.ChainID),
+			utils.LogAttr("GUID", ctx),
+		)
+		return
+	}
+
+	for providerAddress := range slowProviders {
+		ignoredProvidersList[providerAddress] = struct{}{}
+	}
+
+	if len(slowProviders) > 0 {
+		utils.LavaFormatTrace("latency cutoff applied",
+			utils.LogAttr("maxProviderLatency", maxLatency),
+			utils.LogAttr("slowProviders", slowProviders),
+			utils.LogAttr("chainId", csm.rpcEndpoint.ChainID),
+			utils.LogAttr("GUID", ctx),
+		)
+	}
 }
 
 // On cases where the valid provider list is empty, by being already used in this attempt, and we got to a point

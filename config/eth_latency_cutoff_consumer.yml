@@ -1,0 +1,9 @@
+# Consumer config for the per-chain latency-cutoff E2E setup.
+# Providers whose measured QoS latency exceeds max-provider-latency (seconds) are
+# put aside during the general random selection. 0 / omitted disables the cutoff.
+# Used by scripts/pre_setups/init_eth_latency_cutoff.sh (cutoff mode).
+endpoints:
+  - chain-id: ETH1
+    api-interface: jsonrpc
+    network-address: 127.0.0.1:3333
+    max-provider-latency: 1.0
