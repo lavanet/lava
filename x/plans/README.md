@@ -151,6 +151,7 @@ The plans module supports the following queries:
 | `info`     | index (string)  | shows a plan's info by index                  |
 | `list`     | none            | show the info for all plans (latest version)  |
 | `params`   | none            | shows the module's parameters                 |
+| `diff`     | one or two plan indices / proposal files | shows a field-by-field diff between two plans; with a single proposal file, compares each plan in it against its current on-chain version (i.e. what the update proposal would change) |
 
 ## Transactions
 
@@ -241,6 +242,6 @@ The plans module has the following events:
 
 | Event      | When it happens       |
 | ---------- | --------------- |
-| `add_new_plan_to_storage`     | a successful addition of a plan   |
+| `add_new_plan_to_storage`     | a successful addition of a plan; when the plan replaces an existing version (a plan update), the event's `changes` attribute lists exactly which fields changed   |
 | `del_plan_from_storage`     | a successful deletion of a plan  |
 

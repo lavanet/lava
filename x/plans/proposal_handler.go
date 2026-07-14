@@ -2,6 +2,7 @@ package plans
 
 import (
 	"log"
+	"strings"
 
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -31,6 +32,15 @@ func handlePlansAddProposal(ctx sdk.Context, k keeper.Keeper, p *types.PlansAddP
 	// add the plans to the plan storage
 	for _, planElem := range p.Plans {
 		logger := k.Logger(ctx)
+
+		// grab the plan version this proposal replaces (if any), to reflect
+		// in the event what the update actually changed
+		replacedBlock := uint64(ctx.BlockHeight())
+		if p.Modify {
+			replacedBlock = planElem.Block
+		}
+		replacedPlan, isUpdate := k.FindPlan(ctx, planElem.Index, replacedBlock)
+
 		err := k.AddPlan(ctx, planElem, p.Modify)
 		if err != nil {
 			return utils.LavaFormatError("could not add new plan", err,
@@ -39,6 +49,14 @@ func handlePlansAddProposal(ctx sdk.Context, k keeper.Keeper, p *types.PlansAddP
 		}
 
 		details := map[string]string{"planDetails": planElem.String()}
+		if isUpdate {
+			changes := types.DiffPlans(replacedPlan, planElem)
+			if len(changes) == 0 {
+				details["changes"] = "none (identical to the replaced version)"
+			} else {
+				details["changes"] = strings.Join(changes, "; ")
+			}
+		}
 		utils.LogLavaEvent(ctx, logger, types.PlanAddEventName, details, "Gov Proposal Accepted Plans")
 	}
 	return nil
