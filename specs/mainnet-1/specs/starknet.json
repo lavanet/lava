@@ -12,7 +12,7 @@
                 "block_distance_for_finalized_data": 6,
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 2000,
-                "allowed_block_lag_for_qos_sync": 2,
+                "allowed_block_lag_for_qos_sync": 5,
                 "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
@@ -109,7 +109,7 @@
                                     "parser_arg": [
                                         "block_number",
                                         ":",
-                                        "1"
+                                        "2"
                                     ],
                                     "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
                                     "default_value": "latest"
@@ -1086,7 +1086,7 @@
                 "block_distance_for_finalized_data": 1,
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 2000,
-                "allowed_block_lag_for_qos_sync": 1,
+                "allowed_block_lag_for_qos_sync": 5,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "5000000000"
@@ -1182,7 +1182,7 @@
                                     "parser_arg": [
                                         "block_number",
                                         ":",
-                                        "1"
+                                        "2"
                                     ],
                                     "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
                                     "default_value": "latest"

@@ -251,6 +251,9 @@ func (h *handler) handleImmediate(msg *JsonrpcMessage) bool {
 			return true
 		}
 		return false
+	case msg.isStarknetNotification():
+		h.handleSubscriptionResultStarknet(msg)
+		return true
 	case msg.isResponse():
 		h.handleResponse(msg)
 		h.log.Trace("Handled RPC response", "reqid", idForLog{msg.ID}, "duration", time.Since(start))
@@ -274,6 +277,22 @@ func (h *handler) handleSubscriptionResultStarkNetPathfinder(msg *JsonrpcMessage
 	id := strconv.Itoa(result.ID)
 	if h.clientSubs[id] != nil {
 		h.clientSubs[id].deliver(msg)
+	}
+}
+
+func (h *handler) handleSubscriptionResultStarknet(msg *JsonrpcMessage) {
+	var result starknetSubscriptionResult
+	if err := json.Unmarshal(msg.Params, &result); err != nil {
+		utils.LavaFormatTrace("Dropping invalid starknet subscription message",
+			utils.LogAttr("err", err),
+			utils.LogAttr("params", string(msg.Params)),
+		)
+		h.log.Debug("Dropping invalid subscription message")
+		return
+	}
+
+	if h.clientSubs[result.ID] != nil {
+		h.clientSubs[result.ID].deliver(msg)
 	}
 }
 
