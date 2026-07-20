@@ -350,17 +350,20 @@ func (h *handler) handleResponse(msg *JsonrpcMessage) {
 		return
 	}
 	delete(h.respWait, string(msg.ID))
-	// For normal responses, just forward the reply to Call/BatchCall.
-	op.resp <- msg
 	if op.sub == nil {
+		// For normal responses, just forward the reply to Call/BatchCall.
+		op.resp <- msg
 		return
 	}
 	// For subscription responses, start the subscription if the server
 	// indicates success. EthSubscribe gets unblocked in either case through
-	// the op.resp channel.
+	// the op.resp channel. All op.err writes and subscription registration
+	// must happen before the op.resp send: the waiting caller reads op.err as
+	// soon as it receives, so a later write would race.
 	defer close(op.resp)
 	if msg.Error != nil {
 		op.err = msg.Error
+		op.resp <- msg
 		return
 	}
 
@@ -380,6 +383,7 @@ func (h *handler) handleResponse(msg *JsonrpcMessage) {
 			h.clientSubs[op.sub.subid] = op.sub
 		}
 	}
+	op.resp <- msg
 }
 
 // handleCallMsg executes a call message and returns the answer.
