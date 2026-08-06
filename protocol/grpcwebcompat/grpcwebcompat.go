@@ -50,15 +50,15 @@ const trailerFrameFlag = 1 << 7
 // WrapServer wraps a gRPC server for gRPC-Web the same way grpcweb.WrapServer does,
 // except that gRPC-Web responses get a canonically encoded trailer frame.
 func WrapServer(server *grpc.Server, options ...grpcweb.Option) http.Handler {
-	return WrapHandler(server, grpcweb.WrapServer(server, options...))
+	return wrapHandler(server, grpcweb.WrapServer(server, options...))
 }
 
-// WrapHandler routes gRPC-Web requests to grpcHandler through this package's response
+// wrapHandler routes gRPC-Web requests to grpcHandler through this package's response
 // writer and everything else to fallback, which is expected to be the equivalent
 // grpcweb-wrapped handler.
-func WrapHandler(grpcHandler, fallback http.Handler) http.Handler {
+func wrapHandler(grpcHandler, fallback http.Handler) http.Handler {
 	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
-		if IsGrpcWebRequest(req) {
+		if isGrpcWebRequest(req) {
 			serveGrpcWeb(grpcHandler, resp, req)
 			return
 		}
@@ -66,18 +66,42 @@ func WrapHandler(grpcHandler, fallback http.Handler) http.Handler {
 	})
 }
 
-// IsGrpcWebRequest reports whether req is a gRPC-Web request, using the same rule as
-// grpcweb.WrappedGrpcServer.IsGrpcWebRequest so that the two stay in agreement about
-// which requests this package takes over.
-func IsGrpcWebRequest(req *http.Request) bool {
+// isGrpcWebRequest reports whether req is a gRPC-Web request.
+//
+// The rule is character for character the one in
+// grpcweb.WrappedGrpcServer.IsGrpcWebRequest, case sensitivity included. Whatever this
+// does not claim is served by the fallback, so the two predicates have to agree
+// exactly: matching more than the fallback would route requests here that the rest of
+// the pipeline still rejects, and matching less would send gRPC-Web responses back
+// through the trailer encoding this package exists to avoid.
+func isGrpcWebRequest(req *http.Request) bool {
 	return req.Method == http.MethodPost && strings.HasPrefix(req.Header.Get("content-type"), grpcWebContentType)
 }
 
 func serveGrpcWeb(grpcHandler http.Handler, resp http.ResponseWriter, req *http.Request) {
+	requestContentType := req.Header.Get("content-type")
 	nativeReq, isTextFormat := toNativeGrpcRequest(req)
-	webResp := newResponseWriter(resp, isTextFormat)
+	webResp := newResponseWriter(resp, isTextFormat, requestContentType)
 	grpcHandler.ServeHTTP(webResp, nativeReq)
 	webResp.finishRequest()
+}
+
+// responseContentType picks the content type to report for a gRPC-Web response.
+//
+// The value is always assembled from this package's constants and never echoed from
+// the request: the request header is attacker controlled, and reflecting it into a
+// response header is a cross-site scripting sink (CodeQL go/reflected-xss). Only the
+// proto and json sub-types carry meaning here, so the request merely selects between
+// fixed strings.
+func responseContentType(baseContentType, requestContentType string) string {
+	switch {
+	case strings.HasSuffix(requestContentType, "+proto"):
+		return baseContentType + "+proto"
+	case strings.HasSuffix(requestContentType, "+json"):
+		return baseContentType + "+json"
+	default:
+		return baseContentType
+	}
 }
 
 // toNativeGrpcRequest rewrites a gRPC-Web request into the plain gRPC request the
@@ -118,16 +142,17 @@ type responseWriter struct {
 	contentType string
 }
 
-func newResponseWriter(resp http.ResponseWriter, isTextFormat bool) *responseWriter {
+func newResponseWriter(resp http.ResponseWriter, isTextFormat bool, requestContentType string) *responseWriter {
 	w := &responseWriter{
-		headers:     make(http.Header),
-		wrapped:     resp,
-		contentType: grpcWebContentType,
+		headers: make(http.Header),
+		wrapped: resp,
 	}
+	baseContentType := grpcWebContentType
 	if isTextFormat {
 		w.wrapped = newBase64ResponseWriter(w.wrapped)
-		w.contentType = grpcWebTextContentType
+		baseContentType = grpcWebTextContentType
 	}
+	w.contentType = responseContentType(baseContentType, requestContentType)
 	return w
 }
 
@@ -168,14 +193,13 @@ func (w *responseWriter) prepareHeaders() {
 		}
 		key = strings.Replace(key, http.TrailerPrefix, "", 1)
 		if strings.EqualFold(key, "content-type") {
-			replaced := make([]string, len(values))
-			for i, value := range values {
-				replaced[i] = strings.Replace(value, grpcContentType, w.contentType, 1)
-			}
-			values = replaced
+			// replaced below by a value this package controls, never by the one the
+			// grpc-go server derived from the request
+			continue
 		}
 		flushed[http.CanonicalHeaderKey(key)] = values
 	}
+	flushed.Set("Content-Type", w.contentType)
 
 	exposed := make([]string, 0, len(flushed)+2)
 	for key := range flushed {
@@ -185,7 +209,7 @@ func (w *responseWriter) prepareHeaders() {
 	// grpc-status and grpc-message travel in the body, but browsers still expect them
 	// to be listed here, matching grpcweb's behaviour.
 	exposed = append(exposed, "grpc-status", "grpc-message")
-	flushed.Set(http.CanonicalHeaderKey("access-control-expose-headers"), strings.Join(exposed, ", "))
+	flushed.Set("Access-Control-Expose-Headers", strings.Join(exposed, ", "))
 }
 
 func (w *responseWriter) finishRequest() {

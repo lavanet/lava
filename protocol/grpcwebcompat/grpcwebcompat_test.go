@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -28,10 +29,20 @@ const testMethod = "/lavanet.test.Echo/Echo"
 // codec does, so these tests do not need generated protobuf types.
 type rawCodec struct{}
 
-func (rawCodec) Marshal(v interface{}) ([]byte, error) { return v.([]byte), nil }
+func (rawCodec) Marshal(v interface{}) ([]byte, error) {
+	payload, ok := v.([]byte)
+	if !ok {
+		return nil, fmt.Errorf("rawCodec cannot marshal %T", v)
+	}
+	return payload, nil
+}
 
 func (rawCodec) Unmarshal(data []byte, v interface{}) error {
-	*(v.(*[]byte)) = data
+	buffer, ok := v.(*[]byte)
+	if !ok {
+		return fmt.Errorf("rawCodec cannot unmarshal into %T", v)
+	}
+	*buffer = data
 	return nil
 }
 func (rawCodec) Name() string   { return "lava/test-raw-codec" }
@@ -150,11 +161,11 @@ func doGrpcWebRequest(t *testing.T, handler http.Handler, contentType string, pa
 	return resp, raw
 }
 
-// TestTrailerFrameHasNoOptionalWhitespace is the regression test for the reported
+// TestEncodeTrailers_NoOptionalWhitespace is the regression test for the reported
 // failure: a trailer block written as "grpc-status: 0" is read as " 0" by receivers
 // that split on ':' without trimming, which rejects the call with
 // "transport: malformed grpc-status" and drops the message the caller already got.
-func TestTrailerFrameHasNoOptionalWhitespace(t *testing.T) {
+func TestEncodeTrailers_NoOptionalWhitespace(t *testing.T) {
 	for _, contentType := range []string{grpcWebContentType + "+proto", grpcWebTextContentType} {
 		t.Run(contentType, func(t *testing.T) {
 			resp, body := doGrpcWebRequest(t, WrapServer(newEchoServer(nil)), contentType, []byte("ping"))
@@ -177,9 +188,9 @@ func TestTrailerFrameHasNoOptionalWhitespace(t *testing.T) {
 	}
 }
 
-// TestTrailerFrameOnError checks a non-OK status is encoded the same way once the
+// TestEncodeTrailers_NonOKStatus checks a non-OK status is encoded the same way once the
 // response body has already started.
-func TestTrailerFrameOnError(t *testing.T) {
+func TestEncodeTrailers_NonOKStatus(t *testing.T) {
 	handlerErr := status.Error(codes.NotFound, "no such block")
 	resp, body := doGrpcWebRequest(t, WrapServer(newEchoServer(handlerErr)), grpcWebContentType+"+proto", []byte("ping"))
 	require.Equal(t, http.StatusOK, resp.StatusCode)
@@ -192,10 +203,10 @@ func TestTrailerFrameOnError(t *testing.T) {
 	require.NotContains(t, string(trailers), ": ")
 }
 
-// TestTrailersOnlyResponse pins the shape of a call that fails before writing anything:
+// TestResponseWriter_TrailersOnly pins the shape of a call that fails before writing anything:
 // the gRPC-Web spec allows the trailers to be sent as response headers with no body, and
 // net/http serializes those, so they never pick up the stray whitespace.
-func TestTrailersOnlyResponse(t *testing.T) {
+func TestResponseWriter_TrailersOnly(t *testing.T) {
 	handlerErr := status.Error(codes.NotFound, "no such block")
 	resp, body := doGrpcWebRequest(t, WrapServer(newFailFastServer(handlerErr)), grpcWebContentType+"+proto", []byte("ping"))
 	require.Equal(t, http.StatusOK, resp.StatusCode)
@@ -206,9 +217,9 @@ func TestTrailersOnlyResponse(t *testing.T) {
 	require.Empty(t, resp.Header.Get("Trailer"))
 }
 
-// TestNativeGrpcIsUnaffected makes sure requests that are not gRPC-Web still reach the
+// TestWrapServer_NativeGrpcPassthrough makes sure requests that are not gRPC-Web still reach the
 // wrapped gRPC server untouched.
-func TestNativeGrpcIsUnaffected(t *testing.T) {
+func TestWrapServer_NativeGrpcPassthrough(t *testing.T) {
 	grpcServer := newEchoServer(nil)
 	httpServer := &http.Server{Handler: h2c.NewHandler(WrapServer(grpcServer), &http2.Server{})}
 
@@ -232,24 +243,80 @@ func TestNativeGrpcIsUnaffected(t *testing.T) {
 	require.Equal(t, []string{"  padded  "}, trailer.Get("x-padded-trailer"))
 }
 
-func TestIsGrpcWebRequest(t *testing.T) {
-	newRequest := func(method, contentType string) *http.Request {
-		req := httptest.NewRequest(method, testMethod, nil)
-		req.Header.Set("content-type", contentType)
-		return req
-	}
-	require.True(t, IsGrpcWebRequest(newRequest(http.MethodPost, grpcWebContentType)))
-	require.True(t, IsGrpcWebRequest(newRequest(http.MethodPost, grpcWebContentType+"+proto")))
-	require.True(t, IsGrpcWebRequest(newRequest(http.MethodPost, grpcWebTextContentType)))
-	require.False(t, IsGrpcWebRequest(newRequest(http.MethodPost, grpcContentType)))
-	require.False(t, IsGrpcWebRequest(newRequest(http.MethodGet, grpcWebContentType)))
+// TestResponseContentType_NotReflectedFromRequest checks the response content type is assembled
+// from this package's constants. The request header is attacker controlled, so echoing
+// it back is a cross-site scripting sink.
+func TestResponseContentType_NotReflectedFromRequest(t *testing.T) {
+	hostile := grpcWebContentType + `+<script>alert(1)</script>`
+	resp, _ := doGrpcWebRequest(t, WrapServer(newEchoServer(nil)), hostile, []byte("ping"))
+
+	require.Equal(t, grpcWebContentType, resp.Header.Get("Content-Type"))
+	require.NotContains(t, resp.Header.Get("Content-Type"), "script")
 }
 
-func TestSanitizeFieldValue(t *testing.T) {
-	require.Equal(t, "0", sanitizeFieldValue(" 0"))
-	require.Equal(t, "0", sanitizeFieldValue("0\t"))
-	// CR and LF each become a space, matching net/http's own header serialization
-	require.Equal(t, "a  b", sanitizeFieldValue("a\r\nb"))
-	require.Equal(t, "", sanitizeFieldValue("   "))
-	require.Equal(t, "keep me", sanitizeFieldValue("keep me"))
+func TestResponseContentType_SubTypes(t *testing.T) {
+	playbook := []struct {
+		name      string
+		base      string
+		requested string
+		expected  string
+	}{
+		{"bare", grpcWebContentType, grpcWebContentType, grpcWebContentType},
+		{"proto", grpcWebContentType, grpcWebContentType + "+proto", grpcWebContentType + "+proto"},
+		{"json", grpcWebContentType, grpcWebContentType + "+json", grpcWebContentType + "+json"},
+		{"text", grpcWebTextContentType, grpcWebTextContentType, grpcWebTextContentType},
+		{"text proto", grpcWebTextContentType, grpcWebTextContentType + "+proto", grpcWebTextContentType + "+proto"},
+		// anything outside the known sub-types collapses to the base rather than echoing
+		{"unknown sub-type", grpcWebContentType, grpcWebContentType + "+<script>", grpcWebContentType},
+		{"empty", grpcWebContentType, "", grpcWebContentType},
+	}
+	for _, tt := range playbook {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, responseContentType(tt.base, tt.requested))
+		})
+	}
+}
+
+func TestIsGrpcWebRequest_MethodAndContentType(t *testing.T) {
+	playbook := []struct {
+		name        string
+		method      string
+		contentType string
+		expected    bool
+	}{
+		{"grpc-web", http.MethodPost, grpcWebContentType, true},
+		{"grpc-web proto", http.MethodPost, grpcWebContentType + "+proto", true},
+		{"grpc-web text", http.MethodPost, grpcWebTextContentType, true},
+		{"native grpc", http.MethodPost, grpcContentType, false},
+		{"not a post", http.MethodGet, grpcWebContentType, false},
+		// case sensitivity is deliberate: it mirrors the fallback's own predicate
+		{"mixed case", http.MethodPost, "Application/Grpc-Web", false},
+	}
+	for _, tt := range playbook {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(tt.method, testMethod, nil)
+			req.Header.Set("content-type", tt.contentType)
+			require.Equal(t, tt.expected, isGrpcWebRequest(req))
+		})
+	}
+}
+
+func TestSanitizeFieldValue_Whitespace(t *testing.T) {
+	playbook := []struct {
+		name     string
+		value    string
+		expected string
+	}{
+		{"leading space", " 0", "0"},
+		{"trailing tab", "0\t", "0"},
+		// CR and LF each become a space, matching net/http's own header serialization
+		{"embedded crlf", "a\r\nb", "a  b"},
+		{"all whitespace", "   ", ""},
+		{"inner space kept", "keep me", "keep me"},
+	}
+	for _, tt := range playbook {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, sanitizeFieldValue(tt.value))
+		})
+	}
 }
