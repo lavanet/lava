@@ -9,9 +9,9 @@ import (
 	"sync"
 
 	"github.com/gogo/status"
-	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
 	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/grpcwebcompat"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol/protocolerrors"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/utils"
@@ -70,7 +70,7 @@ func NewProviderListener(ctx context.Context, networkAddress lavasession.Network
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	}
 	grpcServer := grpc.NewServer(opts...)
-	wrappedServer := grpcweb.WrapServer(grpcServer)
+	wrappedServer := grpcwebcompat.WrapServer(grpcServer)
 	handler := func(resp http.ResponseWriter, req *http.Request) {
 		// Set CORS headers
 		resp.Header().Set("Access-Control-Allow-Origin", "*")
