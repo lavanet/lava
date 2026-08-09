@@ -37,10 +37,14 @@ const (
 // assert whether a hash lookup fell through to the node.
 type svmMockChainFetcher struct {
 	latestBlockhashResponse []byte
+	customMessageErr        error
 	hashByNumCalls          []int64
 }
 
 func (m *svmMockChainFetcher) CustomMessage(ctx context.Context, path string, data []byte, connectionType string, apiName string) ([]byte, error) {
+	if m.customMessageErr != nil {
+		return nil, m.customMessageErr
+	}
 	return m.latestBlockhashResponse, nil
 }
 
@@ -55,12 +59,16 @@ func (m *svmMockChainFetcher) FetchEndpoint() lavasession.RPCProviderEndpoint {
 	return lavasession.RPCProviderEndpoint{}
 }
 
-// svmMockDataFetcher stubs IChainTrackerDataFetcher. Returning zeroes keeps the
-// server-memory floor at 0 so any non-negative slot passes the too-early guard.
-type svmMockDataFetcher struct{}
+// svmMockDataFetcher stubs IChainTrackerDataFetcher. The zero value keeps the
+// server-memory floor at 0 so any non-negative slot passes the too-early guard;
+// tests that exercise that guard set the fields explicitly.
+type svmMockDataFetcher struct {
+	latestBlock  int64
+	serverMemory uint64
+}
 
-func (svmMockDataFetcher) GetAtomicLatestBlockNum() int64 { return 0 }
-func (svmMockDataFetcher) GetServerBlockMemory() uint64   { return 0 }
+func (d svmMockDataFetcher) GetAtomicLatestBlockNum() int64 { return d.latestBlock }
+func (d svmMockDataFetcher) GetServerBlockMemory() uint64   { return d.serverMemory }
 
 func newTestSVMChainTracker(t *testing.T, latestBlockhashResponse string) (*SVMChainTracker, *svmMockChainFetcher) {
 	t.Helper()
@@ -127,6 +135,81 @@ func TestSVMChainTracker_CachesHashBySlot(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, svmTestBlockHash, hash)
 	require.Empty(t, chainFetcher.hashByNumCalls, "a cached slot must not fall through to the node")
+}
+
+// TestSVMChainTracker_FetchBlockHashByNumPaths covers the lookup paths that a
+// cached-slot hit short-circuits, all of which now take a slot as their argument.
+func TestSVMChainTracker_FetchBlockHashByNumPaths(t *testing.T) {
+	t.Run("slot below the server-memory floor is rejected", func(t *testing.T) {
+		tracker, chainFetcher := newTestSVMChainTracker(t, svmTestLatestBlockhashReply)
+		tracker.dataFetcher = svmMockDataFetcher{latestBlock: svmTestSlot, serverMemory: 100}
+
+		_, err := tracker.FetchBlockHashByNum(context.Background(), svmTestSlot-1000)
+		require.ErrorIs(t, err, ErrorFailedToFetchTooEarlyBlock)
+		require.Empty(t, chainFetcher.hashByNumCalls, "a too-early slot must not reach the node")
+	})
+
+	t.Run("observed slot without a cached hash falls through to the node", func(t *testing.T) {
+		tracker, chainFetcher := newTestSVMChainTracker(t, svmTestLatestBlockhashReply)
+		// Mark the slot observed without seeding hashCache — the state left behind
+		// once a hash entry expires (hashCacheTTL) while the slot mark survives
+		// (slotCacheTTL, 4x longer).
+		atomic.StoreInt64(&tracker.seenBlock, svmTestSlot)
+		tracker.slotCache.SetWithTTL(svmTestSlot, svmTestSlot, 1, slotCacheTTL)
+		tracker.slotCache.Wait()
+
+		hash, err := tracker.FetchBlockHashByNum(context.Background(), svmTestSlot)
+		require.NoError(t, err)
+		require.Equal(t, "node-hash", hash)
+		require.Equal(t, []int64{svmTestSlot}, chainFetcher.hashByNumCalls,
+			"the node must be queried with the slot itself, not a translated value")
+	})
+
+	t.Run("slot the tracker has never observed is reported as not visible", func(t *testing.T) {
+		tracker, chainFetcher := newTestSVMChainTracker(t, svmTestLatestBlockhashReply)
+
+		// seenBlock is 0, so the slot is ahead of anything polled and waitForSlotVisible
+		// returns without sleeping.
+		_, err := tracker.FetchBlockHashByNum(context.Background(), svmTestSlot)
+		require.ErrorContains(t, err, "slot not yet visible")
+		require.Empty(t, chainFetcher.hashByNumCalls)
+	})
+
+	t.Run("slot at or below seenBlock but absent from the cache is retried then rejected", func(t *testing.T) {
+		tracker, chainFetcher := newTestSVMChainTracker(t, svmTestLatestBlockhashReply)
+		// seenBlock says the tracker has passed this slot, but no cache entry backs it
+		// — the eviction case. waitForSlotVisible polls the cache before giving up.
+		atomic.StoreInt64(&tracker.seenBlock, svmTestSlot)
+
+		_, err := tracker.FetchBlockHashByNum(context.Background(), svmTestSlot)
+		require.ErrorContains(t, err, "slot not yet visible")
+		require.Empty(t, chainFetcher.hashByNumCalls,
+			"today the gate stops the lookup before the node is consulted")
+	})
+}
+
+// TestSVMChainTracker_FetchLatestBlockNumErrors covers the poll failure paths.
+// FetchLatestBlockNum reports 0 alongside the error so callers can treat the poll
+// as failed rather than as a chain that rolled back to genesis.
+func TestSVMChainTracker_FetchLatestBlockNumErrors(t *testing.T) {
+	t.Run("transport error", func(t *testing.T) {
+		tracker, chainFetcher := newTestSVMChainTracker(t, svmTestLatestBlockhashReply)
+		chainFetcher.customMessageErr = context.DeadlineExceeded
+
+		latestBlock, err := tracker.FetchLatestBlockNum(context.Background())
+		require.Error(t, err)
+		require.Zero(t, latestBlock)
+		require.Zero(t, atomic.LoadInt64(&tracker.seenBlock), "a failed poll must not move seenBlock")
+	})
+
+	t.Run("malformed response body", func(t *testing.T) {
+		tracker, _ := newTestSVMChainTracker(t, `not json`)
+
+		latestBlock, err := tracker.FetchLatestBlockNum(context.Background())
+		require.Error(t, err)
+		require.Zero(t, latestBlock)
+		require.Zero(t, atomic.LoadInt64(&tracker.seenBlock))
+	})
 }
 
 // svmSpecRPCInput is a minimal parser.RPCInput carrying only a JSON-RPC result,
