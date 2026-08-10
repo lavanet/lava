@@ -251,7 +251,7 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 		dappId := "dapp"
 		consumerIp := "123.11"
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
-		consistency := relaycore.NewConsistency(specId)
+		consistency := relaycore.NewConsistency(specId, 0)
 		usedProviders := lavasession.NewUsedProviders(nil)
 		stateMachine, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil}, protocolMessage, nil, false)
 		require.NoError(t, err)
@@ -324,7 +324,7 @@ func TestConsumerStateMachineExhaustRetries(t *testing.T) {
 		dappId := "dapp"
 		consumerIp := "123.11"
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
-		consistency := relaycore.NewConsistency(specId)
+		consistency := relaycore.NewConsistency(specId, 0)
 		usedProviders := lavasession.NewUsedProviders(nil)
 		stateMachine, err := NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil, tickerValue: 10 * time.Second}, protocolMessage, nil, false)
 		require.NoError(t, err)
@@ -394,7 +394,7 @@ func TestConsumerStateMachineArchiveRetry(t *testing.T) {
 
 		relayRequestData := lavaprotocol.NewRelayData(ctx, http.MethodPost, "", jsonData, seenBlock, reqBlock, spectypes.APIInterfaceJsonRPC, chainMsg.GetRPCMessage().GetHeaders(), chainlib.GetAddon(chainMsg), common.GetExtensionNames(chainMsg.GetExtensions()))
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, relayRequestData, dappId, consumerIp)
-		consistency := relaycore.NewConsistency(specId)
+		consistency := relaycore.NewConsistency(specId, 0)
 		usedProviders := lavasession.NewUsedProviders(nil)
 		stateMachine, err := NewRelayStateMachine(
 			ctx,
@@ -500,7 +500,7 @@ func TestConsumerStateMachineBatchRequestRetryCondition(t *testing.T) {
 		require.True(t, ok, "expected ConsumerRelayStateMachine")
 
 		// Create a mock results checker
-		consistency := relaycore.NewConsistency(specId)
+		consistency := relaycore.NewConsistency(specId, 0)
 		relayProcessor := relaycore.NewRelayProcessor(
 			ctx,
 			nil, // Stateless mode - no cross-validation params

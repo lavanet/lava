@@ -1,6 +1,7 @@
 package relaycore
 
 import (
+	"math"
 	"time"
 
 	"github.com/dgraph-io/ristretto/v2"
@@ -12,6 +13,17 @@ const (
 	CacheMaxCost     = 20000 // each item cost would be 1
 	CacheNumCounters = 20000 // expect 2000 items
 	EntryTTL         = 5 * time.Minute
+
+	// A seen block entry lives at most EntryTTL, so the largest advance a healthy
+	// chain can legitimately show between two updates is the number of blocks it
+	// produces in that window. seenBlockAdvanceSafetyFactor multiplies that bound so
+	// bursty block production, clock skew and provider spread never trip the guard —
+	// it is meant to reject values that are impossible, not merely surprising.
+	seenBlockAdvanceSafetyFactor = 4
+	// seenBlockAdvanceFloor is always accepted regardless of block time, so chains
+	// slower than EntryTTL per block (where the computed bound rounds to zero) and
+	// freshly-started chains are never gated.
+	seenBlockAdvanceFloor = 1000
 )
 
 // Consistency interface for managing block consistency
@@ -24,8 +36,23 @@ type Consistency interface {
 
 // ConsistencyImpl is the default implementation of Consistency
 type ConsistencyImpl struct {
-	cache  *ristretto.Cache[string, any]
-	specId string
+	cache            *ristretto.Cache[string, any]
+	specId           string
+	averageBlockTime time.Duration
+}
+
+// maxPlausibleSeenBlockAdvance is the largest jump in seen block this chain could
+// legitimately produce within the lifetime of a cache entry. Anything beyond it did
+// not come from the chain advancing.
+//
+// A zero or negative average block time means the chain's cadence is unknown, so the
+// guard fails open rather than gating on a number it cannot justify.
+func (cc *ConsistencyImpl) maxPlausibleSeenBlockAdvance() int64 {
+	if cc.averageBlockTime <= 0 {
+		return math.MaxInt64
+	}
+	blocksWithinTTL := int64(EntryTTL / cc.averageBlockTime)
+	return blocksWithinTTL*seenBlockAdvanceSafetyFactor + seenBlockAdvanceFloor
 }
 
 func (cc *ConsistencyImpl) SetLatestBlock(key string, block int64) {
@@ -58,9 +85,28 @@ func (cc *ConsistencyImpl) SetSeenBlockFromKey(blockSeen int64, key string) {
 	if cc == nil {
 		return
 	}
-	// seen block is only increasing
-	if block, found := cc.GetLatestBlock(key); found && block >= blockSeen {
-		return
+	if block, found := cc.GetLatestBlock(key); found {
+		// seen block is only increasing
+		if block >= blockSeen {
+			return
+		}
+		// The seen block is taken from whatever a provider reports as its latest block
+		// and is then sent to every other provider, which bail when they cannot reach
+		// it. A single provider reporting a value from outside this chain's numeric
+		// domain — a different unit, a bug, or a deliberately inflated number — would
+		// otherwise pin the seen block out of reach and make every honest provider look
+		// hopelessly behind, for the lifetime of the entry.
+		if advance := blockSeen - block; advance > cc.maxPlausibleSeenBlockAdvance() {
+			utils.LavaFormatWarning("discarding implausible seen block advance", nil,
+				utils.LogAttr("specId", cc.specId),
+				utils.LogAttr("storedSeenBlock", block),
+				utils.LogAttr("reportedSeenBlock", blockSeen),
+				utils.LogAttr("advance", advance),
+				utils.LogAttr("maxPlausibleAdvance", cc.maxPlausibleSeenBlockAdvance()),
+				utils.LogAttr("averageBlockTime", cc.averageBlockTime),
+			)
+			return
+		}
 	}
 	cc.SetLatestBlock(key, blockSeen)
 }
@@ -83,10 +129,13 @@ func (cc *ConsistencyImpl) GetSeenBlock(userData common.UserData) (int64, bool) 
 	return cc.GetLatestBlock(cc.Key(userData))
 }
 
-func NewConsistency(specId string) Consistency {
+// NewConsistency builds the per-chain seen block store. averageBlockTime comes from
+// the spec and bounds how far the seen block may advance at once; pass 0 when it is
+// not known, which disables that guard.
+func NewConsistency(specId string, averageBlockTime time.Duration) Consistency {
 	cache, err := ristretto.NewCache(&ristretto.Config[string, any]{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for consistency", err)
 	}
-	return &ConsistencyImpl{cache: cache, specId: specId}
+	return &ConsistencyImpl{cache: cache, specId: specId, averageBlockTime: averageBlockTime}
 }
