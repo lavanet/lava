@@ -37,6 +37,14 @@ type SVMChainTracker struct {
 	slotCache    *ristretto.Cache[int64, int64]  // marks slots the tracker has observed, so hash lookups can tell "not yet polled" from "too old".
 	hashCache    *ristretto.Cache[int64, string] // cache for slot to hash.
 	seenBlock    int64
+	// wireLatestBlock is value.lastValidBlockHeight from the most recent poll: the
+	// block height at which the returned blockhash expires. It is NOT the chain
+	// position — the tracker uses context.slot for that — and is kept only because it
+	// is the number providers have historically published in RelayReply.LatestBlock.
+	// Consumers ratchet that value and send it back to every provider, so changing it
+	// would put an un-upgraded fleet out of sync with an upgraded one. See
+	// GetWireLatestBlock.
+	wireLatestBlock int64
 }
 
 type SVMLatestBlockResponse struct {
@@ -45,9 +53,19 @@ type SVMLatestBlockResponse struct {
 			Slot int64 `json:"slot"`
 		} `json:"context"`
 		Value struct {
-			BlockHash string `json:"blockhash"`
+			LastValidBlockHeight int64  `json:"lastValidBlockHeight"`
+			BlockHash            string `json:"blockhash"`
 		} `json:"value"`
 	} `json:"result"`
+}
+
+// GetWireLatestBlock reports the value this tracker publishes to consumers, which
+// deliberately stays in the legacy block-height domain while the chain position moves
+// to slots. Returns false before the first successful poll, so callers fall back to
+// the chain position rather than publishing a zero.
+func (cs *SVMChainTracker) GetWireLatestBlock() (int64, bool) {
+	wire := atomic.LoadInt64(&cs.wireLatestBlock)
+	return wire, wire > 0
 }
 
 func (cs *SVMChainTracker) fetchLatestBlockNumInner(ctx context.Context) (int64, error) {
@@ -76,10 +94,13 @@ func (cs *SVMChainTracker) fetchLatestBlockNumInner(ctx context.Context) (int64,
 	atomic.StoreInt64(&cs.seenBlock, slot)
 	cs.slotCache.SetWithTTL(slot, slot, 1, slotCacheTTL)
 	cs.hashCache.SetWithTTL(slot, blockHash, 1, hashCacheTTL)
+	// Kept only to preserve the published value; nothing internal compares against it.
+	atomic.StoreInt64(&cs.wireLatestBlock, response.Result.Value.LastValidBlockHeight)
 
 	utils.LavaFormatTrace("[SVMChainTracker] fetching latest slot",
 		utils.LogAttr("slot", slot),
 		utils.LogAttr("block_hash", blockHash),
+		utils.LogAttr("wire_latest_block", response.Result.Value.LastValidBlockHeight),
 	)
 
 	return slot, nil

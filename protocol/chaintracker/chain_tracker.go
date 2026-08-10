@@ -39,6 +39,14 @@ type IChainTracker interface {
 	// GetAtomicLatestBlockNum returns the current latest block number atomically
 	GetAtomicLatestBlockNum() int64
 
+	// GetWireLatestBlock returns the block number to publish to consumers in
+	// RelayReply.LatestBlock and to compare against their reported seen block.
+	//
+	// For every chain but SVM this is the chain position and the two are identical.
+	// SVM tracks slots internally while consumers still exchange the legacy block
+	// height, so the two differ there until the published domain is migrated.
+	GetWireLatestBlock() int64
+
 	// StartAndServe starts the chain tracker and serves gRPC if configured
 	StartAndServe(ctx context.Context) error
 
@@ -197,6 +205,25 @@ func (cs *ChainTracker) GetLatestBlockNum() (int64, time.Time) {
 
 func (cs *ChainTracker) GetAtomicLatestBlockNum() int64 {
 	return atomic.LoadInt64(&cs.latestBlockNum)
+}
+
+// wireLatestBlockProvider is implemented by fetcher wrappers whose published block
+// number differs from the chain position they track internally. Only the SVM wrapper
+// does; every other chain publishes its chain position unchanged.
+type wireLatestBlockProvider interface {
+	GetWireLatestBlock() (int64, bool)
+}
+
+// GetWireLatestBlock returns the block number to publish to consumers. It falls back
+// to the chain position whenever the wrapper has no separate published value, which
+// covers every non-SVM chain and the window before SVM's first successful poll.
+func (cs *ChainTracker) GetWireLatestBlock() int64 {
+	if provider, ok := cs.iChainFetcherWrapper.(wireLatestBlockProvider); ok {
+		if wire, valid := provider.GetWireLatestBlock(); valid {
+			return wire
+		}
+	}
+	return cs.GetAtomicLatestBlockNum()
 }
 
 func (cs *ChainTracker) GetServerBlockMemory() uint64 {

@@ -212,6 +212,34 @@ func TestSVMChainTracker_FetchLatestBlockNumErrors(t *testing.T) {
 	})
 }
 
+// TestSVMChainTracker_PublishesLegacyHeightOnTheWire pins the split that keeps a
+// mixed provider fleet working: the tracker's chain position moves to slots, but the
+// number published to consumers stays the legacy block height.
+//
+// Consumers ratchet the published value and send it back to every provider, and
+// providers bail when they cannot reach it. If an upgraded provider published a slot
+// while un-upgraded ones still published block heights, consumers would ratchet to the
+// slot domain and every un-upgraded provider would look ~22M blocks behind. Keeping
+// the published value put means upgrades can land in any order.
+func TestSVMChainTracker_PublishesLegacyHeightOnTheWire(t *testing.T) {
+	tracker, _ := newTestSVMChainTracker(t, svmTestLatestBlockhashReply)
+
+	wire, valid := tracker.GetWireLatestBlock()
+	require.False(t, valid, "before the first poll there is no published value to report")
+
+	chainPosition, err := tracker.FetchLatestBlockNum(context.Background())
+	require.NoError(t, err)
+
+	wire, valid = tracker.GetWireLatestBlock()
+	require.True(t, valid)
+	require.Equal(t, svmTestLastValidBlockHeight, wire,
+		"the published value must stay in the legacy block-height domain")
+	require.Equal(t, svmTestSlot, chainPosition,
+		"the chain position must be the slot")
+	require.NotEqual(t, wire, chainPosition,
+		"the two domains differ on Solana; that difference is the whole point of the split")
+}
+
 // svmSpecRPCInput is a minimal parser.RPCInput carrying only a JSON-RPC result,
 // which is all a GET_BLOCKNUM result_parsing directive reads.
 type svmSpecRPCInput struct {
