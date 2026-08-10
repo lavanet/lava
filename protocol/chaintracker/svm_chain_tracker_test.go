@@ -224,14 +224,14 @@ func TestSVMChainTracker_FetchLatestBlockNumErrors(t *testing.T) {
 func TestSVMChainTracker_PublishesLegacyHeightOnTheWire(t *testing.T) {
 	tracker, _ := newTestSVMChainTracker(t, svmTestLatestBlockhashReply)
 
-	wire, valid := tracker.GetWireLatestBlock()
-	require.False(t, valid, "before the first poll there is no published value to report")
+	_, hasWire := tracker.GetWireLatestBlock()
+	require.False(t, hasWire, "before the first poll there is no published value to report")
 
 	chainPosition, err := tracker.FetchLatestBlockNum(context.Background())
 	require.NoError(t, err)
 
-	wire, valid = tracker.GetWireLatestBlock()
-	require.True(t, valid)
+	wire, hasWire := tracker.GetWireLatestBlock()
+	require.True(t, hasWire)
 	require.Equal(t, svmTestLastValidBlockHeight, wire,
 		"the published value must stay in the legacy block-height domain")
 	require.Equal(t, svmTestSlot, chainPosition,
