@@ -20,10 +20,13 @@ const (
 	// bursty block production, clock skew and provider spread never trip the guard —
 	// it is meant to reject values that are impossible, not merely surprising.
 	seenBlockAdvanceSafetyFactor = 4
-	// seenBlockAdvanceFloor is always accepted regardless of block time, so chains
-	// slower than EntryTTL per block (where the computed bound rounds to zero) and
-	// freshly-started chains are never gated.
-	seenBlockAdvanceFloor = 1000
+	// minSeenBlockAdvance keeps the bound usable on chains that produce less than one
+	// block per EntryTTL, where the computed bound truncates to zero and would reject
+	// every advance. It is deliberately small: a blanket allowance large enough for a
+	// fast chain would leave a slow one — BTC produces a block every 10 minutes —
+	// accepting jumps of days' worth of blocks, which is exactly what this guard is
+	// supposed to catch.
+	minSeenBlockAdvance = 16
 )
 
 // Consistency interface for managing block consistency
@@ -52,7 +55,10 @@ func (cc *ConsistencyImpl) maxPlausibleSeenBlockAdvance() int64 {
 		return math.MaxInt64
 	}
 	blocksWithinTTL := int64(EntryTTL / cc.averageBlockTime)
-	return blocksWithinTTL*seenBlockAdvanceSafetyFactor + seenBlockAdvanceFloor
+	if bound := blocksWithinTTL * seenBlockAdvanceSafetyFactor; bound > minSeenBlockAdvance {
+		return bound
+	}
+	return minSeenBlockAdvance
 }
 
 func (cc *ConsistencyImpl) SetLatestBlock(key string, block int64) {
@@ -85,7 +91,17 @@ func (cc *ConsistencyImpl) SetSeenBlockFromKey(blockSeen int64, key string) {
 	if cc == nil {
 		return
 	}
-	if block, found := cc.GetLatestBlock(key); found {
+	block, found := cc.GetLatestBlock(key)
+	if !found {
+		// Cache writes are applied asynchronously, so a value written moments ago may
+		// not be readable yet. Flush once and look again before concluding the entry is
+		// genuinely cold: relay responses are handled back-to-back, and treating a
+		// not-yet-visible baseline as absent would skip the guard for precisely the
+		// rapid successive updates it exists to police.
+		cc.cache.Wait()
+		block, found = cc.GetLatestBlock(key)
+	}
+	if found {
 		// seen block is only increasing
 		if block >= blockSeen {
 			return
