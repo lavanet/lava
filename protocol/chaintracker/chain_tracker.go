@@ -14,8 +14,8 @@ import (
 	"github.com/dgraph-io/ristretto/v2"
 	rand "github.com/lavanet/lava/v5/utils/rand"
 
-	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/grpcwebcompat"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/protocol/metrics"
 	"github.com/lavanet/lava/v5/utils"
@@ -609,7 +609,7 @@ func (ct *ChainTracker) serve(ctx context.Context, listenAddr string) error {
 	}
 	s := grpc.NewServer()
 
-	wrappedServer := grpcweb.WrapServer(s)
+	wrappedServer := grpcwebcompat.WrapServer(s)
 	handler := func(resp http.ResponseWriter, req *http.Request) {
 		// Set CORS headers
 		resp.Header().Set("Access-Control-Allow-Origin", "*")
