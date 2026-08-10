@@ -62,21 +62,22 @@ func (cs *SVMChainTracker) fetchLatestBlockNumInner(ctx context.Context) (int64,
 		return 0, fmt.Errorf("failed to unmarshal response: %v", err)
 	}
 
-	blockNum := response.Result.Value.LastValidBlockHeight
+	// Solana uses slot (not block height) as the canonical chain-position primitive.
+	// Provider spec parsing also reads context.slot, so the tracker's "seen" value
+	// must track slot to keep consistency validation apples-to-apples.
 	slot := response.Result.Context.Slot
 	blockHash := response.Result.Value.BlockHash
 
-	atomic.StoreInt64(&cs.seenBlock, blockNum)
-	cs.slotCache.SetWithTTL(blockNum, slot, 1, slotCacheTTL)
-	cs.hashCache.SetWithTTL(blockNum, blockHash, 1, hashCacheTTL)
+	atomic.StoreInt64(&cs.seenBlock, slot)
+	cs.slotCache.SetWithTTL(slot, slot, 1, slotCacheTTL)
+	cs.hashCache.SetWithTTL(slot, blockHash, 1, hashCacheTTL)
 
-	utils.LavaFormatTrace("[SVMChainTracker] fetching latest block num",
+	utils.LavaFormatTrace("[SVMChainTracker] fetching latest slot",
 		utils.LogAttr("slot", slot),
-		utils.LogAttr("block_num", blockNum),
 		utils.LogAttr("block_hash", blockHash),
 	)
 
-	return blockNum, nil
+	return slot, nil
 }
 
 func (cs *SVMChainTracker) FetchLatestBlockNum(ctx context.Context) (int64, error) {
@@ -91,42 +92,39 @@ func (cs *SVMChainTracker) FetchLatestBlockNum(ctx context.Context) (int64, erro
 	return latestBlockNum, nil
 }
 
-func (cs *SVMChainTracker) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
-	if blockNum < cs.dataFetcher.GetAtomicLatestBlockNum()-int64(cs.dataFetcher.GetServerBlockMemory()) {
-		return "", ErrorFailedToFetchTooEarlyBlock.Wrapf("requested Block: %d, latest block: %d, server memory %d", blockNum, cs.dataFetcher.GetAtomicLatestBlockNum(), cs.dataFetcher.GetServerBlockMemory())
+// On Solana the interface's `blockNum` parameter is a slot.
+func (cs *SVMChainTracker) FetchBlockHashByNum(ctx context.Context, slot int64) (string, error) {
+	if slot < cs.dataFetcher.GetAtomicLatestBlockNum()-int64(cs.dataFetcher.GetServerBlockMemory()) {
+		return "", ErrorFailedToFetchTooEarlyBlock.Wrapf("requested slot: %d, latest slot: %d, server memory %d", slot, cs.dataFetcher.GetAtomicLatestBlockNum(), cs.dataFetcher.GetServerBlockMemory())
 	}
-	blockHash, ok := cs.hashCache.Get(blockNum)
-	if ok {
-		utils.LavaFormatTrace("[SVMChainTracker] FetchBlockHashByNum found block hash in cache", utils.LogAttr("block_num", blockNum), utils.LogAttr("hash", blockHash))
+	if blockHash, ok := cs.hashCache.Get(slot); ok {
+		utils.LavaFormatTrace("[SVMChainTracker] FetchBlockHashByNum found hash in cache", utils.LogAttr("slot", slot), utils.LogAttr("hash", blockHash))
 		return blockHash, nil
 	}
 
-	// In SVM, the block hash is fetched by slot instead of block.
-	// We need to get the slot which is related to this block number.
-	slot, err := cs.tryGetSlotFromCache(blockNum)
-	if err != nil {
+	if err := cs.waitForSlotVisible(slot); err != nil {
 		return "", err
 	}
 
-	utils.LavaFormatTrace("[SVMChainTracker] FetchBlockHashByNum found slot in cache", utils.LogAttr("block_num", blockNum), utils.LogAttr("slot", slot))
 	hash, err := cs.chainFetcher.FetchBlockHashByNum(ctx, slot)
 	if err == nil {
-		utils.LavaFormatTrace("[SVMChainTracker] FetchBlockHashByNum succeeded", utils.LogAttr("block_num", blockNum), utils.LogAttr("hash", hash), utils.LogAttr("slot", slot))
+		utils.LavaFormatTrace("[SVMChainTracker] FetchBlockHashByNum succeeded", utils.LogAttr("slot", slot), utils.LogAttr("hash", hash))
 	}
 	return hash, err
 }
 
-func (cs *SVMChainTracker) tryGetSlotFromCache(blockNum int64) (int64, error) {
-	if blockNum <= atomic.LoadInt64(&cs.seenBlock) {
-		for i := 0; i < getSlotFromCacheMaxRetries; i++ {
-			slot, ok := cs.slotCache.Get(blockNum)
-			if ok {
-				return slot, nil
+// waitForSlotVisible blocks briefly until the tracker has observed `slot` at least once.
+// Handles the bootstrap race where a hash lookup can arrive before the tracker has seen that slot.
+func (cs *SVMChainTracker) waitForSlotVisible(slot int64) error {
+	if slot <= atomic.LoadInt64(&cs.seenBlock) {
+		for range getSlotFromCacheMaxRetries {
+			if _, ok := cs.slotCache.Get(slot); ok {
+				return nil
 			}
 			time.Sleep(getSlotFromCacheSleepDuration)
 		}
 	}
 
-	return 0, fmt.Errorf("slot not found in cache. This error can happen on bootstrap and should resolve by itself, if persists please let the dev team know. "+
-		"block: %d, latest_block: %d, server_memory: %d", blockNum, cs.dataFetcher.GetAtomicLatestBlockNum(), cs.dataFetcher.GetServerBlockMemory())
+	return fmt.Errorf("slot not yet visible. This can happen on bootstrap and should resolve by itself, if persists please let the dev team know. "+
+		"slot: %d, latest_slot: %d, server_memory: %d", slot, cs.dataFetcher.GetAtomicLatestBlockNum(), cs.dataFetcher.GetServerBlockMemory())
 }

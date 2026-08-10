@@ -65,7 +65,7 @@ func TestIsBlockNotAvailableError_SolanaErrorCode(t *testing.T) {
 		{
 			name:     "EVM -32004 method not supported (same code different chain)",
 			response: []byte(`{"jsonrpc":"2.0","id":1,"error":{"code":-32004,"message":"Method not supported"}}`),
-			expected: true, // The function only checks the code, chain filtering is done by the caller
+			expected: true, // Classified via ChainFamilySolana (callers gate by chain); -32004 → BlockNotFound in Solana tier.
 		},
 	}
 
