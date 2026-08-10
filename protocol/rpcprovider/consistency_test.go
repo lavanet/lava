@@ -228,6 +228,77 @@ func TestHandleConsistency_ComparesInPublishedDomain(t *testing.T) {
 	})
 }
 
+// TestHandleConsistency_SmallGapWaitsInsteadOfBailing pins the NEAR-shaped case: the consumer's
+// seenBlock is a few blocks ahead of this provider's chain tracker, but those blocks already exist
+// on chain and the tracker picks them up on its next poll. The provider must spend its wait budget
+// instead of bailing with ConsistencyError, even when the spec's average_block_time overstates the
+// chain's real block time (which inflates probabilityBlockError to ~1 for any gap >= 2).
+func TestHandleConsistency_SmallGapWaitsInsteadOfBailing(t *testing.T) {
+	for _, blockGap := range []int64{2, 3} {
+		seqTracker := &sequenceChainTracker{
+			DummyChainTracker: &chaintracker.DummyChainTracker{},
+			// first read is behind by blockGap, the next poll has caught up
+			seq:        []int64{1000, 1000 + blockGap, 1000 + blockGap, 1000 + blockGap},
+			changeTime: time.Now().Add(-300 * time.Millisecond),
+		}
+
+		rpcps := &RPCProviderServer{
+			chainTracker:        seqTracker,
+			rpcProviderEndpoint: &lavasession.RPCProviderEndpoint{ChainID: "NEAR"},
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+
+		latest, slept, err := rpcps.handleConsistency(
+			ctx,
+			time.Second,            // baseRelayTimeout: 10 CU => halfTimeLeft caps at 500ms
+			1000+blockGap,          // seenBlock, already served by another provider
+			spectypes.LATEST_BLOCK, // requestBlock
+			1200*time.Millisecond,  // stale average_block_time (chain really runs at ~600ms)
+			16,                     // allowed_block_lag_for_qos_sync
+			3,
+			3,
+		)
+		cancel()
+
+		require.NoError(t, err, "blockGap %d must not bail, the tracker catches up on its next poll", blockGap)
+		require.Equal(t, 1000+blockGap, latest)
+		require.Greater(t, slept, time.Duration(0), "blockGap %d should have used the wait budget", blockGap)
+	}
+}
+
+// TestHandleConsistency_NoTimeToPollBails covers the other side of the gate: when the caller leaves
+// less time than a single chain tracker poll, waiting cannot help, so bail immediately.
+func TestHandleConsistency_NoTimeToPollBails(t *testing.T) {
+	mockTracker := NewMockChainTracker()
+	mockTracker.SetLatestBlock(1000, time.Now().Add(-100*time.Millisecond))
+
+	rpcps := &RPCProviderServer{
+		chainTracker:        mockTracker,
+		rpcProviderEndpoint: &lavasession.RPCProviderEndpoint{ChainID: "NEAR"},
+	}
+
+	// averageBlockTime 1200ms => tracker polls at worst every 300ms; a 100ms relay budget
+	// leaves halfTimeLeft of 50ms, which cannot fit a poll.
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	latest, slept, err := rpcps.handleConsistency(
+		ctx,
+		100*time.Millisecond,
+		1002,
+		spectypes.LATEST_BLOCK,
+		1200*time.Millisecond,
+		16,
+		3,
+		3,
+	)
+
+	require.Error(t, err)
+	require.Equal(t, int64(1000), latest)
+	require.Equal(t, time.Duration(0), slept)
+}
+
 type fakeChainParser struct {
 	blockLagForQosSync        int64
 	averageBlockTime          time.Duration
