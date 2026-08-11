@@ -28,6 +28,12 @@ func (dct *DummyChainTracker) GetAtomicLatestBlockNum() int64 {
 	return DummyChainTrackerLatestBlock
 }
 
+// GetWireLatestBlock returns the block number published to consumers, which for the
+// dummy tracker is the same value it reports everywhere else.
+func (dct *DummyChainTracker) GetWireLatestBlock() int64 {
+	return DummyChainTrackerLatestBlock
+}
+
 // StartAndServe starts the chain tracker and serves gRPC if configured
 func (dct *DummyChainTracker) StartAndServe(ctx context.Context) error {
 	return nil

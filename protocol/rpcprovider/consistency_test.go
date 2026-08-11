@@ -43,7 +43,22 @@ func (sct *sequenceChainTracker) current() int64 {
 	return sct.seq[i]
 }
 
+// GetLatestBlockNum does not advance the sequence: consistency now reads the block
+// through GetWireLatestBlock and consults this only for the change time, so advancing
+// here would consume the sequence twice per poll.
 func (sct *sequenceChainTracker) GetLatestBlockNum() (int64, time.Time) {
+	return sct.current(), sct.changeTime
+}
+
+func (sct *sequenceChainTracker) GetAtomicLatestBlockNum() int64 {
+	return sct.current()
+}
+
+// GetWireLatestBlock walks the sequence, one entry per read. This tracker models a
+// non-SVM chain, where the published value and the chain position are the same number
+// — but it must still be overridden, since the embedded DummyChainTracker reports
+// MaxInt64 and would make every wait succeed instantly.
+func (sct *sequenceChainTracker) GetWireLatestBlock() int64 {
 	i := int(sct.callIdx.Add(1)) - 1
 	if i < 0 {
 		i = 0
@@ -51,11 +66,7 @@ func (sct *sequenceChainTracker) GetLatestBlockNum() (int64, time.Time) {
 	if i >= len(sct.seq) {
 		i = len(sct.seq) - 1
 	}
-	return sct.seq[i], sct.changeTime
-}
-
-func (sct *sequenceChainTracker) GetAtomicLatestBlockNum() int64 {
-	return sct.current()
+	return sct.seq[i]
 }
 
 func TestHandleConsistency_HistoricalBlockNoWait(t *testing.T) {
@@ -144,6 +155,77 @@ func TestHandleConsistency_SleepsAndCatchesUp(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int64(2), latest)
 	require.Greater(t, slept, time.Duration(0))
+}
+
+// splitDomainChainTracker models an SVM provider after the domain split: its chain
+// position is a slot, while the value it publishes to consumers stays a block height.
+// The two differ by roughly the Solana slot-vs-height gap.
+type splitDomainChainTracker struct {
+	*chaintracker.DummyChainTracker
+	wireLatestBlock    int64
+	chainPositionBlock int64
+	changeTime         time.Time
+}
+
+func (sdt *splitDomainChainTracker) GetLatestBlockNum() (int64, time.Time) {
+	return sdt.chainPositionBlock, sdt.changeTime
+}
+func (sdt *splitDomainChainTracker) GetAtomicLatestBlockNum() int64 { return sdt.chainPositionBlock }
+func (sdt *splitDomainChainTracker) GetWireLatestBlock() int64      { return sdt.wireLatestBlock }
+
+// TestHandleConsistency_ComparesInPublishedDomain guards the quiet failure mode of the
+// SVM domain split. seenBlock and requestBlock both originate from the consumer, which
+// only ever saw published values, so consistency has to compare against the published
+// value too.
+//
+// Reading the chain position instead would not error — it would silently pass every
+// check, because a Solana slot sits ~22M above the block height a consumer reports.
+// Consistency enforcement for Solana would switch off with nothing in the logs.
+func TestHandleConsistency_ComparesInPublishedDomain(t *testing.T) {
+	const (
+		wireLatest    = int64(414654108) // block height, what consumers exchange
+		chainPosition = int64(436597938) // slot, the tracker's internal position
+	)
+
+	newServer := func() *RPCProviderServer {
+		return &RPCProviderServer{
+			chainTracker: &splitDomainChainTracker{
+				DummyChainTracker:  &chaintracker.DummyChainTracker{},
+				wireLatestBlock:    wireLatest,
+				chainPositionBlock: chainPosition,
+				changeTime:         time.Now().Add(-time.Second),
+			},
+			rpcProviderEndpoint: &lavasession.RPCProviderEndpoint{ChainID: "SOLANA"},
+		}
+	}
+
+	t.Run("reports the published value, not the chain position", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+		defer cancel()
+
+		// Comfortably behind the published latest, so this returns immediately.
+		latest, slept, err := newServer().handleConsistency(ctx, 20*time.Millisecond,
+			wireLatest-10, wireLatest-10, 400*time.Millisecond, 25, 0, 1)
+
+		require.NoError(t, err)
+		require.Zero(t, slept)
+		require.Equal(t, wireLatest, latest,
+			"RelayReply.LatestBlock is fed from here and must stay in the published domain")
+		require.NotEqual(t, chainPosition, latest)
+	})
+
+	t.Run("a seen block past the published latest is still enforced", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+		defer cancel()
+
+		// Above the published latest but far below the chain position: reading the
+		// chain position here would return nil and skip the check entirely.
+		_, _, err := newServer().handleConsistency(ctx, 20*time.Millisecond,
+			wireLatest+500, wireLatest+500, 400*time.Millisecond, 25, 0, 1)
+
+		require.Error(t, err,
+			"consistency must still fire; comparing against the chain position would silently pass")
+	})
 }
 
 type fakeChainParser struct {
