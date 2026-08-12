@@ -503,7 +503,7 @@ func (rpcc *RPCConsumer) CreateConsumerEndpoint(
 		}
 
 		// Create / Use existing Consistency
-		newConsumerConsistency := relaycore.NewConsistency(chainID)
+		newConsumerConsistency := relaycore.NewConsistency(chainID, averageBlockTime)
 		consumerConsistency, _, err = consumerConsistencies.LoadOrStore(chainID, newConsumerConsistency)
 		if err != nil {
 			return utils.LavaFormatError("failed loading consumer consistency", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
