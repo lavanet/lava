@@ -1006,6 +1006,13 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 	blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData := rpcps.chainParser.ChainBlockStats()
 	relayTimeout := chainlib.GetRelayTimeout(chainMsg, averageBlockTime)
 
+	// Two block numbers are in play, and they are the same value for every chain but
+	// SVM. latestBlock is what we publish to the consumer and what consistency
+	// compares against its reported seen block, so it must stay in the domain
+	// consumers already exchange. chainPositionBlock is the tracker's real position on
+	// the chain, which is what finalization has to use because the requested block is
+	// parsed from the spec in that same domain.
+	//
 	// Handle consistency: wait for chain tracker to catch up with consumer's seenBlock if needed (if enabled via CLI flag)
 	var latestBlock int64
 	if rpcps.enableConsistency {
@@ -1024,13 +1031,15 @@ func (rpcps *RPCProviderServer) TryRelayWithWrapper(ctx context.Context, request
 		}
 	} else {
 		// Without consistency checks, get latest block directly
-		latestBlock = rpcps.chainTracker.GetAtomicLatestBlockNum()
+		latestBlock = rpcps.chainTracker.GetWireLatestBlock()
 	}
+	chainPositionBlock := rpcps.chainTracker.GetAtomicLatestBlockNum()
 
-	// Calculate cache parameters using the consistent latest block
+	// Calculate cache parameters using the tracker's chain position, so a requested
+	// block parsed from the spec is compared against a value in its own domain.
 	var requestedBlockHash []byte
 	var finalized bool
-	requestedBlockHash, finalized = rpcps.GetParametersForCache(ctx, request, latestBlock, blockDistanceToFinalization)
+	requestedBlockHash, finalized = rpcps.GetParametersForCache(ctx, request, chainPositionBlock, blockDistanceToFinalization)
 
 	// currently used when cache hits.
 	var ignoredMetadata []pairingtypes.Metadata
@@ -1275,7 +1284,10 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, baseRelay
 			tracing.RecordError(span, err)
 		}
 	}()
-	latestBlock, changeTime := rpcps.chainTracker.GetLatestBlockNum()
+	// Consistency works entirely in the published domain: seenBlock and requestBlock
+	// both arrive from the consumer, which only ever saw published values.
+	_, changeTime := rpcps.chainTracker.GetLatestBlockNum()
+	latestBlock = rpcps.chainTracker.GetWireLatestBlock()
 	if requestBlock == spectypes.LATEST_BLOCK && seenBlock > latestBlock {
 		// we can't just replace requested block here with what we have, it must be with at least seen block
 		requestBlock = seenBlock
@@ -1328,14 +1340,14 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, baseRelay
 	utils.LavaFormatDebug("waiting for state tracker to update", utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "time", Value: time.Until(deadline)}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "seenBlock", Value: seenBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "blockGap", Value: blockGap})
 	sleepContext, cancel := context.WithTimeout(context.Background(), halfTimeLeft)
 	getLatestBlock := func() bool {
-		ret, _ := rpcps.chainTracker.GetLatestBlockNum()
+		ret := rpcps.chainTracker.GetWireLatestBlock()
 		// if we hit either seen or requested we can return
 		return ret >= requestBlock || ret >= seenBlock
 	}
 	sleptTime := rpcps.SleepUntilTimeOrConditionReached(sleepContext, 50*time.Millisecond, getLatestBlock)
 	cancel()
 	// see if there is an updated info
-	latestBlock, _ = rpcps.chainTracker.GetLatestBlockNum()
+	latestBlock = rpcps.chainTracker.GetWireLatestBlock()
 	if requestBlock > latestBlock && seenBlock > latestBlock {
 		// meaning we can't guarantee it will work since chainTracker didn't see this requested block yet
 		bailed = true
@@ -1510,7 +1522,9 @@ func (rpcps *RPCProviderServer) GetBlockDataForOptimisticFetch(ctx context.Conte
 }
 
 func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtypes.ProbeRequest) (*pairingtypes.ProbeReply, error) {
-	latestB, _ := rpcps.chainTracker.GetLatestBlockNum()
+	// The probe reply is published to consumers, so it carries the same domain as
+	// RelayReply.LatestBlock rather than the tracker's internal chain position.
+	latestB := rpcps.chainTracker.GetWireLatestBlock()
 	verificationsStatus := []*pairingtypes.Verification{}
 	if probeReq.WithVerifications {
 		if rpcps.verificationsStatusGetter != nil {

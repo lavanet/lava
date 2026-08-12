@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/lavanet/lava/v5/protocol/common"
+	"github.com/lavanet/lava/v5/protocol/grpcwebcompat"
 	"github.com/lavanet/lava/v5/utils"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"golang.org/x/net/http2"
@@ -47,16 +47,16 @@ func NewGRPCProxyWithReflection(cb ProxyCallBack, healthCheckPath string, cmdFla
 	s := grpc.NewServer(serverOpts...)
 	grpc_health_v1.RegisterHealthServer(s, health.NewServer())
 
-	wrappedServer := grpcweb.WrapServer(s)
+	wrappedServer := grpcwebcompat.WrapServer(s)
 
 	// Create a separate gRPC server for reflection with standard protobuf codec
 	// This is needed because the main proxy server uses RawBytesCodec which breaks
 	// the reflection service's protobuf message serialization
-	var wrappedReflectionServer *grpcweb.WrappedGrpcServer
+	var wrappedReflectionServer http.Handler
 	if reflectionCallback != nil {
 		reflectionGrpcServer := grpc.NewServer(serverReceiveMaxMessageSize)
 		RegisterReflectionProxy(reflectionGrpcServer, reflectionCallback)
-		wrappedReflectionServer = grpcweb.WrapServer(reflectionGrpcServer)
+		wrappedReflectionServer = grpcwebcompat.WrapServer(reflectionGrpcServer)
 	}
 
 	handler := func(resp http.ResponseWriter, req *http.Request) {
