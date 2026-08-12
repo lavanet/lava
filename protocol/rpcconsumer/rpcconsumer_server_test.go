@@ -92,7 +92,7 @@ func createRpcConsumer(t *testing.T, ctrl *gomock.Controller, ctx context.Contex
 		},
 	}, nil)
 
-	consumerConsistency := relaycore.NewConsistency(specId)
+	consumerConsistency := relaycore.NewConsistency(specId, 0)
 	consumerCmdFlags := common.ConsumerCmdFlags{
 		RelaysHealthEnableFlag: false,
 	}
