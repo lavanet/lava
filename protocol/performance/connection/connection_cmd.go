@@ -8,8 +8,8 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/lavanet/lava/v5/protocol/chainlib"
+	"github.com/lavanet/lava/v5/protocol/grpcwebcompat"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
 	"github.com/lavanet/lava/v5/utils"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
@@ -50,7 +50,7 @@ func CreateTestConnectionServerCobraCommand() *cobra.Command {
 			serverSendMaxMessageSize := grpc.MaxSendMsgSize(1024 * 1024 * 512)    // setting send size to 512mb for large debug responses
 			grpcServer := grpc.NewServer(serverReceiveMaxMessageSize, serverSendMaxMessageSize)
 
-			wrappedServer := grpcweb.WrapServer(grpcServer)
+			wrappedServer := grpcwebcompat.WrapServer(grpcServer)
 			handler := func(resp http.ResponseWriter, req *http.Request) {
 				// Set CORS headers
 				resp.Header().Set("Access-Control-Allow-Origin", "*")

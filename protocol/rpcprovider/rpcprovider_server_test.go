@@ -74,6 +74,13 @@ func (mct *MockChainTracker) GetAtomicLatestBlockNum() int64 {
 	return mct.latestBlock
 }
 
+// GetWireLatestBlock must be overridden rather than inherited from the embedded
+// DummyChainTracker, which reports MaxInt64. On every chain but SVM the published
+// value is the chain position, so the mock reports one number for both.
+func (mct *MockChainTracker) GetWireLatestBlock() int64 {
+	return mct.latestBlock
+}
+
 func (mct *MockChainTracker) SetLatestBlock(newLatest int64, changeTime time.Time) {
 	mct.latestBlock = newLatest
 	mct.changeTime = changeTime

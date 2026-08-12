@@ -65,7 +65,21 @@ func TestIsBlockNotAvailableError_SolanaErrorCode(t *testing.T) {
 		{
 			name:     "EVM -32004 method not supported (same code different chain)",
 			response: []byte(`{"jsonrpc":"2.0","id":1,"error":{"code":-32004,"message":"Method not supported"}}`),
-			expected: true, // The function only checks the code, chain filtering is done by the caller
+			expected: true, // Classified via ChainFamilySolana (callers gate by chain); -32004 -> BlockNotFound in the Solana tier.
+		},
+		{
+			// Tier-1 message fallthrough: the Solana tier has no matcher for this code,
+			// so ClassifyError falls back to the generic JSON-RPC message matchers.
+			name:     "block not found by message without -32004",
+			response: []byte(`{"jsonrpc":"2.0","id":1,"error":{"code":-32000,"message":"block not found"}}`),
+			expected: true,
+		},
+		{
+			// Guard against the Solana tier's other codes being swept into the retry
+			// path: -32005 is node-unhealthy, which must not look like a missing block.
+			name:     "Solana -32005 node unhealthy",
+			response: []byte(`{"jsonrpc":"2.0","id":1,"error":{"code":-32005,"message":"Node is behind by 100 slots"}}`),
+			expected: false,
 		},
 	}
 

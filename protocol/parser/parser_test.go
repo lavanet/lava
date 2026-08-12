@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/utils/keeper"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -973,4 +974,53 @@ func TestParseRawBlock(t *testing.T) {
 		ParseRawBlock(&rpcInput, parsedInput, "")
 		require.Equal(t, spectypes.NOT_APPLICABLE, parsedInput.GetBlock())
 	})
+}
+
+// TestSolanaSpec_GetBlocknumParsesSlotNotBlockHeight is the spec-side guard for
+// #2319. The chaintracker test covers the runtime side — SVMChainTracker exposing
+// context.slot — but that fix is only correct because the spec declares the SOLANA
+// block domain to be slots in the first place. This pins that declaration: the
+// GET_BLOCKNUM directive must extract context.slot from a getLatestBlockhash reply,
+// never value.lastValidBlockHeight.
+//
+// It loads the real specs/mainnet-1/specs/solana.json rather than a hand-built
+// BlockParser, so repointing the spec at lastValidBlockHeight fails here.
+func TestSolanaSpec_GetBlocknumParsesSlotNotBlockHeight(t *testing.T) {
+	const specPath = "../../specs/mainnet-1/specs/solana.json"
+
+	specs, err := keeper.GetAllSpecsFromFile(specPath)
+	require.NoError(t, err, "must be able to load %s", specPath)
+
+	solana, ok := specs["SOLANA"]
+	require.True(t, ok, "SOLANA spec must be present in %s", specPath)
+
+	// Locate the GET_BLOCKNUM parse directive — the one that derives the canonical
+	// chain position from a getLatestBlockhash reply.
+	var blockParser *spectypes.BlockParser
+	for _, collection := range solana.ApiCollections {
+		for _, directive := range collection.ParseDirectives {
+			if directive.FunctionTag == spectypes.FUNCTION_TAG_GET_BLOCKNUM {
+				bp := directive.ResultParsing
+				blockParser = &bp
+			}
+		}
+	}
+	require.NotNil(t, blockParser, "SOLANA spec must define a GET_BLOCKNUM parse directive")
+
+	// Check the parser argument path first, so a mis-pointed parser_arg fails with a
+	// readable message rather than only through the numeric assertion below.
+	require.Contains(t, blockParser.ParserArg, "slot",
+		"GET_BLOCKNUM must parse context.slot; parser_arg was %v", blockParser.ParserArg)
+	require.NotContains(t, blockParser.ParserArg, "lastValidBlockHeight",
+		"GET_BLOCKNUM must not parse value.lastValidBlockHeight — that is the #2319 domain mismatch")
+
+	// A getLatestBlockhash result whose slot and lastValidBlockHeight diverge by the
+	// ~22M gap seen on Solana mainnet.
+	reply := &RPCInputTest{
+		Result: []byte(`{"context":{"slot":436597938},"value":{"blockhash":"test-hash","lastValidBlockHeight":414654108}}`),
+	}
+
+	parsed := ParseBlockFromReply(reply, *blockParser, nil)
+	require.Equal(t, int64(436597938), parsed.GetBlock(),
+		"GET_BLOCKNUM must yield context.slot (436597938), not value.lastValidBlockHeight (414654108)")
 }
