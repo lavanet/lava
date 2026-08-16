@@ -8,6 +8,8 @@ import (
 	"github.com/lavanet/lava/v5/utils"
 )
 
+// Compression of payloads that are stored rather than sent, such as cache entries.
+// Payloads on the wire are compressed by gRPC itself, see the enable-grpc-compression flag.
 const (
 	// CompressionThreshold - only compress payloads larger than this (1 MB)
 	// Small payloads have compression overhead > bandwidth savings
@@ -17,14 +19,6 @@ const (
 	// BestSpeed = 1 (fastest), BestCompression = 9 (smallest)
 	// DefaultCompression = 6 (good balance)
 	CompressionLevel = gzip.BestSpeed
-
-	// LavaCompressionHeader - custom header to indicate manual compression
-	LavaCompressionHeader = "lava-compression"
-	LavaCompressionGzip   = "gzip"
-
-	// LavaCompressionSupportHeader - custom header consumer sends to indicate it supports compression
-	// This is different from grpc-accept-encoding which is always sent by gRPC
-	LavaCompressionSupportHeader = "lava-compression-support"
 )
 
 // CompressData compresses data using gzip if it's larger than threshold
