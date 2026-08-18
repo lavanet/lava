@@ -11,8 +11,12 @@ import (
 
 var _ paramtypes.ParamSet = (*Params)(nil)
 
+// TARGET_VERSION is the protocol version lavap reports for itself, and together
+// with MIN_VERSION seeds the default protocol version params at genesis. It is
+// compiled into the binary rather than derived from the git tag, so it has to be
+// bumped by hand alongside a release.
 const (
-	TARGET_VERSION = "6.1.0"
+	TARGET_VERSION = "6.2.5"
 	MIN_VERSION    = "5.5.1"
 )
 
