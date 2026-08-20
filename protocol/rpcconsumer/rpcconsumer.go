@@ -635,9 +635,9 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			if lavasession.AllowInsecureConnectionToProviders {
 				utils.LavaFormatWarning("AllowInsecureConnectionToProviders is set to true, this should be used only in development", nil, utils.Attribute{Key: lavasession.AllowInsecureConnectionToProvidersFlag, Value: lavasession.AllowInsecureConnectionToProviders})
 			}
-			lavasession.AllowGRPCCompressionForConsumerProviderCommunication = viper.GetBool(lavasession.AllowGRPCCompressionFlag)
+			lavasession.AllowGRPCCompressionForConsumerProviderCommunication = viper.GetBool(lavasession.AllowGRPCCompressionFlag) || viper.GetBool(lavasession.AllowGRPCCompressionFlagDeprecated)
 			if lavasession.AllowGRPCCompressionForConsumerProviderCommunication {
-				utils.LavaFormatInfo("AllowGRPCCompressionForConsumerProviderCommunication is set to true, messages will be compressed", utils.Attribute{Key: lavasession.AllowGRPCCompressionFlag, Value: lavasession.AllowGRPCCompressionForConsumerProviderCommunication})
+				utils.LavaFormatInfo("gRPC compression is enabled, relays to providers will be gzip compressed", utils.Attribute{Key: lavasession.AllowGRPCCompressionFlag, Value: lavasession.AllowGRPCCompressionForConsumerProviderCommunication})
 			}
 
 			var rpcEndpoints []*lavasession.RPCEndpoint
@@ -857,7 +857,9 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().Uint(common.MaximumConcurrentProvidersFlagName, 3, "max number of concurrent providers to communicate with")
 	cmdRPCConsumer.MarkFlagRequired(common.GeolocationFlag)
 	cmdRPCConsumer.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allow insecure provider-dialing. used for development and testing")
-	cmdRPCConsumer.Flags().Bool(lavasession.AllowGRPCCompressionFlag, false, "allow messages to be compressed when communicating between the consumer and provider")
+	cmdRPCConsumer.Flags().Bool(lavasession.AllowGRPCCompressionFlag, false, "compress relays between the consumer and the provider with gzip, trading cpu for bandwidth")
+	cmdRPCConsumer.Flags().Bool(lavasession.AllowGRPCCompressionFlagDeprecated, false, "deprecated, use --"+lavasession.AllowGRPCCompressionFlag)
+	cmdRPCConsumer.Flags().MarkDeprecated(lavasession.AllowGRPCCompressionFlagDeprecated, "use --"+lavasession.AllowGRPCCompressionFlag+" instead")
 	cmdRPCConsumer.Flags().String(common.ResponseCompressionFlag, common.DefaultResponseCompression, "client-facing response compression: gzip (default), brotli, or off")
 	cmdRPCConsumer.Flags().Uint64Var(&lavasession.MaximumStreamsOverASingleConnection, lavasession.MaximumStreamsOverASingleConnectionFlag, lavasession.DefaultMaximumStreamsOverASingleConnection, "maximum number of parallel streams over a single provider connection")
 	cmdRPCConsumer.Flags().Bool(common.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")

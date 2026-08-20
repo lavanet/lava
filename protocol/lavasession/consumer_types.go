@@ -68,8 +68,12 @@ func (prc *ProviderRelayConnection) GetEndpointAddress() string {
 }
 
 const (
-	AllowInsecureConnectionToProvidersFlag     = "allow-insecure-provider-dialing"
-	AllowGRPCCompressionFlag                   = "enable-application-level-compression"
+	AllowInsecureConnectionToProvidersFlag = "allow-insecure-provider-dialing"
+	AllowGRPCCompressionFlag               = "enable-grpc-compression"
+	// AllowGRPCCompressionFlagDeprecated is the previous name of AllowGRPCCompressionFlag, kept
+	// working so existing deployments don't break when upgrading. It was named after the
+	// application level compression that gRPC's own gzip compressor has since replaced.
+	AllowGRPCCompressionFlagDeprecated         = "enable-application-level-compression"
 	MaximumStreamsOverASingleConnectionFlag    = "maximum-streams-per-connection"
 	DefaultMaximumStreamsOverASingleConnection = 100
 	WeightMultiplierForStaticProviders         = 10
