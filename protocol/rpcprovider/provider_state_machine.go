@@ -44,11 +44,14 @@ func NewProviderStateMachine(chainId string, relayRetriesManager lavaprotocol.Re
 func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg chainlib.ChainMessage, request *pairingtypes.RelayRequest) (*chainlib.RelayReplyWrapper, time.Duration, error) {
 	hash, hashErr := chainMsg.GetRawRequestHash()
 	requestHashString := ""
-	// Batch requests intentionally return WontCalculateBatchHash - this is expected, not a warning.
-	// Only log warning for unexpected hash failures on single requests.
+	// Batch requests intentionally return WontCalculateBatchHash - this is expected, not a failure.
+	// Log it at debug level so it stays discoverable when diagnosing retry behavior without adding
+	// production noise; only log a warning for unexpected hash failures on single requests.
 	isBatchRequest := errors.Is(hashErr, rpcInterfaceMessages.WontCalculateBatchHash)
 	if hashErr != nil && !isBatchRequest {
 		utils.LavaFormatWarning("Failed converting message to hash", hashErr, utils.LogAttr("url", request.RelayData.ApiUrl), utils.LogAttr("data", string(request.RelayData.Data)))
+	} else if isBatchRequest {
+		utils.LavaFormatDebug("batch request: skipping hash-based retry (expected for JSON-RPC batches)", utils.LogAttr("url", request.RelayData.ApiUrl), utils.LogAttr("data", string(request.RelayData.Data)))
 	} else if hashErr == nil {
 		requestHashString = string(hash)
 	}
