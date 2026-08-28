@@ -625,15 +625,6 @@ func TestCheckResponseError_ServerErrors(t *testing.T) {
 			response:      `{"error":"invalid request"}`,
 			expectedError: false, // NOT a node error
 		},
-		{
-			name:          "400 archive height beyond chain length (node error, not a client error)",
-			httpStatus:    400,
-			response:      `{"code":3,"message":"rpc error: code = InvalidArgument desc = requested block height is bigger then the chain length: invalid request","details":[]}`,
-			expectedError: true, // node cannot serve a valid historical height despite advertising archive support
-			errorCheck: func(t *testing.T, errorMessage string) {
-				require.Contains(t, errorMessage, "requested block height is bigger then the chain length")
-			},
-		},
 	}
 
 	for _, tc := range testCases {
@@ -647,56 +638,6 @@ func TestCheckResponseError_ServerErrors(t *testing.T) {
 
 			if tc.errorCheck != nil {
 				tc.errorCheck(t, errorMessage)
-			}
-		})
-	}
-}
-
-// TestCheckResponseError_ArchiveHeightBeyondChainLength reproduces the AXELAR/AXELART
-// archive provider quality issue: a provider advertises archive support but its backend
-// node returns Cosmos SDK/CometBFT's "requested block height is bigger then the chain
-// length" InvalidArgument error for a demonstrably valid historical height (confirmed by
-// another provider returning HTTP 200 for the exact same height/path). Before this fix,
-// RestMessage.CheckResponseError() treated this HTTP 400 as a client error and let the
-// relay follow the successful-result path: it was never retried to another provider,
-// never logged as a node error, and the provider was paid full CU for archive data it
-// never delivered.
-func TestCheckResponseError_ArchiveHeightBeyondChainLength(t *testing.T) {
-	testCases := []struct {
-		name          string
-		httpStatus    int
-		response      string
-		expectedError bool
-	}{
-		{
-			name:          "exact reproduced backend response",
-			httpStatus:    400,
-			response:      `{"code":3,"message":"rpc error: code = InvalidArgument desc = requested block height is bigger then the chain length: invalid request","details":[]}`,
-			expectedError: true,
-		},
-		{
-			name:          "message case is ignored",
-			httpStatus:    400,
-			response:      `{"code":3,"message":"Requested Block Height Is Bigger Then The Chain Length","details":[]}`,
-			expectedError: true,
-		},
-		{
-			name:          "unrelated 400 body is unaffected (regression guard)",
-			httpStatus:    400,
-			response:      `{"code":3,"message":"invalid character in address","details":[]}`,
-			expectedError: false,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			restMsg := RestMessage{}
-
-			hasError, errorMessage := restMsg.CheckResponseError([]byte(tc.response), tc.httpStatus)
-
-			require.Equal(t, tc.expectedError, hasError, "Error detection mismatch for %s", tc.name)
-			if tc.expectedError {
-				require.NotEmpty(t, errorMessage)
 			}
 		})
 	}

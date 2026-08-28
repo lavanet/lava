@@ -265,14 +265,6 @@ var genericErrorMappings = map[TransportType][]errorMapping{
 		{MessageContains("route not found"), LavaErrorNodeEndpointNotFound},
 		{MessageContains("path not found"), LavaErrorNodeEndpointNotFound},
 		{MessageContains("method not allowed"), LavaErrorNodeMethodNotAllowed},
-		// Cosmos SDK / CometBFT return this exact (typo'd, "then" not "than")
-		// InvalidArgument message via the LCD/grpc-gateway REST layer when a
-		// query targets a height the node's local store hasn't indexed/synced
-		// to. It surfaces on archive-advertising providers whose backend
-		// cannot actually serve a valid, historical height, and is otherwise
-		// indistinguishable from a plain client 4xx — see the Axelar/Axelart
-		// archive quality investigation for reproduced same-height evidence.
-		{MessageContains("requested block height is bigger then the chain length"), LavaErrorChainStatePruned},
 		// CodeEquals and HTTPStatusContains matchers are appended by init()
 		// via httpStatusCodeMappings() and httpStatusMessageMappings()
 	},

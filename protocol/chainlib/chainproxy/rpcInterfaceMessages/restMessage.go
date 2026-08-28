@@ -9,7 +9,6 @@ import (
 
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/parser"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/sigs"
@@ -67,23 +66,7 @@ func (jm RestMessage) CheckResponseError(data []byte, httpStatusCode int) (hasEr
 		return false, ""
 	}
 
-	// 4xx (except 429) are generally client errors — not node errors, pass
-	// through to consumer untouched. A narrow, well-evidenced exception:
-	// Cosmos SDK/CometBFT surfaces a node-side data/state problem (a node
-	// that cannot serve a valid historical height it locally hasn't synced
-	// to) as a generic InvalidArgument 4xx. Left unclassified, an archive
-	// provider returning this response would be counted as a successful
-	// relay — no retry to another provider, no node-error logging, full CU
-	// credit for archive data it never delivered. Route the body through the
-	// shared registry so only this specific pattern is reclassified; every
-	// other 4xx keeps its current pass-through behavior.
-	if httpStatusCode >= 400 && httpStatusCode < 500 {
-		errMsg := extractErrorMessage(data, httpStatusCode)
-		if common.ClassifyError(nil, common.ChainFamilyUnknown, common.TransportREST, 0, errMsg) == common.LavaErrorChainStatePruned {
-			return true, errMsg
-		}
-	}
-
+	// 4xx (except 429) are client errors — not node errors, pass through to consumer
 	return false, ""
 }
 
