@@ -804,6 +804,16 @@
       "expected_lava_code": 2006,
       "expected_name": "NODE_SERVICE_UNAVAILABLE"
     },
+    {
+      "name": "rest_cosmos_archive_height_beyond_chain_length",
+      "chain_family": "CosmosSDK",
+      "transport": "rest",
+      "error_code": 0,
+      "error_message": "rpc error: code = InvalidArgument desc = requested block height is bigger then the chain length: invalid request",
+      "expected_lava_code": 3204,
+      "expected_name": "CHAIN_STATE_PRUNED",
+      "_note": "AXELAR/AXELART archive provider quality: an archive-advertising provider whose backend cannot serve a valid historical height returns this HTTP 400 body instead of the requested data."
+    },
 
     {
       "_comment": "--- Solana blockhash expiry ---",
