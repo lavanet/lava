@@ -9,6 +9,7 @@ import (
 
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/parser"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/sigs"
@@ -66,7 +67,24 @@ func (jm RestMessage) CheckResponseError(data []byte, httpStatusCode int) (hasEr
 		return false, ""
 	}
 
-	// 4xx (except 429) are client errors — not node errors, pass through to consumer
+	// 4xx (except 429) are client errors by default — not node errors, pass
+	// through to the consumer. The exception is a node that reports its own
+	// inability to serve a well-formed request with a client-error status: an
+	// archive endpoint that does not hold the requested depth answers HTTP 400
+	// even though the block exists and a peer serves the identical request.
+	// Only response bodies the shared error registry recognises as node- or
+	// chain-attributed flip to a node error; the status code alone never does,
+	// so ordinary 400/404/405 responses keep passing straight through.
+	//
+	// Scoped to 4xx rather than to "everything that reached here" so 1xx and 3xx
+	// keep their existing pass-through behaviour untouched.
+	if httpStatusCode >= 400 && httpStatusCode < 500 {
+		errorMessage = extractErrorMessage(data, httpStatusCode)
+		if common.ClassifyRESTClientErrorStatus(errorMessage) != nil {
+			return true, errorMessage
+		}
+	}
+
 	return false, ""
 }
 

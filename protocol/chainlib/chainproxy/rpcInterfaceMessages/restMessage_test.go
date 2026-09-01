@@ -642,3 +642,141 @@ func TestCheckResponseError_ServerErrors(t *testing.T) {
 		})
 	}
 }
+
+// TestCheckResponseError_ArchiveDepthBoundary covers the AXELAR/AXELART archive
+// regression: a provider advertising the `archive` extension answers a deep
+// historical read with HTTP 400 and a Cosmos SDK "height is bigger then the
+// chain length" body. The block exists — peer providers return 200 with a valid
+// block for the identical height and path — so the failure belongs to the node,
+// not the client, and must be reported as a node error so the relay is retried
+// against another provider instead of being recorded as a success.
+func TestCheckResponseError_ArchiveDepthBoundary(t *testing.T) {
+	// The exact body observed in production, verbatim including the upstream
+	// "then" typo.
+	const axelarArchiveBody = `{"code":3,"message":"rpc error: code = InvalidArgument desc = requested block height is bigger then the chain length: invalid request"}`
+
+	testCases := []struct {
+		name          string
+		httpStatus    int
+		response      string
+		expectedError bool
+		expectMessage string
+	}{
+		{
+			name:          "400 archive depth boundary (the reported bug)",
+			httpStatus:    400,
+			response:      axelarArchiveBody,
+			expectedError: true,
+			expectMessage: "requested block height is bigger then the chain length",
+		},
+		{
+			name:          "400 archive depth boundary with the typo corrected upstream",
+			httpStatus:    400,
+			response:      `{"message":"requested block height is bigger than the chain length"}`,
+			expectedError: true,
+			expectMessage: "bigger than the chain length",
+		},
+		{
+			name:          "404 carrying the same node-side body",
+			httpStatus:    404,
+			response:      axelarArchiveBody,
+			expectedError: true,
+			expectMessage: "chain length",
+		},
+		{
+			name:          "matching is case-insensitive",
+			httpStatus:    400,
+			response:      `{"message":"Requested Block Height Is Bigger Then The Chain Length"}`,
+			expectedError: true,
+		},
+		{
+			name:          "plain-text body is matched too",
+			httpStatus:    400,
+			response:      `requested block height is bigger then the chain length`,
+			expectedError: true,
+		},
+
+		// --- Negative cases: the status code alone must never flip the verdict.
+		{
+			name:          "400 genuine client error stays a client error",
+			httpStatus:    400,
+			response:      `{"error":"invalid request"}`,
+			expectedError: false,
+		},
+		{
+			name:          "400 malformed address stays a client error",
+			httpStatus:    400,
+			response:      `{"code":3,"message":"decoding bech32 failed: invalid checksum"}`,
+			expectedError: false,
+		},
+		{
+			name:          "404 endpoint not found stays a client error",
+			httpStatus:    404,
+			response:      `{"code":5,"message":"endpoint not found"}`,
+			expectedError: false,
+		},
+		{
+			name:          "404 block not found stays a client error",
+			httpStatus:    404,
+			response:      `{"code":5,"message":"block not found"}`,
+			expectedError: false,
+		},
+		{
+			name:          "405 method not allowed stays a client error",
+			httpStatus:    405,
+			response:      `{"message":"method not allowed"}`,
+			expectedError: false,
+		},
+		{
+			name:          "403 forbidden stays a client error",
+			httpStatus:    403,
+			response:      `{"message":"forbidden"}`,
+			expectedError: false,
+		},
+		{
+			name:          "400 with an empty body stays a client error",
+			httpStatus:    400,
+			response:      ``,
+			expectedError: false,
+		},
+		{
+			name:          "400 with a non-JSON body stays a client error",
+			httpStatus:    400,
+			response:      `<html><body>Bad Request</body></html>`,
+			expectedError: false,
+		},
+		{
+			name:          "200 carrying the node-side phrase is untouched",
+			httpStatus:    200,
+			response:      `{"message":"requested block height is bigger then the chain length"}`,
+			expectedError: false,
+		},
+		{
+			// The gate is scoped to 4xx, so redirects keep their previous
+			// pass-through behaviour even if the body were to match.
+			name:          "302 carrying the node-side phrase is untouched",
+			httpStatus:    302,
+			response:      `{"message":"requested block height is bigger then the chain length"}`,
+			expectedError: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			restMsg := RestMessage{}
+
+			hasError, errorMessage := restMsg.CheckResponseError([]byte(tc.response), tc.httpStatus)
+
+			require.Equal(t, tc.expectedError, hasError,
+				"expected node error=%v for HTTP %d body %s", tc.expectedError, tc.httpStatus, tc.response)
+
+			if tc.expectMessage != "" {
+				require.Contains(t, errorMessage, tc.expectMessage,
+					"node error must carry the node's own message through for logging and classification")
+			}
+			if !tc.expectedError {
+				require.Empty(t, errorMessage, "client errors must not report an error message")
+			}
+		})
+	}
+}

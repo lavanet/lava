@@ -336,12 +336,76 @@ func httpStatusMessageMappings() []errorMapping {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// HTTP 4xx bodies that actually blame the node
+// ---------------------------------------------------------------------------
+
+// A 4xx status conventionally means the client sent a bad request, so REST
+// responses in that range are passed through to the consumer rather than being
+// treated as node errors. Some nodes break that convention and report their own
+// inability to serve a well-formed request with a 4xx. An archive endpoint that
+// does not actually hold the requested depth is the case this list exists for.
+//
+// Entries here are matched against the RESPONSE BODY ONLY, never the status
+// code. That restriction is the whole safety argument: this list is appended to
+// the REST bucket by init(), but ClassifyRESTClientErrorStatus walks it directly
+// with errorCode 0 rather than running genericErrorMappings[TransportREST],
+// because that bucket's CodeEquals/HTTPStatusContains matchers would re-classify
+// every 404 and 405 as a node error — a far broader behaviour change than the
+// one intended here.
+//
+// Keep entries phrase-specific. Each one must name a failure no well-formed
+// client request could provoke, because a false positive here converts a real
+// client error into a retry across every provider in the pairing list, billed
+// at full CU each time.
+var restClientErrorStatusNodeMappings = []errorMapping{
+	// Cosmos SDK / CometBFT: the requested height is past this node's own tip.
+	// Observed on AXELAR/AXELART REST endpoints that advertise the `archive`
+	// extension but are backed by a pruned or shallow node — the identical
+	// height and path return 200 with a valid block on a peer provider, so the
+	// block exists, the request is valid, and the failure is the node's.
+	// Full body: {"code":3,"message":"rpc error: code = InvalidArgument desc =
+	// requested block height is bigger then the chain length: invalid request"}
+	// "then" is the upstream typo; "than" covers it being corrected later.
+	{MessageRegex(`(?i)block height is bigger th(?:e|a)n the chain length`), LavaErrorChainDataNotAvailable},
+}
+
+// ClassifyRESTClientErrorStatus classifies the body of a REST response whose HTTP
+// status is a client error (4xx). It returns the node- or chain-attributed
+// LavaError when the body matches a known node-side failure, and nil otherwise.
+//
+// nil means "this really is a client error, pass it through" — which is the
+// answer for the overwhelming majority of 4xx responses and is why the caller
+// must treat nil as the default rather than the exception.
+func ClassifyRESTClientErrorStatus(message string) *LavaError {
+	if message == "" {
+		return nil
+	}
+	loweredMessage := strings.ToLower(message)
+	for _, mapping := range restClientErrorStatusNodeMappings {
+		// errorCode 0 deliberately: match on the body, never on the status.
+		if matchMapping(mapping.Matcher, 0, message, loweredMessage) {
+			return mapping.LavaError
+		}
+	}
+	return nil
+}
+
 // init is the ONLY place allowed to mutate genericErrorMappings. It runs before
 // any reader can observe the map, so the runtime invariant ("read-only after
 // package init") holds. Do not add mutations outside this function.
 func init() {
 	// Append shared HTTP status message matchers to JSON-RPC transport
 	genericErrorMappings[TransportJsonRPC] = append(genericErrorMappings[TransportJsonRPC], httpStatusMessageMappings()...)
+
+	// Append the 4xx-body node-error matchers to REST transport. They are
+	// phrase-specific and go in FIRST, ahead of the status-code matchers, so a
+	// body this list recognises is named as the node/chain error it is rather
+	// than being swallowed by a broader CodeEquals/HTTPStatusContains match.
+	// Without this the consumer would still retry correctly (an unmatched node
+	// error classifies as Unknown, which is retryable by default) but the error
+	// would be unnamed in logs and metrics.
+	genericErrorMappings[TransportREST] = append(genericErrorMappings[TransportREST], restClientErrorStatusNodeMappings...)
 
 	// Append both CodeEquals and HTTPStatusContains matchers to REST transport
 	genericErrorMappings[TransportREST] = append(genericErrorMappings[TransportREST], httpStatusCodeMappings()...)
