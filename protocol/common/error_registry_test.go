@@ -1102,3 +1102,83 @@ func checkShadow(t *testing.T, i, j int, a, b errorMapping) {
 			i, aCode.code, a.LavaError.Name, j, bCode.code, b.LavaError.Name)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// HTTP 4xx bodies that blame the node
+// ---------------------------------------------------------------------------
+
+// The Cosmos SDK body an archive-advertising node returns for a depth it cannot
+// serve, verbatim from production including the upstream "then" typo.
+const axelarArchiveDepthMessage = "rpc error: code = InvalidArgument desc = requested block height is bigger then the chain length: invalid request"
+
+func TestClassifyRESTClientErrorStatus_ArchiveDepthBoundary(t *testing.T) {
+	classification := ClassifyRESTClientErrorStatus(axelarArchiveDepthMessage)
+
+	require.NotNil(t, classification, "archive depth boundary must be recognised as a node-side failure")
+	require.Equal(t, LavaErrorChainDataNotAvailable, classification)
+	require.True(t, classification.Retryable,
+		"the block exists and peers serve it, so the relay must be retried against another provider")
+}
+
+func TestClassifyRESTClientErrorStatus_PassesThroughClientErrors(t *testing.T) {
+	// Nothing in this list may be claimed as a node error. The status code is
+	// never consulted, so these stand in for the whole 4xx range.
+	clientErrors := []string{
+		"",
+		"invalid request",
+		"bad request",
+		"decoding bech32 failed: invalid checksum",
+		"endpoint not found",
+		"route not found",
+		"method not allowed",
+		"block not found",
+		"forbidden",
+		"HTTP 400",
+		"<html><body>Bad Request</body></html>",
+	}
+
+	for _, message := range clientErrors {
+		t.Run(message, func(t *testing.T) {
+			require.Nil(t, ClassifyRESTClientErrorStatus(message),
+				"%q must stay a client error — a false positive here retries a doomed request across every provider at full CU", message)
+		})
+	}
+}
+
+// TestClassifyRESTClientErrorStatus_IgnoresStatusCodes pins the safety property
+// that separates this narrow fix from a broad "4xx are node errors" change: the
+// curated list is walked with errorCode 0, so the REST bucket's CodeEquals and
+// HTTPStatusContains matchers cannot fire. Were they to fire, every 404 would
+// resolve to NODE_ENDPOINT_NOT_FOUND and be re-classified as a node error.
+func TestClassifyRESTClientErrorStatus_IgnoresStatusCodes(t *testing.T) {
+	// 404 and 405 both have CodeEquals entries in the REST bucket and would
+	// match if the status code reached the matchers.
+	require.Nil(t, ClassifyRESTClientErrorStatus("404"))
+	require.Nil(t, ClassifyRESTClientErrorStatus("405"))
+	require.Nil(t, ClassifyRESTClientErrorStatus("HTTP status 404"))
+}
+
+// TestArchiveDepthBoundary_ConsumerPolicy asserts what the consumer does with the
+// classification once CheckResponseError flags it. Retrying is the fix; the CU
+// and jailing questions are deliberately left as they are, so this test fails if
+// a later change silently zeroes CU for this error class.
+func TestArchiveDepthBoundary_ConsumerPolicy(t *testing.T) {
+	classification := ClassifyNodeErrorForRetry(
+		ChainFamilyUnknown, TransportREST, 400, axelarArchiveDepthMessage,
+	)
+
+	require.False(t, classification.IsNonRetryable,
+		"must be retried against another provider — that is the entire point of the fix")
+	require.False(t, classification.IsUnsupportedMethod,
+		"must NOT take the zero-CU carve-out: whether this error class should be discounted is an open product decision, not one this change makes")
+}
+
+// TestArchiveDepthBoundary_NamedInRegistry proves the matcher is reachable through
+// the ordinary REST classification path, so the error is named in logs and metrics
+// rather than surfacing as UNKNOWN_ERROR.
+func TestArchiveDepthBoundary_NamedInRegistry(t *testing.T) {
+	classification := ClassifyError(nil, ChainFamilyUnknown, TransportREST, 400, axelarArchiveDepthMessage)
+
+	require.Equal(t, LavaErrorChainDataNotAvailable, classification)
+	require.NotEqual(t, LavaErrorUnknown, classification)
+}
