@@ -16,7 +16,7 @@ var _ paramtypes.ParamSet = (*Params)(nil)
 // compiled into the binary rather than derived from the git tag, so it has to be
 // bumped by hand alongside a release.
 const (
-	TARGET_VERSION = "6.2.5"
+	TARGET_VERSION = "6.2.7"
 	MIN_VERSION    = "5.5.1"
 )
 
