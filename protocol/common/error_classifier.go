@@ -25,14 +25,23 @@ var chainErrorMappings = map[ChainFamily][]errorMapping{
 		{CodeEquals(-32003), LavaErrorChainSolanaSignatureVerifyFailed},                        // "Signature verification failure"
 		{CodeEquals(-32004), LavaErrorChainBlockNotFound},                                      // "Block not available for slot N"
 		{CodeEquals(-32005), LavaErrorNodeSolanaUnhealthy},                                     // "Node is unhealthy" / "Node is behind by N slots"
+		{CodeEquals(-32006), LavaErrorChainInvalidSignature},                                   // "Transaction precompile verification failure" (ed25519/secp256k1 precompiles)
 		{CodeEquals(-32007), LavaErrorChainSolanaLedgerJump},                                   // "Slot skipped or missing"
+		{CodeEquals(-32008), LavaErrorNodeResourceUnavailable},                                 // "No snapshot"
 		{CodeEquals(-32009), LavaErrorChainSolanaMissingLongTerm},                              // "Slot missing in long-term storage"
 		{MessageContains("missing in long-term storage"), LavaErrorChainSolanaMissingLongTerm}, // message-based fallback
 		{CodeEquals(-32010), LavaErrorChainSolanaExcludedFromIndex},                            // "Excluded from account secondary indexes"
+		{CodeEquals(-32011), LavaErrorChainDataNotAvailable},                                   // "Transaction history is not available from this node"
+		{CodeEquals(-32012), LavaErrorNodeInternalError},                                       // scan error (account scan aborted mid-flight)
 		{CodeEquals(-32013), LavaErrorChainSolanaSignatureLengthMismatch},                      // "Signature length mismatch"
 		{CodeEquals(-32014), LavaErrorChainSolanaBlockStatusUnavailable},                       // "Block status unavailable"
 		{CodeEquals(-32015), LavaErrorChainSolanaTxVersionUnsupported},                         // "Transaction version not supported"
 		{CodeEquals(-32016), LavaErrorChainSolanaMinContextSlotNotReached},                     // "Minimum context slot not reached"
+		{CodeEquals(-32017), LavaErrorChainSolanaEpochRewardsActive},                           // "Epoch rewards period still active at slot N"
+		{CodeEquals(-32018), LavaErrorUserInvalidParams},                                       // "Rewards cannot be found; slot N is not epoch boundary"
+		{CodeEquals(-32019), LavaErrorNodeServiceUnavailable},                                  // "Failed to query long-term storage; please try again"
+		{CodeEquals(-32020), LavaErrorChainTxNotFound},                                         // "Transaction N not found" (getSignaturesForAddress before/until)
+		{CodeEquals(-32021), LavaErrorChainDataNotAvailable},                                   // "No slot history"
 		// Blockhash expiry — extremely common under load when clients submit tx
 		// with a recent blockhash that has since rolled off the 150-slot window.
 		// Placed before generic Tier-1 matchers would see it; case-insensitive

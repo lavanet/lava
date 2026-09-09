@@ -883,6 +883,15 @@ func TestClassifyError_ChainSpecificMappings(t *testing.T) {
 		{"Solana -32005", ChainFamilySolana, -32005, "", LavaErrorNodeSolanaUnhealthy},
 		{"Solana -32004", ChainFamilySolana, -32004, "", LavaErrorChainBlockNotFound},
 		{"Solana -32001", ChainFamilySolana, -32001, "", LavaErrorChainStatePruned},
+		{"Solana -32006 precompile verify", ChainFamilySolana, -32006, "", LavaErrorChainInvalidSignature},
+		{"Solana -32008 no snapshot", ChainFamilySolana, -32008, "", LavaErrorNodeResourceUnavailable},
+		{"Solana -32011 no tx history", ChainFamilySolana, -32011, "", LavaErrorChainDataNotAvailable},
+		{"Solana -32012 scan error", ChainFamilySolana, -32012, "", LavaErrorNodeInternalError},
+		{"Solana -32017 epoch rewards active", ChainFamilySolana, -32017, "", LavaErrorChainSolanaEpochRewardsActive},
+		{"Solana -32018 not epoch boundary", ChainFamilySolana, -32018, "", LavaErrorUserInvalidParams},
+		{"Solana -32019 long-term storage unreachable", ChainFamilySolana, -32019, "", LavaErrorNodeServiceUnavailable},
+		{"Solana -32020 filter tx not found", ChainFamilySolana, -32020, "", LavaErrorChainTxNotFound},
+		{"Solana -32021 no slot history", ChainFamilySolana, -32021, "", LavaErrorChainDataNotAvailable},
 		// Bitcoin Tier 2 — source: Bitcoin Core src/rpc/protocol.h
 		{"Bitcoin warmup -28", ChainFamilyBitcoin, -28, "", LavaErrorNodeBitcoinWarmup},
 		{"Bitcoin initial download -10", ChainFamilyBitcoin, -10, "", LavaErrorNodeBitcoinInitialDownload},
@@ -1181,4 +1190,26 @@ func TestArchiveDepthBoundary_NamedInRegistry(t *testing.T) {
 
 	require.Equal(t, LavaErrorChainDataNotAvailable, classification)
 	require.NotEqual(t, LavaErrorUnknown, classification)
+}
+
+// TestClassifyError_SolanaAgaveCodeCoverage pins the whole Solana custom-error
+// surface, not just the codes someone happened to hit in production.
+//
+// Agave defines a contiguous block of JSON-RPC server error codes in
+// rpc-client-api/src/custom_error.rs (-32001 through -32021). Anything in that
+// block that Lava does not map falls through to UNKNOWN_ERROR, which is
+// retryable by default — so a permanent, deterministic node answer would be
+// retried across every provider in the pairing before failing. That is exactly
+// what happened to -32020 (added in Agave v4.0) until this test existed.
+//
+// If Agave adds a code past -32021, extend the range here together with the
+// mapping; a bare range bump with no mapping fails this test by design.
+func TestClassifyError_SolanaAgaveCodeCoverage(t *testing.T) {
+	const firstAgaveCode, lastAgaveCode = -32001, -32021
+	for code := firstAgaveCode; code >= lastAgaveCode; code-- {
+		result := ClassifyError(nil, ChainFamilySolana, TransportJsonRPC, code, "")
+		assert.NotEqual(t, LavaErrorUnknown, result,
+			"Solana code %d is defined by agave rpc-client-api/src/custom_error.rs but is unmapped in "+
+				"chainErrorMappings[ChainFamilySolana]; it would classify as UNKNOWN_ERROR and be retried across providers", code)
+	}
 }
