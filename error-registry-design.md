@@ -131,6 +131,7 @@ Uses a **tiered classification system** (see Section 3 for details):
 | 3309 | `CHAIN_SOLANA_BLOCK_STATUS_UNAVAILABLE` | Block status unavailable (-32014) | No | Solana |
 | 3310 | `CHAIN_SOLANA_TX_VERSION_UNSUPPORTED` | Transaction version not supported (-32015) | No | Solana |
 | 3311 | `CHAIN_SOLANA_MIN_CONTEXT_SLOT_NOT_REACHED` | Minimum context slot not reached (-32016) | No | Solana |
+| 3312 | `CHAIN_SOLANA_EPOCH_REWARDS_ACTIVE` | Epoch rewards distribution period still active (-32017) | No | Solana |
 | **Starknet-Specific (3320-3339) — Tier 2** |||||
 | 3320 | `CHAIN_STARKNET_FAILED_TO_RECEIVE_TX` | Failed to receive tx (code 1) | No | Starknet |
 | 3321 | `CHAIN_STARKNET_CLASS_NOT_FOUND` | Class hash not found (code 28) | No | Starknet |
