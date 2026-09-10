@@ -444,3 +444,101 @@ func TestCardanoSpec_HistoricalBlockActivatesArchive(t *testing.T) {
 		})
 	}
 }
+
+// cardanoAddonPolicy builds a consumer policy for CARDANO that requires the given addons.
+// Passing no addons reproduces every plan shipped today (empty or wildcard chain policies),
+// which resolve to the base collection only.
+func cardanoAddonPolicy(addons ...struct{ addOn, connectionType string }) *plantypes.Policy {
+	requirements := []plantypes.ChainRequirement{}
+	for _, addon := range addons {
+		requirements = append(requirements, plantypes.ChainRequirement{
+			Collection: spectypes.CollectionData{
+				ApiInterface: spectypes.APIInterfaceRest,
+				Type:         addon.connectionType,
+				AddOn:        addon.addOn,
+			},
+			Mixed: true,
+		})
+	}
+	return &plantypes.Policy{ChainPolicies: []plantypes.ChainPolicy{{ChainId: "CARDANO", Requirements: requirements}}}
+}
+
+// TestCardanoSpec_MempoolAndEvaluateAreAddons pins the resolution of lavanet/lava#2333:
+// the three /mempool routes and the two /utils/txs/evaluate routes are not implemented by
+// the self-hosted blockfrost-backend-ryo, so they must not be part of the mandatory base
+// collection. They live in the "mempool" and "txs-evaluate" addons instead, which a
+// provider opts into and a consumer policy must request.
+func TestCardanoSpec_MempoolAndEvaluateAreAddons(t *testing.T) {
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"height": 12000000}`)
+	})
+	chainParser, _, _, closeServer, _, err := CreateChainLibMocks(ctx, "CARDANO", spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	require.NoError(t, err)
+	defer func() {
+		if closeServer != nil {
+			closeServer()
+		}
+	}()
+
+	mempoolAddon := struct{ addOn, connectionType string }{"mempool", http.MethodGet}
+	evaluateAddon := struct{ addOn, connectionType string }{"txs-evaluate", http.MethodPost}
+
+	addonRoutes := []struct {
+		path           string
+		connectionType string
+	}{
+		{path: "/mempool", connectionType: http.MethodGet},
+		{path: "/mempool/4ea1ba291e8eef538635a53e59fddba7810d1679631cc3aed7c8e6c4091a5b1f", connectionType: http.MethodGet},
+		{path: "/mempool/addresses/addr1qxqs59lphg8g6qndelq8xwqn60ag3aeyfcp33c2kdp46a09re5df3pzwwmyq946axfcejy5n4x0y99wqpgtp2gd0k09qsgy6pz", connectionType: http.MethodGet},
+		{path: "/utils/txs/evaluate", connectionType: http.MethodPost},
+		{path: "/utils/txs/evaluate/utxos", connectionType: http.MethodPost},
+	}
+	baseRoutes := []struct {
+		path           string
+		connectionType string
+	}{
+		{path: "/blocks/latest", connectionType: http.MethodGet},
+		{path: "/tx/submit", connectionType: http.MethodPost},
+	}
+
+	// a policy without the addons - every plan in cookbook/plans today - reaches the base
+	// collection only, and the five routes are rejected before they ever leave the consumer
+	require.NoError(t, chainParser.SetPolicy(cardanoAddonPolicy(), "CARDANO", spectypes.APIInterfaceRest))
+	for _, route := range addonRoutes {
+		t.Run("rejected without addon "+route.path, func(t *testing.T) {
+			_, err := ParseAndValidateMessage(chainParser, route.path, nil, route.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			require.Error(t, err)
+		})
+	}
+	for _, route := range baseRoutes {
+		t.Run("base reachable without addon "+route.path, func(t *testing.T) {
+			_, err := ParseAndValidateMessage(chainParser, route.path, nil, route.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			require.NoError(t, err)
+		})
+	}
+
+	// once the policy asks for both addons the same routes resolve, and they carry the
+	// addon so pairing can route them to a provider that declared it
+	require.NoError(t, chainParser.SetPolicy(cardanoAddonPolicy(mempoolAddon, evaluateAddon), "CARDANO", spectypes.APIInterfaceRest))
+	for _, route := range addonRoutes {
+		t.Run("allowed with addon "+route.path, func(t *testing.T) {
+			chainMessage, err := ParseAndValidateMessage(chainParser, route.path, nil, route.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			require.NoError(t, err)
+			expectedAddon := mempoolAddon.addOn
+			if route.connectionType == http.MethodPost {
+				expectedAddon = evaluateAddon.addOn
+			}
+			require.Equal(t, expectedAddon, GetAddon(chainMessage))
+		})
+	}
+	// the base collection is unaffected by the addons being present
+	for _, route := range baseRoutes {
+		t.Run("base unaffected by addon "+route.path, func(t *testing.T) {
+			chainMessage, err := ParseAndValidateMessage(chainParser, route.path, nil, route.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			require.NoError(t, err)
+			require.Equal(t, "", GetAddon(chainMessage))
+		})
+	}
+}
