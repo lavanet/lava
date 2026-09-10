@@ -13,7 +13,9 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/parser"
+	specutils "github.com/lavanet/lava/v5/utils/keeper"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	plantypes "github.com/lavanet/lava/v5/x/plans/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -316,5 +318,129 @@ func TestRegexParsing(t *testing.T) {
 		} else {
 			assert.ErrorIs(t, err, common.APINotSupportedError)
 		}
+	}
+}
+
+// TestCardanoSpec_HistoricalBlockRequestsAreNotLatest pins the block parsing of the
+// Blockfrost-style `/blocks/{hash_or_number}` routes in the CARDANO spec.
+//
+// The routes used to declare `DEFAULT latest`, so `GET /blocks/1` was classified as a
+// request for the latest block: the archive rule never fired, archive providers were
+// not selected, and the archive CU multiplier was not applied. A numeric path parameter
+// must now surface as the requested block, and a block hash must be captured as a
+// requested hash (the consumer resolves hashes to heights through its cache) while the
+// block itself falls back to latest.
+func TestCardanoSpec_HistoricalBlockRequestsAreNotLatest(t *testing.T) {
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"height": 12000000, "hash": "4ea1ba291e8eef538635a53e59fddba7810d1679631cc3aed7c8e6c4091a5b1f"}`)
+	})
+	chainParser, _, _, closeServer, _, err := CreateChainLibMocks(ctx, "CARDANO", spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	require.NoError(t, err)
+	defer func() {
+		if closeServer != nil {
+			closeServer()
+		}
+	}()
+
+	const blockHash = "4ea1ba291e8eef538635a53e59fddba7810d1679631cc3aed7c8e6c4091a5b1f"
+
+	tests := []struct {
+		path          string
+		expectedBlock int64
+		expectedHash  string
+	}{
+		{path: "/blocks/latest", expectedBlock: spectypes.LATEST_BLOCK},
+		{path: "/blocks/1", expectedBlock: 1},
+		{path: "/blocks/11500000", expectedBlock: 11500000},
+		{path: "/blocks/1/next", expectedBlock: 1},
+		{path: "/blocks/1/previous", expectedBlock: 1},
+		{path: "/blocks/1/txs", expectedBlock: 1},
+		{path: "/blocks/1/txs/cbor", expectedBlock: 1},
+		{path: "/blocks/1/addresses", expectedBlock: 1},
+		{path: "/blocks/" + blockHash, expectedBlock: spectypes.LATEST_BLOCK, expectedHash: blockHash},
+		{path: "/blocks/" + blockHash + "/txs", expectedBlock: spectypes.LATEST_BLOCK, expectedHash: blockHash},
+		// epoch and slot numbers are not block heights and must keep resolving to latest
+		{path: "/epochs/1", expectedBlock: spectypes.LATEST_BLOCK},
+		{path: "/blocks/slot/1", expectedBlock: spectypes.LATEST_BLOCK},
+	}
+
+	for _, test := range tests {
+		t.Run(test.path, func(t *testing.T) {
+			chainMessage, err := chainParser.ParseMsg(test.path, nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			require.NoError(t, err)
+			requestedBlock, _ := chainMessage.RequestedBlock()
+			require.Equal(t, test.expectedBlock, requestedBlock)
+			if test.expectedHash == "" {
+				require.Empty(t, chainMessage.GetRequestedBlocksHashes())
+			} else {
+				require.Equal(t, []string{test.expectedHash}, chainMessage.GetRequestedBlocksHashes())
+			}
+		})
+	}
+}
+
+// TestCardanoSpec_HistoricalBlockActivatesArchive checks the end-to-end effect of the
+// parsing fix: with the archive extension enabled by policy, an old numeric block goes
+// to archive with the archive CU multiplier, while latest and recent blocks do not.
+func TestCardanoSpec_HistoricalBlockActivatesArchive(t *testing.T) {
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"height": 12000000, "hash": "4ea1ba291e8eef538635a53e59fddba7810d1679631cc3aed7c8e6c4091a5b1f"}`)
+	})
+	chainParser, _, _, closeServer, _, err := CreateChainLibMocks(ctx, "CARDANO", spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	require.NoError(t, err)
+	defer func() {
+		if closeServer != nil {
+			closeServer()
+		}
+	}()
+
+	chainParser.SetPolicy(&plantypes.Policy{ChainPolicies: []plantypes.ChainPolicy{{ChainId: "CARDANO", Requirements: []plantypes.ChainRequirement{{Collection: spectypes.CollectionData{ApiInterface: spectypes.APIInterfaceRest}, Extensions: []string{"archive"}}}}}}, "CARDANO", spectypes.APIInterfaceRest)
+
+	spec, err := specutils.GetASpec("CARDANO", "../../", nil, nil)
+	require.NoError(t, err)
+	var archiveRuleBlock uint64
+	var archiveCuMultiplier uint64
+	for _, apiCollection := range spec.ApiCollections {
+		for _, extension := range apiCollection.Extensions {
+			if extension.Name == "archive" {
+				archiveRuleBlock = extension.Rule.Block
+				archiveCuMultiplier = extension.CuMultiplier
+			}
+		}
+	}
+	require.NotZero(t, archiveRuleBlock)
+	require.NotZero(t, archiveCuMultiplier)
+
+	const latestBlock = uint64(12000000)
+	baseCu := uint64(10) // /blocks/{hash_or_number} compute units
+
+	tests := []struct {
+		name       string
+		path       string
+		archive    bool
+		expectedCu uint64
+	}{
+		{name: "latest", path: "/blocks/latest", archive: false, expectedCu: baseCu},
+		{name: "recent block", path: fmt.Sprintf("/blocks/%d", latestBlock-1), archive: false, expectedCu: baseCu},
+		{name: "block just inside the archive boundary", path: fmt.Sprintf("/blocks/%d", latestBlock-archiveRuleBlock-1), archive: true, expectedCu: baseCu * archiveCuMultiplier},
+		{name: "genesis-era block", path: "/blocks/1", archive: true, expectedCu: baseCu * archiveCuMultiplier},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			chainMessage, err := chainParser.ParseMsg(test.path, nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: latestBlock})
+			require.NoError(t, err)
+			if test.archive {
+				require.Len(t, chainMessage.GetExtensions(), 1)
+				require.Equal(t, "archive", chainMessage.GetExtensions()[0].Name)
+			} else {
+				require.Empty(t, chainMessage.GetExtensions())
+			}
+			require.Equal(t, test.expectedCu, chainMessage.GetApi().ComputeUnits)
+		})
 	}
 }
