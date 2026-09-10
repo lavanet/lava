@@ -4,9 +4,17 @@ endpoints:
     network-address:
       address: "127.0.0.1:2220"
     node-urls:
-      - url: wss://starknet.api.onfinality.io/public-ws
+      - url: https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_10/o3Tg75HBJ3deWrZSbmtYhvfMP-t_WbeU
+        internal-path: /rpc/v0_10
+      - url: wss://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_10/o3Tg75HBJ3deWrZSbmtYhvfMP-t_WbeU
+        internal-path: /ws/rpc/v0_10
+      - url: https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_9/o3Tg75HBJ3deWrZSbmtYhvfMP-t_WbeU
+        internal-path: /rpc/v0_9
+      - url: wss://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_9/o3Tg75HBJ3deWrZSbmtYhvfMP-t_WbeU
         internal-path: /ws/rpc/v0_9
-      - url: wss://starknet.api.onfinality.io/public-ws
+      - url: https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_8/o3Tg75HBJ3deWrZSbmtYhvfMP-t_WbeU
+        internal-path: /rpc/v0_8
+      - url: wss://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_8/o3Tg75HBJ3deWrZSbmtYhvfMP-t_WbeU
         internal-path: /ws/rpc/v0_8
-      - url: wss://starknet.api.onfinality.io/public-ws
-      - url: https://starknet-mainnet.public.blastapi.io
+      - url: https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_10/o3Tg75HBJ3deWrZSbmtYhvfMP-t_WbeU
+      - url: wss://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_10/o3Tg75HBJ3deWrZSbmtYhvfMP-t_WbeU
