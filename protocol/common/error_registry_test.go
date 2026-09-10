@@ -1197,10 +1197,12 @@ func TestArchiveDepthBoundary_NamedInRegistry(t *testing.T) {
 //
 // Agave defines a contiguous block of JSON-RPC server error codes in
 // rpc-client-api/src/custom_error.rs (-32001 through -32021). Anything in that
-// block that Lava does not map falls through to UNKNOWN_ERROR, which is
-// retryable by default — so a permanent, deterministic node answer would be
-// retried across every provider in the pairing before failing. That is exactly
-// what happened to -32020 (added in Agave v4.0) until this test existed.
+// block that Lava does not map falls through to UNKNOWN_ERROR, so its retry
+// behaviour is decided by the default instead of being chosen — and the default
+// is to retry, which is wrong for any answer every provider would give
+// identically. -32020 (added in Agave v4.0) sat unmapped in exactly that state
+// until this test existed. Whether a mapped code *should* retry is a separate
+// question, pinned per code in TestClassifyError_SolanaRetryPolicy.
 //
 // If Agave adds a code past -32021, extend the range here together with the
 // mapping; a bare range bump with no mapping fails this test by design.
@@ -1211,5 +1213,60 @@ func TestClassifyError_SolanaAgaveCodeCoverage(t *testing.T) {
 		assert.NotEqual(t, LavaErrorUnknown, result,
 			"Solana code %d is defined by agave rpc-client-api/src/custom_error.rs but is unmapped in "+
 				"chainErrorMappings[ChainFamilySolana]; it would classify as UNKNOWN_ERROR and be retried across providers", code)
+	}
+}
+
+// TestClassifyError_SolanaRetryPolicy pins the retry decision for every Solana code,
+// not merely which error each one maps to.
+//
+// Asserting the mapped error alone is not enough. Most of these targets are generic
+// errors shared with other chain families, so flipping Retryable on one of them would
+// silently change Solana's provider-rotation behaviour while every mapping test still
+// passed. The `why` column is the policy argument, recorded next to the value it
+// justifies: retryable means a different provider could plausibly answer, non-retryable
+// means every provider returns the same thing and rotating only burns the pairing.
+func TestClassifyError_SolanaRetryPolicy(t *testing.T) {
+	tests := []struct {
+		code          int
+		wantErr       *LavaError
+		wantRetryable bool
+		why           string
+	}{
+		{-32001, LavaErrorChainStatePruned, true, "cleaned up here; a deeper ledger may still hold it"},
+		{-32002, LavaErrorChainSolanaSimulationFailed, false, "the transaction itself fails; same everywhere"},
+		{-32003, LavaErrorChainSolanaSignatureVerifyFailed, false, "bad signature; same everywhere"},
+		{-32004, LavaErrorChainBlockNotFound, true, "slot may be served by another provider"},
+		{-32005, LavaErrorNodeSolanaUnhealthy, true, "this node is behind; others may not be"},
+		{-32006, LavaErrorChainInvalidSignature, false, "precompile signature verification; same everywhere"},
+		{-32007, LavaErrorChainSolanaLedgerJump, true, "snapshot gap is per node"},
+		{-32008, LavaErrorNodeResourceUnavailable, true, "this node has no snapshot; others may"},
+		{-32009, LavaErrorChainSolanaMissingLongTerm, false, "absent from long-term storage"},
+		{-32010, LavaErrorChainSolanaExcludedFromIndex, false, "secondary-index configuration"},
+		{-32011, LavaErrorChainDataNotAvailable, true, "history depth is per node"},
+		{-32012, LavaErrorNodeInternalError, true, "scan aborted mid-flight; transient"},
+		{-32013, LavaErrorChainSolanaSignatureLengthMismatch, false, "malformed input; same everywhere"},
+		{-32014, LavaErrorChainSolanaBlockStatusUnavailable, true, "not available yet; may be shortly"},
+		{-32015, LavaErrorChainSolanaTxVersionUnsupported, false, "caller must opt in; every provider agrees"},
+		{-32016, LavaErrorChainSolanaMinContextSlotNotReached, true, "another provider may be further ahead"},
+		{-32017, LavaErrorChainSolanaEpochRewardsActive, false, "rewards window is chain state, identical everywhere"},
+		{-32018, LavaErrorUserInvalidParams, false, "caller asked for a non-boundary slot"},
+		{-32019, LavaErrorNodeServiceUnavailable, true, "agave itself says \"please try again\""},
+		// Deliberately retryable: the before/until signature may be absent from this
+		// node's history but present on a provider with a deeper ledger or long-term
+		// storage enabled, and the error message is identical in both cases so the
+		// classifier cannot tell them apart. A wasted rotation costs latency; refusing
+		// to retry would report "not found" for data another provider holds. This
+		// matches CHAIN_TX_NOT_FOUND and CHAIN_RECEIPT_NOT_FOUND on every other chain.
+		{-32020, LavaErrorChainTxNotFound, true, "the before/until signature may exist on a provider with deeper history"},
+		{-32021, LavaErrorChainDataNotAvailable, true, "slot history is per node"},
+	}
+
+	for _, tt := range tests {
+		got := ClassifyError(nil, ChainFamilySolana, TransportJsonRPC, tt.code, "")
+		if !assert.Equal(t, tt.wantErr, got, "Solana %d must classify as %s", tt.code, tt.wantErr.Name) {
+			continue
+		}
+		assert.Equal(t, tt.wantRetryable, got.Retryable,
+			"Solana %d (%s) must have Retryable=%v — %s", tt.code, got.Name, tt.wantRetryable, tt.why)
 	}
 }
