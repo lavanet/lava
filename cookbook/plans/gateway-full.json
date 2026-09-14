@@ -284,6 +284,54 @@
                         },
                         {
                             "apis": [],
+                            "chain_id": "CARDANO",
+                            "requirements": [
+                                {
+                                    "collection": {
+                                        "api_interface": "rest",
+                                        "internal_path": "",
+                                        "type": "GET",
+                                        "add_on": "mempool"
+                                    },
+                                    "mixed": true
+                                },
+                                {
+                                    "collection": {
+                                        "api_interface": "rest",
+                                        "internal_path": "",
+                                        "type": "POST",
+                                        "add_on": "txs-evaluate"
+                                    },
+                                    "mixed": true
+                                }
+                            ]
+                        },
+                        {
+                            "apis": [],
+                            "chain_id": "CARDANOT",
+                            "requirements": [
+                                {
+                                    "collection": {
+                                        "api_interface": "rest",
+                                        "internal_path": "",
+                                        "type": "GET",
+                                        "add_on": "mempool"
+                                    },
+                                    "mixed": true
+                                },
+                                {
+                                    "collection": {
+                                        "api_interface": "rest",
+                                        "internal_path": "",
+                                        "type": "POST",
+                                        "add_on": "txs-evaluate"
+                                    },
+                                    "mixed": true
+                                }
+                            ]
+                        },
+                        {
+                            "apis": [],
                             "chain_id": "*",
                             "requirements": []
                         }
