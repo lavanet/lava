@@ -503,16 +503,16 @@ func (c *Client) Subscribe(ctx context.Context, id json.RawMessage, method strin
 	var msg *JsonrpcMessage
 	var err error
 	var subId string
-	var ok bool
 	switch p := params.(type) {
 	case []interface{}:
 		msg, err = c.newMessageArrayWithID(method, id, p)
 	case map[string]interface{}:
 		msg, err = c.newMessageMapWithID(method, id, p)
-		subId, ok = p["query"].(string)
-		if !ok {
-			return nil, nil, fmt.Errorf("Subscribe - p['query'].(string) - type assertion failed")
-		}
+		// tendermint subscriptions are keyed by their "query" param; other chains
+		// using by-name params (e.g. starknet) get their id from the response
+		subId, _ = p["query"].(string)
+	case nil:
+		msg, err = c.newMessageArrayWithID(method, id, nil) // pass nil to let omitempty tag handle field omission
 	default:
 		return nil, nil, fmt.Errorf("%s unknown parameters type %s", p, reflect.TypeOf(p))
 	}
