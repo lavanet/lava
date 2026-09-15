@@ -66,7 +66,13 @@
                             "type": "POST",
                             "add_on": "debug"
                         },
-                        "apis": [],
+                        "apis": [
+                            {
+                                "name": "debug_traceBlock",
+                                "compute_units": 1,
+                                "enabled": false
+                            }
+                        ],
                         "headers": [],
                         "inheritance_apis": [
                             {
