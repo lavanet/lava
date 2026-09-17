@@ -1058,6 +1058,136 @@ func TestNoPairingsError(t *testing.T) {
 	require.True(t, PairingListEmptyError.Is(err))
 }
 
+// TestGetValidProviderAddresses_TotalValidLengthGuardPreventsFalseEmpty verifies that
+// when naive subtraction reaches zero due to non-overlapping ignored providers, the
+// overlap recount guard prevents a false-empty decision and selection still succeeds.
+func TestGetValidProviderAddresses_TotalValidLengthGuardPreventsFalseEmpty(t *testing.T) {
+	t.Logf("demonstration: naive subtraction can produce the wrong answer; this test verifies the guard avoids a false-empty outcome")
+	ctx := context.Background()
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil)
+	require.NoError(t, err)
+	time.Sleep(5 * time.Millisecond) // let probes populate optimizer data
+
+	// Limit the valid pool to 2 real providers so naive subtraction can hit zero.
+	csm.validAddresses = []string{pairingList[0].PublicLavaAddress, pairingList[1].PublicLavaAddress}
+	csm.addonAddresses = nil
+
+	ignoredProviders := map[string]struct{}{
+		"ghost-provider-1": {},
+		"ghost-provider-2": {},
+	}
+
+	validAddresses := csm.getValidAddresses("", nil, ctx)
+	naiveTotalValidLength := len(validAddresses) - len(ignoredProviders)
+	actualOverlap := 0
+	for _, address := range validAddresses {
+		if _, ok := ignoredProviders[address]; ok {
+			actualOverlap++
+		}
+	}
+	actualRemaining := len(validAddresses) - actualOverlap
+
+	t.Logf("given validAddresses=%v", validAddresses)
+	t.Logf("given ignoredProviders=%v", ignoredProviders)
+	t.Logf("calculated naiveTotalValidLength=%d", naiveTotalValidLength)
+	t.Logf("calculated actualOverlap=%d", actualOverlap)
+	t.Logf("calculated actualRemaining=%d", actualRemaining)
+
+	require.Equal(t, 0, naiveTotalValidLength, "naive subtraction should incorrectly look empty")
+	require.Equal(t, 0, actualOverlap, "ghost providers should not overlap valid providers")
+	require.Equal(t, 2, actualRemaining, "real remaining providers should still be available")
+
+	addresses, err := csm.getValidProviderAddresses(ctx, 1, ignoredProviders, 10, 100, "", nil, common.NO_STATE, "", "")
+	t.Logf("assert selection succeeds: addresses=%v err=%v", addresses, err)
+	require.NoError(t, err)
+	require.Len(t, addresses, 1)
+	require.Contains(t, validAddresses, addresses[0])
+}
+
+// TestGetValidProviderAddresses_TotalValidLengthGuardDetectsTrueEmpty verifies that
+// when all valid providers are truly ignored (full overlap), the guard confirms an
+// empty provider set and getValidProviderAddresses returns PairingListEmptyError.
+func TestGetValidProviderAddresses_TotalValidLengthGuardDetectsTrueEmpty(t *testing.T) {
+	t.Logf("demonstration: when overlap is real and full, the guard confirms true-empty and returns PairingListEmptyError")
+	ctx := context.Background()
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList, nil)
+	require.NoError(t, err)
+	time.Sleep(5 * time.Millisecond) // let probes populate optimizer data
+
+	providerA := pairingList[0].PublicLavaAddress
+	providerB := pairingList[1].PublicLavaAddress
+	csm.validAddresses = []string{providerA, providerB}
+	csm.addonAddresses = nil
+
+	ignoredProviders := map[string]struct{}{
+		providerA: {},
+		providerB: {},
+	}
+
+	validAddresses := csm.getValidAddresses("", nil, ctx)
+	naiveTotalValidLength := len(validAddresses) - len(ignoredProviders)
+	actualOverlap := 0
+	for _, address := range validAddresses {
+		if _, ok := ignoredProviders[address]; ok {
+			actualOverlap++
+		}
+	}
+	actualRemaining := len(validAddresses) - actualOverlap
+
+	t.Logf("given validAddresses=%v", validAddresses)
+	t.Logf("given ignoredProviders=%v", ignoredProviders)
+	t.Logf("calculated naiveTotalValidLength=%d", naiveTotalValidLength)
+	t.Logf("calculated actualOverlap=%d", actualOverlap)
+	t.Logf("calculated actualRemaining=%d", actualRemaining)
+
+	require.Equal(t, 0, naiveTotalValidLength)
+	require.Equal(t, 2, actualOverlap)
+	require.Equal(t, 0, actualRemaining)
+
+	addresses, err := csm.getValidProviderAddresses(ctx, 1, ignoredProviders, 10, 100, "", nil, common.NO_STATE, "", "")
+	t.Logf("assert selection fails empty: addresses=%v err=%v", addresses, err)
+	require.Error(t, err)
+	require.True(t, PairingListEmptyError.Is(err))
+	require.Empty(t, addresses)
+}
+
+// TestTotalValidLength_NaiveArithmeticIsWrong demonstrates the counting bug pattern:
+// len(valid)-len(ignored) can undercount when ignored providers do not overlap valid
+// providers, so naiveTotalValidLength differs from the real remaining count.
+func TestTotalValidLength_NaiveArithmeticIsWrong(t *testing.T) {
+	t.Logf("demonstration test: prove naive formula can produce the wrong answer; real remaining value differs because naive subtraction ignores overlap")
+	validAddresses := []string{"P1", "P2", "P3"}
+	ignoredProviders := map[string]struct{}{
+		"P99":  {},
+		"P100": {},
+	}
+
+	naiveTotalValidLength := len(validAddresses) - len(ignoredProviders)
+	actualOverlap := 0
+	for _, address := range validAddresses {
+		if _, ok := ignoredProviders[address]; ok {
+			actualOverlap++
+		}
+	}
+	actualRemaining := len(validAddresses) - actualOverlap
+
+	t.Logf("given validAddresses=%v", validAddresses)
+	t.Logf("given ignoredProviders=%v", ignoredProviders)
+	t.Logf("calculated naiveTotalValidLength=%d", naiveTotalValidLength)
+	t.Logf("calculated actualOverlap=%d", actualOverlap)
+	t.Logf("calculated actualRemaining=%d", actualRemaining)
+
+	require.Equal(t, 1, naiveTotalValidLength, "naive subtraction undercounts when ignored providers are outside the valid list")
+	require.Equal(t, 0, actualOverlap)
+	require.Equal(t, 3, actualRemaining, "real remaining providers should be unchanged when there is no overlap")
+	t.Logf("assert naiveTotalValidLength != actualRemaining: %d != %d", naiveTotalValidLength, actualRemaining)
+	require.NotEqual(t, naiveTotalValidLength, actualRemaining, "this demonstrates the counting bug pattern directly")
+}
+
 func TestPairingWithStateful(t *testing.T) {
 	ctx := context.Background()
 	t.Run("stateful", func(t *testing.T) {
