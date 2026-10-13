@@ -451,6 +451,13 @@ var (
 		Code: 3311, Name: "CHAIN_SOLANA_MIN_CONTEXT_SLOT_NOT_REACHED", Category: CategoryExternal,
 		Description: "Minimum context slot not reached (-32016)", Retryable: true,
 	})
+	// Non-retryable on purpose: the epoch rewards distribution period is chain
+	// state, identical on every provider, so rotating to another one during the
+	// window just burns a retry. It clears on its own once distribution ends.
+	LavaErrorChainSolanaEpochRewardsActive = registerError(&LavaError{
+		Code: 3312, Name: "CHAIN_SOLANA_EPOCH_REWARDS_ACTIVE", Category: CategoryExternal,
+		Description: "Epoch rewards distribution period still active (-32017)", Retryable: false,
+	})
 
 	// Starknet-specific (3320-3349) — Tier 2
 	// Source: Starknet JSON-RPC spec error codes

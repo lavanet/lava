@@ -16,7 +16,6 @@ import (
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol/protocolerrors"
 	"github.com/lavanet/lava/v5/protocol/lavasession"
-	"github.com/lavanet/lava/v5/protocol/rpcprovider"
 	"github.com/lavanet/lava/v5/utils"
 	"github.com/lavanet/lava/v5/utils/rand"
 	epochstoragetypes "github.com/lavanet/lava/v5/x/epochstorage/types"
@@ -566,11 +565,6 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 				relayLatency := time.Since(relaySentTime)
 				if guid != probeResp.GetGuid() {
 					return 0, versions, 0, utils.LavaFormatWarning("probe returned invalid value", err, utils.Attribute{Key: "returnedGuid", Value: probeResp.GetGuid()}, utils.Attribute{Key: "guid", Value: guid}, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
-				}
-
-				// CORS check
-				if err := rpcprovider.PerformCORSCheck(endpoint); err != nil {
-					return 0, versions, 0, err
 				}
 
 				relayRequest := &pairingtypes.RelayRequest{

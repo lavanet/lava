@@ -883,6 +883,15 @@ func TestClassifyError_ChainSpecificMappings(t *testing.T) {
 		{"Solana -32005", ChainFamilySolana, -32005, "", LavaErrorNodeSolanaUnhealthy},
 		{"Solana -32004", ChainFamilySolana, -32004, "", LavaErrorChainBlockNotFound},
 		{"Solana -32001", ChainFamilySolana, -32001, "", LavaErrorChainStatePruned},
+		{"Solana -32006 precompile verify", ChainFamilySolana, -32006, "", LavaErrorChainInvalidSignature},
+		{"Solana -32008 no snapshot", ChainFamilySolana, -32008, "", LavaErrorNodeResourceUnavailable},
+		{"Solana -32011 no tx history", ChainFamilySolana, -32011, "", LavaErrorChainDataNotAvailable},
+		{"Solana -32012 scan error", ChainFamilySolana, -32012, "", LavaErrorNodeInternalError},
+		{"Solana -32017 epoch rewards active", ChainFamilySolana, -32017, "", LavaErrorChainSolanaEpochRewardsActive},
+		{"Solana -32018 not epoch boundary", ChainFamilySolana, -32018, "", LavaErrorUserInvalidParams},
+		{"Solana -32019 long-term storage unreachable", ChainFamilySolana, -32019, "", LavaErrorNodeServiceUnavailable},
+		{"Solana -32020 filter tx not found", ChainFamilySolana, -32020, "", LavaErrorChainTxNotFound},
+		{"Solana -32021 no slot history", ChainFamilySolana, -32021, "", LavaErrorChainDataNotAvailable},
 		// Bitcoin Tier 2 — source: Bitcoin Core src/rpc/protocol.h
 		{"Bitcoin warmup -28", ChainFamilyBitcoin, -28, "", LavaErrorNodeBitcoinWarmup},
 		{"Bitcoin initial download -10", ChainFamilyBitcoin, -10, "", LavaErrorNodeBitcoinInitialDownload},
@@ -1100,5 +1109,164 @@ func checkShadow(t *testing.T, i, j int, a, b errorMapping) {
 	if aIsCode && bIsCode && aCode.code == bCode.code {
 		t.Errorf("matcher[%d] CodeEquals(%d)→%s shadows matcher[%d] CodeEquals(%d)→%s",
 			i, aCode.code, a.LavaError.Name, j, bCode.code, b.LavaError.Name)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// HTTP 4xx bodies that blame the node
+// ---------------------------------------------------------------------------
+
+// The Cosmos SDK body an archive-advertising node returns for a depth it cannot
+// serve, verbatim from production including the upstream "then" typo.
+const axelarArchiveDepthMessage = "rpc error: code = InvalidArgument desc = requested block height is bigger then the chain length: invalid request"
+
+func TestClassifyRESTClientErrorStatus_ArchiveDepthBoundary(t *testing.T) {
+	classification := ClassifyRESTClientErrorStatus(axelarArchiveDepthMessage)
+
+	require.NotNil(t, classification, "archive depth boundary must be recognised as a node-side failure")
+	require.Equal(t, LavaErrorChainDataNotAvailable, classification)
+	require.True(t, classification.Retryable,
+		"the block exists and peers serve it, so the relay must be retried against another provider")
+}
+
+func TestClassifyRESTClientErrorStatus_PassesThroughClientErrors(t *testing.T) {
+	// Nothing in this list may be claimed as a node error. The status code is
+	// never consulted, so these stand in for the whole 4xx range.
+	clientErrors := []string{
+		"",
+		"invalid request",
+		"bad request",
+		"decoding bech32 failed: invalid checksum",
+		"endpoint not found",
+		"route not found",
+		"method not allowed",
+		"block not found",
+		"forbidden",
+		"HTTP 400",
+		"<html><body>Bad Request</body></html>",
+	}
+
+	for _, message := range clientErrors {
+		t.Run(message, func(t *testing.T) {
+			require.Nil(t, ClassifyRESTClientErrorStatus(message),
+				"%q must stay a client error — a false positive here retries a doomed request across every provider at full CU", message)
+		})
+	}
+}
+
+// TestClassifyRESTClientErrorStatus_IgnoresStatusCodes pins the safety property
+// that separates this narrow fix from a broad "4xx are node errors" change: the
+// curated list is walked with errorCode 0, so the REST bucket's CodeEquals and
+// HTTPStatusContains matchers cannot fire. Were they to fire, every 404 would
+// resolve to NODE_ENDPOINT_NOT_FOUND and be re-classified as a node error.
+func TestClassifyRESTClientErrorStatus_IgnoresStatusCodes(t *testing.T) {
+	// 404 and 405 both have CodeEquals entries in the REST bucket and would
+	// match if the status code reached the matchers.
+	require.Nil(t, ClassifyRESTClientErrorStatus("404"))
+	require.Nil(t, ClassifyRESTClientErrorStatus("405"))
+	require.Nil(t, ClassifyRESTClientErrorStatus("HTTP status 404"))
+}
+
+// TestArchiveDepthBoundary_ConsumerPolicy asserts what the consumer does with the
+// classification once CheckResponseError flags it. Retrying is the fix; the CU
+// and jailing questions are deliberately left as they are, so this test fails if
+// a later change silently zeroes CU for this error class.
+func TestArchiveDepthBoundary_ConsumerPolicy(t *testing.T) {
+	classification := ClassifyNodeErrorForRetry(
+		ChainFamilyUnknown, TransportREST, 400, axelarArchiveDepthMessage,
+	)
+
+	require.False(t, classification.IsNonRetryable,
+		"must be retried against another provider — that is the entire point of the fix")
+	require.False(t, classification.IsUnsupportedMethod,
+		"must NOT take the zero-CU carve-out: whether this error class should be discounted is an open product decision, not one this change makes")
+}
+
+// TestArchiveDepthBoundary_NamedInRegistry proves the matcher is reachable through
+// the ordinary REST classification path, so the error is named in logs and metrics
+// rather than surfacing as UNKNOWN_ERROR.
+func TestArchiveDepthBoundary_NamedInRegistry(t *testing.T) {
+	classification := ClassifyError(nil, ChainFamilyUnknown, TransportREST, 400, axelarArchiveDepthMessage)
+
+	require.Equal(t, LavaErrorChainDataNotAvailable, classification)
+	require.NotEqual(t, LavaErrorUnknown, classification)
+}
+
+// TestClassifyError_SolanaAgaveCodeCoverage pins the whole Solana custom-error
+// surface, not just the codes someone happened to hit in production.
+//
+// Agave defines a contiguous block of JSON-RPC server error codes in
+// rpc-client-api/src/custom_error.rs (-32001 through -32021). Anything in that
+// block that Lava does not map falls through to UNKNOWN_ERROR, so its retry
+// behaviour is decided by the default instead of being chosen — and the default
+// is to retry, which is wrong for any answer every provider would give
+// identically. -32020 (added in Agave v4.0) sat unmapped in exactly that state
+// until this test existed. Whether a mapped code *should* retry is a separate
+// question, pinned per code in TestClassifyError_SolanaRetryPolicy.
+//
+// If Agave adds a code past -32021, extend the range here together with the
+// mapping; a bare range bump with no mapping fails this test by design.
+func TestClassifyError_SolanaAgaveCodeCoverage(t *testing.T) {
+	const firstAgaveCode, lastAgaveCode = -32001, -32021
+	for code := firstAgaveCode; code >= lastAgaveCode; code-- {
+		result := ClassifyError(nil, ChainFamilySolana, TransportJsonRPC, code, "")
+		assert.NotEqual(t, LavaErrorUnknown, result,
+			"Solana code %d is defined by agave rpc-client-api/src/custom_error.rs but is unmapped in "+
+				"chainErrorMappings[ChainFamilySolana]; it would classify as UNKNOWN_ERROR and be retried across providers", code)
+	}
+}
+
+// TestClassifyError_SolanaRetryPolicy pins the retry decision for every Solana code,
+// not merely which error each one maps to.
+//
+// Asserting the mapped error alone is not enough. Most of these targets are generic
+// errors shared with other chain families, so flipping Retryable on one of them would
+// silently change Solana's provider-rotation behaviour while every mapping test still
+// passed. The `why` column is the policy argument, recorded next to the value it
+// justifies: retryable means a different provider could plausibly answer, non-retryable
+// means every provider returns the same thing and rotating only burns the pairing.
+func TestClassifyError_SolanaRetryPolicy(t *testing.T) {
+	tests := []struct {
+		code          int
+		wantErr       *LavaError
+		wantRetryable bool
+		why           string
+	}{
+		{-32001, LavaErrorChainStatePruned, true, "cleaned up here; a deeper ledger may still hold it"},
+		{-32002, LavaErrorChainSolanaSimulationFailed, false, "the transaction itself fails; same everywhere"},
+		{-32003, LavaErrorChainSolanaSignatureVerifyFailed, false, "bad signature; same everywhere"},
+		{-32004, LavaErrorChainBlockNotFound, true, "slot may be served by another provider"},
+		{-32005, LavaErrorNodeSolanaUnhealthy, true, "this node is behind; others may not be"},
+		{-32006, LavaErrorChainInvalidSignature, false, "precompile signature verification; same everywhere"},
+		{-32007, LavaErrorChainSolanaLedgerJump, true, "snapshot gap is per node"},
+		{-32008, LavaErrorNodeResourceUnavailable, true, "this node has no snapshot; others may"},
+		{-32009, LavaErrorChainSolanaMissingLongTerm, false, "absent from long-term storage"},
+		{-32010, LavaErrorChainSolanaExcludedFromIndex, false, "secondary-index configuration"},
+		{-32011, LavaErrorChainDataNotAvailable, true, "history depth is per node"},
+		{-32012, LavaErrorNodeInternalError, true, "scan aborted mid-flight; transient"},
+		{-32013, LavaErrorChainSolanaSignatureLengthMismatch, false, "malformed input; same everywhere"},
+		{-32014, LavaErrorChainSolanaBlockStatusUnavailable, true, "not available yet; may be shortly"},
+		{-32015, LavaErrorChainSolanaTxVersionUnsupported, false, "caller must opt in; every provider agrees"},
+		{-32016, LavaErrorChainSolanaMinContextSlotNotReached, true, "another provider may be further ahead"},
+		{-32017, LavaErrorChainSolanaEpochRewardsActive, false, "rewards window is chain state, identical everywhere"},
+		{-32018, LavaErrorUserInvalidParams, false, "caller asked for a non-boundary slot"},
+		{-32019, LavaErrorNodeServiceUnavailable, true, "agave itself says \"please try again\""},
+		// Deliberately retryable: the before/until signature may be absent from this
+		// node's history but present on a provider with a deeper ledger or long-term
+		// storage enabled, and the error message is identical in both cases so the
+		// classifier cannot tell them apart. A wasted rotation costs latency; refusing
+		// to retry would report "not found" for data another provider holds. This
+		// matches CHAIN_TX_NOT_FOUND and CHAIN_RECEIPT_NOT_FOUND on every other chain.
+		{-32020, LavaErrorChainTxNotFound, true, "the before/until signature may exist on a provider with deeper history"},
+		{-32021, LavaErrorChainDataNotAvailable, true, "slot history is per node"},
+	}
+
+	for _, tt := range tests {
+		got := ClassifyError(nil, ChainFamilySolana, TransportJsonRPC, tt.code, "")
+		if !assert.Equal(t, tt.wantErr, got, "Solana %d must classify as %s", tt.code, tt.wantErr.Name) {
+			continue
+		}
+		assert.Equal(t, tt.wantRetryable, got.Retryable,
+			"Solana %d (%s) must have Retryable=%v — %s", tt.code, got.Name, tt.wantRetryable, tt.why)
 	}
 }

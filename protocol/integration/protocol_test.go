@@ -271,7 +271,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 		}
 	}
 
-	consumerConsistency := relaycore.NewConsistency(rpcConsumerOptions.specId)
+	consumerConsistency := relaycore.NewConsistency(rpcConsumerOptions.specId, 0)
 	consumerCmdFlags := common.ConsumerCmdFlags{}
 	rpcconsumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil, nil)
 	require.NoError(t, err)

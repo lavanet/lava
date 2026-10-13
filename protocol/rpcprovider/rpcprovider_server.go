@@ -304,11 +304,6 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		utils.Attribute{Key: "requestBlock", Value: request.RelayData.GetRequestBlock()},
 	)
 
-	// Check if consumer supports compression via custom header
-	md, _ := metadata.FromIncomingContext(ctx)
-	compressionSupport := md.Get(common.LavaCompressionSupportHeader)
-	consumerSupportsCompression := len(compressionSupport) > 0 && compressionSupport[0] == "true"
-
 	// Init relay
 	var relaySession *lavasession.SingleProviderSession
 	var consumerAddress sdk.AccAddress
@@ -447,28 +442,8 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		rpcps.metrics.SetEndToEndLatency(endToEndLatencyMs)
 	}
 
-	// Application-level compression if consumer supports it
-	if reply != nil && reply.Data != nil {
-		// Only compress if consumer explicitly supports it via custom header
-		// Don't rely on grpc-accept-encoding which is always present
-		if consumerSupportsCompression {
-			originalSize := len(reply.Data)
-			compressedData, wasCompressed, compressErr := common.CompressData(reply.Data, common.CompressionThreshold)
-
-			if compressErr != nil {
-				utils.LavaFormatWarning("Failed to compress response, sending uncompressed",
-					compressErr,
-					utils.LogAttr("GUID", ctx),
-					utils.LogAttr("originalSize", originalSize),
-				)
-			} else if wasCompressed {
-				reply.Data = compressedData
-
-				// Set header to indicate manual compression
-				grpc.SetHeader(ctx, metadata.Pairs(common.LavaCompressionHeader, common.LavaCompressionGzip))
-			}
-		}
-	}
+	// the reply is compressed by gRPC itself when the consumer sent a compressed request,
+	// see the enable-grpc-compression flag on the consumer side
 
 	utils.LavaFormatInfo("Done handling relay request from consumer",
 		utils.Attribute{Key: "GUID", Value: ctx},
@@ -480,7 +455,6 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		utils.Attribute{Key: "request.cu", Value: request.RelaySession.CuSum},
 		utils.Attribute{Key: "relay_timeout", Value: common.GetRemainingTimeoutFromContext(ctx)},
 		utils.Attribute{Key: "timeTaken", Value: processingTime},
-		utils.Attribute{Key: "consumerSupportsCompression", Value: consumerSupportsCompression},
 	)
 	return reply, rpcps.handleRelayErrorStatus(err)
 }
@@ -1327,9 +1301,21 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, baseRelay
 		}
 	}
 	// we only bail if there is no chance for the provider to get to the requested block and the consumer has already got a response from a different provider with that block
-	if (blockGap > blockLagForQosSync*2 || (blockGap > 1 && probabilityBlockError > 0.4)) && (seenBlock >= latestBlock) {
+	//
+	// the block we wait for is never past seenBlock (see blockGap above), and seenBlock was already served
+	// to the consumer by another provider, so those blocks already exist on chain. what we wait for here is
+	// our own chainTracker polling them, not the chain producing them, and the tracker polls at worst every
+	// averageBlockTime/(MostFrequentPollingMultiplier/4) (see chaintracker.updateTimer) - well under a block.
+	// probabilityBlockError models block production instead, so it over-predicts failure whenever the spec's
+	// average_block_time is larger than the chain's real block time, and bails before the wait loop below
+	// ever runs. use it for observability, and gate the early bail on whether waiting can help at all:
+	// either the provider lags beyond what this spec tolerates (a node problem polling won't fix), or we
+	// can't fit a single tracker poll into the time we're willing to wait.
+	trackerPollInterval := averageBlockTime / (chaintracker.MostFrequentPollingMultiplier / 4)
+	noTimeForATrackerPoll := ok && halfTimeLeft < trackerPollInterval
+	if (blockGap > blockLagForQosSync*2 || (blockGap > 1 && noTimeForATrackerPoll)) && (seenBlock >= latestBlock) {
 		bailed = true
-		return latestBlock, 0, utils.LavaFormatWarning("Requested a block that is too new", protocolerrors.ConsistencyError, utils.Attribute{Key: "blockGap", Value: blockGap}, utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "seenBlock", Value: seenBlock}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
+		return latestBlock, 0, utils.LavaFormatWarning("Requested a block that is too new", protocolerrors.ConsistencyError, utils.Attribute{Key: "blockGap", Value: blockGap}, utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError}, utils.Attribute{Key: "halfTimeLeft", Value: halfTimeLeft}, utils.Attribute{Key: "trackerPollInterval", Value: trackerPollInterval}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: utils.KEY_REQUEST_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TASK_ID, Value: ctx}, utils.Attribute{Key: utils.KEY_TRANSACTION_ID, Value: ctx}, utils.Attribute{Key: "seenBlock", Value: seenBlock}, utils.Attribute{Key: "requestedBlock", Value: requestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "chainID", Value: rpcps.rpcProviderEndpoint.ChainID})
 	}
 
 	if !ok {

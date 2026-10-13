@@ -2,9 +2,7 @@ package rpcprovider
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
-	"net/http"
 	"sort"
 	"strconv"
 	"strings"
@@ -47,66 +45,6 @@ func validatePortNumber(ipPort string) string {
 		return ""
 	}
 	return ipPort
-}
-
-func PerformCORSCheck(endpoint epochstoragetypes.Endpoint) error {
-	utils.LavaFormatDebug("Checking CORS", utils.LogAttr("endpoint", endpoint))
-	// Construct the URL for the RPC endpoint
-	endpointURL := "https://" + endpoint.IPPORT // Providers must have HTTPS support
-
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{Transport: tr}
-
-	methods := []string{"OPTIONS", "GET", "POST", "PUT"}
-	for _, method := range methods {
-		req, err := http.NewRequest(method, endpointURL, nil)
-		if err != nil {
-			return err
-		}
-
-		// Perform the HTTP request
-		resp, err := client.Do(req)
-		if err != nil {
-			return fmt.Errorf("error making %s request to %s: %w", method, endpointURL, err)
-		}
-		defer resp.Body.Close()
-
-		// Perform CORS Validation
-		err = validateCORSHeaders(resp)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func validateCORSHeaders(resp *http.Response) error {
-	// Check for the presence of "Access-Control-Allow-Origin" header
-	corsOrigin := resp.Header.Get("Access-Control-Allow-Origin")
-	if corsOrigin != "*" {
-		return utils.LavaFormatError("CORS check failed. Expected 'Access-Control-Allow-Origin: *' but not found.", nil,
-			utils.LogAttr("returned code", resp.StatusCode),
-			utils.LogAttr("corsOrigin", corsOrigin),
-		)
-	}
-
-	// Headers that must be present in "Access-Control-Allow-Headers"
-	requiredHeaders := []string{"x-grpc-web"}
-
-	corsHeaders := strings.ToLower(resp.Header.Get("Access-Control-Allow-Headers"))
-	for _, requiredHeader := range requiredHeaders {
-		if !strings.Contains(corsHeaders, strings.ToLower(requiredHeader)) {
-			return utils.LavaFormatError("CORS check failed. Expected 'Access-Control-Allow-Headers' are not present.", nil,
-				utils.LogAttr("corsHeaders", corsHeaders),
-				utils.LogAttr("requiredHeader", requiredHeader),
-			)
-		}
-	}
-
-	return nil
 }
 
 func getStatusIndicator(passed bool) string {
@@ -230,18 +168,6 @@ func startTesting(ctx context.Context, clientCtx client.Context, lavaNetworkChai
 							utils.LogAttr("networkChainId", lavaNetworkChainId),
 						)
 					}
-				}
-
-				// CORS check
-				if err := PerformCORSCheck(endpoint); err != nil {
-					return probeResp, 0, versions, 0, utils.LavaFormatError("invalid CORS check", err,
-						utils.LogAttr("returnedGuid", probeResp.GetGuid()),
-						utils.LogAttr("guid", guid),
-						utils.LogAttr("apiInterface", apiInterface),
-						utils.LogAttr("addon", addon),
-						utils.LogAttr("chainID", providerEntry.Chain),
-						utils.LogAttr("network address", endpoint.IPPORT),
-					)
 				}
 
 				relayRequest := &pairingtypes.RelayRequest{

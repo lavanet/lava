@@ -3,6 +3,14 @@
 # Get your project_id at https://blockfrost.io after creating a project for the
 # corresponding network (mainnet, preprod).
 # Port 2221 is the default Lava provider listen port.
+#
+# Addons: the `mempool` and `txs-evaluate` addons are optional. The hosted
+# Blockfrost service serves them; the self-hosted blockfrost-backend-ryo does
+# not implement /mempool/* or /utils/txs/evaluate*, so a RYO-backed provider
+# should leave both out. Declaring an addon here is only half of it - it must
+# also be declared in the provider stake entry, e.g.
+#   "127.0.0.1:2221,1,rest,mempool,txs-evaluate"
+# otherwise pairing will never route addon requests to this provider.
 endpoints:
   - api-interface: rest
     chain-id: CARDANO
@@ -13,6 +21,9 @@ endpoints:
         auth-config:
           auth-headers:
             project_id: <YOUR_PROJECT_ID> # Blockfrost mainnet project ID
+        addons:
+          - mempool       # drop this line when backing the provider with RYO
+          - txs-evaluate  # drop this line when backing the provider with RYO
   - api-interface: rest
     chain-id: CARDANOT
     network-address:
@@ -22,3 +33,6 @@ endpoints:
         auth-config:
           auth-headers:
             project_id: <YOUR_PROJECT_ID> # Blockfrost preprod project ID
+        addons:
+          - mempool       # drop this line when backing the provider with RYO
+          - txs-evaluate  # drop this line when backing the provider with RYO

@@ -444,6 +444,24 @@
                                 "extra_compute_units": 0
                             },
                             {
+                                "name": "/assets/{asset}/utxos",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
                                 "name": "/assets/policy/{policy_id}",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -519,9 +537,12 @@
                                 "name": "/blocks/{hash_or_number}",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "latest"
+                                        "hash_or_number",
+                                        "=",
+                                        "0"
                                     ],
-                                    "parser_func": "DEFAULT"
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
+                                    "default_value": "latest"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -531,15 +552,24 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0
+                                "extra_compute_units": 0,
+                                "parsers": [
+                                    {
+                                        "parse_path": ".params.hash_or_number",
+                                        "parse_type": "BLOCK_HASH"
+                                    }
+                                ]
                             },
                             {
                                 "name": "/blocks/{hash_or_number}/next",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "latest"
+                                        "hash_or_number",
+                                        "=",
+                                        "0"
                                     ],
-                                    "parser_func": "DEFAULT"
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
+                                    "default_value": "latest"
                                 },
                                 "compute_units": 20,
                                 "enabled": true,
@@ -549,15 +579,24 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0
+                                "extra_compute_units": 0,
+                                "parsers": [
+                                    {
+                                        "parse_path": ".params.hash_or_number",
+                                        "parse_type": "BLOCK_HASH"
+                                    }
+                                ]
                             },
                             {
                                 "name": "/blocks/{hash_or_number}/previous",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "latest"
+                                        "hash_or_number",
+                                        "=",
+                                        "0"
                                     ],
-                                    "parser_func": "DEFAULT"
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
+                                    "default_value": "latest"
                                 },
                                 "compute_units": 20,
                                 "enabled": true,
@@ -567,7 +606,13 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0
+                                "extra_compute_units": 0,
+                                "parsers": [
+                                    {
+                                        "parse_path": ".params.hash_or_number",
+                                        "parse_type": "BLOCK_HASH"
+                                    }
+                                ]
                             },
                             {
                                 "name": "/blocks/slot/{slot_number}",
@@ -609,9 +654,12 @@
                                 "name": "/blocks/{hash_or_number}/txs",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "latest"
+                                        "hash_or_number",
+                                        "=",
+                                        "0"
                                     ],
-                                    "parser_func": "DEFAULT"
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
+                                    "default_value": "latest"
                                 },
                                 "compute_units": 20,
                                 "enabled": true,
@@ -621,15 +669,24 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0
+                                "extra_compute_units": 0,
+                                "parsers": [
+                                    {
+                                        "parse_path": ".params.hash_or_number",
+                                        "parse_type": "BLOCK_HASH"
+                                    }
+                                ]
                             },
                             {
                                 "name": "/blocks/{hash_or_number}/txs/cbor",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "latest"
+                                        "hash_or_number",
+                                        "=",
+                                        "0"
                                     ],
-                                    "parser_func": "DEFAULT"
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
+                                    "default_value": "latest"
                                 },
                                 "compute_units": 20,
                                 "enabled": true,
@@ -639,15 +696,24 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0
+                                "extra_compute_units": 0,
+                                "parsers": [
+                                    {
+                                        "parse_path": ".params.hash_or_number",
+                                        "parse_type": "BLOCK_HASH"
+                                    }
+                                ]
                             },
                             {
                                 "name": "/blocks/{hash_or_number}/addresses",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "latest"
+                                        "hash_or_number",
+                                        "=",
+                                        "0"
                                     ],
-                                    "parser_func": "DEFAULT"
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
+                                    "default_value": "latest"
                                 },
                                 "compute_units": 20,
                                 "enabled": true,
@@ -657,7 +723,13 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0
+                                "extra_compute_units": 0,
+                                "parsers": [
+                                    {
+                                        "parse_path": ".params.hash_or_number",
+                                        "parse_type": "BLOCK_HASH"
+                                    }
+                                ]
                             },
                             {
                                 "name": "/epochs/latest",
@@ -948,6 +1020,60 @@
                                 "extra_compute_units": 0
                             },
                             {
+                                "name": "/governance/committee",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/governance/committee/votes",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/governance/committee/{cc_id}/votes",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
                                 "name": "/governance/proposals",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -1157,60 +1283,6 @@
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/mempool",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 20,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/mempool/{hash}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/mempool/addresses/{address}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                },
-                                "compute_units": 20,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
@@ -1597,6 +1669,24 @@
                             },
                             {
                                 "name": "/scripts/{script_hash}/redeemers",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/scripts/{script_hash}/utxos",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2093,7 +2183,28 @@
                                     "hanging_api": true
                                 },
                                 "extra_compute_units": 0
+                            }
+                        ],
+                        "headers": [
+                            {
+                                "name": "content-type",
+                                "kind": "pass_send"
                             },
+                            {
+                                "name": "project_id",
+                                "kind": "pass_send"
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": "txs-evaluate"
+                        },
+                        "apis": [
                             {
                                 "name": "/utils/txs/evaluate",
                                 "block_parsing": {
@@ -2130,15 +2241,70 @@
                                 },
                                 "extra_compute_units": 0
                             }
-                        ],
-                        "headers": [
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "GET",
+                            "add_on": "mempool"
+                        },
+                        "apis": [
                             {
-                                "name": "content-type",
-                                "kind": "pass_send"
+                                "name": "/mempool",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             },
                             {
-                                "name": "project_id",
-                                "kind": "pass_send"
+                                "name": "/mempool/{hash}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/mempool/addresses/{address}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             }
                         ]
                     }

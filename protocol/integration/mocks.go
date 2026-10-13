@@ -2,11 +2,13 @@ package integration_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"strconv"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/lavanet/lava/v5/protocol/chaintracker"
@@ -243,6 +245,14 @@ type uniqueAddressGenerator struct {
 	lock        sync.Mutex
 }
 
+// addressUnavailable reports whether err means this host cannot offer the address
+// family at all, rather than the port being taken. A runner without IPv6 loopback
+// fails every [::1] bind this way; treating that as "in use" marks every port busy
+// and makes the caller loop until the test binary is killed.
+func addressUnavailable(err error) bool {
+	return errors.Is(err, syscall.EAFNOSUPPORT) || errors.Is(err, syscall.EADDRNOTAVAIL)
+}
+
 func isPortInUse(port int) bool {
 	addresses := []string{
 		fmt.Sprintf(":%d", port),          // all interfaces
@@ -255,12 +265,18 @@ func isPortInUse(port int) bool {
 		// Try TCP
 		tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 		if err != nil {
+			if addressUnavailable(err) {
+				continue // this host has no such address family; it says nothing about the port
+			}
 			// If there's an error, the port is likely in use
 			return true
 		}
 
 		tcpListener, err := net.ListenTCP("tcp", tcpAddr)
 		if err != nil {
+			if addressUnavailable(err) {
+				continue
+			}
 			// If there's an error, the port is likely in use
 			return true
 		}
@@ -271,12 +287,18 @@ func isPortInUse(port int) bool {
 		// Try UDP (unchanged)
 		udpAddr, err := net.ResolveUDPAddr("udp", addr)
 		if err != nil {
+			if addressUnavailable(err) {
+				continue
+			}
 			// If there's an error, the port is likely in use
 			return true
 		}
 
 		udpConn, err := net.ListenUDP("udp", udpAddr)
 		if err != nil {
+			if addressUnavailable(err) {
+				continue
+			}
 			// If there's an error, the port is likely in use
 			return true
 		}
@@ -298,15 +320,15 @@ func (ag *uniqueAddressGenerator) GetAddress() string {
 	ag.lock.Lock()
 	defer ag.lock.Unlock()
 
-	for {
-		if !isPortInUse(ag.currentPort) {
-			break
-		}
+	for isPortInUse(ag.currentPort) {
 		ag.currentPort++
-	}
-
-	if ag.currentPort > maxPort {
-		panic("all ports have been exhausted")
+		// the bound has to be tested inside the loop: with it after the loop, an
+		// environment where every probe reports "in use" spins here forever instead
+		// of ever reaching the check, and the package dies on the go test timeout
+		// with no output rather than a usable error.
+		if ag.currentPort > maxPort {
+			panic("all ports have been exhausted")
+		}
 	}
 
 	address := fmt.Sprintf("localhost:%d", ag.currentPort)

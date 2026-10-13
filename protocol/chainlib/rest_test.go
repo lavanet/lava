@@ -13,7 +13,9 @@ import (
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/parser"
+	specutils "github.com/lavanet/lava/v5/utils/keeper"
 	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
+	plantypes "github.com/lavanet/lava/v5/x/plans/types"
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -316,5 +318,227 @@ func TestRegexParsing(t *testing.T) {
 		} else {
 			assert.ErrorIs(t, err, common.APINotSupportedError)
 		}
+	}
+}
+
+// TestCardanoSpec_HistoricalBlockRequestsAreNotLatest pins the block parsing of the
+// Blockfrost-style `/blocks/{hash_or_number}` routes in the CARDANO spec.
+//
+// The routes used to declare `DEFAULT latest`, so `GET /blocks/1` was classified as a
+// request for the latest block: the archive rule never fired, archive providers were
+// not selected, and the archive CU multiplier was not applied. A numeric path parameter
+// must now surface as the requested block, and a block hash must be captured as a
+// requested hash (the consumer resolves hashes to heights through its cache) while the
+// block itself falls back to latest.
+func TestCardanoSpec_HistoricalBlockRequestsAreNotLatest(t *testing.T) {
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"height": 12000000, "hash": "4ea1ba291e8eef538635a53e59fddba7810d1679631cc3aed7c8e6c4091a5b1f"}`)
+	})
+	chainParser, _, _, closeServer, _, err := CreateChainLibMocks(ctx, "CARDANO", spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	require.NoError(t, err)
+	defer func() {
+		if closeServer != nil {
+			closeServer()
+		}
+	}()
+
+	const blockHash = "4ea1ba291e8eef538635a53e59fddba7810d1679631cc3aed7c8e6c4091a5b1f"
+
+	tests := []struct {
+		path          string
+		expectedBlock int64
+		expectedHash  string
+	}{
+		{path: "/blocks/latest", expectedBlock: spectypes.LATEST_BLOCK},
+		{path: "/blocks/1", expectedBlock: 1},
+		{path: "/blocks/11500000", expectedBlock: 11500000},
+		{path: "/blocks/1/next", expectedBlock: 1},
+		{path: "/blocks/1/previous", expectedBlock: 1},
+		{path: "/blocks/1/txs", expectedBlock: 1},
+		{path: "/blocks/1/txs/cbor", expectedBlock: 1},
+		{path: "/blocks/1/addresses", expectedBlock: 1},
+		{path: "/blocks/" + blockHash, expectedBlock: spectypes.LATEST_BLOCK, expectedHash: blockHash},
+		{path: "/blocks/" + blockHash + "/txs", expectedBlock: spectypes.LATEST_BLOCK, expectedHash: blockHash},
+		// epoch and slot numbers are not block heights and must keep resolving to latest
+		{path: "/epochs/1", expectedBlock: spectypes.LATEST_BLOCK},
+		{path: "/blocks/slot/1", expectedBlock: spectypes.LATEST_BLOCK},
+	}
+
+	for _, test := range tests {
+		t.Run(test.path, func(t *testing.T) {
+			chainMessage, err := chainParser.ParseMsg(test.path, nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			require.NoError(t, err)
+			requestedBlock, _ := chainMessage.RequestedBlock()
+			require.Equal(t, test.expectedBlock, requestedBlock)
+			if test.expectedHash == "" {
+				require.Empty(t, chainMessage.GetRequestedBlocksHashes())
+			} else {
+				require.Equal(t, []string{test.expectedHash}, chainMessage.GetRequestedBlocksHashes())
+			}
+		})
+	}
+}
+
+// TestCardanoSpec_HistoricalBlockActivatesArchive checks the end-to-end effect of the
+// parsing fix: with the archive extension enabled by policy, an old numeric block goes
+// to archive with the archive CU multiplier, while latest and recent blocks do not.
+func TestCardanoSpec_HistoricalBlockActivatesArchive(t *testing.T) {
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"height": 12000000, "hash": "4ea1ba291e8eef538635a53e59fddba7810d1679631cc3aed7c8e6c4091a5b1f"}`)
+	})
+	chainParser, _, _, closeServer, _, err := CreateChainLibMocks(ctx, "CARDANO", spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	require.NoError(t, err)
+	defer func() {
+		if closeServer != nil {
+			closeServer()
+		}
+	}()
+
+	chainParser.SetPolicy(&plantypes.Policy{ChainPolicies: []plantypes.ChainPolicy{{ChainId: "CARDANO", Requirements: []plantypes.ChainRequirement{{Collection: spectypes.CollectionData{ApiInterface: spectypes.APIInterfaceRest}, Extensions: []string{"archive"}}}}}}, "CARDANO", spectypes.APIInterfaceRest)
+
+	spec, err := specutils.GetASpec("CARDANO", "../../", nil, nil)
+	require.NoError(t, err)
+	var archiveRuleBlock uint64
+	var archiveCuMultiplier uint64
+	for _, apiCollection := range spec.ApiCollections {
+		for _, extension := range apiCollection.Extensions {
+			if extension.Name == "archive" {
+				archiveRuleBlock = extension.Rule.Block
+				archiveCuMultiplier = extension.CuMultiplier
+			}
+		}
+	}
+	require.NotZero(t, archiveRuleBlock)
+	require.NotZero(t, archiveCuMultiplier)
+
+	const latestBlock = uint64(12000000)
+	baseCu := uint64(10) // /blocks/{hash_or_number} compute units
+
+	tests := []struct {
+		name       string
+		path       string
+		archive    bool
+		expectedCu uint64
+	}{
+		{name: "latest", path: "/blocks/latest", archive: false, expectedCu: baseCu},
+		{name: "recent block", path: fmt.Sprintf("/blocks/%d", latestBlock-1), archive: false, expectedCu: baseCu},
+		{name: "block just inside the archive boundary", path: fmt.Sprintf("/blocks/%d", latestBlock-archiveRuleBlock-1), archive: true, expectedCu: baseCu * archiveCuMultiplier},
+		{name: "genesis-era block", path: "/blocks/1", archive: true, expectedCu: baseCu * archiveCuMultiplier},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			chainMessage, err := chainParser.ParseMsg(test.path, nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: latestBlock})
+			require.NoError(t, err)
+			if test.archive {
+				require.Len(t, chainMessage.GetExtensions(), 1)
+				require.Equal(t, "archive", chainMessage.GetExtensions()[0].Name)
+			} else {
+				require.Empty(t, chainMessage.GetExtensions())
+			}
+			require.Equal(t, test.expectedCu, chainMessage.GetApi().ComputeUnits)
+		})
+	}
+}
+
+// cardanoAddonPolicy builds a consumer policy for CARDANO that requires the given addons.
+// Passing no addons reproduces every plan shipped today (empty or wildcard chain policies),
+// which resolve to the base collection only.
+func cardanoAddonPolicy(addons ...struct{ addOn, connectionType string }) *plantypes.Policy {
+	requirements := []plantypes.ChainRequirement{}
+	for _, addon := range addons {
+		requirements = append(requirements, plantypes.ChainRequirement{
+			Collection: spectypes.CollectionData{
+				ApiInterface: spectypes.APIInterfaceRest,
+				Type:         addon.connectionType,
+				AddOn:        addon.addOn,
+			},
+			Mixed: true,
+		})
+	}
+	return &plantypes.Policy{ChainPolicies: []plantypes.ChainPolicy{{ChainId: "CARDANO", Requirements: requirements}}}
+}
+
+// TestCardanoSpec_MempoolAndEvaluateAreAddons pins the resolution of lavanet/lava#2333:
+// the three /mempool routes and the two /utils/txs/evaluate routes are not implemented by
+// the self-hosted blockfrost-backend-ryo, so they must not be part of the mandatory base
+// collection. They live in the "mempool" and "txs-evaluate" addons instead, which a
+// provider opts into and a consumer policy must request.
+func TestCardanoSpec_MempoolAndEvaluateAreAddons(t *testing.T) {
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"height": 12000000}`)
+	})
+	chainParser, _, _, closeServer, _, err := CreateChainLibMocks(ctx, "CARDANO", spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	require.NoError(t, err)
+	defer func() {
+		if closeServer != nil {
+			closeServer()
+		}
+	}()
+
+	mempoolAddon := struct{ addOn, connectionType string }{"mempool", http.MethodGet}
+	evaluateAddon := struct{ addOn, connectionType string }{"txs-evaluate", http.MethodPost}
+
+	addonRoutes := []struct {
+		path           string
+		connectionType string
+	}{
+		{path: "/mempool", connectionType: http.MethodGet},
+		{path: "/mempool/4ea1ba291e8eef538635a53e59fddba7810d1679631cc3aed7c8e6c4091a5b1f", connectionType: http.MethodGet},
+		{path: "/mempool/addresses/addr1qxqs59lphg8g6qndelq8xwqn60ag3aeyfcp33c2kdp46a09re5df3pzwwmyq946axfcejy5n4x0y99wqpgtp2gd0k09qsgy6pz", connectionType: http.MethodGet},
+		{path: "/utils/txs/evaluate", connectionType: http.MethodPost},
+		{path: "/utils/txs/evaluate/utxos", connectionType: http.MethodPost},
+	}
+	baseRoutes := []struct {
+		path           string
+		connectionType string
+	}{
+		{path: "/blocks/latest", connectionType: http.MethodGet},
+		{path: "/tx/submit", connectionType: http.MethodPost},
+	}
+
+	// a policy without the addons - every plan in cookbook/plans today - reaches the base
+	// collection only, and the five routes are rejected before they ever leave the consumer
+	require.NoError(t, chainParser.SetPolicy(cardanoAddonPolicy(), "CARDANO", spectypes.APIInterfaceRest))
+	for _, route := range addonRoutes {
+		t.Run("rejected without addon "+route.path, func(t *testing.T) {
+			_, err := ParseAndValidateMessage(chainParser, route.path, nil, route.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			require.Error(t, err)
+		})
+	}
+	for _, route := range baseRoutes {
+		t.Run("base reachable without addon "+route.path, func(t *testing.T) {
+			_, err := ParseAndValidateMessage(chainParser, route.path, nil, route.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			require.NoError(t, err)
+		})
+	}
+
+	// once the policy asks for both addons the same routes resolve, and they carry the
+	// addon so pairing can route them to a provider that declared it
+	require.NoError(t, chainParser.SetPolicy(cardanoAddonPolicy(mempoolAddon, evaluateAddon), "CARDANO", spectypes.APIInterfaceRest))
+	for _, route := range addonRoutes {
+		t.Run("allowed with addon "+route.path, func(t *testing.T) {
+			chainMessage, err := ParseAndValidateMessage(chainParser, route.path, nil, route.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			require.NoError(t, err)
+			expectedAddon := mempoolAddon.addOn
+			if route.connectionType == http.MethodPost {
+				expectedAddon = evaluateAddon.addOn
+			}
+			require.Equal(t, expectedAddon, GetAddon(chainMessage))
+		})
+	}
+	// the base collection is unaffected by the addons being present
+	for _, route := range baseRoutes {
+		t.Run("base unaffected by addon "+route.path, func(t *testing.T) {
+			chainMessage, err := ParseAndValidateMessage(chainParser, route.path, nil, route.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			require.NoError(t, err)
+			require.Equal(t, "", GetAddon(chainMessage))
+		})
 	}
 }

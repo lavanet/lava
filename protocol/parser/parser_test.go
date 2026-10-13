@@ -1024,3 +1024,68 @@ func TestSolanaSpec_GetBlocknumParsesSlotNotBlockHeight(t *testing.T) {
 	require.Equal(t, int64(436597938), parsed.GetBlock(),
 		"GET_BLOCKNUM must yield context.slot (436597938), not value.lastValidBlockHeight (414654108)")
 }
+
+// TestSolanaSpec_GetBlockByNumSupportsV1Transactions pins the transaction version the
+// SOLANA GET_BLOCK_BY_NUM directive declares, in every deployed copy of the spec.
+//
+// Solana V1 transactions (SIMD-0385) require maxSupportedTransactionVersion to be the
+// JSON integer 1. At 0, a getBlock that asks for transaction details fails the entire
+// call with -32015 as soon as the block holds one V1 transaction. The value therefore
+// has to be asserted and not merely set: the spec is duplicated per network, so a later
+// edit can revert one copy or update only one of them with nothing to catch it.
+func TestSolanaSpec_GetBlockByNumSupportsV1Transactions(t *testing.T) {
+	const wantMaxSupportedTxVersion = 1
+
+	specPaths := map[string]string{
+		"mainnet-1": "../../specs/mainnet-1/specs/solana.json",
+		"testnet-2": "../../specs/testnet-2/specs/solana.json",
+	}
+
+	templates := make(map[string]string, len(specPaths))
+	for network, specPath := range specPaths {
+		t.Run(network, func(t *testing.T) {
+			specs, err := keeper.GetAllSpecsFromFile(specPath)
+			require.NoError(t, err, "must be able to load %s", specPath)
+
+			solana, ok := specs["SOLANA"]
+			require.True(t, ok, "SOLANA spec must be present in %s", specPath)
+
+			var template string
+			for _, collection := range solana.ApiCollections {
+				for _, directive := range collection.ParseDirectives {
+					if directive.FunctionTag == spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM {
+						template = directive.FunctionTemplate
+					}
+				}
+			}
+			require.NotEmpty(t, template, "SOLANA spec in %s must define a GET_BLOCK_BY_NUM template", specPath)
+			templates[network] = template
+
+			// Decode the rendered request instead of substring-matching the template, so the
+			// assertion survives reordering and whitespace, and so the string "1" cannot pass
+			// as the integer 1 — Solana rejects the quoted form.
+			var request struct {
+				Params []json.RawMessage `json:"params"`
+			}
+			require.NoError(t, json.Unmarshal([]byte(fmt.Sprintf(template, 12345)), &request),
+				"GET_BLOCK_BY_NUM template must render to valid JSON: %s", template)
+			require.Len(t, request.Params, 2, "getBlock must be called with a slot and a config object")
+
+			var config map[string]any
+			require.NoError(t, json.Unmarshal(request.Params[1], &config))
+
+			version, ok := config["maxSupportedTransactionVersion"]
+			require.True(t, ok, "GET_BLOCK_BY_NUM must declare maxSupportedTransactionVersion")
+			versionNumber, isNumber := version.(float64)
+			require.True(t, isNumber, "maxSupportedTransactionVersion must be a JSON number, got %T (%v)", version, version)
+			require.Equal(t, float64(wantMaxSupportedTxVersion), versionNumber,
+				"GET_BLOCK_BY_NUM must declare support for Solana V1 transactions")
+		})
+	}
+
+	// The per-network specs are copies of one another. Nothing else in the repo stops
+	// this directive drifting between them.
+	require.Len(t, templates, len(specPaths), "every network's template must have been read")
+	require.Equal(t, templates["mainnet-1"], templates["testnet-2"],
+		"the SOLANA GET_BLOCK_BY_NUM template must be identical across networks")
+}
