@@ -510,7 +510,12 @@ func (c *Client) Subscribe(ctx context.Context, id json.RawMessage, method strin
 		msg, err = c.newMessageMapWithID(method, id, p)
 		// tendermint subscriptions are keyed by their "query" param; other chains
 		// using by-name params (e.g. starknet) get their id from the response
-		subId, _ = p["query"].(string)
+		if query, found := p["query"]; found {
+			var ok bool
+			if subId, ok = query.(string); !ok {
+				return nil, nil, fmt.Errorf("Subscribe - p['query'].(string) - type assertion failed")
+			}
+		}
 	case nil:
 		msg, err = c.newMessageArrayWithID(method, id, nil) // pass nil to let omitempty tag handle field omission
 	default:

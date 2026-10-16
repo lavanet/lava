@@ -1,10 +1,26 @@
 package rpcclient
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestClientSubscribe_NonStringQueryParam(t *testing.T) {
+	// tendermint subscriptions are keyed by "query", so a query that is present but
+	// not a string must fail fast instead of registering under the response id
+	for _, query := range []interface{}{1, nil, []interface{}{"tm.event='NewBlock'"}} {
+		// the client has no connection, so a request that gets past validation
+		// waits on the context instead of hanging the test
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		client := &Client{}
+		_, _, err := client.Subscribe(ctx, nil, "subscribe", make(chan *JsonrpcMessage), map[string]interface{}{"query": query})
+		cancel()
+		assert.ErrorContains(t, err, "type assertion failed", "query=%v", query)
+	}
+}
 
 // Test that demonstrates the fix for Client.CallContext nil parameter handling
 // The fix changes how nil params are passed to newMessageArrayWithID
