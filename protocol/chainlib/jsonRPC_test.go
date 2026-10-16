@@ -483,8 +483,8 @@ func TestJsonRpcInternalPathsMultipleVersionsStarkNet(t *testing.T) {
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainProxy)
 	require.NotNil(t, chainFetcher)
-	v8_path := "/rpc/v0_8"
 	v9_path := "/rpc/v0_9"
+	v10_path := "/rpc/v0_10"
 	req_data := []byte(`{"jsonrpc": "2.0", "id": 1, "method": "starknet_specVersion", "params": []}`)
 	chainMessage, err := chainParser.ParseMsg("", req_data, http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 	require.NoError(t, err)
@@ -493,19 +493,19 @@ func TestJsonRpcInternalPathsMultipleVersionsStarkNet(t *testing.T) {
 	require.Equal(t, "starknet_specVersion", api.Name)
 	require.Equal(t, "", collection.CollectionData.InternalPath)
 
-	chainMessage, err = chainParser.ParseMsg(v8_path, req_data, http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
-	require.NoError(t, err)
-	api = chainMessage.GetApi()
-	collection = chainMessage.GetApiCollection()
-	require.Equal(t, "starknet_specVersion", api.Name)
-	require.Equal(t, v8_path, collection.CollectionData.InternalPath)
-
 	chainMessage, err = chainParser.ParseMsg(v9_path, req_data, http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 	require.NoError(t, err)
 	api = chainMessage.GetApi()
 	collection = chainMessage.GetApiCollection()
 	require.Equal(t, "starknet_specVersion", api.Name)
 	require.Equal(t, v9_path, collection.CollectionData.InternalPath)
+
+	chainMessage, err = chainParser.ParseMsg(v10_path, req_data, http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	api = chainMessage.GetApi()
+	collection = chainMessage.GetApiCollection()
+	require.Equal(t, "starknet_specVersion", api.Name)
+	require.Equal(t, v10_path, collection.CollectionData.InternalPath)
 }
 
 func TestJsonRpcInternalPathsMultipleVersionsAvalanche(t *testing.T) {
