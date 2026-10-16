@@ -816,9 +816,23 @@ func (cwsm *ConsumerWSSubscriptionManager) findActiveSubscriptionHashedParamsFro
 		}
 	}
 
-	for hashesParams, activeSubscription := range cwsm.activeSubscriptions {
-		if activeSubscription.subscriptionId == unsubscribeRequestParamsString {
-			return hashesParams, nil
+	candidateSubscriptionIds := []string{unsubscribeRequestParamsString}
+	// By-name params with a single entry carry the subscription id as its value,
+	// e.g. starknet's {"subscription_id": "0x1"}
+	if byNameParams, ok := chainMessage.GetRPCMessage().GetParams().(map[string]interface{}); ok && len(byNameParams) == 1 {
+		for _, value := range byNameParams {
+			if subscriptionId, ok := value.(string); ok {
+				candidateSubscriptionIds = append(candidateSubscriptionIds, subscriptionId)
+			}
+		}
+	}
+
+	// The raw params are matched first, so tendermint (whose id is the whole params object) is unaffected
+	for _, subscriptionId := range candidateSubscriptionIds {
+		for hashesParams, activeSubscription := range cwsm.activeSubscriptions {
+			if activeSubscription.subscriptionId == subscriptionId {
+				return hashesParams, nil
+			}
 		}
 	}
 
