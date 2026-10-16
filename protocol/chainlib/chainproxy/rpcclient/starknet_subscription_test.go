@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestIsStarknetNotification(t *testing.T) {
+func TestStarknetNotification_Detection(t *testing.T) {
 	notification := &JsonrpcMessage{
 		Version: Vsn,
 		Method:  "starknet_subscriptionNewHeads",
@@ -60,11 +60,11 @@ func TestIsStarknetNotification(t *testing.T) {
 	require.False(t, pathfinderNotification.isStarknetNotification())
 }
 
-// TestStarknetSubscriptionEndToEnd subscribes against a mock starknet node over
+// TestStarknetSubscription_EndToEnd subscribes against a mock starknet node over
 // websocket using by-name params (the canonical starknet form) and verifies the
 // v0.9+ notification envelope {method: starknet_subscriptionXxx, params:
 // {subscription_id, result}} is delivered to the subscription channel.
-func TestStarknetSubscriptionEndToEnd(t *testing.T) {
+func TestStarknetSubscription_EndToEnd(t *testing.T) {
 	subId := "340282366920938463463374607431768211456"
 	upgrader := websocket.Upgrader{}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
