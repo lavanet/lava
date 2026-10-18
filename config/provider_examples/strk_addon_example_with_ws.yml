@@ -5,8 +5,8 @@ endpoints:
       address: "127.0.0.1:2220"
     node-urls:
       - url: wss://starknet.api.onfinality.io/public-ws
-        internal-path: /ws/rpc/v0_9
+        internal-path: /ws/rpc/v0_10
       - url: wss://starknet.api.onfinality.io/public-ws
-        internal-path: /ws/rpc/v0_8
+        internal-path: /ws/rpc/v0_9
       - url: wss://starknet.api.onfinality.io/public-ws
       - url: https://starknet-mainnet.public.blastapi.io
