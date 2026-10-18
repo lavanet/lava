@@ -11,6 +11,7 @@ import (
 	"time"
 
 	gomock "github.com/golang/mock/gomock"
+	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v5/protocol/common"
 	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
@@ -730,4 +731,40 @@ func CreateConsumerSessionManager(chainID, apiInterface, consumerPublicAddress s
 		nil, consumerPublicAddress,
 		lavasession.NewActiveSubscriptionProvidersStorage(),
 	)
+}
+
+func TestConsumerWSSubscriptionManager_FindSubscriptionByUnsubscribeParams(t *testing.T) {
+	manager := &ConsumerWSSubscriptionManager{
+		activeSubscriptions: map[string]*activeSubscriptionHolder{
+			"jsonrpcHash":    {subscriptionId: "0x1"},
+			"tendermintHash": {subscriptionId: `{"query":"tm.event='NewBlock'"}`},
+		},
+	}
+
+	tests := []struct {
+		name         string
+		params       interface{}
+		expectedHash string // empty means the subscription must not be found
+	}{
+		{name: "positional id", params: []interface{}{"0x1"}, expectedHash: "jsonrpcHash"},
+		{name: "by-name id", params: map[string]interface{}{"subscription_id": "0x1"}, expectedHash: "jsonrpcHash"},
+		{name: "tendermint query object", params: map[string]interface{}{"query": "tm.event='NewBlock'"}, expectedHash: "tendermintHash"},
+		{name: "unknown positional id", params: []interface{}{"0x2"}},
+		{name: "unknown by-name id", params: map[string]interface{}{"subscription_id": "0x2"}},
+		{name: "by-name with several entries", params: map[string]interface{}{"subscription_id": "0x1", "extra": "0x1"}},
+		{name: "by-name non-string id", params: map[string]interface{}{"subscription_id": 1}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			chainMessage := &baseChainMessageContainer{msg: &rpcInterfaceMessages.JsonrpcMessage{Params: tt.params}}
+			hashedParams, err := manager.findActiveSubscriptionHashedParamsFromChainMessage(chainMessage)
+			if tt.expectedHash == "" {
+				require.ErrorIs(t, err, common.SubscriptionNotFoundError)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.expectedHash, hashedParams)
+		})
+	}
 }
