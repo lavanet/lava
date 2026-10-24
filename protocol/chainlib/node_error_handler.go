@@ -38,9 +38,10 @@ func NewSolanaNonRetryableError(err error) error {
 	return common.NewLavaError(common.LavaErrorChainSolanaMissingLongTerm, err.Error())
 }
 
-// ExtractNodeErrorDetails extracts the numeric error code and canonical message from a node error.
-// It handles three error shapes in priority order:
-//  1. HTTP-wrapped JSON-RPC body  — extracts .error.code / .error.message
+// ExtractNodeErrorDetails extracts the numeric error code and a classification
+// message from a node error. It handles three error shapes in priority order:
+//  1. HTTP-wrapped JSON-RPC body  — extracts .error.code and a message folded
+//     from .error's message + name + cause + data (see classificationMessage)
 //  2. gRPC status                 — extracts status code and description
 //  3. Raw HTTP status code        — extracts the HTTP status integer
 //
@@ -49,14 +50,17 @@ func NewSolanaNonRetryableError(err error) error {
 // an rpcclient.HTTPError must NOT be overwritten by the HTTP status code —
 // downstream classification relies on the structured JSON-RPC code.
 //
+// The returned message is for CLASSIFICATION and telemetry only; the original
+// node error is always surfaced to the user unchanged (transparent hop).
+//
 // Falls back to (0, err.Error()) when none of the above apply.
 func ExtractNodeErrorDetails(nodeError error) (errorCode int, errorMessage string) {
 	errorMessage = nodeError.Error()
 
 	// 1. HTTP-wrapped JSON-RPC body — the richest source, check first.
 	if jsonMsg := TryRecoverNodeErrorFromClientError(nodeError); jsonMsg != nil && jsonMsg.Error != nil {
-		if jsonMsg.Error.Message != "" {
-			errorMessage = jsonMsg.Error.Message
+		if msg := classificationMessage(jsonMsg.Error); msg != "" {
+			errorMessage = msg
 		}
 		return jsonMsg.Error.Code, errorMessage
 	}
@@ -75,6 +79,58 @@ func ExtractNodeErrorDetails(nodeError error) (errorCode int, errorMessage strin
 	}
 
 	return 0, errorMessage
+}
+
+// classificationMessage builds the message string used for ERROR CLASSIFICATION
+// (and telemetry) from a recovered JSON-RPC error. It is never shown to the user;
+// the original node error always passes through unchanged.
+//
+// Beyond .message it folds in .name, .cause and .data, because several chains carry
+// the canonical, matcher-relevant error identity outside the message field. NEAR is
+// the motivating case: querying a pruned block on a non-archive node returns
+//
+//	{"code":-32000,"message":"Server error","name":"HANDLER_ERROR",
+//	 "cause":{"name":"UNKNOWN_BLOCK"},"data":"DB Not Found Error: BLOCK HEIGHT: ..."}
+//
+// The discriminating token "UNKNOWN_BLOCK" lives in cause.name (the same is true for
+// NEAR's UNKNOWN_CHUNK / INVALID_SHARD_ID / NOT_SYNCED_YET). Folding it in lets the
+// Tier-2 NEAR matchers fire; without it the error misclassifies as a generic
+// NODE_SERVER_ERROR (and, on builds predating the error registry, as an unsupported
+// method — non-retryable + zero-CU — which suppressed failover to an archive node).
+//
+// Chain-scoped Tier-2 matchers run before generic Tier-1 ones, so a chain that
+// declares its own matcher (NEAR here) is classified by it before any broadened
+// message can reach a Tier-1 rule.
+func classificationMessage(jsonErr *rpcclient.JsonError) string {
+	parts := make([]string, 0, 4)
+	if jsonErr.Message != "" {
+		parts = append(parts, jsonErr.Message)
+	}
+	for _, field := range []interface{}{jsonErr.Name, jsonErr.Cause, jsonErr.Data} {
+		if s := stringifyErrorField(field); s != "" {
+			parts = append(parts, s)
+		}
+	}
+	return strings.Join(parts, " ")
+}
+
+// stringifyErrorField renders an arbitrary JSON-RPC error sub-field (string, object,
+// number, ...) into a string suitable for substring/regex matching. Strings pass
+// through as-is; everything else is JSON-encoded so nested tokens (e.g. cause.name)
+// stay visible to the matchers. goccy/go-json sorts object keys, so the encoding is
+// deterministic for a given input.
+func stringifyErrorField(v interface{}) string {
+	switch t := v.(type) {
+	case nil:
+		return ""
+	case string:
+		return t
+	default:
+		if b, err := json.Marshal(v); err == nil {
+			return string(b)
+		}
+		return fmt.Sprintf("%v", v)
+	}
 }
 
 // ClassifyNodeError classifies a node error into a LavaError using the error registry.
