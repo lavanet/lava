@@ -1,7 +1,7 @@
 {
   "proposal": {
-    "title": "Add Specs: Polkadot Asset Hub (mainnet + Westend testnet)",
-    "description": "Adding new specification support for relaying Polkadot Asset Hub (mainnet) and Westend Asset Hub (testnet) data on Lava",
+    "title": "Update Specs: Polkadot Asset Hub (mainnet + Westend testnet)",
+    "description": "Updating spec to support REST interface for both mainnet and testnet",
     "specs": [
       {
         "index": "POLKADOTASSETHUB",
@@ -4306,5 +4306,5 @@
       }
     ]
   },
-  "deposit": "10000000ulava"
+  "deposit": "10001000ulava"
 }
