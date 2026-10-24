@@ -85,11 +85,25 @@ ENV BUILD_COMMIT=${GIT_COMMIT}
 ENV GOOS=${TARGETOS}
 ENV GOARCH=${TARGETARCH}
 
-# Download  IP geolocation database
-RUN curl https://iptoasn.com/data/ip2asn-v4.tsv.gz -o /tmp/ip2asn-v4.tsv.gz \
-    && gunzip /tmp/ip2asn-v4.tsv.gz
+# Download IP geolocation databases.
+# curl flags: -f fails (non-zero exit) on HTTP errors instead of silently
+# saving the error page as the "database"; -S surfaces the error; -L follows
+# redirects; -s hides the progress meter.
+# Optionally pin SHA-256 checksums via build args to detect tampering or
+# corruption in transit. They default to empty (verification skipped) because
+# the ip2asn dataset is refreshed upstream frequently; operators can pin a
+# known-good digest at build time, e.g. --build-arg COUNTRIES_SHA256=<hash>.
+ARG IP2ASN_SHA256=""
+ARG COUNTRIES_SHA256=""
 
-RUN curl https://storage.googleapis.com/lavanet-public-asssets/countries.csv -o /tmp/countries.csv
+RUN curl -fsSL https://iptoasn.com/data/ip2asn-v4.tsv.gz -o /tmp/ip2asn-v4.tsv.gz \
+    && if [ -n "$IP2ASN_SHA256" ]; then echo "$IP2ASN_SHA256  /tmp/ip2asn-v4.tsv.gz" | sha256sum -c -; fi \
+    && gunzip /tmp/ip2asn-v4.tsv.gz \
+    && test -s /tmp/ip2asn-v4.tsv
+
+RUN curl -fsSL https://storage.googleapis.com/lavanet-public-asssets/countries.csv -o /tmp/countries.csv \
+    && if [ -n "$COUNTRIES_SHA256" ]; then echo "$COUNTRIES_SHA256  /tmp/countries.csv" | sha256sum -c -; fi \
+    && test -s /tmp/countries.csv
 
 # Build lavad binary
 RUN --mount=type=cache,sharing=private,target=/root/.cache/go-build \
