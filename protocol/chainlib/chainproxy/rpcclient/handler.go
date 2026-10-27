@@ -251,6 +251,9 @@ func (h *handler) handleImmediate(msg *JsonrpcMessage) bool {
 			return true
 		}
 		return false
+	case msg.isStarknetNotification():
+		h.handleSubscriptionResultStarknet(msg)
+		return true
 	case msg.isResponse():
 		h.handleResponse(msg)
 		h.log.Trace("Handled RPC response", "reqid", idForLog{msg.ID}, "duration", time.Since(start))
@@ -274,6 +277,22 @@ func (h *handler) handleSubscriptionResultStarkNetPathfinder(msg *JsonrpcMessage
 	id := strconv.Itoa(result.ID)
 	if h.clientSubs[id] != nil {
 		h.clientSubs[id].deliver(msg)
+	}
+}
+
+func (h *handler) handleSubscriptionResultStarknet(msg *JsonrpcMessage) {
+	var result starknetSubscriptionResult
+	if err := json.Unmarshal(msg.Params, &result); err != nil {
+		utils.LavaFormatTrace("Dropping invalid starknet subscription message",
+			utils.LogAttr("err", err),
+			utils.LogAttr("params", string(msg.Params)),
+		)
+		h.log.Debug("Dropping invalid subscription message")
+		return
+	}
+
+	if h.clientSubs[result.ID] != nil {
+		h.clientSubs[result.ID].deliver(msg)
 	}
 }
 
@@ -331,17 +350,20 @@ func (h *handler) handleResponse(msg *JsonrpcMessage) {
 		return
 	}
 	delete(h.respWait, string(msg.ID))
-	// For normal responses, just forward the reply to Call/BatchCall.
-	op.resp <- msg
 	if op.sub == nil {
+		// For normal responses, just forward the reply to Call/BatchCall.
+		op.resp <- msg
 		return
 	}
 	// For subscription responses, start the subscription if the server
 	// indicates success. EthSubscribe gets unblocked in either case through
-	// the op.resp channel.
+	// the op.resp channel. All op.err writes and subscription registration
+	// must happen before the op.resp send: the waiting caller reads op.err as
+	// soon as it receives, so a later write would race.
 	defer close(op.resp)
 	if msg.Error != nil {
 		op.err = msg.Error
+		op.resp <- msg
 		return
 	}
 
@@ -361,6 +383,7 @@ func (h *handler) handleResponse(msg *JsonrpcMessage) {
 			h.clientSubs[op.sub.subid] = op.sub
 		}
 	}
+	op.resp <- msg
 }
 
 // handleCallMsg executes a call message and returns the answer.

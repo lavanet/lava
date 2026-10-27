@@ -39,6 +39,7 @@ const (
 	unsubscribeMethodSuffix          = "_unsubscribe"
 	ethereumNotificationMethodSuffix = "_subscription"
 	solanaNotificationMethodSuffix   = "Notification"
+	starknetNotificationMethodPrefix = "starknet_subscription"
 
 	defaultWriteTimeout = 10 * time.Second // used if context has no deadline
 )
@@ -52,6 +53,11 @@ type ethereumSubscriptionResult struct {
 
 type integerIdSubscriptionResult struct {
 	ID     int             `json:"subscription"`
+	Result json.RawMessage `json:"result,omitempty"`
+}
+
+type starknetSubscriptionResult struct {
+	ID     string          `json:"subscription_id"`
 	Result json.RawMessage `json:"result,omitempty"`
 }
 
@@ -86,6 +92,14 @@ type tendermintSubscribeReply struct {
 
 func (msg *JsonrpcMessage) isStarkNetPathfinderNotification() bool {
 	return msg.ID == nil && msg.Method != "" && msg.Result != nil
+}
+
+func (msg *JsonrpcMessage) isStarknetNotification() bool {
+	// Starknet JSON-RPC v0.9+ websocket notifications use methods named
+	// starknet_subscriptionXxx with params containing {subscription_id, result},
+	// unlike ethereum's "_subscription" suffix and "subscription" id key.
+	return msg.Method != "" && msg.Params != nil &&
+		strings.HasPrefix(msg.Method, starknetNotificationMethodPrefix)
 }
 
 func (msg *JsonrpcMessage) isEthereumNotification() bool {
