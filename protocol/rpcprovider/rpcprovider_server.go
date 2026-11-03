@@ -1345,39 +1345,35 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, baseRelay
 	return latestBlock, sleptTime, nil
 }
 
-// SleepUntilTimeOrConditionReached sleeps in intervals, checking a condition periodically
-// Returns the total time slept before the condition was met or context was cancelled
+// SleepUntilTimeOrConditionReached waits in steps of at most queryTime, checking the condition after each step.
+// It returns the time actually waited, once the condition is met or the context is done.
+// The loop runs in the caller's goroutine, so no state is shared with another goroutine
+// and the condition is never called after this function returns.
 func (rpcps *RPCProviderServer) SleepUntilTimeOrConditionReached(ctx context.Context, queryTime time.Duration, condition func() bool) (sleepTime time.Duration) {
-	sleepTime = 0
-	blockReached := make(chan struct{})
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return // Context canceled, exit goroutine
-			default:
-				var sleeping time.Duration
-				deadline, ok := ctx.Deadline()
-				if ok {
-					sleeping = lavaslices.Min([]time.Duration{queryTime, time.Until(deadline) / 4})
-				} else {
-					sleeping = queryTime
-				}
-				sleepTime += sleeping
-				time.Sleep(sleeping)
-				if condition() {
-					close(blockReached) // Signal that the block is reached
-					return
-				}
+	start := time.Now()
+	timer := time.NewTimer(0)
+	if !timer.Stop() {
+		<-timer.C
+	}
+	defer timer.Stop()
+	for {
+		sleeping := queryTime
+		if deadline, ok := ctx.Deadline(); ok {
+			remaining := time.Until(deadline)
+			if remaining <= 0 {
+				return time.Since(start)
 			}
+			sleeping = min(queryTime, remaining)
 		}
-	}()
-
-	select {
-	case <-blockReached:
-		return sleepTime
-	case <-ctx.Done():
-		return sleepTime
+		timer.Reset(sleeping)
+		select {
+		case <-ctx.Done():
+			return time.Since(start)
+		case <-timer.C:
+		}
+		if condition() {
+			return time.Since(start)
+		}
 	}
 }
 
