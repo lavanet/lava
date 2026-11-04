@@ -1345,12 +1345,19 @@ func (rpcps *RPCProviderServer) handleConsistency(ctx context.Context, baseRelay
 	return latestBlock, sleptTime, nil
 }
 
+// minSleepStep is the polling step used when SleepUntilTimeOrConditionReached gets a queryTime of zero or less.
+const minSleepStep = 10 * time.Millisecond
+
 // SleepUntilTimeOrConditionReached waits in steps of at most queryTime, checking the condition after each step.
 // It returns the time actually waited, once the condition is met or the context is done.
 // The loop runs in the caller's goroutine, so no state is shared with another goroutine
 // and the condition is never called after this function returns.
+// A queryTime of zero or less is replaced by minSleepStep so the loop cannot spin.
 func (rpcps *RPCProviderServer) SleepUntilTimeOrConditionReached(ctx context.Context, queryTime time.Duration, condition func() bool) (sleepTime time.Duration) {
 	start := time.Now()
+	if queryTime <= 0 {
+		queryTime = minSleepStep
+	}
 	timer := time.NewTimer(0)
 	if !timer.Stop() {
 		<-timer.C
@@ -1370,6 +1377,14 @@ func (rpcps *RPCProviderServer) SleepUntilTimeOrConditionReached(ctx context.Con
 		case <-ctx.Done():
 			return time.Since(start)
 		case <-timer.C:
+		}
+		// select picks at random when the timer and ctx.Done are both ready,
+		// so check again before running the condition.
+		if ctx.Err() != nil {
+			return time.Since(start)
+		}
+		if deadline, ok := ctx.Deadline(); ok && !time.Now().Before(deadline) {
+			return time.Since(start)
 		}
 		if condition() {
 			return time.Since(start)
