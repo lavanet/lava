@@ -289,8 +289,8 @@ A valid `add_spec_json_1` JSON proposal format:
         "description": "Adding new specification support for relaying Lava data on Lava",
         "specs": [
             {
-                "index": "LAV1",
-                "name": "lava testnet",
+                "index": "LAVA",
+                "name": "lava mainnet",
                 "enabled": true,
                 "imports": [
                     "COSMOSSDK"
@@ -344,7 +344,7 @@ A valid `add_spec_json_1` JSON proposal format:
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "lava-testnet"
+                                        "expected_value": "lava-mainnet-1"
                                     }
                                 ]
                             }

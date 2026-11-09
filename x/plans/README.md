@@ -192,7 +192,7 @@ A valid `plans-add` JSON proposal format:
                 "plan_policy": {
                     "chain_policies": [
                         {
-                            "chain_id": "LAV1",
+                            "chain_id": "LAVA",
                             "apis": [
                             ]
                         },
