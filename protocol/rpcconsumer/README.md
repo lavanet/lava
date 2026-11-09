@@ -60,7 +60,7 @@ endpoints:
 
 ### Configuration Fields
 
-- `chain-id`: Blockchain identifier (e.g., ETH1, OSMOSIS, LAV1)
+- `chain-id`: Blockchain identifier (e.g., ETH1, OSMOSIS, LAVA)
 - `api-interface`: API type (jsonrpc, rest, tendermintrpc, grpc)
 - `network-address`: IP:PORT where the consumer will listen for requests
 - `max-provider-latency` (optional): QoS latency cutoff **in seconds** for this
@@ -79,14 +79,14 @@ endpoints:
 ```bash
 lavap rpcconsumer rpcconsumer.yml \
   --from wallet_name \
-  --chain-id lava-testnet-2 \
+  --chain-id lava-mainnet-1 \
   --geolocation 1
 ```
 
 ### Required Flags
 
 - `--from`: Your wallet name (used for signing relay requests and conflict detection)
-- `--chain-id`: Lava blockchain chain ID (e.g., lava-testnet-2, lava-mainnet-1)
+- `--chain-id`: Lava blockchain chain ID (e.g., lava-mainnet-1)
 - `--geolocation`: Your geographic location code
 
 ### Common Options
@@ -94,7 +94,7 @@ lavap rpcconsumer rpcconsumer.yml \
 ```bash
 lavap rpcconsumer rpcconsumer.yml \
   --from wallet_name \
-  --chain-id lava-testnet-2 \
+  --chain-id lava-mainnet-1 \
   --geolocation 1 \
   --cache-be "127.0.0.1:7778" \
   --strategy latency \

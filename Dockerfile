@@ -62,7 +62,6 @@ RUN --mount=type=cache,sharing=private,target=/root/.cache/go-build \
 COPY . .
 
 # Git clone the sources if requested
-# NOTE TODO: after reset of chain (lava-testnet-1) prefix 'v' to ${GIT_VERSION}
 RUN if [ "${GIT_CLONE}" = true ]; then \
     find . -mindepth 1 -delete && \
     git clone --depth 1 --branch v${GIT_VERSION} https://github.com/lavanet/lava . \
@@ -70,11 +69,9 @@ RUN if [ "${GIT_CLONE}" = true ]; then \
 
 # Remove tag v0.4.0 (same v0.4.0-rc2, which was used in the upgrade proposal
 # and must always be reported) to not eclipse the v0.4.0-rc2 tag.
-# NOTE TODO: after reset of chain (lava-testnet-1) remove this
 RUN git tag -d v0.4.0 || true
 
 # Fix glitch in Makefile for versions < 0.4.3
-# NOTE TODO: after reset of chain (lava-testnet-1) remove this
 RUN sed -i 's/whitespace += $(whitespace)/whitespace := $(whitespace) $(whitespace)/g' Makefile
 
 # Export our version/commit for the Makefile to know (the .git directory

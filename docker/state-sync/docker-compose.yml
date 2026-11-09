@@ -4,7 +4,7 @@ services:
     # Update with the most recent supported version of lavad
     image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-latest}
     environment:
-      - CHAIN_ID=${CHAIN_ID:-lava-testnet-2}
+      - CHAIN_ID=${CHAIN_ID:-lava-mainnet-1}
       - KEYRING_BACKEND=${KEYRING_BACKEND:-test}
       - MONIKER=${MONIKER:-DOCKER_COMPOSE_MONIKER}
     command: >
@@ -21,9 +21,9 @@ services:
     entrypoint: ["sh", "-c"]
     # Example variables for kjnodes nodes
     environment:
-      - STATE_SYNC_RPC_1=${STATE_SYNC_RPC_1:-https://lava-testnet.rpc.kjnodes.com:443}
-      - GENESIS_ADDRESS=${GENESIS_ADDRESS:-https://snapshots.kjnodes.com/lava-testnet/genesis.json}
-      - ADDRBOOK_ADDRESS=${ADDRBOOK_ADDRESS:-https://snapshots.kjnodes.com/lava-testnet/addrbook.json}
+      - STATE_SYNC_RPC_1=${STATE_SYNC_RPC_1:-https://lava.rpc.kjnodes.com:443}
+      - GENESIS_ADDRESS=${GENESIS_ADDRESS:-https://snapshots.kjnodes.com/lava/genesis.json}
+      - ADDRBOOK_ADDRESS=${ADDRBOOK_ADDRESS:-https://snapshots.kjnodes.com/lava/addrbook.json}
       - NUM_BLOCKS=${NUM_BLOCKS:-1500}
     command: >
       "

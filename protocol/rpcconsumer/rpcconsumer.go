@@ -587,7 +587,7 @@ func CreateRPCConsumerCobraCommand() *cobra.Command {
 		if no arguments are passed, assumes default config file: ` + DefaultRPCConsumerFileName + `
 		if one argument is passed, its assumed the config file name
 		`,
-		Example: `required flags: --geolocation 1 --from alice --chain-id lava-testnet-2
+		Example: `required flags: --geolocation 1 --from alice --chain-id lava-mainnet-1
 rpcconsumer <flags>
 rpcconsumer rpcconsumer_conf <flags>
 rpcconsumer 127.0.0.1:3333 OSMOSIS tendermintrpc 127.0.0.1:3334 OSMOSIS rest <flags>

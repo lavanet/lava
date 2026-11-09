@@ -123,7 +123,7 @@ Remember to always test your changes locally before submitting a PR to ensure th
 
 ## Join Lava
 
-Join Lava's testnet, [read instructions here](https://docs.lavanet.xyz/testnet?utm_source=github.com&utm_medium=github&utm_campaign=readme)
+Join Lava's mainnet, [read instructions here](https://docs.lavanet.xyz/mainnet-manual-cosmovisor?utm_source=github.com&utm_medium=github&utm_campaign=readme)
 
 ## Community
 
