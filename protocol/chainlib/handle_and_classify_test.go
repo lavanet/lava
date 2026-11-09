@@ -156,6 +156,43 @@ func TestValidateRequestAndResponseIds_NonScalarId(t *testing.T) {
 	require.Error(t, geh.ValidateRequestAndResponseIds([]byte(`1`), []byte(`2`)))
 }
 
+// TestExtractNodeErrorDetails_NEARUnknownBlock_FoldsCauseIntoClassification is a
+// regression test for the NEART "UNKNOWN_BLOCK" misclassification (non-archive node
+// asked for a pruned block). The body below is the verbatim response captured from a
+// live NEAR testnet node for block_id 217272549, whose height is below the node's
+// earliest retained block.
+//
+// NEAR puts the canonical error name in error.cause.name ("UNKNOWN_BLOCK"), while
+// error.message is just "Server error". Extraction must fold cause/data into the
+// classification message so the chain-scoped Tier-2 matcher fires; otherwise the
+// error lands on the generic NODE_SERVER_ERROR rule (and, on builds predating the
+// error registry, on the unsupported-method path that suppressed archive failover).
+func TestExtractNodeErrorDetails_NEARUnknownBlock_FoldsCauseIntoClassification(t *testing.T) {
+	const nearUnknownBlockBody = `{"jsonrpc":"2.0","id":1,"error":{"code":-32000,"message":"Server error","data":"DB Not Found Error: BLOCK HEIGHT: 217272549 \n Cause: Unknown","name":"HANDLER_ERROR","cause":{"info":{},"name":"UNKNOWN_BLOCK"}}}`
+	httpErr := rpcclient.HTTPError{
+		StatusCode: 422,
+		Status:     "422 Unprocessable Entity",
+		Body:       []byte(nearUnknownBlockBody),
+	}
+
+	// Extraction keeps the structured JSON-RPC code and folds cause/data so the
+	// discriminating token reaches the matchers.
+	code, msg := ExtractNodeErrorDetails(httpErr)
+	assert.Equal(t, -32000, code)
+	assert.Contains(t, msg, "UNKNOWN_BLOCK", "cause.name must be folded into the classification message")
+
+	// PRIMARY assertion: the NEAR Tier-2 matcher fires (was NODE_SERVER_ERROR before the fix).
+	classified := ClassifyNodeError(httpErr, common.ChainFamilyNEAR, common.TransportJsonRPC)
+	require.NotNil(t, classified)
+	assert.Equal(t, common.LavaErrorChainNEARUnknownBlock, classified,
+		"NEAR UNKNOWN_BLOCK must classify as CHAIN_NEAR_UNKNOWN_BLOCK")
+
+	// Sanity: a pruned-block error stays retryable (so the consumer can fail over to an
+	// archive node) and is never treated as an unsupported method.
+	assert.True(t, classified.Retryable, "UNKNOWN_BLOCK must stay retryable for archive failover")
+	assert.False(t, IsUnsupportedMethodError(httpErr), "must not be classified as unsupported method")
+}
+
 func TestUnwrapLavaError_FromWrapped(t *testing.T) {
 	err := common.NewLavaError(common.LavaErrorChainNonceTooLow, "test")
 	le := unwrapLavaError(err)
