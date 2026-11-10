@@ -1,8 +1,0 @@
-projects-data:
-  2:
-    sampleProjectId:
-      epochs-max-cu: 100000
-
-default-geolocation: 2
-countries-file-path: ""
-ip-file-path: ""
