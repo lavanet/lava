@@ -40,7 +40,6 @@ func validatePortNumber(ipPort string) string {
 	if lavasession.AllowInsecureConnectionToProviders {
 		return "Skipped Port Validation due to Allow Insecure Connection flag"
 	}
-	// provider-test.lava-cybertron.xyz:443
 	if strings.HasSuffix(ipPort, ":443") {
 		return ""
 	}
