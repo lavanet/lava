@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/cosmos/cosmos-sdk/testutil"
@@ -204,6 +205,122 @@ func TestApplyVestingUnlockPauseToAccount_InconsistentSchedule(t *testing.T) {
 	require.Equal(t, original, account)
 }
 
+// newMainnetContinuousVestingAccount mirrors the mainnet continuous vesting account: 232.5M LAVA
+// vesting linearly from 2025-01-17 to 2028-01-17, with most of its locked tokens delegated.
+func newMainnetContinuousVestingAccount(addr sdk.AccAddress) *vestingtypes.ContinuousVestingAccount {
+	start := time.Date(2025, 1, 17, 15, 0, 0, 0, time.UTC).Unix()
+	end := time.Date(2028, 1, 17, 15, 0, 0, 0, time.UTC).Unix()
+	account := vestingtypes.NewContinuousVestingAccount(authtypes.NewBaseAccountWithAddress(addr),
+		sdk.NewCoins(sdk.NewInt64Coin("ulava", 232_500_000_000_000)), start, end)
+	account.DelegatedVesting = sdk.NewCoins(sdk.NewInt64Coin("ulava", 121_318_594_896_283))
+	account.DelegatedFree = sdk.NewCoins(sdk.NewInt64Coin("ulava", 1_348_408_064_422))
+	return account
+}
+
+// vestedUlava is the account's vested ulava at unix, as a string so amounts compare by value
+func vestedUlava(account interface{ GetVestedCoins(time.Time) sdk.Coins }, unix int64) string {
+	return account.GetVestedCoins(time.Unix(unix, 0)).AmountOf("ulava").String()
+}
+
+func TestApplyVestingUnlockPauseToContinuousAccount(t *testing.T) {
+	const pause = VestingUnlockPauseDuration
+	reference := newMainnetContinuousVestingAccount(testAddress("continuous"))
+	start, end := reference.StartTime, reference.EndTime
+
+	tests := []struct {
+		name            string
+		blockTime       int64
+		expectChanged   bool
+		expectConverted bool
+	}{
+		{name: "before start", blockTime: start - 30*day, expectChanged: true},
+		{name: "at start", blockTime: start, expectChanged: true},
+		{name: "right after start", blockTime: start + 1, expectChanged: true, expectConverted: true},
+		{name: "mid-schedule", blockTime: time.Date(2026, 12, 1, 10, 0, 0, 0, time.UTC).Unix(), expectChanged: true, expectConverted: true},
+		{name: "one second before the end", blockTime: end - 1, expectChanged: true, expectConverted: true},
+		{name: "at the end", blockTime: end},
+		{name: "after the end", blockTime: end + day},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			original := newMainnetContinuousVestingAccount(testAddress("continuous"))
+			account := newMainnetContinuousVestingAccount(testAddress("continuous"))
+			now := tt.blockTime
+
+			paused, changed := applyVestingUnlockPauseToContinuousAccount(account, now, pause)
+			require.Equal(t, tt.expectChanged, changed)
+			if !changed {
+				require.Equal(t, original, account)
+				return
+			}
+
+			// same account, same coins and delegations; only the schedule changes
+			require.NoError(t, paused.Validate())
+			require.Equal(t, original.GetAddress(), paused.GetAddress())
+			require.Equal(t, original.OriginalVesting, paused.GetOriginalVesting())
+			require.Equal(t, original.DelegatedVesting, paused.GetDelegatedVesting())
+			require.Equal(t, original.DelegatedFree, paused.GetDelegatedFree())
+			require.Equal(t, original.EndTime+pause, paused.GetEndTime())
+
+			if !tt.expectConverted {
+				// not started: it stays continuous and the whole schedule moves by the pause
+				_, isContinuous := paused.(*vestingtypes.ContinuousVestingAccount)
+				require.True(t, isContinuous)
+				require.Equal(t, original.StartTime+pause, paused.GetStartTime())
+				for _, offset := range []int64{0, 1, day, 400 * day, end - start, end - start + day} {
+					require.Equal(t, vestedUlava(original, start+offset), vestedUlava(paused, start+pause+offset), "at start%+d", offset)
+				}
+				return
+			}
+
+			periodic, isPeriodic := paused.(*vestingtypes.PeriodicVestingAccount)
+			require.True(t, isPeriodic)
+			require.Equal(t, original.StartTime, periodic.StartTime)
+			remaining := end - now
+			require.Len(t, periodic.VestingPeriods, 1+int((remaining+day-1)/day), "one tranche for what vested, then daily tranches")
+
+			// what unlocked until now stays unlocked
+			unlockedAtPause := vestedUlava(original, now)
+			require.Equal(t, unlockedAtPause, vestedUlava(periodic, now))
+
+			// nothing unlocks during the pause, until the first tranche after it
+			firstUnlock := min(now+pause+day, end+pause)
+			for _, during := range []int64{now + 1, now + pause/2, firstUnlock - 1} {
+				require.Equal(t, unlockedAtPause, vestedUlava(periodic, during), "at now%+d", during-now)
+			}
+
+			// after the pause, each daily tranche matches the original schedule shifted by the pause
+			for _, after := range []int64{day, 2 * day, 37 * day, 100 * day, remaining} {
+				if after > remaining {
+					continue
+				}
+				expected, ok := math.NewIntFromString(vestedUlava(original, now+after))
+				require.True(t, ok)
+				actual, ok := math.NewIntFromString(vestedUlava(periodic, now+pause+after))
+				require.True(t, ok)
+				require.True(t, expected.Sub(actual).Abs().LTE(math.NewInt(2)), "at now+pause+%d: expected %s, got %s", after, expected, actual)
+			}
+			require.Equal(t, original.OriginalVesting.AmountOf("ulava").String(), vestedUlava(periodic, end+pause))
+		})
+	}
+}
+
+func TestApplyVestingUnlockPauseToContinuousAccount_MainnetDates(t *testing.T) {
+	original := newMainnetContinuousVestingAccount(testAddress("continuous"))
+	account := newMainnetContinuousVestingAccount(testAddress("continuous"))
+	upgradeTime := time.Date(2026, 12, 1, 10, 0, 0, 0, time.UTC)
+
+	paused, changed := applyVestingUnlockPauseToContinuousAccount(account, upgradeTime.Unix(), VestingUnlockPauseDuration)
+	require.True(t, changed)
+
+	unlockedAtUpgrade := vestedUlava(original, upgradeTime.Unix())
+	firstUnlock := time.Date(2027, 4, 1, 10, 0, 0, 0, time.UTC) // 2026-12-01 10:00 + 120 days + 1 day
+	require.Equal(t, unlockedAtUpgrade, vestedUlava(paused, firstUnlock.Unix()-1))
+	require.NotEqual(t, unlockedAtUpgrade, vestedUlava(paused, firstUnlock.Unix()))
+	require.Equal(t, time.Date(2028, 5, 16, 15, 0, 0, 0, time.UTC).Unix(), paused.GetEndTime()) // 2028-01-17 15:00 + 120 days
+}
+
 func newTestAccountKeeper(t *testing.T, blockTime time.Time) (sdk.Context, authkeeper.AccountKeeper, moduletestutil.TestEncodingConfig) {
 	key := storetypes.NewKVStoreKey(authtypes.StoreKey)
 	testCtx := testutil.DefaultContextWithDB(t, key, storetypes.NewTransientStoreKey("transient_test"))
@@ -214,23 +331,27 @@ func newTestAccountKeeper(t *testing.T, blockTime time.Time) (sdk.Context, authk
 	return testCtx.Ctx.WithBlockTime(blockTime), ak, encCfg
 }
 
-func TestApplyVestingUnlockPause_OnlyPeriodicAccountsChange(t *testing.T) {
+func TestApplyVestingUnlockPause_PausesPeriodicAndContinuousAccounts(t *testing.T) {
 	upgradeTime := time.Date(2026, 12, 1, 10, 0, 0, 0, time.UTC)
 	now := upgradeTime.Unix()
 	ctx, ak, _ := newTestAccountKeeper(t, upgradeTime)
 	coins := sdk.NewCoins(sdk.NewInt64Coin("ulava", 1_000_000))
+	newContinuous := func(name string, start, end int64) *vestingtypes.ContinuousVestingAccount {
+		return vestingtypes.NewContinuousVestingAccount(authtypes.NewBaseAccountWithAddress(testAddress(name)), coins, start, end)
+	}
 
 	accounts := map[string]authtypes.AccountI{
-		"base":              authtypes.NewBaseAccountWithAddress(testAddress("base")),
-		"periodic mid":      newMainnetShapedVestingAccount(testAddress("periodic_mid"), mainnetVestingStart),
-		"periodic future":   newMainnetShapedVestingAccount(testAddress("periodic_future"), now+30*day),
-		"periodic finished": newMainnetShapedVestingAccount(testAddress("periodic_finished"), now-800*day),
-		"continuous": vestingtypes.NewContinuousVestingAccount(
-			authtypes.NewBaseAccountWithAddress(testAddress("continuous")), coins, now-100*day, now+100*day),
+		"base":                authtypes.NewBaseAccountWithAddress(testAddress("base")),
+		"periodic mid":        newMainnetShapedVestingAccount(testAddress("periodic_mid"), mainnetVestingStart),
+		"periodic future":     newMainnetShapedVestingAccount(testAddress("periodic_future"), now+30*day),
+		"periodic finished":   newMainnetShapedVestingAccount(testAddress("periodic_finished"), now-800*day),
+		"continuous mid":      newContinuous("continuous_mid", now-100*day, now+100*day),
+		"continuous future":   newContinuous("continuous_future", now+10*day, now+100*day),
+		"continuous finished": newContinuous("continuous_finished", now-100*day, now-10*day),
 		"delayed": vestingtypes.NewDelayedVestingAccount(
 			authtypes.NewBaseAccountWithAddress(testAddress("delayed")), coins, now+100*day),
 	}
-	expectPaused := map[string]bool{"periodic mid": true, "periodic future": true}
+	expectPaused := map[string]bool{"periodic mid": true, "periodic future": true, "continuous mid": true, "continuous future": true}
 
 	before := map[string]authtypes.AccountI{}
 	for name, account := range accounts {
@@ -248,11 +369,25 @@ func TestApplyVestingUnlockPause_OnlyPeriodicAccountsChange(t *testing.T) {
 			require.Equal(t, before[name], after, name)
 			continue
 		}
-		expected, ok := before[name].(*vestingtypes.PeriodicVestingAccount)
-		require.True(t, ok, name)
-		require.True(t, applyVestingUnlockPauseToAccount(expected, now, VestingUnlockPauseDuration), name)
+		var expected authtypes.AccountI
+		switch beforeAccount := before[name].(type) {
+		case *vestingtypes.PeriodicVestingAccount:
+			require.True(t, applyVestingUnlockPauseToAccount(beforeAccount, now, VestingUnlockPauseDuration), name)
+			expected = beforeAccount
+		case *vestingtypes.ContinuousVestingAccount:
+			converted, changed := applyVestingUnlockPauseToContinuousAccount(beforeAccount, now, VestingUnlockPauseDuration)
+			require.True(t, changed, name)
+			expected = converted
+		default:
+			t.Fatalf("%s: unexpected account type %T", name, beforeAccount)
+		}
 		require.Equal(t, expected, after, name)
 	}
+
+	_, isPeriodic := ak.GetAccount(ctx, testAddress("continuous_mid")).(*vestingtypes.PeriodicVestingAccount)
+	require.True(t, isPeriodic, "a mid-schedule continuous account becomes periodic")
+	_, isContinuous := ak.GetAccount(ctx, testAddress("continuous_future")).(*vestingtypes.ContinuousVestingAccount)
+	require.True(t, isContinuous, "a continuous account that has not started stays continuous")
 }
 
 func TestApplyVestingUnlockPause_SkipsInvalidAccount(t *testing.T) {
@@ -300,7 +435,7 @@ func TestApplyVestingUnlockPause_SkipsInvalidAccount(t *testing.T) {
 //
 //	lavad export > export.json
 //	LAVA_STATE_EXPORT=export.json VESTING_UNLOCK_PAUSE_TIME=2026-12-01T10:00:00Z \
-//	  VESTING_UNLOCK_PAUSE_EXPECTED_PAUSED=229 \
+//	  VESTING_UNLOCK_PAUSE_EXPECTED_PAUSED=<expected count> \
 //	  go test ./app/upgrades -run TestApplyVestingUnlockPause_StateExport -v
 //
 // LAVA_STATE_EXPORT is a full export or just its auth section (jq '.app_state.auth' export.json).
@@ -341,17 +476,20 @@ func TestApplyVestingUnlockPause_StateExport(t *testing.T) {
 	accounts, err := authtypes.UnpackAccounts(authGenesis.Accounts)
 	require.NoError(t, err)
 
-	periodic := 0
+	periodic, continuous := 0, 0
 	for _, account := range accounts {
-		if _, ok := account.(*vestingtypes.PeriodicVestingAccount); ok {
+		switch account.(type) {
+		case *vestingtypes.PeriodicVestingAccount:
 			periodic++
+		case *vestingtypes.ContinuousVestingAccount:
+			continuous++
 		}
 		ak.SetAccount(ctx, account)
 	}
 
 	paused, skipped := applyVestingUnlockPause(ctx, ak, VestingUnlockPauseDuration)
-	t.Logf("pause time %s: %d accounts, %d periodic vesting, %d paused, %d skipped",
-		pauseTime.Format(time.RFC3339), len(accounts), periodic, paused, skipped)
+	t.Logf("pause time %s: %d accounts, %d periodic and %d continuous vesting, %d paused, %d skipped",
+		pauseTime.Format(time.RFC3339), len(accounts), periodic, continuous, paused, skipped)
 	require.Zero(t, skipped, "accounts that would miss the vesting unlock pause")
 	if value := os.Getenv("VESTING_UNLOCK_PAUSE_EXPECTED_PAUSED"); value != "" {
 		expectedPaused, err := strconv.Atoi(value)
