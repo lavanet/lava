@@ -1,6 +1,8 @@
 package upgrades
 
 import (
+	"encoding/json"
+	"os"
 	"testing"
 	"time"
 
@@ -17,6 +19,7 @@ import (
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	ica "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts"
 	"github.com/lavanet/lava/v5/app/keepers"
 	"github.com/stretchr/testify/require"
 )
@@ -161,7 +164,8 @@ func TestApplyVestingUnlockPauseToAccount_InconsistentSchedule(t *testing.T) {
 func newTestAccountKeeper(t *testing.T, blockTime time.Time) (sdk.Context, authkeeper.AccountKeeper, moduletestutil.TestEncodingConfig) {
 	key := storetypes.NewKVStoreKey(authtypes.StoreKey)
 	testCtx := testutil.DefaultContextWithDB(t, key, storetypes.NewTransientStoreKey("transient_test"))
-	encCfg := moduletestutil.MakeTestEncodingConfig(auth.AppModuleBasic{}, vesting.AppModuleBasic{})
+	// ica registers the interchain account type, which also exists on mainnet
+	encCfg := moduletestutil.MakeTestEncodingConfig(auth.AppModuleBasic{}, vesting.AppModuleBasic{}, ica.AppModuleBasic{})
 	ak := authkeeper.NewAccountKeeper(encCfg.Codec, key, authtypes.ProtoBaseAccount, map[string][]string{},
 		"lava@", authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	return testCtx.Ctx.WithBlockTime(blockTime), ak, encCfg
@@ -191,7 +195,9 @@ func TestApplyVestingUnlockPause_OnlyPeriodicAccountsChange(t *testing.T) {
 		before[name] = ak.GetAccount(ctx, account.GetAddress())
 	}
 
-	require.Equal(t, len(expectPaused), applyVestingUnlockPause(ctx, ak, VestingUnlockPauseDuration))
+	paused, skipped := applyVestingUnlockPause(ctx, ak, VestingUnlockPauseDuration)
+	require.Equal(t, len(expectPaused), paused)
+	require.Zero(t, skipped)
 
 	for name, account := range accounts {
 		after := ak.GetAccount(ctx, account.GetAddress())
@@ -204,6 +210,81 @@ func TestApplyVestingUnlockPause_OnlyPeriodicAccountsChange(t *testing.T) {
 		require.True(t, applyVestingUnlockPauseToAccount(expected, now, VestingUnlockPauseDuration), name)
 		require.Equal(t, expected, after, name)
 	}
+}
+
+func TestApplyVestingUnlockPause_SkipsInvalidAccount(t *testing.T) {
+	upgradeTime := time.Date(2026, 12, 1, 10, 0, 0, 0, time.UTC)
+	ctx, ak, _ := newTestAccountKeeper(t, upgradeTime)
+
+	valid := newMainnetShapedVestingAccount(testAddress("periodic_valid"), mainnetVestingStart)
+	invalid := newMainnetShapedVestingAccount(testAddress("periodic_invalid"), mainnetVestingStart)
+	invalid.DelegatedVesting = invalid.OriginalVesting.Add(sdk.NewInt64Coin("ulava", 1)) // fails Validate()
+	ak.SetAccount(ctx, ak.NewAccount(ctx, valid))
+	ak.SetAccount(ctx, ak.NewAccount(ctx, invalid))
+	invalidBefore := ak.GetAccount(ctx, invalid.GetAddress())
+
+	paused, skipped := applyVestingUnlockPause(ctx, ak, VestingUnlockPauseDuration)
+	require.Equal(t, 1, paused)
+	require.Equal(t, 1, skipped)
+	require.Equal(t, invalidBefore, ak.GetAccount(ctx, invalid.GetAddress()), "a skipped account keeps its original schedule")
+}
+
+// TestApplyVestingUnlockPause_StateExport is a dry run of the vesting unlock pause against a state
+// export, to run before the upgrade proposal. It is skipped unless LAVA_STATE_EXPORT is set:
+//
+//	lavad export > export.json
+//	LAVA_STATE_EXPORT=export.json VESTING_UNLOCK_PAUSE_TIME=2026-12-01T10:00:00Z \
+//	  go test ./app/upgrades -run TestApplyVestingUnlockPause_StateExport -v
+//
+// LAVA_STATE_EXPORT is a full export or just its auth section (jq '.app_state.auth' export.json).
+// VESTING_UNLOCK_PAUSE_TIME is the expected upgrade block time (RFC 3339) and defaults to now.
+// The test fails if any account would be skipped, and logs how many accounts would be paused.
+func TestApplyVestingUnlockPause_StateExport(t *testing.T) {
+	exportPath := os.Getenv("LAVA_STATE_EXPORT")
+	if exportPath == "" {
+		t.Skip("set LAVA_STATE_EXPORT to a state export (lavad export) to run this dry run")
+	}
+	pauseTime := time.Now().UTC()
+	if value := os.Getenv("VESTING_UNLOCK_PAUSE_TIME"); value != "" {
+		var err error
+		pauseTime, err = time.Parse(time.RFC3339, value)
+		require.NoError(t, err)
+	}
+	ctx, ak, encCfg := newTestAccountKeeper(t, pauseTime)
+
+	// exported addresses use the lava@ prefix
+	sdkConfig := sdk.GetConfig()
+	accountPrefix, accountPubPrefix := sdkConfig.GetBech32AccountAddrPrefix(), sdkConfig.GetBech32AccountPubPrefix()
+	sdkConfig.SetBech32PrefixForAccount("lava@", "lava@pub")
+	t.Cleanup(func() { sdkConfig.SetBech32PrefixForAccount(accountPrefix, accountPubPrefix) })
+
+	exportJSON, err := os.ReadFile(exportPath)
+	require.NoError(t, err)
+	var export struct {
+		AppState map[string]json.RawMessage `json:"app_state"`
+	}
+	require.NoError(t, json.Unmarshal(exportJSON, &export))
+	authJSON := exportJSON
+	if export.AppState != nil {
+		authJSON = export.AppState[authtypes.ModuleName]
+	}
+	var authGenesis authtypes.GenesisState
+	require.NoError(t, encCfg.Codec.UnmarshalJSON(authJSON, &authGenesis))
+	accounts, err := authtypes.UnpackAccounts(authGenesis.Accounts)
+	require.NoError(t, err)
+
+	periodic := 0
+	for _, account := range accounts {
+		if _, ok := account.(*vestingtypes.PeriodicVestingAccount); ok {
+			periodic++
+		}
+		ak.SetAccount(ctx, account)
+	}
+
+	paused, skipped := applyVestingUnlockPause(ctx, ak, VestingUnlockPauseDuration)
+	t.Logf("pause time %s: %d accounts, %d periodic vesting, %d paused, %d skipped",
+		pauseTime.Format(time.RFC3339), len(accounts), periodic, paused, skipped)
+	require.Zero(t, skipped, "accounts that would miss the vesting unlock pause")
 }
 
 func TestUpgrade_6_3_0_AppliesVestingUnlockPause(t *testing.T) {

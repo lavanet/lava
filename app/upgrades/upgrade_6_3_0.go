@@ -30,11 +30,11 @@ func v_6_3_0(
 // pauseDuration seconds, starting at the current block time. Tokens that already
 // unlocked stay unlocked, and every tranche that has not unlocked yet moves
 // pauseDuration seconds later. Other account types (including continuous and
-// delayed vesting accounts) are not touched. It returns the number of paused accounts.
-func applyVestingUnlockPause(ctx sdk.Context, ak authkeeper.AccountKeeper, pauseDuration int64) int {
+// delayed vesting accounts) are not touched. It returns the number of paused accounts and
+// the number of accounts skipped because they were invalid after the change.
+func applyVestingUnlockPause(ctx sdk.Context, ak authkeeper.AccountKeeper, pauseDuration int64) (paused, skipped int) {
 	blockTime := ctx.BlockTime().Unix()
 	logger := ctx.Logger().With("upgrade", "vesting-unlock-pause")
-	paused := 0
 
 	// GetAllAccounts collects all accounts first, so the store is not written while it is iterated
 	for _, account := range ak.GetAllAccounts(ctx) {
@@ -50,6 +50,7 @@ func applyVestingUnlockPause(ctx sdk.Context, ak authkeeper.AccountKeeper, pause
 
 		if err := vestingAccount.Validate(); err != nil {
 			// not saved: the account keeps its original schedule
+			skipped++
 			logger.Error("vesting unlock pause skipped: account is invalid after the pause",
 				"address", vestingAccount.Address, "error", err.Error())
 			continue
@@ -62,9 +63,9 @@ func applyVestingUnlockPause(ctx sdk.Context, ak authkeeper.AccountKeeper, pause
 			"old_end_time", oldEndTime, "new_end_time", vestingAccount.EndTime)
 	}
 
-	logger.Info("vesting unlock pause applied", "paused_accounts", paused,
+	logger.Info("vesting unlock pause applied", "paused_accounts", paused, "skipped_accounts", skipped,
 		"pause_seconds", pauseDuration, "block_time", blockTime)
-	return paused
+	return paused, skipped
 }
 
 // applyVestingUnlockPauseToAccount moves the part of the schedule that has not unlocked
