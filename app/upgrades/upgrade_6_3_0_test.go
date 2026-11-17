@@ -55,83 +55,125 @@ func newMainnetShapedVestingAccount(addr sdk.AccAddress, startTime int64) *vesti
 	return account
 }
 
+// newMonthlyVestingAccount mirrors the monthly periodic accounts created on mainnet after
+// genesis: a 1-second first tranche, then 24 tranches of 30 days.
+func newMonthlyVestingAccount(addr sdk.AccAddress, startTime int64) *vestingtypes.PeriodicVestingAccount {
+	first := sdk.NewCoins(sdk.NewInt64Coin("ulava", 1_000_000_000))
+	monthly := sdk.NewCoins(sdk.NewInt64Coin("ulava", 50_000_000_000))
+	periods := vestingtypes.Periods{{Length: 1, Amount: first}}
+	total := first
+	for i := 0; i < 24; i++ {
+		periods = append(periods, vestingtypes.Period{Length: 30 * day, Amount: monthly})
+		total = total.Add(monthly...)
+	}
+	return vestingtypes.NewPeriodicVestingAccount(authtypes.NewBaseAccountWithAddress(addr), total, startTime, periods)
+}
+
+// unlockTimes returns the time each tranche of the account unlocks
+func unlockTimes(account *vestingtypes.PeriodicVestingAccount) []int64 {
+	times := make([]int64, 0, len(account.VestingPeriods))
+	unlockTime := account.StartTime
+	for _, period := range account.VestingPeriods {
+		unlockTime += period.Length
+		times = append(times, unlockTime)
+	}
+	return times
+}
+
 func vestedAt(account *vestingtypes.PeriodicVestingAccount, unix int64) sdk.Coins {
 	return account.GetVestedCoins(time.Unix(unix, 0))
 }
 
 func TestApplyVestingUnlockPauseToAccount(t *testing.T) {
-	const pause = VestingUnlockPauseDuration
 	start := mainnetVestingStart
-	end := start + 730*day
-
-	tests := []struct {
-		name          string
-		blockTime     int64
-		expectChanged bool
+	shapes := []struct {
+		name       string
+		newAccount func(sdk.AccAddress, int64) *vestingtypes.PeriodicVestingAccount
 	}{
-		{name: "before start", blockTime: start - 30*day, expectChanged: true},
-		{name: "at start, cliff still locked", blockTime: start, expectChanged: true},
-		{name: "right after the cliff unlocked", blockTime: start + 1, expectChanged: true},
-		{name: "between two daily unlocks", blockTime: start + 322*day - 5*60*60, expectChanged: true},
-		{name: "one second before a daily unlock", blockTime: start + 100*day - 1, expectChanged: true},
-		{name: "exactly at a daily unlock", blockTime: start + 100*day, expectChanged: true},
-		{name: "one second before the last unlock", blockTime: end - 1, expectChanged: true},
-		{name: "at the last unlock", blockTime: end, expectChanged: false},
-		{name: "after the last unlock", blockTime: end + day, expectChanged: false},
+		{name: "genesis shape", newAccount: newMainnetShapedVestingAccount},
+		{name: "monthly shape", newAccount: newMonthlyVestingAccount},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			addr := testAddress("vesting_account")
-			original := newMainnetShapedVestingAccount(addr, start)
-			paused := newMainnetShapedVestingAccount(addr, start)
-			now := tt.blockTime
+	for _, shape := range shapes {
+		unlocks := unlockTimes(shape.newAccount(testAddress("vesting_account"), start))
+		end := unlocks[len(unlocks)-1]
+		middle := unlocks[len(unlocks)/2]
+		tests := []struct {
+			name          string
+			blockTime     int64
+			expectChanged bool
+		}{
+			{name: "before start", blockTime: start - 30*day, expectChanged: true},
+			{name: "at start, nothing unlocked yet", blockTime: start, expectChanged: true},
+			{name: "right after the first unlock", blockTime: unlocks[0] + 1, expectChanged: true},
+			{name: "between two unlocks", blockTime: middle - 5*60*60, expectChanged: true},
+			{name: "one second before an unlock", blockTime: middle - 1, expectChanged: true},
+			{name: "exactly at an unlock", blockTime: middle, expectChanged: true},
+			{name: "one second before the last unlock", blockTime: end - 1, expectChanged: true},
+			{name: "at the last unlock", blockTime: end, expectChanged: false},
+			{name: "after the last unlock", blockTime: end + day, expectChanged: false},
+		}
 
-			require.Equal(t, tt.expectChanged, applyVestingUnlockPauseToAccount(paused, now, pause))
-			if !tt.expectChanged {
-				require.Equal(t, original, paused)
-				return
-			}
+		for _, tt := range tests {
+			t.Run(shape.name+"/"+tt.name, func(t *testing.T) {
+				addr := testAddress("vesting_account")
+				original := shape.newAccount(addr, start)
+				paused := shape.newAccount(addr, start)
+				requirePauseAt(t, original, paused, tt.blockTime, tt.expectChanged)
+			})
+		}
+	}
+}
 
-			// the schedule stays valid and only its timing changes
-			require.NoError(t, paused.Validate())
-			require.Equal(t, original.EndTime+pause, paused.EndTime)
-			require.Equal(t, original.OriginalVesting, paused.OriginalVesting)
-			require.Equal(t, original.DelegatedVesting, paused.DelegatedVesting)
-			require.Equal(t, original.DelegatedFree, paused.DelegatedFree)
-			require.Len(t, paused.VestingPeriods, len(original.VestingPeriods))
-			lengthened := 0
-			for i := range original.VestingPeriods {
-				require.Equal(t, original.VestingPeriods[i].Amount, paused.VestingPeriods[i].Amount)
-				if diff := paused.VestingPeriods[i].Length - original.VestingPeriods[i].Length; diff != 0 {
-					require.Equal(t, pause, diff)
-					lengthened++
-				}
-			}
-			if now <= start {
-				require.Equal(t, original.StartTime+pause, paused.StartTime)
-				require.Zero(t, lengthened)
-			} else {
-				require.Equal(t, original.StartTime, paused.StartTime)
-				require.Equal(t, 1, lengthened)
-			}
+// requirePauseAt applies the pause at now to paused (a copy of original) and checks the
+// result against the SDK's own GetVestedCoins.
+func requirePauseAt(t *testing.T, original, paused *vestingtypes.PeriodicVestingAccount, now int64, expectChanged bool) {
+	const pause = VestingUnlockPauseDuration
+	start, end := original.StartTime, original.EndTime
 
-			// what unlocked until now stays unlocked
-			for _, past := range []int64{now - 2*day, now - 1, now} {
-				require.Equal(t, vestedAt(original, past), vestedAt(paused, past), "at now%+d", past-now)
-			}
+	require.Equal(t, expectChanged, applyVestingUnlockPauseToAccount(paused, now, pause))
+	if !expectChanged {
+		require.Equal(t, original, paused)
+		return
+	}
 
-			// nothing unlocks during the pause
-			unlockedAtPause := vestedAt(original, now)
-			for _, during := range []int64{now + 1, now + day, now + pause/2, now + pause - 1} {
-				require.Equal(t, unlockedAtPause, vestedAt(paused, during), "at now%+d", during-now)
-			}
+	// the schedule stays valid and only its timing changes
+	require.NoError(t, paused.Validate())
+	require.Equal(t, original.EndTime+pause, paused.EndTime)
+	require.Equal(t, original.OriginalVesting, paused.OriginalVesting)
+	require.Equal(t, original.DelegatedVesting, paused.DelegatedVesting)
+	require.Equal(t, original.DelegatedFree, paused.DelegatedFree)
+	require.Len(t, paused.VestingPeriods, len(original.VestingPeriods))
+	lengthened := 0
+	for i := range original.VestingPeriods {
+		require.Equal(t, original.VestingPeriods[i].Amount, paused.VestingPeriods[i].Amount)
+		if diff := paused.VestingPeriods[i].Length - original.VestingPeriods[i].Length; diff != 0 {
+			require.Equal(t, pause, diff)
+			lengthened++
+		}
+	}
+	if now <= start {
+		require.Equal(t, original.StartTime+pause, paused.StartTime)
+		require.Zero(t, lengthened)
+	} else {
+		require.Equal(t, original.StartTime, paused.StartTime)
+		require.Equal(t, 1, lengthened)
+	}
 
-			// after the pause, unlocking continues from the same point, shifted by the pause
-			for _, after := range []int64{0, 1, day - 1, day, 37*day + 123, end - now, end - now + day} {
-				require.Equal(t, vestedAt(original, now+after), vestedAt(paused, now+pause+after), "at now+pause%+d", after)
-			}
-		})
+	// what unlocked until now stays unlocked
+	for _, past := range []int64{now - 2*day, now - 1, now} {
+		require.Equal(t, vestedAt(original, past), vestedAt(paused, past), "at now%+d", past-now)
+	}
+
+	// nothing unlocks during the pause
+	unlockedAtPause := vestedAt(original, now)
+	for _, during := range []int64{now + 1, now + day, now + pause/2, now + pause - 1} {
+		require.Equal(t, unlockedAtPause, vestedAt(paused, during), "at now%+d", during-now)
+	}
+
+	// after the pause, unlocking continues from the same point, shifted by the pause
+	for _, after := range []int64{0, 1, day - 1, day, 37*day + 123, end - now, end - now + day} {
+		require.Equal(t, vestedAt(original, now+after), vestedAt(paused, now+pause+after), "at now+pause%+d", after)
 	}
 }
 
@@ -214,19 +256,42 @@ func TestApplyVestingUnlockPause_OnlyPeriodicAccountsChange(t *testing.T) {
 
 func TestApplyVestingUnlockPause_SkipsInvalidAccount(t *testing.T) {
 	upgradeTime := time.Date(2026, 12, 1, 10, 0, 0, 0, time.UTC)
-	ctx, ak, _ := newTestAccountKeeper(t, upgradeTime)
+	tests := []struct {
+		name    string
+		corrupt func(account *vestingtypes.PeriodicVestingAccount)
+	}{
+		{
+			name: "fails validation after the change",
+			corrupt: func(account *vestingtypes.PeriodicVestingAccount) {
+				account.DelegatedVesting = account.OriginalVesting.Add(sdk.NewInt64Coin("ulava", 1))
+			},
+		},
+		{
+			name: "inconsistent schedule that has not fully unlocked",
+			corrupt: func(account *vestingtypes.PeriodicVestingAccount) {
+				// the tranches end before the upgrade, but EndTime is after it
+				account.StartTime = upgradeTime.Unix() - 800*day
+				account.EndTime = upgradeTime.Unix() + 10*day
+			},
+		},
+	}
 
-	valid := newMainnetShapedVestingAccount(testAddress("periodic_valid"), mainnetVestingStart)
-	invalid := newMainnetShapedVestingAccount(testAddress("periodic_invalid"), mainnetVestingStart)
-	invalid.DelegatedVesting = invalid.OriginalVesting.Add(sdk.NewInt64Coin("ulava", 1)) // fails Validate()
-	ak.SetAccount(ctx, ak.NewAccount(ctx, valid))
-	ak.SetAccount(ctx, ak.NewAccount(ctx, invalid))
-	invalidBefore := ak.GetAccount(ctx, invalid.GetAddress())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, ak, _ := newTestAccountKeeper(t, upgradeTime)
+			valid := newMainnetShapedVestingAccount(testAddress("periodic_valid"), mainnetVestingStart)
+			invalid := newMainnetShapedVestingAccount(testAddress("periodic_invalid"), mainnetVestingStart)
+			tt.corrupt(invalid)
+			ak.SetAccount(ctx, ak.NewAccount(ctx, valid))
+			ak.SetAccount(ctx, ak.NewAccount(ctx, invalid))
+			invalidBefore := ak.GetAccount(ctx, invalid.GetAddress())
 
-	paused, skipped := applyVestingUnlockPause(ctx, ak, VestingUnlockPauseDuration)
-	require.Equal(t, 1, paused)
-	require.Equal(t, 1, skipped)
-	require.Equal(t, invalidBefore, ak.GetAccount(ctx, invalid.GetAddress()), "a skipped account keeps its original schedule")
+			paused, skipped := applyVestingUnlockPause(ctx, ak, VestingUnlockPauseDuration)
+			require.Equal(t, 1, paused)
+			require.Equal(t, 1, skipped)
+			require.Equal(t, invalidBefore, ak.GetAccount(ctx, invalid.GetAddress()), "a skipped account keeps its original schedule")
+		})
+	}
 }
 
 // TestApplyVestingUnlockPause_StateExport is a dry run of the vesting unlock pause against a state

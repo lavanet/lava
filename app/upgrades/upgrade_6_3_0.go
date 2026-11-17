@@ -45,6 +45,12 @@ func applyVestingUnlockPause(ctx sdk.Context, ak authkeeper.AccountKeeper, pause
 
 		oldStartTime, oldEndTime := vestingAccount.StartTime, vestingAccount.EndTime
 		if !applyVestingUnlockPauseToAccount(vestingAccount, blockTime, pauseDuration) {
+			if blockTime < vestingAccount.EndTime {
+				// not fully unlocked, but its tranches end before EndTime: it misses the pause
+				skipped++
+				logger.Error("vesting unlock pause skipped: inconsistent vesting schedule",
+					"address", vestingAccount.Address)
+			}
 			continue
 		}
 
