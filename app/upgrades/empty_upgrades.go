@@ -99,3 +99,10 @@ var Upgrade_5_5_1 = Upgrade{
 	CreateUpgradeHandler: defaultUpgradeHandler,
 	StoreUpgrades:        store.StoreUpgrades{},
 }
+
+// Upgrade_6_3_0 applies a 120-day (4-month) vesting unlock pause (see upgrade_6_3_0.go)
+var Upgrade_6_3_0 = Upgrade{
+	UpgradeName:          "v6.3.0",
+	CreateUpgradeHandler: v_6_3_0,
+	StoreUpgrades:        store.StoreUpgrades{},
+}
