@@ -3,6 +3,7 @@ package upgrades
 import (
 	"encoding/json"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -299,11 +300,13 @@ func TestApplyVestingUnlockPause_SkipsInvalidAccount(t *testing.T) {
 //
 //	lavad export > export.json
 //	LAVA_STATE_EXPORT=export.json VESTING_UNLOCK_PAUSE_TIME=2026-12-01T10:00:00Z \
+//	  VESTING_UNLOCK_PAUSE_EXPECTED_PAUSED=229 \
 //	  go test ./app/upgrades -run TestApplyVestingUnlockPause_StateExport -v
 //
 // LAVA_STATE_EXPORT is a full export or just its auth section (jq '.app_state.auth' export.json).
 // VESTING_UNLOCK_PAUSE_TIME is the expected upgrade block time (RFC 3339) and defaults to now.
-// The test fails if any account would be skipped, and logs how many accounts would be paused.
+// VESTING_UNLOCK_PAUSE_EXPECTED_PAUSED, if set, is the number of accounts expected to be paused.
+// The test fails if any account would be skipped or the paused count differs from the expected one.
 func TestApplyVestingUnlockPause_StateExport(t *testing.T) {
 	exportPath := os.Getenv("LAVA_STATE_EXPORT")
 	if exportPath == "" {
@@ -350,6 +353,11 @@ func TestApplyVestingUnlockPause_StateExport(t *testing.T) {
 	t.Logf("pause time %s: %d accounts, %d periodic vesting, %d paused, %d skipped",
 		pauseTime.Format(time.RFC3339), len(accounts), periodic, paused, skipped)
 	require.Zero(t, skipped, "accounts that would miss the vesting unlock pause")
+	if value := os.Getenv("VESTING_UNLOCK_PAUSE_EXPECTED_PAUSED"); value != "" {
+		expectedPaused, err := strconv.Atoi(value)
+		require.NoError(t, err)
+		require.Equal(t, expectedPaused, paused, "paused accounts")
+	}
 }
 
 func TestUpgrade_6_3_0_AppliesVestingUnlockPause(t *testing.T) {
