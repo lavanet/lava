@@ -251,6 +251,23 @@ func TestPercentile(t *testing.T) {
 	}
 }
 
+func TestPercentileAtMaximumRank(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		slice []int
+		want  int
+	}{
+		{"even length", []int{4, 1, 3, 2}, 4},
+		{"even length reversed input", []int{1, 2, 3, 4}, 4},
+		{"odd length", []int{4, 1, 3}, 4},
+		{"single element", []int{7}, 7},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, Percentile(tt.slice, 1.0, false))
+		})
+	}
+}
+
 func TestMin(t *testing.T) {
 	for _, tt := range []struct {
 		name  string

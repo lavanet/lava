@@ -107,9 +107,14 @@ func Percentile[T Number](slice []T, rank float64, reverse bool) T {
 	// Calculate the fractional part
 
 	if data_len%2 == 0 {
-		// Interpolate between two middle values
+		// Interpolate between two middle values. At rank 1.0 the position is
+		// the last index, so clamp the upper index to stay within the slice.
+		upperIndex := position + 1
+		if upperIndex >= data_len {
+			upperIndex = data_len - 1
+		}
 		lower := slice[position]
-		upper := slice[position+1]
+		upper := slice[upperIndex]
 		return lower + T(float64(upper-lower)*rank)
 	} else {
 		return slice[position]
