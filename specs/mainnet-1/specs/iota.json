@@ -948,78 +948,6 @@
                 "extra_compute_units": 0
               },
               {
-                "name": "iotax_subscribeEvent",
-                "block_parsing": {
-                  "parser_arg": [
-                    ""
-                  ],
-                  "parser_func": "EMPTY"
-                },
-                "compute_units": 1000,
-                "enabled": true,
-                "category": {
-                  "deterministic": false,
-                  "local": false,
-                  "subscription": true,
-                  "stateful": 0
-                },
-                "extra_compute_units": 0
-              },
-              {
-                "name": "iotax_subscribeTransaction",
-                "block_parsing": {
-                  "parser_arg": [
-                    ""
-                  ],
-                  "parser_func": "EMPTY"
-                },
-                "compute_units": 1000,
-                "enabled": true,
-                "category": {
-                  "deterministic": false,
-                  "local": false,
-                  "subscription": true,
-                  "stateful": 0
-                },
-                "extra_compute_units": 0
-              },
-              {
-                "name": "iotax_unsubscribeEvent",
-                "block_parsing": {
-                  "parser_arg": [
-                    ""
-                  ],
-                  "parser_func": "EMPTY"
-                },
-                "compute_units": 10,
-                "enabled": true,
-                "category": {
-                  "deterministic": false,
-                  "local": false,
-                  "subscription": true,
-                  "stateful": 0
-                },
-                "extra_compute_units": 0
-              },
-              {
-                "name": "iotax_unsubscribeTransaction",
-                "block_parsing": {
-                  "parser_arg": [
-                    ""
-                  ],
-                  "parser_func": "EMPTY"
-                },
-                "compute_units": 10,
-                "enabled": true,
-                "category": {
-                  "deterministic": false,
-                  "local": false,
-                  "subscription": true,
-                  "stateful": 0
-                },
-                "extra_compute_units": 0
-              },
-              {
                 "name": "iota_isTransactionIndexedOnNode",
                 "block_parsing": {
                   "parser_arg": [
@@ -1275,24 +1203,6 @@
                   "parser_func": "PARSE_CANONICAL"
                 },
                 "api_name": "iota_getCheckpoints"
-              },
-              {
-                "function_tag": "SUBSCRIBE",
-                "api_name": "iotax_subscribeEvent"
-              },
-              {
-                "function_tag": "SUBSCRIBE",
-                "api_name": "iotax_subscribeTransaction"
-              },
-              {
-                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"iotax_unsubscribeEvent\",\"params\":[\"%s\"],\"id\":1}",
-                "function_tag": "UNSUBSCRIBE",
-                "api_name": "iotax_unsubscribeEvent"
-              },
-              {
-                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"iotax_unsubscribeTransaction\",\"params\":[\"%s\"],\"id\":1}",
-                "function_tag": "UNSUBSCRIBE",
-                "api_name": "iotax_unsubscribeTransaction"
               }
             ],
             "verifications": [
