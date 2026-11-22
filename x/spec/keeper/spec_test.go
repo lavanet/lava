@@ -880,7 +880,7 @@ func TestSolanaSpecAddMultipleSubscribe(t *testing.T) {
 	require.Greater(t, unsubscribeCount, 2)
 }
 
-// TestIotaSpecHasNoWebsocketSubscriptions pins that the IOTA specs declare no
+// TestIotaSpec_NoWebsocketSubscriptions pins that the IOTA specs declare no
 // subscription API and no SUBSCRIBE/UNSUBSCRIBE parse directive, in every deployed
 // copy and after import expansion.
 //
@@ -890,7 +890,7 @@ func TestSolanaSpecAddMultipleSubscribe(t *testing.T) {
 // expanded spec makes the provider require a ws/wss node URL at startup, which an
 // upgraded node cannot offer. IOTAT imports IOTA, so the expanded form is what has
 // to be checked, and the spec is duplicated per network, so both copies are.
-func TestIotaSpecHasNoWebsocketSubscriptions(t *testing.T) {
+func TestIotaSpec_NoWebsocketSubscriptions(t *testing.T) {
 	specPaths := map[string]string{
 		"mainnet-1": "../../.././specs/mainnet-1/specs/iota.json",
 		"testnet-2": "../../.././specs/testnet-2/specs/iota.json",
