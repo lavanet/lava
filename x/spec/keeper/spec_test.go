@@ -880,6 +880,63 @@ func TestSolanaSpecAddMultipleSubscribe(t *testing.T) {
 	require.Greater(t, unsubscribeCount, 2)
 }
 
+// TestIotaSpecHasNoWebsocketSubscriptions pins that the IOTA specs declare no
+// subscription API and no SUBSCRIBE/UNSUBSCRIBE parse directive, in every deployed
+// copy and after import expansion.
+//
+// iota-node v1.36 serves JSON-RPC over HTTP only: iotax_subscribeEvent,
+// iotax_subscribeTransaction, their unsubscribe counterparts and the WebSocket
+// endpoint were removed upstream. A single SUBSCRIBE directive anywhere in the
+// expanded spec makes the provider require a ws/wss node URL at startup, which an
+// upgraded node cannot offer. IOTAT imports IOTA, so the expanded form is what has
+// to be checked, and the spec is duplicated per network, so both copies are.
+func TestIotaSpecHasNoWebsocketSubscriptions(t *testing.T) {
+	specPaths := map[string]string{
+		"mainnet-1": "../../.././specs/mainnet-1/specs/iota.json",
+		"testnet-2": "../../.././specs/testnet-2/specs/iota.json",
+	}
+
+	rawSpecs := make(map[string][]byte, len(specPaths))
+	for network, specPath := range specPaths {
+		t.Run(network, func(t *testing.T) {
+			contents, err := os.ReadFile(specPath)
+			require.NoError(t, err, "must be able to read %s", specPath)
+			rawSpecs[network] = contents
+
+			var proposal utils.SpecAddProposalJSON
+			require.NoError(t, json.NewDecoder(bytes.NewReader(contents)).Decode(&proposal), specPath)
+
+			ts := newTester(t)
+			require.NoError(t, ts.TxProposalAddSpecs(proposal.Proposal.Specs...))
+
+			for _, index := range []string{"IOTA", "IOTAT"} {
+				expanded, err := ts.Keepers.Spec.GetExpandedSpec(ts.Ctx, index)
+				require.NoError(t, err, "%s must be present and expandable in %s", index, specPath)
+				require.NotEmpty(t, expanded.ApiCollections, "%s must expand to at least one api collection", index)
+
+				for _, apiCol := range expanded.ApiCollections {
+					for _, api := range apiCol.Apis {
+						require.False(t, api.Category.Subscription,
+							"%s must not declare subscription api %s: IOTA nodes no longer serve WebSocket", index, api.Name)
+					}
+					for _, parseDirective := range apiCol.ParseDirectives {
+						require.NotEqual(t, types.FUNCTION_TAG_SUBSCRIBE, parseDirective.FunctionTag,
+							"%s must not declare a SUBSCRIBE directive (%s)", index, parseDirective.ApiName)
+						require.NotEqual(t, types.FUNCTION_TAG_UNSUBSCRIBE, parseDirective.FunctionTag,
+							"%s must not declare an UNSUBSCRIBE directive (%s)", index, parseDirective.ApiName)
+					}
+				}
+			}
+		})
+	}
+
+	// The per-network specs are copies of one another. Nothing else in the repo stops
+	// one of them drifting back to the WebSocket form.
+	require.Len(t, rawSpecs, len(specPaths), "every network's spec must have been read")
+	require.True(t, bytes.Equal(rawSpecs["mainnet-1"], rawSpecs["testnet-2"]),
+		"iota.json must be identical across networks")
+}
+
 func TestSpecs(t *testing.T) {
 	ts := newTester(t)
 
