@@ -112,8 +112,10 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 		default:
 			// punish providers that didnt vote
 			providersWithoutVote = append(providersWithoutVote, vote.Address)
-			bail := stake
-			bail.Quo(sdk.NewIntFromUint64(BailStakeDiv))
+			// sdk.Int.Quo is immutable - it returns a new Int and does not
+			// mutate the receiver. The result must be assigned, otherwise the
+			// bail equals the full stake instead of stake / BailStakeDiv.
+			bail := stake.Quo(sdk.NewIntFromUint64(BailStakeDiv))
 			err = k.pairingKeeper.JailEntry(ctx, vote.Address, conflictVote.ChainID, conflictVote.VoteStartBlock, blocksToSave, sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), bail))
 			if err != nil {
 				utils.LavaFormatWarning("jailing failed at vote conflict", err)
