@@ -32,18 +32,25 @@ func (r *RelayErrors) findMaxAppearances(input map[string][]int) (maxVal int, in
 	return maxVal, indexToReturn
 }
 
-func replacePattern(input, pattern, replacement string) string {
-	re := regexp.MustCompile(pattern)
+// Patterns are constant, so they are compiled once at package init instead of
+// on every sanitizeError call. sanitizeError runs on the relay error accounting
+// path, which fires for every classified relay failure.
+var (
+	sessionIDPattern = regexp.MustCompile(`SessionId:\d+`)
+	guidPattern      = regexp.MustCompile(`GUID:\d+`)
+)
+
+func replacePattern(input string, re *regexp.Regexp, replacement string) string {
 	return re.ReplaceAllString(input, replacement)
 }
 
 func (r *RelayErrors) sanitizeError(err error) string {
 	errMsg := err.Error()
 	// Replace SessionId:(any digit here) with SessionId:*
-	errMsg = replacePattern(errMsg, `SessionId:\d+`, "SessionId:*")
+	errMsg = replacePattern(errMsg, sessionIDPattern, "SessionId:*")
 
 	// Replace GUID:(any digit here) with GUID:*
-	errMsg = replacePattern(errMsg, `GUID:\d+`, "GUID:*")
+	errMsg = replacePattern(errMsg, guidPattern, "GUID:*")
 
 	return errMsg
 }

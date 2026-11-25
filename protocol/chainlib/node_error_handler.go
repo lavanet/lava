@@ -258,14 +258,16 @@ func (geh *genericErrorHandler) handleConnectionError(err error) error {
 	return nil
 }
 
+// Compiled once: maskSensitiveInfo runs on the node error path.
+var ipAddressPattern = regexp.MustCompile(`\b(?:\d{1,3}\.){3}\d{1,3}\b`)
+
 func maskSensitiveInfo(errMsg string) (string, bool) {
 	foundSecret := false
 
 	// Mask IP addresses
-	ipRegex := regexp.MustCompile(`\b(?:\d{1,3}\.){3}\d{1,3}\b`)
-	if ipRegex.MatchString(errMsg) {
+	if ipAddressPattern.MatchString(errMsg) {
 		foundSecret = true
-		errMsg = ipRegex.ReplaceAllString(errMsg, "[IP_ADDRESS]")
+		errMsg = ipAddressPattern.ReplaceAllString(errMsg, "[IP_ADDRESS]")
 	}
 
 	return errMsg, foundSecret
